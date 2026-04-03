@@ -29,8 +29,8 @@ RUN apk add --no-cache openssl
 # Copy package files for production install
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Install only production dependencies (Resiliente para subpastas de monorepo)
+RUN npm install --omit=dev
 
 # Copy Prisma schema and generated clients from builder
 COPY --from=builder /app/prisma ./prisma
@@ -47,8 +47,9 @@ ENV PORT=3000
 # Expose the API port
 EXPOSE 3000
 
-# Run the app (Padrão NestJS estável)
+# Run the app (Caminho e padrão estáveis)
 CMD ["node", "dist/main.js"]
+
 
 
 
