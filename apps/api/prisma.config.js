@@ -1,11 +1,10 @@
-import { defineConfig } from "@prisma/config";
+const { defineConfig } = require("@prisma/config");
 
 /**
- * Prisma 7 Configuration Mapping
- * Using process.env.DATABASE_URL to allow fallback for build-time generation
- * without using the stricter env() helper that can throw when missing.
+ * Prisma 7 Configuration Mapping (CommonJS for Runtime Compatibility)
+ * Correctly exports for Node.js in CommonJS mode (no type:module in package.json).
  */
-export default defineConfig({
+module.exports = defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
     url: process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/zapscore",
