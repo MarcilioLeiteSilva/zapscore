@@ -53,17 +53,47 @@ export class FixturesService {
   }
 
   async findById(id: string) {
-    const cacheKey = `fixtures:detail:${id}`;
-    const cached = await this.redis.getJson(cacheKey);
+    const cacheKey = `fixture:detail:${id}`;
+    const cached = await this.redis.getJson<any>(cacheKey);
     if (cached) return cached;
 
-    const data = await this.prisma.fixture.findUnique({
+    const fixture = await this.prisma.fixture.findUnique({
       where: { id },
-      include: { league: true, homeTeam: true, awayTeam: true },
+      include: {
+        homeTeam: true,
+        awayTeam: true,
+        league: true,
+        events: true,
+        stats: true,
+        lineups: true,
+      },
     });
 
-    if (data) await this.redis.setJson(cacheKey, data, 600);
-    return data;
+    if (fixture) {
+      await this.redis.setJson(cacheKey, fixture, 300); // 5 min cache
+    }
+
+    return fixture;
+  }
+
+  async findEvents(fixtureId: string) {
+    return this.prisma.fixtureEvent.findMany({
+      where: { fixtureId },
+      orderBy: { time: 'asc' },
+    });
+  }
+
+  async findStats(fixtureId: string) {
+    return this.prisma.fixtureStat.findMany({
+      where: { fixtureId },
+    });
+  }
+
+  async findLineups(fixtureId: string) {
+    return this.prisma.fixtureLineup.findMany({
+      where: { fixtureId },
+      orderBy: { isStart: 'desc' },
+    });
   }
 
   async findToday(leagueId?: number) {

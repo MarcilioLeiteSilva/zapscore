@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { HealthModule } from './health/health.module';
 import { VersionModule } from './version/version.module';
@@ -18,6 +19,7 @@ import { CompetitionsModule } from './competitions/competitions.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
     ApiFootballModule,

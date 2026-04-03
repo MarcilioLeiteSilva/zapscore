@@ -18,6 +18,7 @@ model League {
   season     Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  
   fixtures   Fixture[]
   standings  Standing[]
 
@@ -49,6 +50,7 @@ model Fixture {
   leagueId    String
   season      Int
   date        DateTime
+  round       String?
   statusLong  String?
   statusShort String?
   elapsed     Int?
@@ -65,8 +67,54 @@ model Fixture {
   homeTeam    Team   @relation("HomeTeam", fields: [homeTeamId], references: [id])
   awayTeam    Team   @relation("AwayTeam", fields: [awayTeamId], references: [id])
 
+  // Relações para dados técnicos
+  events      FixtureEvent[]
+  stats       FixtureStat[]
+  lineups     FixtureLineup[]
+
   @@index([externalId])
   @@index([date])
+}
+
+model FixtureEvent {
+  id        String   @id @default(uuid())
+  fixtureId String
+  time      Int
+  teamId    Int
+  player    String?
+  assist    String?
+  type      String   // Goal, Card, Subst, Var
+  detail    String?
+  createdAt DateTime @default(now())
+
+  fixture   Fixture  @relation(fields: [fixtureId], references: [id])
+}
+
+model FixtureStat {
+  id        String   @id @default(uuid())
+  fixtureId String
+  teamId    Int
+  type      String   // Shots on Goal, Possession, Corners, Fouls...
+  value     String?
+  createdAt DateTime @default(now())
+
+  fixture   Fixture  @relation(fields: [fixtureId], references: [id])
+
+  @@unique([fixtureId, teamId, type])
+}
+
+model FixtureLineup {
+  id        String   @id @default(uuid())
+  fixtureId String
+  teamId    Int
+  player    String
+  number    Int?
+  pos       String?  // G, D, M, F
+  grid      String?  // Posição no campo (ex: 1:1)
+  isStart   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  fixture   Fixture  @relation(fields: [fixtureId], references: [id])
 }
 
 model Standing {

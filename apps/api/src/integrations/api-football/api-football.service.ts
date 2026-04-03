@@ -39,7 +39,7 @@ export class ApiFootballService {
     return this.get('/standings', params);
   }
 
-  private async get(endpoint: string, params: any) {
+  async get(endpoint: string, params: any) {
     if (!this.apiKey) {
       this.logger.error('API_FOOTBALL_KEY is not defined');
       throw new Error('API_FOOTBALL_KEY is not defined');

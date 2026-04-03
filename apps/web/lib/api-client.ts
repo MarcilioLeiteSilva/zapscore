@@ -32,6 +32,9 @@ export const ZapScoreApi = {
   getFixturesToday: (leagueId?: number) => {
     return fetchApi(`/fixtures/today${leagueId ? `?leagueId=${leagueId}` : ''}`);
   },
+  getFixtureDetail: (id: string) => {
+    return fetchApi(`/fixtures/${id}`);
+  },
   getStanding: (leagueId: number, season: number = 2026) => {
     return fetchApi(`/standings?leagueId=${leagueId}&season=${season}`);
   },

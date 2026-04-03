@@ -34,7 +34,22 @@ export class FixturesController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string) {
     return this.fixturesService.findById(id);
+  }
+
+  @Get(':id/events')
+  getEvents(@Param('id') id: string) {
+    return this.fixturesService.findEvents(id);
+  }
+
+  @Get(':id/stats')
+  getStats(@Param('id') id: string) {
+    return this.fixturesService.findStats(id);
+  }
+
+  @Get(':id/lineups')
+  getLineups(@Param('id') id: string) {
+    return this.fixturesService.findLineups(id);
   }
 }
