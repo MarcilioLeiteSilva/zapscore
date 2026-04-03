@@ -28,7 +28,7 @@ RUN apk add --no-cache openssl
 
 # Copy package files for production install
 COPY package*.json ./
-COPY prisma.config.ts ./
+COPY prisma.config.js ./
 
 # Install only production dependencies
 RUN npm ci --omit=dev
@@ -50,3 +50,4 @@ EXPOSE 3000
 
 # Run the app (Caminho corrigido para a estrutura NestJS detectada)
 CMD ["node", "dist/src/main"]
+
