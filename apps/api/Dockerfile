@@ -12,7 +12,7 @@ RUN npm install
 # Copy source code and prisma configs
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client (Usando Prisma 5.22.0 estável)
 RUN npx prisma generate
 
 # Build application
@@ -28,7 +28,6 @@ RUN apk add --no-cache openssl
 
 # Copy package files for production install
 COPY package*.json ./
-COPY prisma.config.js ./
 
 # Install only production dependencies
 RUN npm ci --omit=dev
@@ -48,7 +47,7 @@ ENV PORT=3000
 # Expose the API port
 EXPOSE 3000
 
-# Run the app (Caminho corrigido e padronizado)
+# Run the app (Padrão NestJS estável)
 CMD ["node", "dist/main.js"]
 
 
