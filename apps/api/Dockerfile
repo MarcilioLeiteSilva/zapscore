@@ -1,30 +1,42 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Transer package configuration
+# Transfer package configuration and lockfile (essencial para sync do npm ci)
 COPY package*.json ./
 
-# Install development dependencies
+# Install all dependencies (including dev para build)
 RUN npm install
 
-# Copy source code
+# Copy source code and prisma configs
 COPY . .
+
+# Generate Prisma Client (essencial para a API rodar no container)
+RUN npx prisma generate
 
 # Build application
 RUN npm run build
 
 # Stage 2: Runtime
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy production dependencies from host (as we will reinstall production)
+# Ensure openssl for Prisma runtime em alpine
+RUN apk add --no-cache openssl
+
+# Copy package files for production install
 COPY package*.json ./
+COPY prisma.config.ts ./
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
+
+# Copy Prisma schema and generated clients from builder
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
