@@ -1,6 +1,6 @@
 # ZapScore API
 
-A base da plataforma de inteligência esportiva ZapScore.
+A base da plataforma de inteligência esportiva ZapScore (api.zapscore.api.br).
 
 ## 🚀 Status Inicial
 Este repositório contém a infraestrutura básica e a API funcional para a fase 1 do projeto.
@@ -67,13 +67,13 @@ Na aba **Environment**, adicione:
 - `APP_VERSION`: `1.0.0`
 
 ### 5. Configurar Domínio e SSL
-- Na aba **Domains**, adicione: `api.zapscore.com.br`.
+- Na aba **Domains**, adicione: `api.zapscore.api.br`.
 - Habilite o SSL/HTTPS (geralmente automático no EasyPanel com Let's Encrypt).
 
 ---
 
 ## 🌐 DNS e Apontamento
-Para que o domínio `api.zapscore.com.br` funcione:
+Para que o domínio `api.zapscore.api.br` funcione:
 
 1. Acesse o gerenciador de DNS do seu domínio (Cloudflare, Registro.br, etc).
 2. Adicione um registro do tipo **A**:
@@ -96,5 +96,5 @@ Para que o domínio `api.zapscore.com.br` funcione:
 - [ ] API sobe localmente (`npm run api:dev`)
 - [ ] Build do container funciona (`docker build -t zapscore-api ./apps/api`)
 - [ ] Endpoints respondem 200: `/`, `/health`, `/version`
-- [ ] Domínio `api.zapscore.com.br` aponta para o IP correto
+- [ ] Domínio `api.zapscore.api.br` aponta para o IP correto
 - [ ] SSL ativo no domínio da API
