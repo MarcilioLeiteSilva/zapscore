@@ -6,7 +6,7 @@ WORKDIR /app
 # Transfer package configuration and lockfile
 COPY package*.json ./
 
-# Install all dependencies
+# Install all dependencies (incluindo dev dependencies para build)
 RUN npm install
 
 # Copy source code and prisma configs
@@ -48,6 +48,7 @@ ENV PORT=3000
 # Expose the API port
 EXPOSE 3000
 
-# Run the app (Caminho corrigido para a estrutura NestJS detectada)
-CMD ["node", "dist/src/main"]
+# Run the app (Caminho e extensão corrigidos para Node 22 + Monorepo)
+CMD ["node", "dist/src/main.js"]
+
 
