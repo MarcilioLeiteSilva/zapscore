@@ -1,8 +1,9 @@
 import { ZapScoreApi } from '../../../lib/api-client';
 import Link from 'next/link';
 
-export default async function FixtureDetailPage({ params }: { params: { id: string } }) {
-  const fixture = await ZapScoreApi.getFixtureDetail(params.id);
+export default async function FixtureDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const fixture = await ZapScoreApi.getFixtureDetail(id);
 
   if (!fixture) {
     return <div className="container">Partida não encontrada.</div>;
