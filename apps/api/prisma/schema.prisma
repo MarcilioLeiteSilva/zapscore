@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model League {
+  id         String   @id @default(uuid())
+  externalId Int      @unique
+  name       String
+  country    String?
+  logo       String?
+  type       String?
+  season     Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  fixtures   Fixture[]
+  standings  Standing[]
+
+  @@index([externalId])
+}
+
+model Team {
+  id         String   @id @default(uuid())
+  externalId Int      @unique
+  name       String
+  code       String?
+  country    String?
+  logo       String?
+  founded    Int?
+  national   Boolean? @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  homeFixtures Fixture[] @relation("HomeTeam")
+  awayFixtures Fixture[] @relation("AwayTeam")
+  standings    Standing[]
+
+  @@index([externalId])
+}
+
+model Fixture {
+  id          String   @id @default(uuid())
+  externalId  Int      @unique
+  leagueId    String
+  season      Int
+  date        DateTime
+  statusLong  String?
+  statusShort String?
+  elapsed     Int?
+  venueName   String?
+  venueCity   String?
+  homeTeamId  String
+  awayTeamId  String
+  homeGoals   Int?
+  awayGoals   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  league      League @relation(fields: [leagueId], references: [id])
+  homeTeam    Team   @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team   @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  @@index([externalId])
+  @@index([date])
+}
+
+model Standing {
+  id          String   @id @default(uuid())
+  leagueId    String
+  teamId      String
+  season      Int
+  rank        Int
+  points      Int
+  goalsDiff   Int
+  played      Int
+  win         Int
+  draw        Int
+  lose        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  league      League @relation(fields: [leagueId], references: [id])
+  team        Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([leagueId, teamId, season])
+}
