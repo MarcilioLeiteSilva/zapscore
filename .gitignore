@@ -27,7 +27,6 @@ desktop.ini
 
 # Docker
 .dockerignore
-Dockerfile
 
 # Project specific
 apps/api/dist/
