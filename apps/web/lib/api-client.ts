@@ -1,4 +1,9 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+let API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+// Garante que a URL tenha o protocolo para evitar o erro ERR_INVALID_URL
+if (API_BASE_URL && !API_BASE_URL.startsWith('http')) {
+  API_BASE_URL = `https://${API_BASE_URL}`;
+}
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
