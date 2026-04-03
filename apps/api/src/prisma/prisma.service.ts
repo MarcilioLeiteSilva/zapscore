@@ -10,10 +10,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       throw new Error('DATABASE_URL is not defined in environment variables');
     }
     
-    // Using 'as any' to bypass Prisma/TS compiler property check (TS2353)
-    // while providing the correct runtime connection URL.
+    // Explicitly providing the database URL for the 'db' datasource defined in schema.prisma.
+    // We use 'as any' to bypass strict TS check (TS2353) which can cause build-time failures
+    // while ensuring the Prisma Engine correctly connects at runtime.
     super({
-      datasourceUrl: databaseUrl,
       datasources: {
         db: {
           url: databaseUrl,
