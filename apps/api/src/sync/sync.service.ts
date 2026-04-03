@@ -22,12 +22,38 @@ export class SyncService {
     return parseInt(this.configService.get<string>('DEFAULT_SEASON', '2026'), 10);
   }
 
+  async bootstrap(leagueId?: number, season?: number) {
+    const targetLeague = leagueId || this.defaultLeagueId;
+    const targetSeason = season || this.defaultSeason;
+
+    this.logger.log(`Starting full bootstrap for League ${targetLeague} Season ${targetSeason}`);
+
+    const resLeague = await this.syncLeague(targetLeague, targetSeason);
+    const resTeams = await this.syncTeams(targetLeague, targetSeason);
+    const resFixtures = await this.syncFixtures(targetLeague, targetSeason);
+    const resStandings = await this.syncStandings(targetLeague, targetSeason);
+
+    return {
+      success: true,
+      scope: {
+        leagueId: targetLeague,
+        season: targetSeason,
+      },
+      steps: {
+        league: { ok: true, processed: resLeague.count },
+        teams: { ok: true, processed: resTeams.count },
+        fixtures: { ok: true, processed: resFixtures.count },
+        standings: { ok: true, processed: resStandings.count },
+      },
+      finishedAt: new Date().toISOString(),
+    };
+  }
+
   async syncLeague(leagueId?: number, season?: number) {
     const targetLeague = leagueId || this.defaultLeagueId;
     const targetSeason = season || this.defaultSeason;
 
     this.logger.log(`Syncing league ${targetLeague} for season ${targetSeason}...`);
-    // Filter specifically the target league to avoid mass payload processing if possible
     const leaguesData = await this.apiFootball.getLeagues({ id: targetLeague });
     
     let count = 0;
@@ -35,7 +61,6 @@ export class SyncService {
       if (data.league.id === targetLeague) {
         const leagueMapped = ApiFootballMapper.toLeague({
             ...data,
-            // Override season to current target if it's returning all seasons array
             seasons: [{ year: targetSeason, current: true }]
         });
         await this.prisma.league.upsert({
@@ -47,7 +72,6 @@ export class SyncService {
       }
     }
     
-    this.logger.log(`Synced ${count} league data for ID: ${targetLeague}`);
     return { count };
   }
 
@@ -69,7 +93,6 @@ export class SyncService {
       count++;
     }
     
-    this.logger.log(`Synced ${count} teams for league ${targetLeague}`);
     return { count };
   }
 
@@ -109,7 +132,6 @@ export class SyncService {
       }
     }
     
-    this.logger.log(`Synced ${count} fixtures for league ${targetLeague}`);
     return { count };
   }
 
@@ -156,7 +178,6 @@ export class SyncService {
       }
     }
     
-    this.logger.log(`Synced ${count} standing entries for league ${targetLeague}`);
     return { count };
   }
 }

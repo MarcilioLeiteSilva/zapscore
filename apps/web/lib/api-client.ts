@@ -1,0 +1,37 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+export async function fetchApi(endpoint: string, options: RequestInit = {}) {
+  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      next: { revalidate: 60 }, // Cache on Next.js side too
+    });
+    if (!response.ok) {
+       throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+  } catch (err) {
+    console.error(`Fetch API Error (${url}):`, err);
+    throw err;
+  }
+}
+
+export const ZapScoreApi = {
+  getHealth: () => fetchApi('/'),
+  getCompetitions: () => fetchApi('/competitions'),
+  getFixtures: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi(`/fixtures?${query}`);
+  },
+  getFixturesToday: (leagueId?: number) => {
+    return fetchApi(`/fixtures/today${leagueId ? `?leagueId=${leagueId}` : ''}`);
+  },
+  getStanding: (leagueId: number, season: number = 2026) => {
+    return fetchApi(`/standings?leagueId=${leagueId}&season=${season}`);
+  },
+  getTeams: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchApi(`/teams?${query}`);
+  },
+};

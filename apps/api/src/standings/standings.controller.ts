@@ -6,13 +6,13 @@ export class StandingsController {
   constructor(private readonly standingsService: StandingsService) {}
 
   @Get()
-  async findByLeagueAndSeason(
-    @Query('league') league: string,
-    @Query('season') season: string,
-  ) {
-    if (!league || !season) {
-      throw new Error('League and Season are required');
-    }
-    return this.standingsService.findByLeagueExternalIdAndSeason(Number(league), Number(season));
+  async findAll(@Query() query: {
+    leagueId?: string;
+    season?: string;
+  }) {
+    return this.standingsService.findMany({
+      leagueId: query.leagueId ? parseInt(query.leagueId) : undefined,
+      season: query.season ? parseInt(query.season) : 2026,
+    });
   }
 }

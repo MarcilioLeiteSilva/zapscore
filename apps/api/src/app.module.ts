@@ -11,6 +11,7 @@ import { TeamsModule } from './teams/teams.module';
 import { FixturesModule } from './fixtures/fixtures.module';
 import { StandingsModule } from './standings/standings.module';
 import { SyncModule } from './sync/sync.module';
+import { CompetitionsModule } from './competitions/competitions.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SyncModule } from './sync/sync.module';
     FixturesModule,
     StandingsModule,
     SyncModule,
+    CompetitionsModule,
   ],
   controllers: [AppController],
   providers: [],

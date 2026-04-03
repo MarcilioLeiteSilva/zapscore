@@ -15,52 +15,57 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       try {
         this.client = new Redis(redisUrl, {
           retryStrategy: (times) => {
-            const delay = Math.min(times * 50, 2000);
-            return delay;
+             const delay = Math.min(times * 100, 3000);
+             return delay;
           },
         });
 
-        this.client.on('connect', () => {
-          this.logger.log('Redis connected successfully');
-        });
-
-        this.client.on('error', (err) => {
-          this.logger.error('Redis connection error', err);
-        });
+        this.client.on('connect', () => this.logger.log('Redis initialized and connected.'));
+        this.client.on('error', (err) => this.logger.error('Redis error:', err.message));
       } catch (error) {
-        this.logger.error('Failed to initialize Redis', error);
+        this.logger.error('Failed to initialize Redis client', error);
       }
     } else {
-      this.logger.warn('REDIS_URL not found, Redis integration will be disabled');
+      this.logger.warn('REDIS_URL is missing. Cache layer will be bypassed.');
     }
   }
 
   async onModuleDestroy() {
-    if (this.client) {
-      await this.client.quit();
-    }
+    if (this.client) await this.client.quit();
   }
 
-  getClient(): Redis {
-    return this.client;
+  // Chaveamento Escalável
+  generateKey(prefix: string, context: { leagueId?: number; season?: number; [key: string]: any }): string {
+    const { leagueId = 'any', season = 'any', ...rest } = context;
+    const parts = [prefix, leagueId, season];
+    Object.entries(rest).forEach(([key, val]) => {
+        if (val !== undefined) parts.push(`${key}=${val}`);
+    });
+    return parts.join(':');
   }
 
-  async set(key: string, value: string, ttlSeconds?: number) {
-    if (!this.client) return;
-    if (ttlSeconds) {
-      await this.client.set(key, value, 'EX', ttlSeconds);
-    } else {
-      await this.client.set(key, value);
-    }
-  }
-
-  async get(key: string): Promise<string | null> {
+  async getJson<T>(key: string): Promise<T | null> {
     if (!this.client) return null;
-    return this.client.get(key);
+    const data = await this.client.get(key);
+    return data ? JSON.parse(data) : null;
   }
 
-  async del(key: string) {
+  async setJson(key: string, value: any, ttlSeconds: number = 3600): Promise<void> {
     if (!this.client) return;
-    await this.client.del(key);
+    await this.client.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+    this.logger.debug(`Cache SET: ${key} (TTL: ${ttlSeconds}s)`);
+  }
+
+  async delPattern(pattern: string): Promise<void> {
+    if (!this.client) return;
+    const keys = await this.client.keys(pattern);
+    if (keys.length > 0) {
+      await this.client.del(...keys);
+      this.logger.debug(`Cache DEL PATTERN: ${pattern} (${keys.length} keys)`);
+    }
+  }
+
+  async flushAll(): Promise<void> {
+    if (this.client) await this.client.flushall();
   }
 }
