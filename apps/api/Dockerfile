@@ -3,16 +3,16 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Transfer package configuration and lockfile (essencial para sync do npm ci)
+# Transfer package configuration and lockfile
 COPY package*.json ./
 
-# Install all dependencies (including dev para build)
+# Install all dependencies
 RUN npm install
 
 # Copy source code and prisma configs
 COPY . .
 
-# Generate Prisma Client (essencial para a API rodar no container)
+# Generate Prisma Client
 RUN npx prisma generate
 
 # Build application
@@ -23,7 +23,7 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Ensure openssl for Prisma runtime em alpine
+# Ensure openssl for Prisma runtime
 RUN apk add --no-cache openssl
 
 # Copy package files for production install
@@ -48,5 +48,5 @@ ENV PORT=3000
 # Expose the API port
 EXPOSE 3000
 
-# Run the app
-CMD ["node", "dist/main"]
+# Run the app (Caminho corrigido para a estrutura NestJS detectada)
+CMD ["node", "dist/src/main"]
