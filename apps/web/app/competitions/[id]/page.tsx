@@ -157,7 +157,6 @@ function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], s
     });
 
     // Encontrar a rodada atual se não selecionada
-    // (Poderíamos usar a primeira rodada com jogos 'NS' ou 'LIVE')
     const currentRound = selectedRound || sortedRounds.find(r => roundsMap[r].some((f: any) => ['LIVE', '1H', '2H', 'HT', 'NS'].includes(f.statusShort))) || sortedRounds[0];
 
     const currentIndex = sortedRounds.indexOf(currentRound);
@@ -166,24 +165,28 @@ function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], s
 
     return (
         <div>
-            {/* Navegação de Rodada */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2.5rem', background: 'var(--glass)', padding: '1rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
+            {/* Navegação de Rodada Compacta */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3rem', marginBottom: '3rem' }}>
                 {prevRound ? (
-                    <Link href={`/competitions/${leagueId}?tab=rodadas&round=${prevRound}`} className="card glass" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: '800' }}>
-                        ← ANTERIOR
+                    <Link href={`/competitions/${leagueId}?tab=rodadas&round=${prevRound}`} className="nav-arrow" title="Rodada Anterior">
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '1px solid var(--border)' }}>
+                            ←
+                        </div>
                     </Link>
-                ) : <div style={{ width: '100px' }}></div>}
+                ) : <div style={{ width: '48px' }}></div>}
 
                 <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '900', letterSpacing: '2px', marginBottom: '0.25rem' }}>NAVEGAÇÃO LÓGICA</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '900' }}>{currentRound.toUpperCase()}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '900', letterSpacing: '3px', marginBottom: '0.5rem' }}>COMPETIÇÃO</div>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0 }}>{currentRound.toUpperCase()}</h2>
                 </div>
 
                 {nextRound ? (
-                    <Link href={`/competitions/${leagueId}?tab=rodadas&round=${nextRound}`} className="card glass" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: '800' }}>
-                        PRÓXIMA →
+                    <Link href={`/competitions/${leagueId}?tab=rodadas&round=${nextRound}`} className="nav-arrow" title="Próxima Rodada">
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '1px solid var(--border)' }}>
+                            →
+                        </div>
                     </Link>
-                ) : <div style={{ width: '100px' }}></div>}
+                ) : <div style={{ width: '48px' }}></div>}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '2rem' }}>
