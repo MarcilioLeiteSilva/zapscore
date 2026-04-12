@@ -229,16 +229,20 @@ export class SyncService {
     
     this.logger.log(`Starting live sync for leagues: ${targetLeagues.join(', ')}`);
     
+    let totalSynced = 0;
     try {
-      // API-Football permite filtrar por leagues separadas por "-"
-      const liveFixtures = await this.apiFootball.getFixtures({ 
-         live: 'all',
-         league: targetLeagues.join('-')
-      });
+      for (const leagueId of targetLeagues) {
+        this.logger.debug(`Fetching live fixtures for league ${leagueId}`);
+        const liveFixtures = await this.apiFootball.getFixtures({ 
+           live: 'all',
+           league: leagueId
+        });
 
-      this.logger.log(`Found ${liveFixtures.length} live matches for target leagues.`);
+        if (!liveFixtures || liveFixtures.length === 0) continue;
 
-      for (const data of liveFixtures) {
+        this.logger.log(`Found ${liveFixtures.length} live matches for league ${leagueId}.`);
+
+        for (const data of liveFixtures) {
         try {
           // Precisamos garantir que a liga e os times existem
           // (Normalmente já existem se o bootstrap foi rodado)
@@ -263,13 +267,15 @@ export class SyncService {
 
           // Sincronizar detalhes técnicos para jogos ao vivo
           await this.syncFixtureDetail(data.fixture.id);
+          totalSynced++;
 
         } catch (err) {
           this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
         }
       }
+    }
 
-      return { count: liveFixtures.length };
+      return { count: totalSynced };
     } catch (err) {
       this.logger.error(`Failed live sync: ${err.message}`);
       throw err;
