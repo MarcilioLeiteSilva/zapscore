@@ -31,7 +31,7 @@ export class ApiFootballService {
     return this.get('/teams', params);
   }
 
-  async getFixtures(params: { date?: string; league?: number; season?: number; id?: number }) {
+  async getFixtures(params: { date?: string; league?: number | string; season?: number; id?: number; live?: string }) {
     return this.get('/fixtures', params);
   }
 

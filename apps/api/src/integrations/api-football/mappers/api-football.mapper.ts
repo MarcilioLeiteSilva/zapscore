@@ -32,6 +32,7 @@ export class ApiFootballMapper {
       leagueId: leagueUuid,
       season: apiFixture.league.season,
       date: new Date(apiFixture.fixture.date),
+      round: apiFixture.league.round,
       statusLong: apiFixture.fixture.status.long,
       statusShort: apiFixture.fixture.status.short,
       elapsed: apiFixture.fixture.status.elapsed,
