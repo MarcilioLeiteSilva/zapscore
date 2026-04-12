@@ -30,4 +30,15 @@ export class CompetitionsController {
     const comp = this.competitionsService.findOneByExternalId(id);
     return comp ? comp.activeSeasons : [];
   }
+
+  @Get(':id/scorers')
+  async getScorers(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('season') season?: number,
+  ) {
+    // Busca a season ativa se não for passada
+    const comp = this.competitionsService.findOneByExternalId(id);
+    const targetSeason = season || (comp ? comp.activeSeasons[0] : 2026);
+    return this.competitionsService.getTopScorers(id, targetSeason);
+  }
 }

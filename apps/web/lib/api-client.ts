@@ -42,4 +42,10 @@ export const ZapScoreApi = {
     const query = new URLSearchParams(params).toString();
     return fetchApi(`/teams?${query}`);
   },
+  getCompetitionDetail: (id: number) => {
+    return fetchApi(`/competitions/${id}`);
+  },
+  getTopScorers: (id: number, season: number = 2026) => {
+    return fetchApi(`/competitions/${id}/scorers?season=${season}`);
+  },
 };

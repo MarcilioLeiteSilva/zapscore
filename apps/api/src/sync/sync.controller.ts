@@ -34,9 +34,8 @@ export class SyncController {
   }
 
   @Post('live')
-  async syncLive(@Body() body: { leagueId?: number; season?: number }) {
-    // Para implementação futura de live score
+  async syncLive(@Body() body: { leagueId?: number }) {
     this.logger.log(`Live sync triggered for ${JSON.stringify(body)}`);
-    return { success: true, message: 'Live sync functionality to be implemented' };
+    return this.syncService.syncLive(body.leagueId);
   }
 }

@@ -1,11 +1,9 @@
 import './globals.css';
-import { Inter } from 'next/font/google';
-
-const inter = Inter({ subsets: ['latin'] });
+import Link from 'next/link';
 
 export const metadata = {
-  title: 'ZapScore — Brazilian Football Data Platform',
-  description: 'Scalable data platform for all Brazilian football competitions.',
+  title: 'ZapScore | Inteligência em Futebol',
+  description: 'Plataforma definitiva de dados para competições brasileiras.',
 };
 
 export default function RootLayout({
@@ -15,22 +13,29 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
+      <body>
         <header className="header">
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="logo">ZAP<span>SCORE</span></div>
-            <nav className="nav">
-              <a href="/" className="nav-link">Home</a>
-              <a href="/fixtures" className="nav-link">Jogos</a>
-              <a href="/standings" className="nav-link">Classificação</a>
+            <Link href="/" className="logo">
+              <div className="logo-icon">
+                <span style={{ fontSize: '1.2rem' }}>⚡</span>
+              </div>
+              ZAP<span>SCORE</span>
+            </Link>
+            
+            <nav style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+              <Link href="/fixtures" className="nav-link">Jogos</Link>
+              <Link href="/standings" className="nav-link">Classificação</Link>
             </nav>
           </div>
         </header>
-        <main style={{ padding: '2rem 0' }}>
+
+        <main className="fade-in">
           {children}
         </main>
-        <footer style={{ borderTop: '1px solid var(--border)', padding: '2rem 0', marginTop: '4rem', color: 'var(--muted)', fontSize: '0.8rem' }}>
-          <div className="container" style={{ textAlign: 'center' }}>
+
+        <footer style={{ borderTop: '1px solid var(--border)', padding: '4rem 0', marginTop: '4rem' }}>
+          <div className="container" style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             ZapScore &copy; 2026 — Plataforma de Dados do Futebol Brasileiro
           </div>
         </footer>

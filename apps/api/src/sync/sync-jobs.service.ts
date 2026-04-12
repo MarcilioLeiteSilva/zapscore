@@ -16,17 +16,11 @@ export class SyncJobsService {
   @Cron('*/5 * * * *')
   async handleLiveUpdate() {
     this.logger.log('Starting scheduled live matches sync...');
-    const activeComps = this.competitionsService.findAll();
-    
-    for (const comp of activeComps) {
-      for (const season of comp.activeSeasons) {
-        try {
-          await this.syncService.syncFixtures(comp.externalId, season);
-          this.logger.log(`Live sync successful for ${comp.name} (${season})`);
-        } catch (err) {
-          this.logger.error(`Live sync failed for ${comp.name}: ${err.message}`);
-        }
-      }
+    try {
+      await this.syncService.syncLive();
+      this.logger.log('Live sync completed successfully for all active competitions.');
+    } catch (err) {
+      this.logger.error(`Live sync job failed: ${err.message}`);
     }
   }
 

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiFootballService } from '../integrations/api-football/api-football.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiFootballMapper } from '../integrations/api-football/mappers/api-football.mapper';
+import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
 export class SyncService {
@@ -220,6 +221,58 @@ export class SyncService {
       }
     } catch (err) {
       this.logger.error(`Error syncing fixture detail ${externalFixtureId}: ${err.message}`);
+    }
+  }
+
+  async syncLive(leagueId?: number) {
+    const targetLeagues = leagueId ? [leagueId] : SUPPORTED_COMPETITIONS.map(c => c.externalId);
+    
+    this.logger.log(`Starting live sync for leagues: ${targetLeagues.join(', ')}`);
+    
+    try {
+      // API-Football permite filtrar por leagues separadas por "-"
+      const liveFixtures = await this.apiFootball.getFixtures({ 
+         live: 'all',
+         league: targetLeagues.join('-')
+      });
+
+      this.logger.log(`Found ${liveFixtures.length} live matches for target leagues.`);
+
+      for (const data of liveFixtures) {
+        try {
+          // Precisamos garantir que a liga e os times existem
+          // (Normalmente já existem se o bootstrap foi rodado)
+          const league = await this.prisma.league.findUnique({
+            where: { externalId: data.league.id }
+          });
+          if (!league) continue;
+
+          const [homeTeam, awayTeam] = await Promise.all([
+            this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+            this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+          ]);
+          if (!homeTeam || !awayTeam) continue;
+
+          const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
+          
+          await this.prisma.fixture.upsert({
+            where: { externalId: fixtureMapped.externalId },
+            update: fixtureMapped,
+            create: fixtureMapped as any,
+          });
+
+          // Sincronizar detalhes técnicos para jogos ao vivo
+          await this.syncFixtureDetail(data.fixture.id);
+
+        } catch (err) {
+          this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
+        }
+      }
+
+      return { count: liveFixtures.length };
+    } catch (err) {
+      this.logger.error(`Failed live sync: ${err.message}`);
+      throw err;
     }
   }
 

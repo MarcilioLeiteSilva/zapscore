@@ -39,6 +39,10 @@ export class ApiFootballService {
     return this.get('/standings', params);
   }
 
+  async getTopScorers(params: { league: number; season: number }) {
+    return this.get('/players/topscorers', params);
+  }
+
   async get(endpoint: string, params: any) {
     if (!this.apiKey) {
       this.logger.error('API_FOOTBALL_KEY is not defined');
