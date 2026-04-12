@@ -26,7 +26,7 @@ export const ZapScoreApi = {
   getHealth: () => fetchApi('/'),
   getCompetitions: () => fetchApi('/competitions'),
   getFixtures: (params: Record<string, any> = {}) => {
-    const query = new URLSearchParams(params).toString();
+    const query = new URLSearchParams({ limit: '500', ...params }).toString();
     return fetchApi(`/fixtures?${query}`);
   },
   getFixturesToday: (leagueId?: number) => {
