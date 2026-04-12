@@ -42,13 +42,19 @@ export default async function FixtureDetailPage({ params }: { params: Promise<{ 
 
           {/* Score & Status */}
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '5rem', fontWeight: '950', letterSpacing: '-2px', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '900', letterSpacing: '2px', marginBottom: '0.5rem' }}>
+                {fixture.round?.replace('Regular Season - ', 'RODADA ').toUpperCase()}
+            </div>
+            <div style={{ fontSize: '5rem', fontWeight: '950', letterSpacing: '-2px', display: 'flex', alignItems: 'center', gap: '1.5rem', justifyContent: 'center' }}>
                 <span style={{ textShadow: '0 0 30px rgba(255,255,255,0.1)' }}>{fixture.homeGoals ?? 0}</span>
                 <span style={{ color: 'var(--border)', fontSize: '3rem' }}>:</span>
                 <span style={{ textShadow: '0 0 30px rgba(255,255,255,0.1)' }}>{fixture.awayGoals ?? 0}</span>
             </div>
             <div className="badge" style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.05)', padding: '0.6rem 1.2rem' }}>
                 {fixture.statusLong}
+            </div>
+            <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600' }}>
+               {new Date(fixture.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })} às {new Date(fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
 
