@@ -17,7 +17,7 @@ export default async function FixturesPage() {
            <h1 style={{ fontSize: '3rem' }}>Partidas de <span style={{ color: 'var(--primary)' }}>Hoje</span></h1>
         </div>
         <div style={{ color: 'var(--text-muted)', fontWeight: '600' }}>
-            {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            {new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' })}
         </div>
       </div>
       
@@ -84,7 +84,7 @@ export default async function FixturesPage() {
               <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
                 <span>📍 {fixture.venueName || 'Estádio Indefinido'}</span>
                 <span>•</span>
-                <span>⏰ {new Date(fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>⏰ {new Date(fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}</span>
               </div>
             </Link>
           ))}
