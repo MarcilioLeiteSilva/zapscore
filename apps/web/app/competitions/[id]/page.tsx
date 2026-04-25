@@ -150,14 +150,14 @@ function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], s
     const roundsMap = fixtures?.reduce((acc: any, f: any) => {
         const rawRound = f.round || 'Outros';
         
-        // Tradução amigável de rodadas/fases
+        // Tradução robusta usando Regex
         const r = rawRound
-            .replace('Regular Season - ', 'Rodada ')
-            .replace('Group Stage - ', 'Fase ')
-            .replace('Round of 16', 'Oitavas de Final')
-            .replace('Quarter-finals', 'Quartas de Final')
-            .replace('Semi-finals', 'Semifinal')
-            .replace('Final', 'Final');
+            .replace(/Regular Season - /gi, 'Rodada ')
+            .replace(/Group Stage - /gi, 'Fase ')
+            .replace(/Round of 16/gi, 'Oitavas de Final')
+            .replace(/Quarter-finals/gi, 'Quartas de Final')
+            .replace(/Semi-finals/gi, 'Semifinal')
+            .replace(/Final/gi, 'Final');
 
         if (!acc[r]) acc[r] = [];
         acc[r].push(f);
@@ -289,14 +289,14 @@ function ArtilhariaView({ scorers }: { scorers: any[] }) {
 function FixtureCard({ f }: { f: any }) {
     const isLive = ['LIVE', '1H', '2H', 'HT'].includes(f.statusShort);
     
-    // Tradução amigável de rodadas/fases para o card
+    // Tradução robusta usando Regex
     const roundName = (f.round || '')
-        .replace('Regular Season - ', 'Rodada ')
-        .replace('Group Stage - ', 'Fase ')
-        .replace('Round of 16', 'Oitavas')
-        .replace('Quarter-finals', 'Quartas')
-        .replace('Semi-finals', 'Semifinal')
-        .replace('Final', 'Final');
+        .replace(/Regular Season - /gi, 'Rodada ')
+        .replace(/Group Stage - /gi, 'Fase ')
+        .replace(/Round of 16/gi, 'Oitavas')
+        .replace(/Quarter-finals/gi, 'Quartas')
+        .replace(/Semi-finals/gi, 'Semifinal')
+        .replace(/Final/gi, 'Final');
 
     return (
         <Link href={`/fixtures/${f.id}`} className="card glass" style={{ display: 'block', padding: '1.5rem' }}>
