@@ -149,7 +149,16 @@ function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], s
     // Agrupar por rodada
     const roundsMap = fixtures?.reduce((acc: any, f: any) => {
         const rawRound = f.round || 'Outros';
-        const r = rawRound.replace('Regular Season - ', 'Rodada ').replace('Group Stage - ', 'Grupo ');
+        
+        // Tradução amigável de rodadas/fases
+        const r = rawRound
+            .replace('Regular Season - ', 'Rodada ')
+            .replace('Group Stage - ', 'Fase ')
+            .replace('Round of 16', 'Oitavas de Final')
+            .replace('Quarter-finals', 'Quartas de Final')
+            .replace('Semi-finals', 'Semifinal')
+            .replace('Final', 'Final');
+
         if (!acc[r]) acc[r] = [];
         acc[r].push(f);
         return acc;
@@ -279,7 +288,15 @@ function ArtilhariaView({ scorers }: { scorers: any[] }) {
 
 function FixtureCard({ f }: { f: any }) {
     const isLive = ['LIVE', '1H', '2H', 'HT'].includes(f.statusShort);
-    const roundName = f.round?.replace('Regular Season - ', 'Rodada ').replace('Group Stage - ', 'Grupo ') || '';
+    
+    // Tradução amigável de rodadas/fases para o card
+    const roundName = (f.round || '')
+        .replace('Regular Season - ', 'Rodada ')
+        .replace('Group Stage - ', 'Fase ')
+        .replace('Round of 16', 'Oitavas')
+        .replace('Quarter-finals', 'Quartas')
+        .replace('Semi-finals', 'Semifinal')
+        .replace('Final', 'Final');
 
     return (
         <Link href={`/fixtures/${f.id}`} className="card glass" style={{ display: 'block', padding: '1.5rem' }}>
