@@ -18,9 +18,21 @@ export class SyncJobsService {
     this.logger.log('Starting scheduled live matches sync...');
     try {
       await this.syncService.syncLive();
-      this.logger.log('Live sync completed successfully for all active competitions.');
+      this.logger.log('Live sync completed successfully.');
     } catch (err) {
       this.logger.error(`Live sync job failed: ${err.message}`);
+    }
+  }
+
+  // A cada 30 minutos: Sincroniza todos os jogos do dia (Limpeza/Finalização)
+  @Cron('*/30 * * * *')
+  async handleTodayUpdate() {
+    this.logger.log('Starting scheduled cleanup sync (All Today matches)...');
+    try {
+      await this.syncService.syncToday();
+      this.logger.log('Daily matches cleanup completed successfully.');
+    } catch (err) {
+      this.logger.error(`Today sync job failed: ${err.message}`);
     }
   }
 
