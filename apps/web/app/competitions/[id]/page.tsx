@@ -316,7 +316,7 @@ function FixtureCard({ f }: { f: any }) {
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span>{new Date(f.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                     <span>•</span>
-                    <span>{new Date(f.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>{new Date(f.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span>{roundName?.toUpperCase() || ''}</span>
