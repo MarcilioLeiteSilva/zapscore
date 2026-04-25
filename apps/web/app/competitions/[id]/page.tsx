@@ -154,10 +154,15 @@ function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], s
         const r = rawRound
             .replace(/Regular Season - /gi, 'Rodada ')
             .replace(/Group Stage - /gi, 'Fase ')
+            .replace(/Round of 64/gi, '2ª Fase')
+            .replace(/Round of 32/gi, '3ª Fase')
             .replace(/Round of 16/gi, 'Oitavas de Final')
             .replace(/Quarter-finals/gi, 'Quartas de Final')
             .replace(/Semi-finals/gi, 'Semifinal')
-            .replace(/Final/gi, 'Final');
+            .replace(/Final/gi, 'Final')
+            .replace(/1st Round/gi, '1ª Fase')
+            .replace(/2nd Round/gi, '2ª Fase')
+            .replace(/3rd Round/gi, '3ª Fase');
 
         if (!acc[r]) acc[r] = [];
         acc[r].push(f);
@@ -293,10 +298,15 @@ function FixtureCard({ f }: { f: any }) {
     const roundName = (f.round || '')
         .replace(/Regular Season - /gi, 'Rodada ')
         .replace(/Group Stage - /gi, 'Fase ')
+        .replace(/Round of 64/gi, '2ª Fase')
+        .replace(/Round of 32/gi, '3ª Fase')
         .replace(/Round of 16/gi, 'Oitavas')
         .replace(/Quarter-finals/gi, 'Quartas')
         .replace(/Semi-finals/gi, 'Semifinal')
-        .replace(/Final/gi, 'Final');
+        .replace(/Final/gi, 'Final')
+        .replace(/1st Round/gi, '1ª Fase')
+        .replace(/2nd Round/gi, '2ª Fase')
+        .replace(/3rd Round/gi, '3ª Fase');
 
     return (
         <Link href={`/fixtures/${f.id}`} className="card glass" style={{ display: 'block', padding: '1.5rem' }}>
