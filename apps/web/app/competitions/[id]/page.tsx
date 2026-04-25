@@ -210,7 +210,7 @@ function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], s
 
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '900', letterSpacing: '3px', marginBottom: '0.5rem' }}>COMPETIÇÃO</div>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0 }}>{currentRound.toUpperCase()}</h2>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: '950', margin: 0 }}>{currentRound?.toUpperCase() || 'SEM RODADAS'}</h2>
                 </div>
 
                 {nextRound ? (
@@ -319,7 +319,7 @@ function FixtureCard({ f }: { f: any }) {
                     <span>{new Date(f.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span>{roundName.toUpperCase()}</span>
+                    <span>{roundName?.toUpperCase() || ''}</span>
                     <span className={isLive ? 'badge badge-live' : 'badge badge-ft'}>{f.statusLong}</span>
                 </div>
             </div>
