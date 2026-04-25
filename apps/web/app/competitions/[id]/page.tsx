@@ -27,14 +27,19 @@ export default async function CompetitionPage({
   const isCup = competition.type === 'cup';
   const activeTab = tab === 'tabela' && isCup ? 'rodadas' : tab;
 
-  // Fetch data
+  // Fetch data com tratamento de erro resiliente
   let data: any = null;
-  if (activeTab === 'tabela') {
-    data = await ZapScoreApi.getStanding(leagueId);
-  } else if (activeTab === 'rodadas' || activeTab === 'jogos') {
-    data = await ZapScoreApi.getFixtures({ leagueId, season: 2026 });
-  } else if (activeTab === 'artilharia') {
-    data = await ZapScoreApi.getTopScorers(leagueId);
+  try {
+    if (activeTab === 'tabela') {
+      data = await ZapScoreApi.getStanding(leagueId);
+    } else if (activeTab === 'rodadas' || activeTab === 'jogos') {
+      data = await ZapScoreApi.getFixtures({ leagueId, season: 2026 });
+    } else if (activeTab === 'artilharia') {
+      data = await ZapScoreApi.getTopScorers(leagueId);
+    }
+  } catch (error) {
+    console.error(`Erro ao carregar dados da aba ${activeTab}:`, error);
+    data = []; // Retorna array vazio para evitar que o map() quebre a página
   }
 
   const allTabs = [
