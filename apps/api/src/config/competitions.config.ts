@@ -34,7 +34,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
   },
   {
     code: 'COPA_DO_NORDESTE',
-    externalId: 461,
+    externalId: 612,
     name: 'Copa do Nordeste',
     country: 'Brazil',
     type: 'cup',
