@@ -13,7 +13,7 @@ export default async function CompetitionPage({
   const leagueId = parseInt(id);
 
   const competition = await ZapScoreApi.getCompetitionDetail(leagueId);
-
+  
   if (!competition) {
     return (
         <div className="container" style={{ padding: '10rem 0', textAlign: 'center' }}>
@@ -24,22 +24,27 @@ export default async function CompetitionPage({
     );
   }
 
+  const isCup = competition.type === 'cup';
+  const activeTab = tab === 'tabela' && isCup ? 'rodadas' : tab;
+
   // Fetch data
   let data: any = null;
-  if (tab === 'tabela') {
+  if (activeTab === 'tabela') {
     data = await ZapScoreApi.getStanding(leagueId);
-  } else if (tab === 'rodadas' || tab === 'jogos') {
+  } else if (activeTab === 'rodadas' || activeTab === 'jogos') {
     data = await ZapScoreApi.getFixtures({ leagueId, season: 2026 });
-  } else if (tab === 'artilharia') {
+  } else if (activeTab === 'artilharia') {
     data = await ZapScoreApi.getTopScorers(leagueId);
   }
 
-  const tabs = [
+  const allTabs = [
     { id: 'tabela', label: 'Classificação' },
     { id: 'rodadas', label: 'Rodadas' },
     { id: 'jogos', label: 'Jogos' },
     { id: 'artilharia', label: 'Artilharia' },
   ];
+
+  const tabs = isCup ? allTabs.filter(t => t.id !== 'tabela') : allTabs;
 
   return (
     <div className="container" style={{ paddingTop: '2rem' }}>
@@ -71,10 +76,10 @@ export default async function CompetitionPage({
                 fontWeight: '800',
                 fontSize: '0.9rem',
                 letterSpacing: '0.5px',
-                background: tab === t.id ? 'var(--primary)' : 'transparent',
-                color: tab === t.id ? 'white' : 'var(--text-muted)',
+                background: activeTab === t.id ? 'var(--primary)' : 'transparent',
+                color: activeTab === t.id ? 'white' : 'var(--text-muted)',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: tab === t.id ? '0 4px 15px var(--primary-glow)' : 'none'
+                boxShadow: activeTab === t.id ? '0 4px 15px var(--primary-glow)' : 'none'
             }}
           >
             {t.label.toUpperCase()}
@@ -84,10 +89,10 @@ export default async function CompetitionPage({
 
       {/* Conteúdo das Abas */}
       <div className="fade-in">
-        {tab === 'tabela' && <TabelaView standings={data} />}
-        {tab === 'rodadas' && <RodadasView fixtures={data} selectedRound={selectedRound} leagueId={id} />}
-        {tab === 'jogos' && <JogosView fixtures={data} />}
-        {tab === 'artilharia' && <ArtilhariaView scorers={data} />}
+        {activeTab === 'tabela' && <TabelaView standings={data} />}
+        {activeTab === 'rodadas' && <RodadasView fixtures={data} selectedRound={selectedRound} leagueId={id} />}
+        {activeTab === 'jogos' && <JogosView fixtures={data} />}
+        {activeTab === 'artilharia' && <ArtilhariaView scorers={data} />}
       </div>
     </div>
   );
