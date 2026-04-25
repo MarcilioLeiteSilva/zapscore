@@ -226,13 +226,11 @@ export class SyncService {
 
   async syncLive(leagueId?: number) {
     const targetLeagues = leagueId ? [leagueId] : SUPPORTED_COMPETITIONS.map(c => c.externalId);
-    
     this.logger.log(`Starting live sync for leagues: ${targetLeagues.join(', ')}`);
     
     let totalSynced = 0;
     try {
       for (const leagueId of targetLeagues) {
-        this.logger.debug(`Fetching live fixtures for league ${leagueId}`);
         const liveFixtures = await this.apiFootball.getFixtures({ 
            live: 'all',
            league: leagueId
@@ -240,40 +238,37 @@ export class SyncService {
 
         if (!liveFixtures || liveFixtures.length === 0) continue;
 
-        this.logger.log(`Found ${liveFixtures.length} live matches for league ${leagueId}.`);
-
         for (const data of liveFixtures) {
-        try {
-          // Precisamos garantir que a liga e os times existem
-          // (Normalmente já existem se o bootstrap foi rodado)
-          const league = await this.prisma.league.findUnique({
-            where: { externalId: data.league.id }
-          });
-          if (!league) continue;
+          try {
+            const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
+            if (!league) continue;
 
-          const [homeTeam, awayTeam] = await Promise.all([
-            this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
-            this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
-          ]);
-          if (!homeTeam || !awayTeam) continue;
+            const [homeTeam, awayTeam] = await Promise.all([
+              this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+              this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+            ]);
+            if (!homeTeam || !awayTeam) continue;
 
-          const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
-          
-          await this.prisma.fixture.upsert({
-            where: { externalId: fixtureMapped.externalId },
-            update: fixtureMapped,
-            create: fixtureMapped as any,
-          });
+            const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
+            await this.prisma.fixture.upsert({
+              where: { externalId: fixtureMapped.externalId },
+              update: fixtureMapped,
+              create: fixtureMapped as any,
+            });
 
-          // Sincronizar detalhes técnicos para jogos ao vivo
-          await this.syncFixtureDetail(data.fixture.id);
-          totalSynced++;
-
-        } catch (err) {
-          this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
+            await this.syncFixtureDetail(data.fixture.id);
+            totalSynced++;
+          } catch (err) {
+            this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
+          }
         }
       }
+      return { count: totalSynced };
+    } catch (err) {
+      this.logger.error(`Failed live sync: ${err.message}`);
+      throw err;
     }
+  }
 
   async syncToday() {
     const today = new Date().toISOString().split('T')[0];
@@ -282,7 +277,6 @@ export class SyncService {
     let totalSynced = 0;
     try {
       for (const competition of SUPPORTED_COMPETITIONS) {
-        this.logger.debug(`Fetching fixtures for league ${competition.externalId} on ${today}`);
         const fixturesData = await this.apiFootball.getFixtures({ 
            date: today,
            league: competition.externalId,
@@ -292,28 +286,30 @@ export class SyncService {
         if (!fixturesData || fixturesData.length === 0) continue;
 
         for (const data of fixturesData) {
-          const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
-          if (!league) continue;
+          try {
+            const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
+            if (!league) continue;
 
-          const [homeTeam, awayTeam] = await Promise.all([
-            this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
-            this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
-          ]);
-          if (!homeTeam || !awayTeam) continue;
+            const [homeTeam, awayTeam] = await Promise.all([
+              this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+              this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+            ]);
+            if (!homeTeam || !awayTeam) continue;
 
-          const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
-          
-          await this.prisma.fixture.upsert({
-            where: { externalId: fixtureMapped.externalId },
-            update: fixtureMapped,
-            create: fixtureMapped as any,
-          });
+            const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
+            await this.prisma.fixture.upsert({
+              where: { externalId: fixtureMapped.externalId },
+              update: fixtureMapped,
+              create: fixtureMapped as any,
+            });
 
-          // Se terminou ou está ao vivo, pega detalhes
-          if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN'].includes(data.fixture.status.short)) {
-             await this.syncFixtureDetail(data.fixture.id);
+            if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN'].includes(data.fixture.status.short)) {
+               await this.syncFixtureDetail(data.fixture.id);
+            }
+            totalSynced++;
+          } catch (err) {
+            this.logger.error(`Error processing today fixture ${data.fixture.id}: ${err.message}`);
           }
-          totalSynced++;
         }
       }
       return { count: totalSynced };
