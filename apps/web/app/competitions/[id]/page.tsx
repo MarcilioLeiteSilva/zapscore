@@ -145,25 +145,34 @@ function TabelaView({ standings }: { standings: any[] }) {
   );
 }
 
+// Função centralizada para tradução de rodadas
+const formatRound = (raw: string) => {
+    if (!raw) return 'Outros';
+    
+    let r = raw;
+    // Fases Iniciais / Qualificatórias
+    if (r.match(/1\/256|1\/128|Round of 128/i)) return '1ª Fase';
+    if (r.includes('Round of 64')) return '2ª Fase';
+    if (r.includes('Round of 32')) return '3ª Fase';
+    if (r.match(/Qualification Round (\d+)/i)) return `Qualificatória ${r.match(/(\d+)/)?.[0] || ''}`;
+    
+    // Formatações Padrão
+    return r
+        .replace(/Regular Season - /gi, 'Rodada ')
+        .replace(/Group Stage - /gi, 'Fase ')
+        .replace(/Round of 16/gi, 'Oitavas de Final')
+        .replace(/Quarter-finals/gi, 'Quartas de Final')
+        .replace(/Semi-finals/gi, 'Semifinal')
+        .replace(/Final/gi, 'Final')
+        .replace(/1st Round/gi, '1ª Fase')
+        .replace(/2nd Round/gi, '2ª Fase')
+        .replace(/3rd Round/gi, '3ª Fase');
+};
+
 function RodadasView({ fixtures, selectedRound, leagueId }: { fixtures: any[], selectedRound?: string, leagueId: string }) {
     // Agrupar por rodada
     const roundsMap = fixtures?.reduce((acc: any, f: any) => {
-        const rawRound = f.round || 'Outros';
-        
-        // Tradução robusta usando Regex
-        const r = rawRound
-            .replace(/Regular Season - /gi, 'Rodada ')
-            .replace(/Group Stage - /gi, 'Fase ')
-            .replace(/Round of 64/gi, '2ª Fase')
-            .replace(/Round of 32/gi, '3ª Fase')
-            .replace(/Round of 16/gi, 'Oitavas de Final')
-            .replace(/Quarter-finals/gi, 'Quartas de Final')
-            .replace(/Semi-finals/gi, 'Semifinal')
-            .replace(/Final/gi, 'Final')
-            .replace(/1st Round/gi, '1ª Fase')
-            .replace(/2nd Round/gi, '2ª Fase')
-            .replace(/3rd Round/gi, '3ª Fase');
-
+        const r = formatRound(f.round);
         if (!acc[r]) acc[r] = [];
         acc[r].push(f);
         return acc;
@@ -293,20 +302,8 @@ function ArtilhariaView({ scorers }: { scorers: any[] }) {
 
 function FixtureCard({ f }: { f: any }) {
     const isLive = ['LIVE', '1H', '2H', 'HT'].includes(f.statusShort);
-    
-    // Tradução robusta usando Regex
-    const roundName = (f.round || '')
-        .replace(/Regular Season - /gi, 'Rodada ')
-        .replace(/Group Stage - /gi, 'Fase ')
-        .replace(/Round of 64/gi, '2ª Fase')
-        .replace(/Round of 32/gi, '3ª Fase')
-        .replace(/Round of 16/gi, 'Oitavas')
-        .replace(/Quarter-finals/gi, 'Quartas')
-        .replace(/Semi-finals/gi, 'Semifinal')
-        .replace(/Final/gi, 'Final')
-        .replace(/1st Round/gi, '1ª Fase')
-        .replace(/2nd Round/gi, '2ª Fase')
-        .replace(/3rd Round/gi, '3ª Fase');
+    const roundName = formatRound(f.round);
+
 
     return (
         <Link href={`/fixtures/${f.id}`} className="card glass" style={{ display: 'block', padding: '1.5rem' }}>
