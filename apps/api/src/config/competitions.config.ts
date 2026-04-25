@@ -32,6 +32,22 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     type: 'cup',
     activeSeasons: [2026],
   },
+  {
+    code: 'COPA_DO_NORDESTE',
+    externalId: 461,
+    name: 'Copa do Nordeste',
+    country: 'Brazil',
+    type: 'cup',
+    activeSeasons: [2026],
+  },
+  {
+    code: 'FIFA_WORLD_CUP',
+    externalId: 1,
+    name: 'Copa do Mundo FIFA',
+    country: 'World',
+    type: 'cup',
+    activeSeasons: [2026],
+  },
 ];
 
 export const DEFAULT_COMPETITION = {
