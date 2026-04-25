@@ -48,6 +48,14 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     type: 'cup',
     activeSeasons: [2026],
   },
+  {
+    code: 'LIBERTADORES',
+    externalId: 13,
+    name: 'Copa Libertadores',
+    country: 'World',
+    type: 'cup',
+    activeSeasons: [2026],
+  },
 ];
 
 export const DEFAULT_COMPETITION = {
