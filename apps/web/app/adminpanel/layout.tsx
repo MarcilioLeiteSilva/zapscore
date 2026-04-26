@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <p className="text-[10px] text-slate-500 font-bold tracking-widest mt-1 uppercase">Painel Administrativo</p>
         </div>
 
-        <nav class="flex-1 px-6 space-y-2 mt-4">
+        <nav className="flex-1 px-6 space-y-2 mt-4">
           <Link 
             href="/adminpanel" 
             className="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group"
@@ -44,10 +44,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="p-8 border-t border-slate-800">
            <div className="bg-slate-950/50 p-4 rounded-2xl border border-slate-800">
-              <p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Conexão API</p>
-              <div class="flex items-center space-x-2 text-green-500">
-                  <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span class="text-xs font-black uppercase tracking-tighter">Produção Online</span>
+              <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Conexão API</p>
+              <div className="flex items-center space-x-2 text-green-500">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-black uppercase tracking-tighter">Produção Online</span>
               </div>
            </div>
         </div>
