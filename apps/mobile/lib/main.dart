@@ -8,6 +8,8 @@ import 'logic/cubits/home/home_cubit.dart';
 import 'logic/cubits/live/live_cubit.dart';
 import 'logic/cubits/favorite/favorite_cubit.dart';
 import 'logic/cubits/search/search_cubit.dart';
+import 'logic/cubits/news/news_cubit.dart';
+import 'logic/cubits/video/video_cubit.dart';
 import 'repository/locale/favorite_repository.dart';
 
 void main() {
@@ -43,6 +45,12 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<SearchCubit>(
           create: (BuildContext context) => SearchCubit(apiClient),
+        ),
+        BlocProvider<NewsCubit>(
+          create: (BuildContext context) => NewsCubit(apiClient)..fetchNews(),
+        ),
+        BlocProvider<VideoCubit>(
+          create: (BuildContext context) => VideoCubit(apiClient)..fetchVideos(),
         ),
       ],
       child: MaterialApp.router(

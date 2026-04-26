@@ -351,18 +351,19 @@ class TeamStatePage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state is TeamLoaded) {
-          var stats = state.stats;
-          if (stats == null) {
+          final rawStats = state.stats;
+          if (rawStats == null) {
             return const Center(child: Text('Estatísticas não disponíveis'));
           }
 
+          Map<String, dynamic> data = rawStats;
           // Handle possible nesting under 'response'
-          if (stats.containsKey('response') && stats['response'] != null) {
-            stats = stats['response'];
+          if (data.containsKey('response') && data['response'] is Map) {
+            data = data['response'];
           }
 
-          final fixtures = stats['fixtures'] ?? {};
-          final goals = stats['goals'] ?? {};
+          final fixtures = data['fixtures'] is Map ? data['fixtures'] : {};
+          final goals = data['goals'] is Map ? data['goals'] : {};
           final totalPlayed = fixtures['played'] is Map ? (fixtures['played']?['total'] ?? 0) : (fixtures['played'] ?? 0);
 
           List<Map<String, String>> listStats = [
@@ -387,7 +388,7 @@ class TeamStatePage extends StatelessWidget {
             {
               'name': 'Clean Sheets',
               'game': '-',
-              'total': (stats['clean_sheet']?['total'] ?? stats['clean_sheet'] ?? '0').toString(),
+              'total': (data['clean_sheet']?['total'] ?? data['clean_sheet'] ?? '0').toString(),
               'rank': '-',
             },
             {

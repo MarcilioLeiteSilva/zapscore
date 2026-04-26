@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZapScore Admin | Gestão Unificada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ea580c; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col hidden md:flex">
+            <div class="p-8">
+                <h1 class="text-2xl font-extrabold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent italic tracking-tighter">ZAPSCORE</h1>
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest mt-1 uppercase">Painel de Controle</p>
+            </div>
+            <nav class="flex-1 px-6 space-y-4">
+                <button onclick="showTab('news')" id="btn-news" class="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group bg-slate-800">
+                    <i data-lucide="newspaper" class="text-orange-500"></i>
+                    <span>Notícias</span>
+                </button>
+                <button onclick="showTab('videos')" id="btn-videos" class="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-slate-400 hover:text-white font-bold group">
+                    <i data-lucide="video" class="text-orange-500"></i>
+                    <span>Vídeos</span>
+                </button>
+            </nav>
+            <div class="p-6 border-t border-slate-800 text-center">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Sistema Online</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-12">
+            <!-- News Section -->
+            <div id="tab-news" class="tab-content space-y-8">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h2 class="text-4xl font-black text-white tracking-tight uppercase">Notícias</h2>
+                        <p class="text-slate-400 mt-2 font-medium">Gerencie o conteúdo informativo do ZapScore.</p>
+                    </div>
+                    <button onclick="openForm('news')" class="bg-orange-600 hover:bg-orange-500 text-white px-8 py-4 rounded-2xl font-black shadow-2xl shadow-orange-900/40 transition-all transform hover:-translate-y-1 flex items-center space-x-2">
+                        <i data-lucide="plus-circle"></i>
+                        <span>NOVA NOTÍCIA</span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                    <div class="p-6 border-b border-slate-800 bg-slate-900/50">
+                        <span id="news-count" class="text-xs font-bold text-orange-500 uppercase tracking-widest">Aguardando dados...</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-800/30 text-slate-300 text-[11px] font-black uppercase tracking-widest">
+                                    <th class="p-6">Título / Notícia</th>
+                                    <th class="p-6">Fonte</th>
+                                    <th class="p-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="news-list-body" class="divide-y divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Videos Section -->
+            <div id="tab-videos" class="tab-content hidden space-y-8">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h2 class="text-4xl font-black text-white tracking-tight uppercase">Vídeos</h2>
+                        <p class="text-slate-400 mt-2 font-medium">Controle os highlights e vídeos da aba Watch.</p>
+                    </div>
+                    <button onclick="openForm('videos')" class="bg-red-600 hover:bg-red-500 text-white px-8 py-4 rounded-2xl font-black shadow-2xl shadow-red-900/40 transition-all transform hover:-translate-y-1 flex items-center space-x-2">
+                        <i data-lucide="plus-circle"></i>
+                        <span>CADASTRAR VÍDEO</span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+                    <div class="p-6 border-b border-slate-800 bg-slate-900/50">
+                        <span id="video-count" class="text-xs font-bold text-red-500 uppercase tracking-widest">Aguardando dados...</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-800/30 text-slate-300 text-[11px] font-black uppercase tracking-widest">
+                                    <th class="p-6">Título do Vídeo</th>
+                                    <th class="p-6">Duração</th>
+                                    <th class="p-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="video-list-body" class="divide-y divide-slate-800"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal-container" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl overflow-hidden">
+            <div class="p-8 border-b border-slate-800 flex justify-between items-center text-white">
+                <h3 id="modal-title" class="text-2xl font-black text-white uppercase italic">Editar Registro</h3>
+                <button onclick="closeForm()" class="p-2 hover:bg-slate-800 rounded-full transition-colors"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-8 space-y-6" id="modal-form-content"></div>
+            <div class="p-8 bg-slate-800/30 flex justify-end space-x-4">
+                <button onclick="closeForm()" class="px-6 py-2 text-slate-400 font-bold hover:text-white transition-colors">CANCELAR</button>
+                <button id="modal-save-btn" class="px-10 py-4 rounded-2xl font-black text-white hover:scale-105 transition-all shadow-xl uppercase">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Usando caminhos relativos para garantir que funcione em qualquer URL servida pela API
+        const BASE_API = window.location.origin;
+        let currentEditingId = null;
+        let currentType = 'news';
+
+        async function apiFetch(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${BASE_API}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                if (!response.ok) throw new Error(`Erro: ${response.status}`);
+                return await response.json();
+            } catch (err) {
+                console.error("Falha na API:", err);
+                throw err;
+            }
+        }
+
+        async function fetchData() {
+            const endpoint = currentType === 'news' ? '/news' : '/videos';
+            const countId = currentType === 'news' ? 'news-count' : 'video-count';
+            const bodyId = currentType === 'news' ? 'news-list-body' : 'video-list-body';
+            
+            try {
+                const data = await apiFetch(endpoint);
+                document.getElementById(countId).innerText = `${data.length} REGISTROS CARREGADOS`;
+                
+                document.getElementById(bodyId).innerHTML = data.map(item => `
+                    <tr class="hover:bg-slate-800/40 transition-all border-b border-slate-800/50">
+                        <td class="p-6 text-white">
+                            <div class="flex items-center space-x-4">
+                                <img src="${item.imageUrl || item.thumbnailUrl || 'https://via.placeholder.com/100'}" class="w-12 h-12 rounded-xl object-cover">
+                                <span class="font-bold text-lg">${item.title}</span>
+                            </div>
+                        </td>
+                        <td class="p-6 text-slate-300 font-bold">${item.source || item.duration || '-'}</td>
+                        <td class="p-6 text-right">
+                            <div class="flex justify-end space-x-2">
+                                <button onclick="editItem('${currentType}', ${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-3 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white rounded-xl transition-all"><i data-lucide="edit-3" size="18"></i></button>
+                                <button onclick="deleteItem('${currentType === 'news' ? 'news' : 'videos'}', '${item.id}')" class="p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all"><i data-lucide="trash-2" size="18"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } catch (e) {
+                document.getElementById(countId).innerText = "FALHA AO CARREGAR DADOS";
+            }
+        }
+
+        async function saveItem(type) {
+            const btn = document.getElementById('modal-save-btn');
+            btn.disabled = true; btn.innerText = "GRAVANDO...";
+            
+            try {
+                const payload = type === 'news' ? {
+                    title: document.getElementById('f-title').value,
+                    source: document.getElementById('f-source').value,
+                    imageUrl: document.getElementById('f-image').value,
+                    description: document.getElementById('f-desc').value,
+                } : {
+                    title: document.getElementById('f-title').value,
+                    duration: document.getElementById('f-duration').value,
+                    thumbnailUrl: document.getElementById('f-image').value,
+                    videoUrl: document.getElementById('f-url').value,
+                };
+
+                const method = currentEditingId ? 'PUT' : 'POST';
+                const endpoint = currentEditingId ? `/${type}/${currentEditingId}` : `/${type}`;
+
+                await apiFetch(endpoint, {
+                    method: method,
+                    body: JSON.stringify(payload)
+                });
+
+                alert("Sucesso! Registro salvo.");
+                closeForm();
+                fetchData();
+            } catch (e) {
+                alert("Erro ao gravar: " + e.message);
+            } finally {
+                btn.disabled = false; btn.innerText = "SALVAR ALTERAÇÕES";
+            }
+        }
+
+        function showTab(tab) {
+            currentType = tab;
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById('btn-news').classList.remove('text-white', 'bg-slate-800');
+            document.getElementById('btn-videos').classList.remove('text-white', 'bg-slate-800');
+            document.getElementById(`btn-${tab}`).classList.add('text-white', 'bg-slate-800');
+            fetchData();
+        }
+
+        function openForm(type, data = null) {
+            currentEditingId = data ? data.id : null;
+            const content = document.getElementById('modal-form-content');
+            document.getElementById('modal-title').innerText = data ? `Editar ${type}` : `Novo ${type}`;
+            if (type === 'news') {
+                content.innerHTML = `<div class="grid grid-cols-2 gap-4"><div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Título</label><input id="f-title" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.title || ''}"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Fonte</label><input id="f-source" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.source || ''}"></div><div><label class="text-xs font-bold text-slate-500 uppercase">URL Imagem</label><input id="f-image" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.imageUrl || ''}"></div><div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Descrição</label><textarea id="f-desc" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" rows="4">${data?.description || ''}</textarea></div></div>`;
+            } else {
+                content.innerHTML = `<div class="grid grid-cols-2 gap-4"><div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">Título</label><input id="f-title" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.title || ''}"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Duração</label><input id="f-duration" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.duration || ''}"></div><div><label class="text-xs font-bold text-slate-500 uppercase">Thumbnail</label><input id="f-image" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.thumbnailUrl || ''}"></div><div class="col-span-2"><label class="text-xs font-bold text-slate-500 uppercase">URL Vídeo</label><input id="f-url" type="text" class="w-full bg-slate-800 border-none p-4 rounded-xl mt-2 text-white outline-none" value="${data?.videoUrl || ''}"></div></div>`;
+            }
+            document.getElementById('modal-save-btn').onclick = () => saveItem(type === 'news' ? 'news' : 'videos');
+            document.getElementById('modal-container').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeForm() { document.getElementById('modal-container').classList.add('hidden'); }
+        function editItem(type, data) { openForm(type, data); }
+        async function deleteItem(type, id) {
+            if(!confirm("DELETAR DEFINITIVAMENTE?")) return;
+            await apiFetch(`/${type}/${id}`, { method: 'DELETE' });
+            fetchData();
+        }
+
+        window.onload = () => { fetchData(); lucide.createIcons(); };
+    </script>
+</body>
+</html>

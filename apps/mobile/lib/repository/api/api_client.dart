@@ -5,15 +5,59 @@ import '../../logic/models/fixture.dart';
 import '../../logic/models/standing.dart';
 import '../../logic/models/scorer.dart';
 import '../../logic/models/team.dart';
+import '../../logic/models/news.dart';
+import '../../logic/models/video.dart';
 
 class ApiClient {
   final String baseUrl = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';
 
+  dynamic _decodeResponse(http.Response response) {
+    if (response.body.isEmpty || response.body == 'null') return null;
+    try {
+      return json.decode(response.body);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<News>> getNews({String? leagueId, String? teamId}) async {
+    String url = '$baseUrl/news';
+    if (leagueId != null) url += '?leagueId=$leagueId';
+    if (teamId != null) url += '${leagueId != null ? '&' : '?'}teamId=$teamId';
+    
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => News.fromJson(item)).toList();
+      }
+    }
+    return [];
+  }
+
+  Future<List<Video>> getVideos({String? leagueId, String? teamId}) async {
+    String url = '$baseUrl/videos';
+    if (leagueId != null) url += '?leagueId=$leagueId';
+    if (teamId != null) url += '${leagueId != null ? '&' : '?'}teamId=$teamId';
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Video.fromJson(item)).toList();
+      }
+    }
+    return [];
+  }
+
   Future<List<League>> getStoredLeagues() async {
     final response = await http.get(Uri.parse('$baseUrl/competitions/stored'));
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) => League.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => League.fromJson(item)).toList();
+      }
+      return [];
     } else {
       throw Exception('Failed to load leagues');
     }
@@ -22,8 +66,11 @@ class ApiClient {
   Future<List<Fixture>> getTodayFixtures(int leagueId) async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures/today?leagueId=$leagueId'));
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) => Fixture.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Fixture.fromJson(item)).toList();
+      }
+      return [];
     } else {
       throw Exception('Failed to load today fixtures');
     }
@@ -32,8 +79,11 @@ class ApiClient {
   Future<List<Fixture>> getRecentFixtures(int leagueId, {int limit = 1}) async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures?leagueId=$leagueId&limit=$limit'));
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) => Fixture.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Fixture.fromJson(item)).toList();
+      }
+      return [];
     } else {
       throw Exception('Failed to load recent fixtures');
     }
@@ -66,8 +116,11 @@ class ApiClient {
   Future<List<Standing>> getStandings(int leagueId, {int? season}) async {
     final response = await http.get(Uri.parse('$baseUrl/standings?leagueId=$leagueId&season=${season ?? 2026}'));
     if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((item) => Standing.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Standing.fromJson(item)).toList();
+      }
+      return [];
     }
     throw Exception('Failed to load standings');
   }
@@ -75,8 +128,11 @@ class ApiClient {
   Future<List<Scorer>> getScorers(int leagueId, {int? season}) async {
     final response = await http.get(Uri.parse('$baseUrl/competitions/$leagueId/scorers?season=${season ?? 2026}'));
     if (response.statusCode == 200) {
-      final List data = jsonDecode(response.body);
-      return data.map((item) => Scorer.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Scorer.fromJson(item)).toList();
+      }
+      return [];
     }
     throw Exception('Failed to load scorers');
   }
@@ -84,8 +140,11 @@ class ApiClient {
   Future<List<Fixture>> getLiveFixtures() async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures?status=LIVE'));
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) => Fixture.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Fixture.fromJson(item)).toList();
+      }
+      return [];
     } else {
       throw Exception('Failed to load live fixtures');
     }
@@ -94,8 +153,11 @@ class ApiClient {
   Future<Fixture> getFixtureDetails(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures/$id'));
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return Fixture.fromJson(data);
+      final data = _decodeResponse(response);
+      if (data != null) {
+        return Fixture.fromJson(data);
+      }
+      throw Exception('Fixture data is null');
     } else {
       throw Exception('Failed to load fixture details');
     }
@@ -104,13 +166,11 @@ class ApiClient {
   Future<List<Team>> searchTeams(String query) async {
     final response = await http.get(Uri.parse('$baseUrl/teams?search=$query'));
     if (response.statusCode == 200) {
-      if (response.body.isEmpty) return [];
-      try {
-        List<dynamic> data = json.decode(response.body);
+      final data = _decodeResponse(response);
+      if (data is List) {
         return data.map((item) => Team.fromJson(item)).toList();
-      } catch (e) {
-        return [];
       }
+      return [];
     } else {
       throw Exception('Failed to search teams');
     }
@@ -132,8 +192,11 @@ class ApiClient {
   Future<List<Fixture>> getFixturesByDate(int leagueId, String date) async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures?leagueId=$leagueId&date=$date'));
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) => Fixture.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Fixture.fromJson(item)).toList();
+      }
+      return [];
     } else {
       throw Exception('Failed to load fixtures for date $date');
     }
@@ -142,8 +205,11 @@ class ApiClient {
   Future<List<Fixture>> getTeamFixtures(String teamId) async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures?teamId=$teamId'));
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      return data.map((item) => Fixture.fromJson(item)).toList();
+      final data = _decodeResponse(response);
+      if (data is List) {
+        return data.map((item) => Fixture.fromJson(item)).toList();
+      }
+      return [];
     } else {
       throw Exception('Failed to load team fixtures');
     }
@@ -152,7 +218,11 @@ class ApiClient {
   Future<Map<String, dynamic>> getTeamStats(String teamId, int leagueId) async {
     final response = await http.get(Uri.parse('$baseUrl/teams/statistics?teamId=$teamId&leagueId=$leagueId'));
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      final data = _decodeResponse(response);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return {};
     } else {
       throw Exception('Failed to load team statistics');
     }
@@ -161,13 +231,11 @@ class ApiClient {
   Future<List<Fixture>> searchFixtures(String query) async {
     final response = await http.get(Uri.parse('$baseUrl/fixtures?search=$query'));
     if (response.statusCode == 200) {
-      if (response.body.isEmpty) return [];
-      try {
-        List<dynamic> data = json.decode(response.body);
+      final data = _decodeResponse(response);
+      if (data is List) {
         return data.map((item) => Fixture.fromJson(item)).toList();
-      } catch (e) {
-        return [];
       }
+      return [];
     } else {
       throw Exception('Failed to search fixtures');
     }
@@ -176,8 +244,11 @@ class ApiClient {
   Future<Team> getTeamDetails(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/teams/$id'));
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return Team.fromJson(data);
+      final data = _decodeResponse(response);
+      if (data != null) {
+        return Team.fromJson(data);
+      }
+      throw Exception('Team details are null');
     } else {
       throw Exception('Failed to load team details');
     }

@@ -18,12 +18,16 @@ import '../../logic/cubits/favorite/favorite_cubit.dart';
 import '../../logic/cubits/search/search_cubit.dart';
 import '../../logic/cubits/live/live_cubit.dart';
 import '../../logic/cubits/team/team_cubit.dart';
+import '../../logic/cubits/news/news_cubit.dart';
+import '../../logic/cubits/video/video_cubit.dart';
 import '../../logic/models/home_competition.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/league.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/fixture_event.dart';
 import '../../logic/models/scorer.dart';
+import '../../logic/models/news.dart';
+import '../../logic/models/video.dart';
 
 part 'user.dart';
 part 'home.dart';

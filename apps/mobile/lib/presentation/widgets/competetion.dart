@@ -428,13 +428,29 @@ class NewsLeaguePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      itemBuilder: (_, i) {
-        return const CardNewsItem();
+    return BlocBuilder<NewsCubit, NewsState>(
+      builder: (context, state) {
+        if (state is NewsLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is NewsError) {
+          return Center(child: Text(state.message));
+        }
+        if (state is NewsLoaded) {
+          if (state.news.isEmpty) {
+            return const Center(child: Text('Nenhuma notícia para esta competição'));
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            itemBuilder: (_, i) {
+              return CardNewsItem(news: state.news[i]);
+            },
+            separatorBuilder: (_, i) => const Gap(15),
+            itemCount: state.news.length,
+          );
+        }
+        return const SizedBox();
       },
-      separatorBuilder: (_, i) => const Gap(15),
-      itemCount: 10,
     );
   }
 }

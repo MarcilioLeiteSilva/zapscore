@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { HealthModule } from './health/health.module';
 import { VersionModule } from './version/version.module';
@@ -13,6 +15,8 @@ import { FixturesModule } from './fixtures/fixtures.module';
 import { StandingsModule } from './standings/standings.module';
 import { SyncModule } from './sync/sync.module';
 import { CompetitionsModule } from './competitions/competitions.module';
+import { NewsModule } from './news/news.module';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [
@@ -31,6 +35,8 @@ import { CompetitionsModule } from './competitions/competitions.module';
     StandingsModule,
     SyncModule,
     CompetitionsModule,
+    NewsModule,
+    VideosModule,
   ],
   controllers: [AppController],
   providers: [],

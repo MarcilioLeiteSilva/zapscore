@@ -1,7 +1,8 @@
 part of 'widgets.dart';
 
 class CardStoryItem extends StatelessWidget {
-  const CardStoryItem({super.key});
+  final News? news;
+  const CardStoryItem({super.key, this.news});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +15,13 @@ class CardStoryItem extends StatelessWidget {
         width: context.width * .4,
         child: Stack(
           children: [
-            const CardNoImage(radius: 10),
+            news?.imageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(news!.imageUrl!,
+                        fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                  )
+                : const CardNoImage(radius: 10),
             Padding(
               padding: const EdgeInsets.all(10.0),
               child: Column(
@@ -31,7 +38,7 @@ class CardStoryItem extends StatelessWidget {
                       vertical: 2,
                     ),
                     child: const Text(
-                      'LIVE',
+                      'NEWS',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -39,7 +46,9 @@ class CardStoryItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Leao hails hat-trick hero ramos as president purrs over Portugal',
+                    news?.title ?? 'Leao hails hat-trick hero ramos as president purrs over Portugal',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: context.textTheme.bodySmall!.copyWith(fontSize: 14),
                   ),
                 ],
@@ -53,11 +62,17 @@ class CardStoryItem extends StatelessWidget {
 }
 
 class CardNewsItem extends StatelessWidget {
-  const CardNewsItem({super.key, this.isVideo = false});
+  const CardNewsItem({super.key, this.isVideo = false, this.news, this.video});
   final bool isVideo;
+  final News? news;
+  final Video? video;
 
   @override
   Widget build(BuildContext context) {
+    final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
+    final image = isVideo ? video?.thumbnailUrl : news?.imageUrl;
+    final date = isVideo ? video?.date : news?.date;
+
     return InkWell(
       onTap: () {
         context.pushNamed(isVideo ? screenWatchContent : screenNewsContent);
@@ -69,29 +84,34 @@ class CardNewsItem extends StatelessWidget {
           children: [
             Stack(
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 130,
                   height: 100,
-                  child: CardNoImage(radius: 10),
+                  child: image != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(image, fit: BoxFit.cover),
+                        )
+                      : const CardNoImage(radius: 10),
                 ),
-                Positioned(
-                  bottom: 5,
-                  right: 5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(5),
-                      color: Colors.black45,
-                    ),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    child: const Text(
-                      '04:26',
-                      style: TextStyle(
-                        fontSize: 10,
+                if (isVideo)
+                  Positioned(
+                    bottom: 5,
+                    right: 5,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                        color: Colors.black45,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      child: Text(
+                        video?.duration ?? '04:26',
+                        style: const TextStyle(
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
             const Gap(10),
@@ -101,12 +121,13 @@ class CardNewsItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Bellingham close to the complete player after England per silence the critic',
+                    title,
                     maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: context.textTheme.bodySmall,
                   ),
                   Text(
-                    '1 hour ago',
+                    date != null ? DateFormat('dd/MM/yyyy HH:mm').format(date) : '1 hour ago',
                     style: context.textTheme.labelSmall!.copyWith(
                       fontSize: 14,
                     ),
@@ -122,11 +143,17 @@ class CardNewsItem extends StatelessWidget {
 }
 
 class CardNewsCarouselItem extends StatelessWidget {
-  const CardNewsCarouselItem({super.key, this.isVideo = false});
+  const CardNewsCarouselItem({super.key, this.isVideo = false, this.news, this.video});
   final bool isVideo;
+  final News? news;
+  final Video? video;
 
   @override
   Widget build(BuildContext context) {
+    final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
+    final image = isVideo ? video?.thumbnailUrl : news?.imageUrl;
+    final date = isVideo ? video?.date : news?.date;
+
     return Ink(
       width: context.width * .95,
       padding: const EdgeInsets.only(right: 5),
@@ -141,7 +168,13 @@ class CardNewsCarouselItem extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
-                  const CardNoImage(radius: 15),
+                  image != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.network(image,
+                              fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                        )
+                      : const CardNoImage(radius: 15),
                   if (isVideo)
                     Positioned(
                       bottom: 10,
@@ -151,11 +184,10 @@ class CardNewsCarouselItem extends StatelessWidget {
                           borderRadius: BorderRadius.circular(5),
                           color: Colors.black45,
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 2),
-                        child: const Text(
-                          '04:26',
-                          style: TextStyle(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        child: Text(
+                          video?.duration ?? '04:26',
+                          style: const TextStyle(
                             fontSize: 12,
                           ),
                         ),
@@ -165,12 +197,14 @@ class CardNewsCarouselItem extends StatelessWidget {
               ),
             ),
             const Gap(5),
-            const Text(
-              'Ronaldo denies mega-money AL Nassr deal is signed and sealed',
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const Gap(3),
             Text(
-              '10 hours ago',
+              date != null ? DateFormat('dd/MM/yyyy HH:mm').format(date) : '10 hours ago',
               style: context.textTheme.labelSmall!.copyWith(
                 fontSize: 14,
               ),

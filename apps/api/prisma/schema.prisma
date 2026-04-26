@@ -22,6 +22,8 @@ model League {
   fixtures   Fixture[]
   standings  Standing[]
   statistics TeamStatistic[]
+  news       News[]
+  videos     Video[]
 
   @@index([externalId])
 }
@@ -42,6 +44,8 @@ model Team {
   awayFixtures Fixture[] @relation("AwayTeam")
   standings    Standing[]
   statistics   TeamStatistic[]
+  news         News[]
+  videos       Video[]
 
   @@index([externalId])
 }
@@ -174,4 +178,37 @@ model TeamStatistic {
   league           League   @relation(fields: [leagueId], references: [id])
 
   @@unique([teamId, leagueId, season])
+}
+
+model News {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  content     String?  @db.Text
+  imageUrl    String?
+  author      String?
+  source      String?
+  leagueId    String?
+  teamId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  league      League? @relation(fields: [leagueId], references: [id])
+  team        Team?   @relation(fields: [teamId], references: [id])
+}
+
+model Video {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  thumbnailUrl String?
+  videoUrl    String
+  duration    String?
+  leagueId    String?
+  teamId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  league      League? @relation(fields: [leagueId], references: [id])
+  team        Team?   @relation(fields: [teamId], references: [id])
 }
