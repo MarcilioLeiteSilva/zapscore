@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
 export class TeamsService {
@@ -11,29 +12,36 @@ export class TeamsService {
     search?: string;
   }) {
     const { leagueId, season, search } = params;
-    
-    // In our current schema, teams are not directly linked to seasons/leagues per row
-    // but they appear in fixtures/standings for those.
-    // To list teams of a league/season, we can query standings or fixtures.
-    // For simplicity and scalability, we'll filter by name/externalId if search is provided.
-    
+
     const where: any = {};
     if (search) {
       where.name = { contains: search, mode: 'insensitive' };
     }
 
+    // Filter to only include teams from supported competitions
+    const activeLeagueIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+
     if (leagueId) {
-      // Find teams that were in standings for that league
+      // Find teams that were in standings for that specific league
       const standingTeams = await this.prisma.standing.findMany({
         where: { league: { externalId: leagueId }, season: season || 2026 },
-        select: { team: true }
+        select: { team: true },
       });
-      return standingTeams.map(s => s.team);
+      return standingTeams.map((s) => s.team);
     }
 
+    // If no leagueId is specified, restrict search to teams in any supported competition
+    where.standings = {
+      some: {
+        league: {
+          externalId: { in: activeLeagueIds },
+        },
+      },
+    };
+
     return this.prisma.team.findMany({
-        where,
-        orderBy: { name: 'asc' },
+      where,
+      orderBy: { name: 'asc' },
     });
   }
 
