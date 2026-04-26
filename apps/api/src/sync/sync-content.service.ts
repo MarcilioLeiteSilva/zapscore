@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import fetch from 'node-fetch';
 
 @Injectable()
 export class SyncContentService implements OnModuleInit {
