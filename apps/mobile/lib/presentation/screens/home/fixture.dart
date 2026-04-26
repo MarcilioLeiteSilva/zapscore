@@ -5,12 +5,21 @@ class FixturePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HomeCubit, HomeState>(
-      builder: (context, state) {
-        final List<League> leagues = [];
-        if (state is HomeLoaded) {
-          leagues.addAll(state.competitions.map((e) => e.league));
-        }
+    return BlocListener<SettingCubit, SettingState>(
+      listenWhen: (previous, current) => previous.selectedDate != current.selectedDate,
+      listener: (context, settingState) {
+        final today = DateTime.now();
+        final isToday = settingState.selectedDate.day == today.day && 
+                        settingState.selectedDate.month == today.month && 
+                        settingState.selectedDate.year == today.year;
+        context.read<HomeCubit>().fetchHomeData(date: isToday ? null : settingState.selectedDate);
+      },
+      child: BlocBuilder<HomeCubit, HomeState>(
+        builder: (context, state) {
+          final List<League> leagues = [];
+          if (state is HomeLoaded) {
+            leagues.addAll(state.competitions.map((e) => e.league));
+          }
 
         return Scaffold(
           drawer: const AppDrawer(),
@@ -98,8 +107,9 @@ class FixturePage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 }
 
 class MyHeaderDelegate extends SliverPersistentHeaderDelegate {

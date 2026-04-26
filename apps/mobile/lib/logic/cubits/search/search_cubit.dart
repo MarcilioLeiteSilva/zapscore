@@ -21,6 +21,7 @@ class SearchCubit extends Cubit<SearchState> {
     try {
       List<Team> teams = [];
       List<League> leagues = [];
+      List<Fixture> fixtures = [];
 
       try {
         teams = await apiClient.searchTeams(query);
@@ -34,9 +35,16 @@ class SearchCubit extends Cubit<SearchState> {
         print('Error searching leagues: $e');
       }
 
+      try {
+        fixtures = await apiClient.searchFixtures(query);
+      } catch (e) {
+        print('Error searching fixtures: $e');
+      }
+
       emit(SearchLoaded(
         teams: teams,
         leagues: leagues,
+        fixtures: fixtures,
       ));
     } catch (e) {
       emit(SearchError(e.toString()));

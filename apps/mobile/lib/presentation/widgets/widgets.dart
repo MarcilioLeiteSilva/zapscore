@@ -16,6 +16,8 @@ import '../../logic/cubits/setting/setting_cubit.dart';
 import '../../logic/cubits/league/league_cubit.dart';
 import '../../logic/cubits/favorite/favorite_cubit.dart';
 import '../../logic/cubits/search/search_cubit.dart';
+import '../../logic/cubits/live/live_cubit.dart';
+import '../../logic/cubits/team/team_cubit.dart';
 import '../../logic/models/home_competition.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/league.dart';

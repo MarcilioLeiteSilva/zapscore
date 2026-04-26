@@ -8,6 +8,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
   List<String> tabs = [
     'Top',
     'Matches',
@@ -19,10 +20,17 @@ class _SearchScreenState extends State<SearchScreen> {
   int indexPage = 0;
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: SearchBar(
+          controller: _searchController,
           onChanged: (value) {
             context.read<SearchCubit>().search(value);
           },

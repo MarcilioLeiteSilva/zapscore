@@ -173,7 +173,7 @@ class _FavoritePageState extends State<FavoritePage> {
                                     subtitle: Text(team.country ?? ''),
                                     trailing: const Icon(Icons.chevron_right),
                                     onTap: () {
-                                      // context.pushNamed(screenTeam, extra: team);
+                                      context.pushNamed(screenTeam, extra: team);
                                     },
                                   ),
                                 );

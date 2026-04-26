@@ -25,8 +25,6 @@ class FavoriteCubit extends Cubit<FavoriteState> {
     final leagues = await favoriteRepository.getFavoriteLeagues();
     final fixtures = await favoriteRepository.getFavoriteFixtures();
 
-    emit(FavoriteInitial()); // Temporary until we fetch full data
-    // In a real app, you might fetch details here or just IDs
     await fetchFavoriteDetails(teams, leagues, fixtures);
   }
 
@@ -57,8 +55,16 @@ class FavoriteCubit extends Cubit<FavoriteState> {
       final allLeagues = await apiClient.getStoredLeagues();
       final leagues = allLeagues.where((l) => leagueIds.contains(l.externalId.toString())).toList();
 
-      // Fetch Teams (TODO: Implement getTeamDetails if API supports it)
-      List<Team> teams = []; // Placeholder for now
+      // Fetch Teams
+      List<Team> teams = [];
+      for (var id in teamIds) {
+        try {
+          final t = await apiClient.getTeamDetails(id);
+          teams.add(t);
+        } catch (e) {
+          print('Error fetching favorite team $id: $e');
+        }
+      }
 
       emit(FavoriteLoaded(
         favoriteTeamIds: teamIds,

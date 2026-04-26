@@ -21,6 +21,7 @@ model League {
   
   fixtures   Fixture[]
   standings  Standing[]
+  statistics TeamStatistic[]
 
   @@index([externalId])
 }
@@ -40,6 +41,7 @@ model Team {
   homeFixtures Fixture[] @relation("HomeTeam")
   awayFixtures Fixture[] @relation("AwayTeam")
   standings    Standing[]
+  statistics   TeamStatistic[]
 
   @@index([externalId])
 }
@@ -124,6 +126,8 @@ model Standing {
   season      Int
   rank        Int
   points      Int
+  goalsFor    Int      @default(0)
+  goalsAgainst Int     @default(0)
   goalsDiff   Int
   played      Int
   win         Int
@@ -136,4 +140,38 @@ model Standing {
   team        Team   @relation(fields: [teamId], references: [id])
 
   @@unique([leagueId, teamId, season])
+}
+
+model TeamStatistic {
+  id               String   @id @default(uuid())
+  teamId           String
+  leagueId         String
+  season           Int
+  
+  // Fixtures
+  playedTotal      Int      @default(0)
+  winsTotal        Int      @default(0)
+  drawsTotal       Int      @default(0)
+  losesTotal       Int      @default(0)
+  
+  // Goals
+  goalsForTotal    Int      @default(0)
+  goalsAgainstTotal Int     @default(0)
+  goalsForAverage  Float    @default(0)
+  goalsAgainstAvg  Float    @default(0)
+  
+  // Discipline & Others
+  cleanSheets      Int      @default(0)
+  failedToScore    Int      @default(0)
+  avgPossession    Float?
+  avgShots         Float?
+  avgShotsOnTarget Float?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  team             Team     @relation(fields: [teamId], references: [id])
+  league           League   @relation(fields: [leagueId], references: [id])
+
+  @@unique([teamId, leagueId, season])
 }

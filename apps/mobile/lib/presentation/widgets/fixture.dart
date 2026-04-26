@@ -157,29 +157,53 @@ class CardLiveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.pushNamed(screenLive),
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        decoration: BoxDecoration(
+    return BlocBuilder<LiveCubit, LiveState>(
+      builder: (context, state) {
+        final isLive = state is LiveLoaded && state.fixtures.isNotEmpty;
+        
+        return InkWell(
+          onTap: () => context.pushNamed(screenLive),
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: AppColor.primary,
-            width: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              color: isLive ? Colors.red.withOpacity(0.1) : null,
+              border: Border.all(
+                color: isLive ? Colors.red : AppColor.primary,
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 11,
+              vertical: 7,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isLive) ...[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Gap(5),
+                ],
+                Text(
+                  'Live',
+                  style: context.textTheme.bodySmall!.copyWith(
+                    fontSize: 16,
+                    color: isLive ? Colors.red : AppColor.primary,
+                    fontWeight: isLive ? FontWeight.bold : null,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 11,
-          vertical: 7,
-        ),
-        child: Text(
-          'Live',
-          style: context.textTheme.bodySmall!.copyWith(
-            fontSize: 16,
-            color: AppColor.primary,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -301,12 +325,14 @@ class CardGroupFixtureItem extends StatelessWidget {
               ),
             ],
           ),
-          if (comp.recentMatch != null)
-            CardFixtureItem(fixture: comp.recentMatch!)
+          if (comp.matches.isNotEmpty)
+            ...comp.matches
+                .map((match) => CardFixtureItem(fixture: match))
+                .toList()
           else
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text('Nenhum jogo recente disponível'),
+              padding: EdgeInsets.only(top: 20, bottom: 20, right: 15),
+              child: Text('Nenhum jogo disponível para esta data'),
             ),
         ],
       ),
@@ -351,42 +377,58 @@ class CardFixtureItem extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: fix.homeTeam?.logo != null
-                              ? Image.network(fix.homeTeam!.logo!, fit: BoxFit.contain)
-                              : const CardNoImage(radius: 10),
-                        ),
-                        const Gap(10),
-                        Flexible(
-                          child: Text(
-                            fix.homeTeam?.name ?? 'Home',
-                            style: context.textTheme.bodySmall,
+                    InkWell(
+                      onTap: () {
+                        if (fix.homeTeam != null) {
+                          context.pushNamed(screenTeam, extra: fix.homeTeam);
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: fix.homeTeam?.logo != null
+                                ? Image.network(fix.homeTeam!.logo!,
+                                    fit: BoxFit.contain)
+                                : const CardNoImage(radius: 10),
                           ),
-                        ),
-                      ],
+                          const Gap(10),
+                          Flexible(
+                            child: Text(
+                              fix.homeTeam?.name ?? 'Home',
+                              style: context.textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const Gap(10),
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: fix.awayTeam?.logo != null
-                              ? Image.network(fix.awayTeam!.logo!, fit: BoxFit.contain)
-                              : const CardNoImage(radius: 10),
-                        ),
-                        const Gap(10),
-                        Flexible(
-                          child: Text(
-                            fix.awayTeam?.name ?? 'Away',
-                            style: context.textTheme.bodySmall,
+                    InkWell(
+                      onTap: () {
+                        if (fix.awayTeam != null) {
+                          context.pushNamed(screenTeam, extra: fix.awayTeam);
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: fix.awayTeam?.logo != null
+                                ? Image.network(fix.awayTeam!.logo!,
+                                    fit: BoxFit.contain)
+                                : const CardNoImage(radius: 10),
                           ),
-                        ),
-                      ],
+                          const Gap(10),
+                          Flexible(
+                            child: Text(
+                              fix.awayTeam?.name ?? 'Away',
+                              style: context.textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -407,19 +449,32 @@ class CardFixtureItem extends StatelessWidget {
 
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: LikeButton(
-                  size: 20,
-                  circleColor: const CircleColor(
-                    start: Colors.orange,
-                    end: Colors.deepOrange,
-                  ),
-                  bubblesColor: const BubblesColor(
-                    dotPrimaryColor: Colors.orange,
-                    dotSecondaryColor: Colors.deepOrange,
-                  ),
-                  likeBuilder: (bool isLiked) {
-                    return SvgPicture.asset(
-                      isLiked ? Assets.starSolid : Assets.star,
+                child: BlocBuilder<FavoriteCubit, FavoriteState>(
+                  builder: (context, favState) {
+                    final isFav = context
+                        .read<FavoriteCubit>()
+                        .isFixtureFavorite(fix.id);
+                    return LikeButton(
+                      size: 20,
+                      isLiked: isFav,
+                      onTap: (val) async {
+                        context.read<FavoriteCubit>().toggleFixture(fix.id);
+                        return !val;
+                      },
+                      circleColor: const CircleColor(
+                        start: Colors.orange,
+                        end: Colors.deepOrange,
+                      ),
+                      bubblesColor: const BubblesColor(
+                        dotPrimaryColor: Colors.orange,
+                        dotSecondaryColor: Colors.deepOrange,
+                      ),
+                      likeBuilder: (bool isLiked) {
+                        return SvgPicture.asset(
+                          isLiked ? Assets.starSolid : Assets.star,
+                          color: isLiked ? Colors.amber : Colors.white,
+                        );
+                      },
                     );
                   },
                 ),

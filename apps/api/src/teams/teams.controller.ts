@@ -22,4 +22,17 @@ export class TeamsController {
   async findOne(@Param('id') id: string) {
     return this.teamsService.findOne(id);
   }
+
+  @Get('statistics')
+  async getStats(@Query() query: {
+    teamId: string;
+    leagueId: string;
+    season?: string;
+  }) {
+    return this.teamsService.getTeamStats(
+      parseInt(query.teamId),
+      parseInt(query.leagueId),
+      query.season ? parseInt(query.season) : undefined,
+    );
+  }
 }

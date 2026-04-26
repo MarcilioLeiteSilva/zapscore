@@ -5,18 +5,35 @@ class PageSearchFixture extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      itemBuilder: (_, i) {
-        return const CardSearchFixture();
+    return BlocBuilder<SearchCubit, SearchState>(
+      builder: (context, state) {
+        if (state is SearchLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is SearchError) {
+          return Center(child: Text(state.message));
+        }
+        if (state is SearchLoaded) {
+          if (state.fixtures.isEmpty) {
+            return const Center(child: Text('No matches found'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 15),
+            itemCount: state.fixtures.length,
+            itemBuilder: (_, i) {
+              return CardSearchFixture(fixture: state.fixtures[i]);
+            },
+          );
+        }
+        return const Center(child: Text('Type to search matches'));
       },
-      itemCount: 5,
     );
   }
 }
 
 class CardSearchFixture extends StatelessWidget {
-  const CardSearchFixture({super.key});
+  const CardSearchFixture({super.key, required this.fixture});
+  final Fixture fixture;
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +42,6 @@ class CardSearchFixture extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Today, 26 December',
-            style: context.textTheme.bodySmall,
-          ),
-          const Gap(10),
           Container(
             decoration: BoxDecoration(
               color: AppColor.card,
@@ -38,6 +50,7 @@ class CardSearchFixture extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(vertical: 15),
             child: CardFixtureItem(
+              fixture: fixture,
               showDivider: false,
             ),
           ),
@@ -89,56 +102,69 @@ class PagePopularSearch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-          child: Text(
-            'Popular Search',
-            style: context.textTheme.bodyMedium,
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            itemBuilder: (_, i) {
-              return ListTile(
-                onTap: () {},
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
+    return BlocBuilder<SearchCubit, SearchState>(
+      builder: (context, state) {
+        if (state is SearchLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is SearchLoaded) {
+          final items = [
+            ...state.leagues.take(3),
+            ...state.teams.take(3),
+          ];
+
+          if (items.isEmpty) {
+            return const Center(child: Text('No popular results found'));
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                child: Text(
+                  'Top Results',
+                  style: context.textTheme.bodyMedium,
                 ),
-                leading: const SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: CardNoImage(radius: 5),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) {
+                    final item = items[i];
+                    if (item is League) {
+                      return ListTile(
+                        onTap: () => context.pushNamed(screenLeague, extra: item),
+                        leading: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Image.network(item.logo ?? '', errorBuilder: (_, __, ___) => const CardNoImage(radius: 5)),
+                        ),
+                        title: Text(item.name),
+                        subtitle: const Text('Competition'),
+                        trailing: BlocBuilder<FavoriteCubit, FavoriteState>(
+                          builder: (context, favState) {
+                            final isFav = context.read<FavoriteCubit>().isLeagueFavorite(item.externalId.toString());
+                            return Icon(isFav ? Icons.star : Icons.star_border, color: isFav ? Colors.amber : Colors.white, size: 18);
+                          },
+                        ),
+                      );
+                    } else if (item is Team) {
+                      return CardFollowItem(
+                        team: item,
+                        onTap: () => context.pushNamed(screenTeam, extra: item),
+                      );
+                    }
+                    return const SizedBox();
+                  },
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                title: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'Popular Search',
-                        maxLines: 1,
-                        style: context.textTheme.bodyMedium,
-                      ),
-                    ),
-                    //fav
-                    ...[
-                      const Gap(5),
-                      SvgPicture.asset(
-                        Assets.starSolid,
-                        width: 13,
-                      ),
-                    ]
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ],
+          );
+        }
+        return const Center(child: Text('Type to search'));
+      },
     );
   }
 }
@@ -197,10 +223,30 @@ class PageSearchCompetition extends StatelessWidget {
                         final isFav = context
                             .read<FavoriteCubit>()
                             .isLeagueFavorite(league.externalId.toString());
-                        return Icon(
-                          isFav ? Icons.star : Icons.star_border,
-                          color: isFav ? Colors.amber : Colors.white,
+                        return LikeButton(
                           size: 16,
+                          isLiked: isFav,
+                          onTap: (val) async {
+                            context
+                                .read<FavoriteCubit>()
+                                .toggleLeague(league.externalId.toString());
+                            return !val;
+                          },
+                          circleColor: const CircleColor(
+                            start: Colors.orange,
+                            end: Colors.deepOrange,
+                          ),
+                          bubblesColor: const BubblesColor(
+                            dotPrimaryColor: Colors.orange,
+                            dotSecondaryColor: Colors.deepOrange,
+                          ),
+                          likeBuilder: (bool isLiked) {
+                            return Icon(
+                              isLiked ? Icons.star : Icons.star_border,
+                              color: isLiked ? Colors.amber : Colors.white,
+                              size: 16,
+                            );
+                          },
                         );
                       },
                     ),

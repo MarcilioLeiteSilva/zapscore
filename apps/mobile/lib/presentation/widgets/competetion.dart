@@ -36,7 +36,7 @@ class CardMatchLeague extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Today, 26 December',
+          DateFormat('EEEE, d MMMM').format(DateTime.now()),
           style: context.textTheme.bodySmall,
         ),
         const Gap(15),

@@ -23,6 +23,8 @@ import '../../logic/cubits/fixture/fixture_cubit.dart';
 import '../../logic/cubits/league/league_cubit.dart';
 import '../../logic/cubits/favorite/favorite_cubit.dart';
 import '../../logic/cubits/search/search_cubit.dart';
+import '../../logic/cubits/team/team_cubit.dart';
+import '../../repository/api/api_client.dart';
 import '../../logic/models/league.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/fixture_stat.dart';
