@@ -424,4 +424,53 @@ export class SyncService {
 
     return { count };
   }
+
+  async repairPhotos() {
+    this.logger.log('Starting photo repair for lineups and events...');
+    
+    const lineups = await this.prisma.fixtureLineup.findMany({
+      where: { 
+        OR: [
+          { playerPhoto: null },
+          { playerPhoto: '' }
+        ],
+        externalPlayerId: { not: null } 
+      }
+    });
+
+    let lineupsFixed = 0;
+    for (const l of lineups) {
+      await this.prisma.fixtureLineup.update({
+        where: { id: l.id },
+        data: { playerPhoto: `https://media.api-sports.io/football/players/${l.externalPlayerId}.png` }
+      });
+      lineupsFixed++;
+    }
+
+    const events = await this.prisma.fixtureEvent.findMany({
+      where: { 
+        OR: [
+          { playerPhoto: null },
+          { playerPhoto: '' }
+        ],
+        externalPlayerId: { not: null } 
+      }
+    });
+
+    let eventsFixed = 0;
+    for (const e of events) {
+      await this.prisma.fixtureEvent.update({
+        where: { id: e.id },
+        data: { playerPhoto: `https://media.api-sports.io/football/players/${e.externalPlayerId}.png` }
+      });
+      eventsFixed++;
+    }
+
+    this.logger.log(`Photo repair finished. Fixed ${lineupsFixed} lineups and ${eventsFixed} events.`);
+    
+    return { 
+      lineupsFixed, 
+      eventsFixed 
+    };
+  }
 }

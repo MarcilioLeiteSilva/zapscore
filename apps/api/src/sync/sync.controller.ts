@@ -50,4 +50,10 @@ export class SyncController {
     this.logger.log('Today sync triggered');
     return this.syncService.syncToday();
   }
+
+  @Post('repair-photos')
+  async repairPhotos() {
+    this.logger.log('Repair photos triggered');
+    return this.syncService.repairPhotos();
+  }
 }
