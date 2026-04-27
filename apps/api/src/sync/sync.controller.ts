@@ -38,4 +38,10 @@ export class SyncController {
     this.logger.log(`Live sync triggered for ${JSON.stringify(body)}`);
     return this.syncService.syncLive(body.leagueId);
   }
+
+  @Post('scorers')
+  async syncScorers(@Body() body: { leagueId?: number; season?: number }) {
+    this.logger.log(`Scorers sync triggered: ${JSON.stringify(body)}`);
+    return this.syncService.syncScorers(body.leagueId, body.season);
+  }
 }
