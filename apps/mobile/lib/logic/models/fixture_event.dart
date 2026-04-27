@@ -11,6 +11,7 @@ class FixtureEvent {
   final String? assist;
   final String type; // Goal, Card, Subst, Var
   final String? detail;
+  final int? externalPlayerId;
 
   FixtureEvent({
     required this.id,
@@ -23,6 +24,7 @@ class FixtureEvent {
     this.assist,
     required this.type,
     this.detail,
+    this.externalPlayerId,
   });
 
   factory FixtureEvent.fromJson(Map<String, dynamic> json) {
@@ -48,6 +50,7 @@ class FixtureEvent {
       time: toInt(json['time']),
       teamId: toInt(json['teamId']),
       playerId: extPlayerId ?? (json['playerId'] != null ? toInt(json['playerId']) : null),
+      externalPlayerId: extPlayerId ?? (json['externalPlayerId'] != null ? toInt(json['externalPlayerId']) : null),
       player: playerName,
       playerPhoto: (json['playerPhoto']?.toString().isNotEmpty == true ? json['playerPhoto'] : null) ?? 
                    (json['photo']?.toString().isNotEmpty == true ? json['photo'] : null) ?? 

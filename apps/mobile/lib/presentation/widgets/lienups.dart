@@ -97,93 +97,96 @@ class PlayerSubstitutionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      child: InkWell(
-        onTap: event.externalPlayerId != null
-            ? () => context.pushNamed(
-                  screenPlayer,
-                  queryParameters: {
-                    'id': event.externalPlayerId.toString(),
-                    'name': event.player ?? '',
-                  },
-                )
-            : null,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              "${event.time}'",
-              style: context.textTheme.bodySmall!.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            "${event.time}'",
+            style: context.textTheme.bodySmall!.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Gap(10),
+          if (event.playerPhoto != null)
+            Container(
+              width: 32,
+              height: 32,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColor.info, width: 1),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(event.playerPhoto!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.person, size: 16)),
               ),
             ),
-            const Gap(10),
-            if (event.playerPhoto != null)
-              Container(
-                width: 32,
-                height: 32,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColor.info, width: 1),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(event.playerPhoto!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 16)),
-                ),
-              ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        Assets.subOut,
-                        width: 12,
-                      ),
-                      const Gap(5),
-                      Flexible(
-                        child: Text(
-                          event.player ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.bodySmall!.copyWith(
-                            fontSize: 11,
-                            color: Colors.redAccent,
-                          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                      Assets.subOut,
+                      width: 12,
+                    ),
+                    const Gap(5),
+                    Flexible(
+                      child: Text(
+                        event.player ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall!.copyWith(
+                          fontSize: 11,
+                          color: Colors.redAccent,
                         ),
                       ),
-                    ],
-                  ),
-                  const Gap(2),
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        Assets.subIn,
-                        width: 12,
-                      ),
-                      const Gap(5),
-                      Flexible(
-                        child: Text(
-                          event.assist ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.textTheme.bodySmall!.copyWith(
-                            fontSize: 11,
-                            color: Colors.greenAccent,
-                          ),
+                    ),
+                  ],
+                ),
+                const Gap(2),
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                      Assets.subIn,
+                      width: 12,
+                    ),
+                    const Gap(5),
+                    Flexible(
+                      child: Text(
+                        event.assist ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall!.copyWith(
+                          fontSize: 11,
+                          color: Colors.greenAccent,
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
   }
 }
 

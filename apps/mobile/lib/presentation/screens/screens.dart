@@ -32,6 +32,7 @@ import '../../logic/models/league.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/fixture_stat.dart';
 import '../../logic/models/fixture.dart';
+import '../../logic/models/player.dart';
 import '../widgets/widgets.dart';
 
 part 'splash.dart';
