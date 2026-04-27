@@ -53,7 +53,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           : player == null
               ? const Center(child: Text('Player details not found'))
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 60),
                   child: Column(
                     children: [
                       // Header Card
@@ -64,6 +64,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                       const Gap(20),
                       // Stats Card
                       if (player!.statistics.isNotEmpty) _buildStats(),
+                      const Gap(20), // Extra space at the bottom
                     ],
                   ),
                 ),
