@@ -44,4 +44,10 @@ export class SyncController {
     this.logger.log(`Scorers sync triggered: ${JSON.stringify(body)}`);
     return this.syncService.syncScorers(body.leagueId, body.season);
   }
+
+  @Post('today')
+  async syncToday() {
+    this.logger.log('Today sync triggered');
+    return this.syncService.syncToday();
+  }
 }

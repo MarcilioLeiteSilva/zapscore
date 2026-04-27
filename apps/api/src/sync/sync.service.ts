@@ -129,8 +129,8 @@ export class SyncService {
             create: fixtureMapped as any,
           });
 
-          // Se o jogo está LIVE ou FINISHED, sincronizamos os detalhes técnicos
-          if (['1H', '2H', 'HT', 'FT', 'LIVE'].includes(data.fixture.status.short)) {
+          // Se o jogo está LIVE, FINISHED ou NS (para pegar escalações), sincronizamos os detalhes técnicos
+          if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN', 'NS', 'BT', 'SUSP', 'INT'].includes(data.fixture.status.short)) {
              await this.syncFixtureDetail(data.fixture.id);
           }
         } catch (err) {
@@ -163,12 +163,12 @@ export class SyncService {
               fixtureId: fixture.id,
               time: e.time.elapsed,
               teamId: e.team.id,
-              player: e.player.name,
+              player: e.player?.name,
               assist: e.assist?.name,
               type: e.type,
               detail: e.detail,
-              playerPhoto: e.player.photo,
-              externalPlayerId: e.player.id
+              playerPhoto: e.player?.photo || (e.player?.id ? `https://media.api-sports.io/football/players/${e.player.id}.png` : null),
+              externalPlayerId: e.player?.id
             }
           });
         }
@@ -205,7 +205,7 @@ export class SyncService {
                   pos: p.player.pos,
                   grid: p.player.grid,
                   isStart: true,
-                  playerPhoto: p.player.photo,
+                  playerPhoto: p.player.photo || (p.player.id ? `https://media.api-sports.io/football/players/${p.player.id}.png` : null),
                   externalPlayerId: p.player.id
                 }
               });
@@ -219,7 +219,7 @@ export class SyncService {
                   number: p.player.number,
                   pos: p.player.pos,
                   isStart: false,
-                  playerPhoto: p.player.photo,
+                  playerPhoto: p.player.photo || (p.player.id ? `https://media.api-sports.io/football/players/${p.player.id}.png` : null),
                   externalPlayerId: p.player.id
                 }
               });
@@ -310,7 +310,7 @@ export class SyncService {
               create: fixtureMapped as any,
             });
 
-            if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN'].includes(data.fixture.status.short)) {
+            if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN', 'NS', 'BT', 'SUSP', 'INT'].includes(data.fixture.status.short)) {
                await this.syncFixtureDetail(data.fixture.id);
             }
             totalSynced++;
@@ -402,7 +402,7 @@ export class SyncService {
         },
         update: {
           rank: index + 1,
-          playerPhoto: player.photo,
+          playerPhoto: player.photo || (player.id ? `https://media.api-sports.io/football/players/${player.id}.png` : null),
           goals: stats.goals.total,
           assists: stats.goals.assists || 0,
           teamLogo: stats.team.logo
@@ -412,7 +412,7 @@ export class SyncService {
           season: targetSeason,
           rank: index + 1,
           playerName: player.name,
-          playerPhoto: player.photo,
+          playerPhoto: player.photo || (player.id ? `https://media.api-sports.io/football/players/${player.id}.png` : null),
           teamName: stats.team.name,
           teamLogo: stats.team.logo,
           goals: stats.goals.total,
