@@ -17,6 +17,7 @@ import { SyncModule } from './sync/sync.module';
 import { CompetitionsModule } from './competitions/competitions.module';
 import { NewsModule } from './news/news.module';
 import { VideosModule } from './videos/videos.module';
+import { PlayersModule } from './players/players.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { VideosModule } from './videos/videos.module';
     CompetitionsModule,
     NewsModule,
     VideosModule,
+    PlayersModule,
   ],
   controllers: [AppController],
   providers: [],

@@ -13,6 +13,7 @@ const String screenSearch = 'search';
 const String screenFixtureDetails = 'fixture-details';
 const String screenLeague = 'league-profile';
 const String screenTeam = 'team-profile';
+const String screenPlayer = 'player-profile';
 
 const String screenNewsContent = 'news-content';
 const String screenWatchContent = 'watch-content';
@@ -133,6 +134,15 @@ abstract class RouterApp {
         path: '/$screenSecurity',
         name: screenSecurity,
         builder: (context, state) => const SecurityScreen(),
+      ),
+      GoRoute(
+        path: '/$screenPlayer',
+        name: screenPlayer,
+        builder: (context, state) {
+          final id = int.tryParse(state.uri.queryParameters['id'] ?? '0') ?? 0;
+          final name = state.uri.queryParameters['name'];
+          return PlayerProfileScreen(playerId: id, playerName: name);
+        },
       ),
     ],
   );

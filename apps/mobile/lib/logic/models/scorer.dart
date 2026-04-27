@@ -8,6 +8,7 @@ class Scorer {
   final String? teamLogo;
   final int goals;
   final int assists;
+  final int? externalPlayerId;
 
   Scorer({
     required this.rank,
@@ -17,6 +18,7 @@ class Scorer {
     this.teamLogo,
     required this.goals,
     required this.assists,
+    this.externalPlayerId,
   });
 
   factory Scorer.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class Scorer {
       teamLogo: json['teamLogo'] ?? json['statistics']?[0]?['team']?['logo'],
       goals: toInt(json['goals'] ?? json['statistics']?[0]?['goals']?['total']),
       assists: toInt(json['assists'] ?? json['statistics']?[0]?['goals']?['assists']),
+      externalPlayerId: json['externalPlayerId'] != null ? toInt(json['externalPlayerId']) : (json['player']?['id'] != null ? toInt(json['player']['id']) : null),
     );
   }
 }

@@ -405,7 +405,8 @@ export class SyncService {
           playerPhoto: player.photo || (player.id ? `https://media.api-sports.io/football/players/${player.id}.png` : null),
           goals: stats.goals.total,
           assists: stats.goals.assists || 0,
-          teamLogo: stats.team.logo
+          teamLogo: stats.team.logo,
+          externalPlayerId: player.id
         },
         create: {
           leagueId: league.id,
@@ -416,7 +417,8 @@ export class SyncService {
           teamName: stats.team.name,
           teamLogo: stats.team.logo,
           goals: stats.goals.total,
-          assists: stats.goals.assists || 0
+          assists: stats.goals.assists || 0,
+          externalPlayerId: player.id
         }
       });
       count++;

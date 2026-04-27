@@ -7,6 +7,7 @@ import '../../logic/models/scorer.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
+import '../../logic/models/player.dart';
 
 class ApiClient {
   final String baseUrl = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';
@@ -252,5 +253,16 @@ class ApiClient {
     } else {
       throw Exception('Failed to load team details');
     }
+  }
+
+  Future<PlayerProfile?> getPlayerDetails(int id, {int? season}) async {
+    final response = await http.get(Uri.parse('$baseUrl/players/$id${season != null ? '?season=$season' : ''}'));
+    if (response.statusCode == 200) {
+      final data = _decodeResponse(response);
+      if (data != null) {
+        return PlayerProfile.fromJson(data);
+      }
+    }
+    return null;
   }
 }

@@ -229,10 +229,33 @@ model Scorer {
   teamLogo    String?
   goals       Int
   assists     Int      @default(0)
+  externalPlayerId Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   league      League @relation(fields: [leagueId], references: [id])
 
   @@unique([leagueId, season, playerName, teamName])
+}
+
+model Player {
+  id               String   @id @default(uuid())
+  externalId       Int      @unique
+  name             String
+  firstname        String?
+  lastname         String?
+  age              Int?
+  birthDate        String?
+  birthPlace       String?
+  birthCountry     String?
+  nationality      String?
+  height           String?
+  weight           String?
+  injured          Boolean? @default(false)
+  photo            String?
+  statisticsJson   String?  @db.Text // Store full stats as JSON string for flexibility
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([externalId])
 }

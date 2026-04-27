@@ -228,67 +228,76 @@ class EventSubstituteRight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Text(
-                "${event.time}'",
-                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-              ),
-            ],
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  "${event.time}'",
+                  style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                ),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SvgPicture.asset(
-                    Assets.subIn,
-                    width: 18,
-                  ),
-                  const Gap(5),
-                  PlayerEventPhoto(photo: event.playerPhoto),
-                  const Gap(5),
-                  Flexible(
-                    child: Text(
-                      event.player ?? '',
-                      maxLines: 1,
-                      style:
-                          context.textTheme.bodySmall!.copyWith(fontSize: 15),
+          Expanded(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SvgPicture.asset(
+                      Assets.subIn,
+                      width: 18,
                     ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SvgPicture.asset(
-                    Assets.subOut,
-                    width: 18,
-                  ),
-                  const Gap(5),
-                  // Note: assist in subst usually is the photo of the sub out if available, 
-                  // but we'll use a placeholder if not explicitly provided.
-                  const PlayerEventPhoto(), 
-                  const Gap(5),
-                  Flexible(
-                    child: Text(
-                      event.assist ?? '',
-                      maxLines: 1,
-                      style:
-                          context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                    const Gap(5),
+                    PlayerEventPhoto(photo: event.playerPhoto),
+                    const Gap(5),
+                    Flexible(
+                      child: Text(
+                        event.player ?? '',
+                        maxLines: 1,
+                        style:
+                            context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    SvgPicture.asset(
+                      Assets.subOut,
+                      width: 18,
+                    ),
+                    const Gap(5),
+                    const PlayerEventPhoto(), 
+                    const Gap(5),
+                    Flexible(
+                      child: Text(
+                        event.assist ?? '',
+                        maxLines: 1,
+                        style:
+                            context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -299,69 +308,80 @@ class EventSubstituteLeft extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Text(
-                "${event.time}'",
-                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-              ),
-              const Gap(10),
-              Expanded(
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        SvgPicture.asset(
-                          Assets.subIn,
-                          width: 18,
-                        ),
-                        const Gap(5),
-                        PlayerEventPhoto(photo: event.playerPhoto),
-                        const Gap(5),
-                        Flexible(
-                          child: Text(
-                            event.player ?? '',
-                            maxLines: 1,
-                            style: context.textTheme.bodySmall!
-                                .copyWith(fontSize: 15),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        SvgPicture.asset(
-                          Assets.subOut,
-                          width: 18,
-                        ),
-                        const Gap(5),
-                        const PlayerEventPhoto(),
-                        const Gap(5),
-                        Flexible(
-                          child: Text(
-                            event.assist ?? '',
-                            maxLines: 1,
-                            style: context.textTheme.bodySmall!
-                                .copyWith(fontSize: 15),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  "${event.time}'",
+                  style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
                 ),
-              ),
-            ],
+                const Gap(10),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            Assets.subIn,
+                            width: 18,
+                          ),
+                          const Gap(5),
+                          PlayerEventPhoto(photo: event.playerPhoto),
+                          const Gap(5),
+                          Flexible(
+                            child: Text(
+                              event.player ?? '',
+                              maxLines: 1,
+                              style: context.textTheme.bodySmall!
+                                  .copyWith(fontSize: 15),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          SvgPicture.asset(
+                            Assets.subOut,
+                            width: 18,
+                          ),
+                          const Gap(5),
+                          const PlayerEventPhoto(),
+                          const Gap(5),
+                          Flexible(
+                            child: Text(
+                              event.assist ?? '',
+                              maxLines: 1,
+                              style: context.textTheme.bodySmall!
+                                  .copyWith(fontSize: 15),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
+          const Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -398,51 +418,62 @@ class EventGoalLeft extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Text(
-                "${event.time}'",
-                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-              ),
-              const Gap(10),
-              Expanded(
-                child: Row(
-                  children: [
-                    PlayerEventPhoto(photo: event.playerPhoto),
-                    const Gap(5),
-                    Flexible(
-                      child: Text(
-                        event.player ?? '',
-                        maxLines: 1,
-                        style:
-                            context.textTheme.bodySmall!.copyWith(fontSize: 15),
-                      ),
-                    ),
-                    const Gap(5),
-                    SvgPicture.asset(
-                      Assets.soccer,
-                      width: 18,
-                    ),
-                  ],
-                ),
-              ),
-              if (event.detail != null)
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
                 Text(
-                  event.detail!,
+                  "${event.time}'",
                   style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
                 ),
-            ],
+                const Gap(10),
+                Expanded(
+                  child: Row(
+                    children: [
+                      PlayerEventPhoto(photo: event.playerPhoto),
+                      const Gap(5),
+                      Flexible(
+                        child: Text(
+                          event.player ?? '',
+                          maxLines: 1,
+                          style:
+                              context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                        ),
+                      ),
+                      const Gap(5),
+                      SvgPicture.asset(
+                        Assets.soccer,
+                        width: 18,
+                      ),
+                    ],
+                  ),
+                ),
+                if (event.detail != null)
+                  Text(
+                    event.detail!,
+                    style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                  ),
+              ],
+            ),
           ),
-        ),
-        const Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
+          const Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -453,49 +484,60 @@ class EventGoalRight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Text(
-                "${event.time}'",
-                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-              ),
-              const Gap(10),
-              const Expanded(
-                child: SizedBox.shrink(),
-              ),
-              if (event.detail != null)
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
                 Text(
-                  event.detail!,
+                  "${event.time}'",
                   style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
                 ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              SvgPicture.asset(
-                Assets.soccer,
-                width: 18,
-              ),
-              const Gap(5),
-              PlayerEventPhoto(photo: event.playerPhoto),
-              const Gap(5),
-              Flexible(
-                child: Text(
-                  event.player ?? '',
-                  maxLines: 1,
-                  style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                const Gap(10),
+                const Expanded(
+                  child: SizedBox.shrink(),
                 ),
-              ),
-            ],
+                if (event.detail != null)
+                  Text(
+                    event.detail!,
+                    style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SvgPicture.asset(
+                  Assets.soccer,
+                  width: 18,
+                ),
+                const Gap(5),
+                PlayerEventPhoto(photo: event.playerPhoto),
+                const Gap(5),
+                Flexible(
+                  child: Text(
+                    event.player ?? '',
+                    maxLines: 1,
+                    style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -508,41 +550,52 @@ class EventCardsLeft extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRed = event.detail?.toLowerCase().contains('red') ?? false;
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: [
-              Text(
-                "${event.time}'",
-                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-              ),
-              const Gap(10),
-              Expanded(
-                child: Row(
-                  children: [
-                    PlayerEventPhoto(photo: event.playerPhoto),
-                    const Gap(5),
-                    Expanded(
-                      child: Text(
-                        event.player ?? '',
-                        maxLines: 1,
-                        style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-                      ),
-                    ),
-                  ],
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  "${event.time}'",
+                  style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
                 ),
-              ),
-              SvgPicture.asset(
-                Assets.yellowCard,
-                width: 14,
-                color: isRed ? Colors.redAccent : null,
-              ),
-            ],
+                const Gap(10),
+                Expanded(
+                  child: Row(
+                    children: [
+                      PlayerEventPhoto(photo: event.playerPhoto),
+                      const Gap(5),
+                      Expanded(
+                        child: Text(
+                          event.player ?? '',
+                          maxLines: 1,
+                          style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SvgPicture.asset(
+                  Assets.yellowCard,
+                  width: 14,
+                  color: isRed ? Colors.redAccent : null,
+                ),
+              ],
+            ),
           ),
-        ),
-        const Expanded(child: SizedBox.shrink()),
-      ],
+          const Expanded(child: SizedBox.shrink()),
+        ],
+      ),
     );
   }
 }
@@ -554,32 +607,43 @@ class EventCardsRight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRed = event.detail?.toLowerCase().contains('red') ?? false;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            "${event.time}'",
-            style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-          ),
-        ),
-        Row(
-          children: [
-            SvgPicture.asset(
-              Assets.yellowCard,
-              width: 14,
-              color: isRed ? Colors.redAccent : null,
-            ),
-            const Gap(10),
-            PlayerEventPhoto(photo: event.playerPhoto),
-            const Gap(10),
-            Text(
-              event.player ?? '',
-              maxLines: 1,
+    return InkWell(
+      onTap: event.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': event.externalPlayerId.toString(),
+                  'name': event.player ?? '',
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              "${event.time}'",
               style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
             ),
-          ],
-        ),
-      ],
+          ),
+          Row(
+            children: [
+              SvgPicture.asset(
+                Assets.yellowCard,
+                width: 14,
+                color: isRed ? Colors.redAccent : null,
+              ),
+              const Gap(10),
+              PlayerEventPhoto(photo: event.playerPhoto),
+              const Gap(10),
+              Text(
+                event.player ?? '',
+                maxLines: 1,
+                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

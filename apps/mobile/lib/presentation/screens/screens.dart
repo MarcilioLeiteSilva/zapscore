@@ -66,6 +66,7 @@ part 'fixture/h2h.dart';
 
 part 'profile/league.dart';
 part 'profile/team.dart';
+part 'profile/player.dart';
 
 part 'news/news_content.dart';
 part 'news/watch_content.dart';

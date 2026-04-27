@@ -169,73 +169,84 @@ class CardTopScores extends StatelessWidget {
   Widget build(BuildContext context) {
     if (scorer == null) return const SizedBox();
     final item = scorer!;
-    return Row(
-      children: [
-        SizedBox(
-          width: 25,
-          child: Text(
-            '$rank',
-            style: context.textTheme.bodySmall!.copyWith(
-              fontWeight: FontWeight.bold,
-              color: rank <= 3 ? AppColor.primary : null,
+    return InkWell(
+      onTap: item.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': item.externalPlayerId.toString(),
+                  'name': item.playerName,
+                },
+              )
+          : null,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 25,
+            child: Text(
+              '$rank',
+              style: context.textTheme.bodySmall!.copyWith(
+                fontWeight: FontWeight.bold,
+                color: rank <= 3 ? AppColor.primary : null,
+              ),
             ),
           ),
-        ),
-        const Gap(5),
-        SizedBox(
-          width: 40,
-          height: 40,
-          child: item.playerPhoto != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(item.playerPhoto!, fit: BoxFit.cover),
-                )
-              : const CircleAvatar(
-                  backgroundColor: AppColor.info,
-                  child: Icon(Icons.person, color: Colors.white54),
-                ),
-        ),
-        const Gap(10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.playerName,
-                style: context.textTheme.bodySmall!.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Row(
-                children: [
-                  if (item.teamLogo != null) ...[
-                    Image.network(item.teamLogo!, width: 14, height: 14),
-                    const Gap(5),
-                  ],
-                  Expanded(
-                    child: Text(
-                      item.teamName,
-                      style: context.textTheme.labelSmall!.copyWith(
-                        color: Colors.white54,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+          const Gap(5),
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: item.playerPhoto != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.network(item.playerPhoto!, fit: BoxFit.cover),
+                  )
+                : const CircleAvatar(
+                    backgroundColor: AppColor.info,
+                    child: Icon(Icons.person, color: Colors.white54),
                   ),
-                ],
-              ),
-            ],
           ),
-        ),
-        Text(
-          '${item.goals} Gols',
-          style: context.textTheme.bodySmall!.copyWith(
-            color: AppColor.primary,
-            fontWeight: FontWeight.bold,
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.playerName,
+                  style: context.textTheme.bodySmall!.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  children: [
+                    if (item.teamLogo != null) ...[
+                      Image.network(item.teamLogo!, width: 14, height: 14),
+                      const Gap(5),
+                    ],
+                    Expanded(
+                      child: Text(
+                        item.teamName,
+                        style: context.textTheme.labelSmall!.copyWith(
+                          color: Colors.white54,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          Text(
+            '${item.goals} Gols',
+            style: context.textTheme.bodySmall!.copyWith(
+              color: AppColor.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

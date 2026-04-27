@@ -97,82 +97,93 @@ class PlayerSubstitutionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          "${event.time}'",
-          style: context.textTheme.bodySmall!.copyWith(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const Gap(10),
-        if (event.playerPhoto != null)
-          Container(
-            width: 32,
-            height: 32,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColor.info, width: 1),
+      child: InkWell(
+        onTap: event.externalPlayerId != null
+            ? () => context.pushNamed(
+                  screenPlayer,
+                  queryParameters: {
+                    'id': event.externalPlayerId.toString(),
+                    'name': event.player ?? '',
+                  },
+                )
+            : null,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              "${event.time}'",
+              style: context.textTheme.bodySmall!.copyWith(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(event.playerPhoto!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 16)),
-            ),
-          ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
+            const Gap(10),
+            if (event.playerPhoto != null)
+              Container(
+                width: 32,
+                height: 32,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColor.info, width: 1),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(event.playerPhoto!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 16)),
+                ),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SvgPicture.asset(
-                    Assets.subOut,
-                    width: 12,
-                  ),
-                  const Gap(5),
-                  Flexible(
-                    child: Text(
-                      event.player ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.bodySmall!.copyWith(
-                        fontSize: 11,
-                        color: Colors.redAccent,
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        Assets.subOut,
+                        width: 12,
                       ),
-                    ),
+                      const Gap(5),
+                      Flexible(
+                        child: Text(
+                          event.player ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.bodySmall!.copyWith(
+                            fontSize: 11,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(2),
+                  Row(
+                    children: [
+                      SvgPicture.asset(
+                        Assets.subIn,
+                        width: 12,
+                      ),
+                      const Gap(5),
+                      Flexible(
+                        child: Text(
+                          event.assist ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.bodySmall!.copyWith(
+                            fontSize: 11,
+                            color: Colors.greenAccent,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const Gap(2),
-              Row(
-                children: [
-                  SvgPicture.asset(
-                    Assets.subIn,
-                    width: 12,
-                  ),
-                  const Gap(5),
-                  Flexible(
-                    child: Text(
-                      event.assist ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.textTheme.bodySmall!.copyWith(
-                        fontSize: 11,
-                        color: Colors.greenAccent,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
-    );
+      ),
   }
 }
 
@@ -182,60 +193,71 @@ class PlayerSubstitutionPlayerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 35,
-              height: 35,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColor.info, width: 1),
-                color: AppColor.cardDark,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: player.playerPhoto != null
-                    ? Image.network(
-                        player.playerPhoto!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white54, size: 18),
-                      )
-                    : const Icon(Icons.person, color: Colors.white54, size: 18),
-              ),
-            ),
-            Positioned(
-              right: -2,
-              bottom: -2,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.black87,
+    return InkWell(
+      onTap: player.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': player.externalPlayerId.toString(),
+                  'name': player.player,
+                },
+              )
+          : null,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 35,
+                height: 35,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  border: Border.all(color: AppColor.info, width: 1),
+                  color: AppColor.cardDark,
                 ),
-                child: Text(
-                  "${player.number ?? ''}",
-                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: player.playerPhoto != null
+                      ? Image.network(
+                          player.playerPhoto!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white54, size: 18),
+                        )
+                      : const Icon(Icons.person, color: Colors.white54, size: 18),
                 ),
               ),
-            ),
-          ],
-        ),
-        const Gap(10),
-        Expanded(
-          child: Text(
-            player.player,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.bodySmall!.copyWith(
-              fontSize: 13,
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.black87,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    "${player.number ?? ''}",
+                    style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+          Expanded(
+            child: Text(
+              player.player,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodySmall!.copyWith(
+                fontSize: 13,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -355,84 +377,95 @@ class PlayerLineupItem extends StatelessWidget {
     final hasRed = events.any((e) => e.type.toLowerCase() == 'card' && e.detail?.toLowerCase().contains('red') == true);
     final hasGoal = events.any((e) => e.type.toLowerCase() == 'goal');
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isWhite ? Colors.white : AppColor.primary,
-                  width: 2,
-                ),
-                color: AppColor.cardDark,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: player.playerPhoto != null
-                    ? Image.network(
-                        player.playerPhoto!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
-                      )
-                    : _buildPlaceholder(),
-              ),
-            ),
-            Positioned(
-              right: -5,
-              top: -5,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
+    return GestureDetector(
+      onTap: player.externalPlayerId != null
+          ? () => context.pushNamed(
+                screenPlayer,
+                queryParameters: {
+                  'id': player.externalPlayerId.toString(),
+                  'name': player.player,
+                },
+              )
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isWhite ? Colors.white : AppColor.primary,
+                    width: 2,
+                  ),
+                  color: AppColor.cardDark,
                 ),
-                child: Text(
-                  '${player.number ?? ''}',
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: player.playerPhoto != null
+                      ? Image.network(
+                          player.playerPhoto!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                        )
+                      : _buildPlaceholder(),
                 ),
               ),
-            ),
-            if (hasYellow || hasRed)
               Positioned(
-                right: -8,
-                bottom: 10,
-                child: SvgPicture.asset(
-                  Assets.yellowCard,
-                  width: 10,
-                  color: hasRed ? Colors.redAccent : null,
+                right: -5,
+                top: -5,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${player.number ?? ''}',
+                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ),
-            if (hasGoal)
-              Positioned(
-                left: -8,
-                bottom: 10,
-                child: SvgPicture.asset(
-                  Assets.soccer,
-                  width: 12,
+              if (hasYellow || hasRed)
+                Positioned(
+                  right: -8,
+                  bottom: 10,
+                  child: SvgPicture.asset(
+                    Assets.yellowCard,
+                    width: 10,
+                    color: hasRed ? Colors.redAccent : null,
+                  ),
                 ),
-              ),
-          ],
-        ),
-        const Gap(4),
-        SizedBox(
-          width: 60,
-          child: Text(
-            player.player.split(' ').last,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, shadows: [
-              Shadow(color: Colors.black, blurRadius: 2, offset: Offset(1, 1))
-            ]),
+              if (hasGoal)
+                Positioned(
+                  left: -8,
+                  bottom: 10,
+                  child: SvgPicture.asset(
+                    Assets.soccer,
+                    width: 12,
+                  ),
+                ),
+            ],
           ),
-        ),
-      ],
+          const Gap(4),
+          SizedBox(
+            width: 60,
+            child: Text(
+              player.player.split(' ').last,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, shadows: [
+                Shadow(color: Colors.black, blurRadius: 2, offset: Offset(1, 1))
+              ]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
