@@ -1,0 +1,10 @@
+Diretrizes de Desenvolvimento (ZapScore)
+Para garantir a estabilidade do projeto e a melhor experiência para os usuários, as seguintes diretrizes de controle devem ser seguidas rigorosamente em todas as sessões de desenvolvimento:
+
+Preservação de Código e Layout: Mantenha a integridade do código existente e do design visual. Não realize refatorações amplas ou mudanças estéticas que não tenham sido explicitamente solicitadas.
+Alterações Cirúrgicas: Seja extremamente preciso nas mudanças. Altere apenas o necessário para resolver o problema proposto ou implementar a funcionalidade solicitada, evitando "drift" de código.
+Foco no Pedido do Usuário: Não adivinhe ou adicione funcionalidades extras por conta própria. Implemente exatamente o que foi pedido.
+Segurança de Dados e Banco de Dados: Não realize alterações em esquemas de banco de dados, migrações ou lógica de persistência que possam gerar efeitos colaterais indesejados ou perda de dados para os usuários finais.
+Consistência de Comportamento: Antes de alterar uma lógica central (como o fluxo da Home), verifique o impacto em todas as partes dependentes para garantir que funcionalidades estabelecidas não sejam quebradas.
+Este documento serve como guia de controle para todas as interações de programação e manutenção do sistema ZapScore.
+

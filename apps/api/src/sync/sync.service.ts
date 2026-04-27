@@ -33,6 +33,7 @@ export class SyncService {
     const resTeams = await this.syncTeams(targetLeague, targetSeason);
     const resFixtures = await this.syncFixtures(targetLeague, targetSeason);
     const resStandings = await this.syncStandings(targetLeague, targetSeason);
+    const resScorers = await this.syncScorers(targetLeague, targetSeason);
 
     return {
       success: true,
@@ -45,6 +46,7 @@ export class SyncService {
         teams: { ok: true, processed: resTeams.count },
         fixtures: { ok: true, processed: resFixtures.count },
         standings: { ok: true, processed: resStandings.count },
+        scorers: { ok: true, processed: resScorers.count },
       },
       finishedAt: new Date().toISOString(),
     };
@@ -165,7 +167,9 @@ export class SyncService {
               player: e.player.name,
               assist: e.assist?.name,
               type: e.type,
-              detail: e.detail
+              detail: e.detail,
+              playerPhoto: e.player.photo,
+              externalPlayerId: e.player.id
             }
           });
         }
@@ -194,29 +198,33 @@ export class SyncService {
           const teamId = l.team.id;
           for (const p of l.startXI) {
             await this.prisma.fixtureLineup.create({
-              data: {
-                fixtureId: fixture.id,
-                teamId,
-                player: p.player.name,
-                number: p.player.number,
-                pos: p.player.pos,
-                grid: p.player.grid,
-                isStart: true
-              }
-            });
-          }
-          for (const p of l.substitutes) {
-            await this.prisma.fixtureLineup.create({
-              data: {
-                fixtureId: fixture.id,
-                teamId,
-                player: p.player.name,
-                number: p.player.number,
-                pos: p.player.pos,
-                isStart: false
-              }
-            });
-          }
+                data: {
+                  fixtureId: fixture.id,
+                  teamId,
+                  player: p.player.name,
+                  number: p.player.number,
+                  pos: p.player.pos,
+                  grid: p.player.grid,
+                  isStart: true,
+                  playerPhoto: p.player.photo,
+                  externalPlayerId: p.player.id
+                }
+              });
+            }
+            for (const p of l.substitutes) {
+              await this.prisma.fixtureLineup.create({
+                data: {
+                  fixtureId: fixture.id,
+                  teamId,
+                  player: p.player.name,
+                  number: p.player.number,
+                  pos: p.player.pos,
+                  isStart: false,
+                  playerPhoto: p.player.photo,
+                  externalPlayerId: p.player.id
+                }
+              });
+            }
         }
       }
     } catch (err) {
@@ -362,6 +370,59 @@ export class SyncService {
       }
     }
     
+    return { count };
+  }
+
+  async syncScorers(leagueId?: number, season?: number) {
+    const targetLeague = leagueId || this.defaultLeagueId;
+    const targetSeason = season || this.defaultSeason;
+
+    this.logger.log(`Syncing scorers for league ${targetLeague} season ${targetSeason}...`);
+    
+    const scorersData = await this.apiFootball.getTopScorers({ league: targetLeague, season: targetSeason });
+    if (!scorersData || scorersData.length === 0) return { count: 0 };
+
+    const league = await this.prisma.league.findUnique({
+      where: { externalId: targetLeague }
+    });
+    if (!league) return { count: 0 };
+
+    let count = 0;
+    for (const [index, item] of scorersData.entries()) {
+      const stats = item.statistics[0];
+      const player = item.player;
+
+      await this.prisma.scorer.upsert({
+        where: {
+          leagueId_season_playerName_teamName: {
+            leagueId: league.id,
+            season: targetSeason,
+            playerName: player.name,
+            teamName: stats.team.name
+          }
+        },
+        update: {
+          rank: index + 1,
+          playerPhoto: player.photo,
+          goals: stats.goals.total,
+          assists: stats.goals.assists || 0,
+          teamLogo: stats.team.logo
+        },
+        create: {
+          leagueId: league.id,
+          season: targetSeason,
+          rank: index + 1,
+          playerName: player.name,
+          playerPhoto: player.photo,
+          teamName: stats.team.name,
+          teamLogo: stats.team.logo,
+          goals: stats.goals.total,
+          assists: stats.goals.assists || 0
+        }
+      });
+      count++;
+    }
+
     return { count };
   }
 }

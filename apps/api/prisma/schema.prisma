@@ -24,6 +24,7 @@ model League {
   statistics TeamStatistic[]
   news       News[]
   videos     Video[]
+  scorers    Scorer[]
 
   @@index([externalId])
 }
@@ -91,6 +92,8 @@ model FixtureEvent {
   assist    String?
   type      String   // Goal, Card, Subst, Var
   detail    String?
+  playerPhoto String?
+  externalPlayerId Int?
   createdAt DateTime @default(now())
 
   fixture   Fixture  @relation(fields: [fixtureId], references: [id])
@@ -118,6 +121,8 @@ model FixtureLineup {
   pos       String?  // G, D, M, F
   grid      String?  // Posição no campo (ex: 1:1)
   isStart   Boolean  @default(true)
+  playerPhoto String?
+  externalPlayerId Int?
   createdAt DateTime @default(now())
 
   fixture   Fixture  @relation(fields: [fixtureId], references: [id])
@@ -211,4 +216,23 @@ model Video {
 
   league      League? @relation(fields: [leagueId], references: [id])
   team        Team?   @relation(fields: [teamId], references: [id])
+}
+
+model Scorer {
+  id          String   @id @default(uuid())
+  leagueId    String
+  season      Int
+  rank        Int
+  playerName  String
+  playerPhoto String?
+  teamName    String
+  teamLogo    String?
+  goals       Int
+  assists     Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  league      League @relation(fields: [leagueId], references: [id])
+
+  @@unique([leagueId, season, playerName, teamName])
 }

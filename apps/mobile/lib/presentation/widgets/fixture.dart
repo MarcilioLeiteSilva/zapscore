@@ -299,9 +299,13 @@ class CardGroupFixtureItem extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            comp.league.name,
+                            comp.league.name.toUpperCase(),
                             maxLines: 1,
-                            style: context.textTheme.bodySmall,
+                            style: context.textTheme.bodySmall!.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
                           ),
                         ),
                       ],
@@ -358,19 +362,29 @@ class CardFixtureItem extends StatelessWidget {
           const Divider(endIndent: 20),
           const Gap(5),
         ],
-        InkWell(            onTap: () {
+        InkWell(
+          onTap: () {
             context.pushNamed(screenFixtureDetails, extra: fix);
           },
           child: Row(
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  isLive(fix.statusShort) ? '${fix.elapsed}\'' : (fix.statusShort ?? 'TBD'),
-                  style: context.textTheme.bodySmall!.copyWith(
-                    color: isLive(fix.statusShort) ? Colors.red : (fix.statusShort == 'FT' ? Colors.green : null),
-                    fontWeight: isLive(fix.statusShort) ? FontWeight.bold : null,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isLive(fix.statusShort))
+                      const PulsingLiveIndicator(),
+                    const Gap(5),
+                    Text(
+                      isLive(fix.statusShort) ? '${fix.elapsed}\'' : (fix.statusShort ?? 'TBD'),
+                      style: context.textTheme.bodySmall!.copyWith(
+                        color: isLive(fix.statusShort) ? Colors.red : (fix.statusShort == 'FT' ? Colors.green : null),
+                        fontWeight: isLive(fix.statusShort) ? FontWeight.bold : null,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Gap(10),
@@ -433,18 +447,33 @@ class CardFixtureItem extends StatelessWidget {
                   ],
                 ),
               ),
-              Column(
-                children: [
-                  Text(
-                    '${fix.homeGoals ?? 0}',
-                    style: context.textTheme.bodySmall,
-                  ),
-                  const Gap(10),
-                  Text(
-                    '${fix.awayGoals ?? 0}',
-                    style: context.textTheme.bodySmall,
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColor.background.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${fix.homeGoals ?? 0}',
+                      style: context.textTheme.bodyLarge!.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isLive(fix.statusShort) ? AppColor.primary : null,
+                      ),
+                    ),
+                    const Gap(8),
+                    Text(
+                      '${fix.awayGoals ?? 0}',
+                      style: context.textTheme.bodyLarge!.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isLive(fix.statusShort) ? AppColor.primary : null,
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               Padding(
@@ -657,21 +686,28 @@ class CardFixtureDetail extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Column(
-                children: [
-                  SizedBox(
-                    width: 70,
-                    height: 70,
-                    child: fix.homeTeam?.logo != null
-                        ? Image.network(fix.homeTeam!.logo!, fit: BoxFit.contain)
-                        : const CardNoImage(radius: 5),
-                  ),
-                  const Gap(5),
-                  Text(
-                    fix.homeTeam?.name ?? 'Home',
-                    style: context.textTheme.bodySmall,
-                  ),
-                ],
+              InkWell(
+                onTap: () {
+                  if (fix.homeTeam != null) {
+                    context.pushNamed(screenTeam, extra: fix.homeTeam);
+                  }
+                },
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 70,
+                      height: 70,
+                      child: fix.homeTeam?.logo != null
+                          ? Image.network(fix.homeTeam!.logo!, fit: BoxFit.contain)
+                          : const CardNoImage(radius: 5),
+                    ),
+                    const Gap(5),
+                    Text(
+                      fix.homeTeam?.name ?? 'Home',
+                      style: context.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
               Column(
                 children: [
@@ -683,29 +719,47 @@ class CardFixtureDetail extends StatelessWidget {
                     ),
                   ),
                   const Gap(5),
-                  Text(
-                    fix.statusLong ?? 'TBD',
-                    style: context.textTheme.bodySmall!.copyWith(
-                      fontSize: 15,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (isLive(fix.statusShort)) ...[
+                        const PulsingLiveIndicator(),
+                        const Gap(8),
+                      ],
+                      Text(
+                        isLive(fix.statusShort) ? '${fix.elapsed}\'' : (fix.statusLong ?? 'TBD'),
+                        style: context.textTheme.bodySmall!.copyWith(
+                          fontSize: 16,
+                          fontWeight: isLive(fix.statusShort) ? FontWeight.bold : null,
+                          color: isLive(fix.statusShort) ? Colors.white : Colors.white70,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              Column(
-                children: [
-                  SizedBox(
-                    width: 70,
-                    height: 70,
-                    child: fix.awayTeam?.logo != null
-                        ? Image.network(fix.awayTeam!.logo!, fit: BoxFit.contain)
-                        : const CardNoImage(radius: 5),
-                  ),
-                  const Gap(5),
-                  Text(
-                    fix.awayTeam?.name ?? 'Away',
-                    style: context.textTheme.bodySmall,
-                  ),
-                ],
+              InkWell(
+                onTap: () {
+                  if (fix.awayTeam != null) {
+                    context.pushNamed(screenTeam, extra: fix.awayTeam);
+                  }
+                },
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 70,
+                      height: 70,
+                      child: fix.awayTeam?.logo != null
+                          ? Image.network(fix.awayTeam!.logo!, fit: BoxFit.contain)
+                          : const CardNoImage(radius: 5),
+                    ),
+                    const Gap(5),
+                    Text(
+                      fix.awayTeam?.name ?? 'Away',
+                      style: context.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -886,6 +940,57 @@ class CardFormMatch extends StatelessWidget {
             child: CardNoImage(radius: 5),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class PulsingLiveIndicator extends StatefulWidget {
+  const PulsingLiveIndicator({super.key});
+
+  @override
+  State<PulsingLiveIndicator> createState() => _PulsingLiveIndicatorState();
+}
+
+class _PulsingLiveIndicatorState extends State<PulsingLiveIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.2, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: const BoxDecoration(
+          color: Colors.red,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red,
+              blurRadius: 4,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
       ),
     );
   }

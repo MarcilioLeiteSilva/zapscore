@@ -19,7 +19,6 @@ import '../../logic/cubits/search/search_cubit.dart';
 import '../../logic/cubits/live/live_cubit.dart';
 import '../../logic/cubits/team/team_cubit.dart';
 import '../../logic/cubits/news/news_cubit.dart';
-import '../../logic/cubits/video/video_cubit.dart';
 import '../../logic/models/home_competition.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/league.dart';

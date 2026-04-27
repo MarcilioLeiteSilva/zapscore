@@ -1,5 +1,33 @@
 part of 'widgets.dart';
 
+class PlayerEventPhoto extends StatelessWidget {
+  const PlayerEventPhoto({super.key, this.photo, this.size = 24});
+  final String? photo;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: photo != null
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(size / 2),
+              child: Image.network(photo!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder()),
+            )
+          : _buildPlaceholder(),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return CircleAvatar(
+      backgroundColor: AppColor.info,
+      radius: size / 2,
+      child: Icon(Icons.person, color: Colors.white54, size: size * 0.6),
+    );
+  }
+}
+
 class CardIndicatorThreeH2H extends StatelessWidget {
   const CardIndicatorThreeH2H({super.key, this.hideMid = false});
   final bool hideMid;
@@ -223,6 +251,8 @@ class EventSubstituteRight extends StatelessWidget {
                     width: 18,
                   ),
                   const Gap(5),
+                  PlayerEventPhoto(photo: event.playerPhoto),
+                  const Gap(5),
                   Flexible(
                     child: Text(
                       event.player ?? '',
@@ -240,6 +270,10 @@ class EventSubstituteRight extends StatelessWidget {
                     Assets.subOut,
                     width: 18,
                   ),
+                  const Gap(5),
+                  // Note: assist in subst usually is the photo of the sub out if available, 
+                  // but we'll use a placeholder if not explicitly provided.
+                  const PlayerEventPhoto(), 
                   const Gap(5),
                   Flexible(
                     child: Text(
@@ -285,6 +319,8 @@ class EventSubstituteLeft extends StatelessWidget {
                           width: 18,
                         ),
                         const Gap(5),
+                        PlayerEventPhoto(photo: event.playerPhoto),
+                        const Gap(5),
                         Flexible(
                           child: Text(
                             event.player ?? '',
@@ -301,6 +337,8 @@ class EventSubstituteLeft extends StatelessWidget {
                           Assets.subOut,
                           width: 18,
                         ),
+                        const Gap(5),
+                        const PlayerEventPhoto(),
                         const Gap(5),
                         Flexible(
                           child: Text(
@@ -373,6 +411,8 @@ class EventGoalLeft extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
+                    PlayerEventPhoto(photo: event.playerPhoto),
+                    const Gap(5),
                     Flexible(
                       child: Text(
                         event.player ?? '',
@@ -443,6 +483,8 @@ class EventGoalRight extends StatelessWidget {
                 width: 18,
               ),
               const Gap(5),
+              PlayerEventPhoto(photo: event.playerPhoto),
+              const Gap(5),
               Flexible(
                 child: Text(
                   event.player ?? '',
@@ -477,10 +519,18 @@ class EventCardsLeft extends StatelessWidget {
               ),
               const Gap(10),
               Expanded(
-                child: Text(
-                  event.player ?? '',
-                  maxLines: 1,
-                  style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                child: Row(
+                  children: [
+                    PlayerEventPhoto(photo: event.playerPhoto),
+                    const Gap(5),
+                    Expanded(
+                      child: Text(
+                        event.player ?? '',
+                        maxLines: 1,
+                        style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SvgPicture.asset(
@@ -519,6 +569,8 @@ class EventCardsRight extends StatelessWidget {
               width: 14,
               color: isRed ? Colors.redAccent : null,
             ),
+            const Gap(10),
+            PlayerEventPhoto(photo: event.playerPhoto),
             const Gap(10),
             Text(
               event.player ?? '',

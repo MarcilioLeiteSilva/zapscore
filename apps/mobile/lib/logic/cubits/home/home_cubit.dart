@@ -16,23 +16,15 @@ class HomeCubit extends Cubit<HomeState> {
       final leagues = await apiClient.getStoredLeagues();
       final List<HomeCompetition> competitions = [];
 
+      final targetDate = date ?? DateTime.now();
+      final formattedDate = "${targetDate.year}-${targetDate.month.toString().padLeft(2, '0')}-${targetDate.day.toString().padLeft(2, '0')}";
+
       for (var league in leagues) {
-        List<Fixture> matches = [];
-        if (date != null) {
-          final formattedDate = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-          matches = await apiClient.getFixturesByDate(league.externalId, formattedDate);
-        } else {
-          // Default logic for "Today" - get all today's matches or recent if none
-          matches = await apiClient.getTodayFixtures(league.externalId);
-          if (matches.isEmpty) {
-            final match = await apiClient.getFixtureWithMatchLogic(league.externalId);
-            if (match != null) matches.add(match);
-          }
-        }
+        // Busca sempre por data para garantir todos os jogos do dia
+        List<Fixture> matches = await apiClient.getFixturesByDate(league.externalId, formattedDate);
         
-        if (matches.isNotEmpty || date == null) {
-          competitions.add(HomeCompetition(league: league, matches: matches));
-        }
+        // SEMPRE adiciona a competição para que as "pílulas" (leagues) apareçam na home
+        competitions.add(HomeCompetition(league: league, matches: matches));
       }
 
       emit(HomeLoaded(competitions));

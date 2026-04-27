@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<LiveCubit>(
           create: (BuildContext context) =>
-              LiveCubit(apiClient)..fetchLiveFixtures(),
+              LiveCubit(apiClient)..fetchLiveFixtures()..startAutoRefresh(seconds: 45),
         ),
         BlocProvider<FavoriteCubit>(
           create: (BuildContext context) => FavoriteCubit(

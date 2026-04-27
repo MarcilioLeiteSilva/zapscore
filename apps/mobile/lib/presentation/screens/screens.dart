@@ -27,12 +27,11 @@ import '../../logic/cubits/team/team_cubit.dart';
 import '../../logic/cubits/news/news_cubit.dart';
 import '../../logic/cubits/video/video_cubit.dart';
 import '../../repository/api/api_client.dart';
+import '../../logic/models/home_competition.dart';
 import '../../logic/models/league.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/fixture_stat.dart';
 import '../../logic/models/fixture.dart';
-import '../../logic/models/news.dart';
-import '../../logic/models/video.dart';
 import '../widgets/widgets.dart';
 
 part 'splash.dart';

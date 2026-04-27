@@ -1,7 +1,26 @@
 part of '../screens.dart';
 
-class LivePage extends StatelessWidget {
+class LivePage extends StatefulWidget {
   const LivePage({super.key});
+
+  @override
+  State<LivePage> createState() => _LivePageState();
+}
+
+class _LivePageState extends State<LivePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Inicia a atualização automática ao entrar na tela (a cada 30 segundos para maior precisão)
+    context.read<LiveCubit>().startAutoRefresh(seconds: 30);
+  }
+
+  @override
+  void dispose() {
+    // Para a atualização automática ao sair da tela para economizar recursos/bateria
+    context.read<LiveCubit>().stopAutoRefresh();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +44,32 @@ class LivePage extends StatelessWidget {
               if (state.fixtures.isEmpty) {
                 return const Center(child: Text('Nenhum jogo ao vivo no momento'));
               }
+
+              // Agrupar jogos por liga
+              final groupedFixtures = <String, List<Fixture>>{};
+              final leagues = <String, League>{};
+
+              for (var fixture in state.fixtures) {
+                final league = fixture.league;
+                final leagueId = league?.id.toString() ?? 'unknown';
+                
+                if (!groupedFixtures.containsKey(leagueId)) {
+                  groupedFixtures[leagueId] = [];
+                  leagues[leagueId] = league ?? League(id: '0', externalId: 0, name: 'Outros');
+                }
+                groupedFixtures[leagueId]!.add(fixture);
+              }
+
+              final List<HomeCompetition> competitions = groupedFixtures.entries.map((entry) {
+                return HomeCompetition(
+                  league: leagues[entry.key]!,
+                  matches: entry.value,
+                );
+              }).toList();
+
+              // Ordenar por nome da liga
+              competitions.sort((a, b) => a.league.name.compareTo(b.league.name));
+
               return ListView.separated(
                 padding: const EdgeInsets.only(
                   left: 10,
@@ -33,19 +78,11 @@ class LivePage extends StatelessWidget {
                   bottom: 100,
                 ),
                 itemBuilder: (_, i) {
-                  final fixture = state.fixtures[i];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: AppColor.card,
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: AppColor.info, width: 1),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-                    child: CardFixtureItem(fixture: fixture, showDivider: false),
-                  );
+                  final comp = competitions[i];
+                  return CardGroupFixtureItem(competition: comp);
                 },
                 separatorBuilder: (_, i) => const Gap(20),
-                itemCount: state.fixtures.length,
+                itemCount: competitions.length,
               );
             }
             return const SizedBox();

@@ -1,10 +1,13 @@
 part of 'widgets.dart';
 
 class CardSubstitutionPlayers extends StatelessWidget {
-  const CardSubstitutionPlayers({super.key});
+  const CardSubstitutionPlayers({super.key, required this.substitutes});
+  final List<FixtureLineup> substitutes;
 
   @override
   Widget build(BuildContext context) {
+    if (substitutes.isEmpty) return const SizedBox();
+
     return Container(
       width: context.width,
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -17,7 +20,7 @@ class CardSubstitutionPlayers extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'SUBSTITUTIONS PLAYERS',
+            'SUBSTITUTOS',
             style: context.textTheme.bodySmall,
           ),
           const Divider(height: 20),
@@ -31,9 +34,9 @@ class CardSubstitutionPlayers extends StatelessWidget {
               crossAxisSpacing: 10,
               childAspectRatio: 6,
             ),
-            itemCount: 8,
+            itemCount: substitutes.length,
             itemBuilder: (_, i) {
-              return const PlayerSubstitutionPlayerItem();
+              return PlayerSubstitutionPlayerItem(player: substitutes[i]);
             },
           ),
         ],
@@ -43,10 +46,14 @@ class CardSubstitutionPlayers extends StatelessWidget {
 }
 
 class CardSubstitution extends StatelessWidget {
-  const CardSubstitution({super.key});
+  const CardSubstitution({super.key, required this.substEvents, required this.homeTeamId});
+  final List<FixtureEvent> substEvents;
+  final int homeTeamId;
 
   @override
   Widget build(BuildContext context) {
+    if (substEvents.isEmpty) return const SizedBox();
+
     return Container(
       width: context.width,
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -59,7 +66,7 @@ class CardSubstitution extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'SUBSTITUTIONS',
+            'SUBSTITUIÇÕES',
             style: context.textTheme.bodySmall,
           ),
           const Divider(height: 20),
@@ -73,9 +80,9 @@ class CardSubstitution extends StatelessWidget {
               crossAxisSpacing: 10,
               childAspectRatio: 4,
             ),
-            itemCount: 10,
+            itemCount: substEvents.length,
             itemBuilder: (_, i) {
-              return const PlayerSubstitutionItem();
+              return PlayerSubstitutionItem(event: substEvents[i]);
             },
           ),
         ],
@@ -85,7 +92,8 @@ class CardSubstitution extends StatelessWidget {
 }
 
 class PlayerSubstitutionItem extends StatelessWidget {
-  const PlayerSubstitutionItem({super.key});
+  const PlayerSubstitutionItem({super.key, required this.event});
+  final FixtureEvent event;
 
   @override
   Widget build(BuildContext context) {
@@ -93,12 +101,27 @@ class PlayerSubstitutionItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          "29'",
+          "${event.time}'",
           style: context.textTheme.bodySmall!.copyWith(
-            fontSize: 15,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
           ),
         ),
         const Gap(10),
+        if (event.playerPhoto != null)
+          Container(
+            width: 32,
+            height: 32,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColor.info, width: 1),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(event.playerPhoto!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 16)),
+            ),
+          ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,32 +131,38 @@ class PlayerSubstitutionItem extends StatelessWidget {
                 children: [
                   SvgPicture.asset(
                     Assets.subOut,
+                    width: 12,
                   ),
                   const Gap(5),
                   Flexible(
                     child: Text(
-                      "P. Aumbareyk'",
+                      event.player ?? '',
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: context.textTheme.bodySmall!.copyWith(
-                        fontSize: 12,
+                        fontSize: 11,
+                        color: Colors.redAccent,
                       ),
                     ),
                   ),
                 ],
               ),
-              const Gap(5),
+              const Gap(2),
               Row(
                 children: [
                   SvgPicture.asset(
                     Assets.subIn,
+                    width: 12,
                   ),
                   const Gap(5),
                   Flexible(
                     child: Text(
-                      "Oleksandr Zinc'",
+                      event.assist ?? '',
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: context.textTheme.bodySmall!.copyWith(
-                        fontSize: 12,
+                        fontSize: 11,
+                        color: Colors.greenAccent,
                       ),
                     ),
                   ),
@@ -148,36 +177,61 @@ class PlayerSubstitutionItem extends StatelessWidget {
 }
 
 class PlayerSubstitutionPlayerItem extends StatelessWidget {
-  const PlayerSubstitutionPlayerItem({super.key});
+  const PlayerSubstitutionPlayerItem({super.key, required this.player});
+  final FixtureLineup player;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColor.info,
-              )),
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            "29",
-            style: context.textTheme.bodySmall!.copyWith(
-              fontSize: 11,
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 35,
+              height: 35,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColor.info, width: 1),
+                color: AppColor.cardDark,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: player.playerPhoto != null
+                    ? Image.network(
+                        player.playerPhoto!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white54, size: 18),
+                      )
+                    : const Icon(Icons.person, color: Colors.white54, size: 18),
+              ),
             ),
-          ),
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  "${player.number ?? ''}",
+                  style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ),
         const Gap(10),
         Expanded(
-          child: Flexible(
-            child: Text(
-              "P. Aumbareyk'",
-              maxLines: 1,
-              style: context.textTheme.bodySmall!.copyWith(
-                fontSize: 12,
-              ),
+          child: Text(
+            player.player,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.textTheme.bodySmall!.copyWith(
+              fontSize: 13,
             ),
           ),
         ),
@@ -187,100 +241,55 @@ class PlayerSubstitutionPlayerItem extends StatelessWidget {
 }
 
 class CardLineup extends StatelessWidget {
-  const CardLineup({super.key});
+  const CardLineup({super.key, required this.fixture});
+  final Fixture fixture;
 
   @override
   Widget build(BuildContext context) {
+    final homeLineup = fixture.lineups.where((l) => l.teamId == fixture.homeTeam?.externalId && l.isStart).toList();
+    final awayLineup = fixture.lineups.where((l) => l.teamId == fixture.awayTeam?.externalId && l.isStart).toList();
+
+    if (homeLineup.isEmpty || awayLineup.isEmpty) {
+      return Container(
+        width: context.width,
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: AppColor.card,
+          border: Border.all(color: AppColor.info, width: 1),
+        ),
+        child: const Center(child: Text('Escalações ainda não disponíveis')),
+      );
+    }
+
     return SizedBox(
       width: context.width,
-      height: context.height * .7,
+      height: context.height * .75,
       child: Stack(
         children: [
-          SvgPicture.asset(Assets.terrain),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15),
+          Positioned.fill(
+            child: SvgPicture.asset(Assets.terrain, fit: BoxFit.fill),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Column(
               children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5),
-                  child: Text(
-                    'Chelsea 4-3-3',
-                    style: TextStyle(fontSize: 15),
-                  ),
+                const Gap(10),
+                Text(
+                  fixture.homeTeam?.name ?? '',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      PlayerLineupItem(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          PlayerLineupItem(hasGoal: true),
-                          PlayerLineupItem(),
-                          PlayerLineupItem(),
-                          PlayerLineupItem(),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          PlayerLineupItem(),
-                          PlayerLineupItem(),
-                          PlayerLineupItem(hasYellow: true),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          PlayerLineupItem(),
-                          PlayerLineupItem(hasYellow: true),
-                          PlayerLineupItem(),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: _buildTeamLineup(context, homeLineup, isAway: false),
                 ),
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      PlayerLineupItem(isWhite: true),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          PlayerLineupItem(isWhite: true, hasGoal: true),
-                          PlayerLineupItem(isWhite: true),
-                          PlayerLineupItem(isWhite: true),
-                          PlayerLineupItem(isWhite: true, hasRed: true),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          PlayerLineupItem(isWhite: true),
-                          PlayerLineupItem(isWhite: true),
-                          PlayerLineupItem(isWhite: true, hasGoal: true),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          PlayerLineupItem(isWhite: true),
-                          PlayerLineupItem(isWhite: true),
-                          PlayerLineupItem(isWhite: true),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: _buildTeamLineup(context, awayLineup, isAway: true),
                 ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 5),
-                  child: Text(
-                    'Arsenal 4-2-3-1',
-                    style: TextStyle(fontSize: 15),
-                  ),
+                Text(
+                  fixture.awayTeam?.name ?? '',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
+                const Gap(10),
               ],
             ),
           ),
@@ -288,60 +297,150 @@ class CardLineup extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildTeamLineup(BuildContext context, List<FixtureLineup> lineup, {required bool isAway}) {
+    // Group by grid row (e.g. 1:1 -> row 1)
+    Map<int, List<FixtureLineup>> rows = {};
+    for (var player in lineup) {
+      final gridParts = player.grid?.split(':');
+      if (gridParts != null && gridParts.length == 2) {
+        final row = int.tryParse(gridParts[0]) ?? 0;
+        if (!rows.containsKey(row)) rows[row] = [];
+        rows[row]!.add(player);
+      }
+    }
+
+    final sortedRowKeys = rows.keys.toList()..sort();
+    final displayRows = isAway ? sortedRowKeys.reversed.toList() : sortedRowKeys;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: displayRows.map((rowKey) {
+        final playersInRow = rows[rowKey]!;
+        // Sort players within row by column (gridParts[1])
+        playersInRow.sort((a, b) {
+          final colA = int.tryParse(a.grid?.split(':')[1] ?? '0') ?? 0;
+          final colB = int.tryParse(b.grid?.split(':')[1] ?? '0') ?? 0;
+          return colA.compareTo(colB);
+        });
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: playersInRow.map((p) => PlayerLineupItem(
+            player: p,
+            isWhite: isAway,
+            events: fixture.events.where((e) => e.playerId == p.externalPlayerId).toList(),
+          )).toList(),
+        );
+      }).toList(),
+    );
+  }
 }
 
 class PlayerLineupItem extends StatelessWidget {
-  const PlayerLineupItem(
-      {super.key,
-      this.isWhite = false,
-      this.hasYellow = false,
-      this.hasRed = false,
-      this.hasGoal = false});
+  const PlayerLineupItem({
+    super.key,
+    required this.player,
+    this.isWhite = false,
+    this.events = const [],
+  });
+  
+  final FixtureLineup player;
   final bool isWhite;
-  final bool hasYellow, hasRed;
-  final bool hasGoal;
+  final List<FixtureEvent> events;
 
   @override
   Widget build(BuildContext context) {
+    final hasYellow = events.any((e) => e.type.toLowerCase() == 'card' && e.detail?.toLowerCase().contains('yellow') == true);
+    final hasRed = events.any((e) => e.type.toLowerCase() == 'card' && e.detail?.toLowerCase().contains('red') == true);
+    final hasGoal = events.any((e) => e.type.toLowerCase() == 'goal');
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Stack(
+          clipBehavior: Clip.none,
           children: [
-            CircleAvatar(
-              backgroundColor: !isWhite ? AppColor.background : Colors.white,
-              radius: 15,
-              child: Text(
-                '16',
-                style: TextStyle(
-                    fontSize: 13,
-                    color: isWhite ? AppColor.background : Colors.white),
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isWhite ? Colors.white : AppColor.primary,
+                  width: 2,
+                ),
+                color: AppColor.cardDark,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: player.playerPhoto != null
+                    ? Image.network(
+                        player.playerPhoto!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
+            ),
+            Positioned(
+              right: -5,
+              top: -5,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${player.number ?? ''}',
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
               ),
             ),
             if (hasYellow || hasRed)
               Positioned(
-                right: 0,
+                right: -8,
+                bottom: 10,
                 child: SvgPicture.asset(
                   Assets.yellowCard,
-                  width: 8,
+                  width: 10,
                   color: hasRed ? Colors.redAccent : null,
                 ),
               ),
             if (hasGoal)
               Positioned(
-                left: 0,
+                left: -8,
+                bottom: 10,
                 child: SvgPicture.asset(
                   Assets.soccer,
-                  width: 13,
-                  color: isWhite ? AppColor.background : null,
+                  width: 12,
                 ),
               ),
           ],
         ),
-        const Text(
-          'Mouad zizi',
-          style: TextStyle(fontSize: 13),
+        const Gap(4),
+        SizedBox(
+          width: 60,
+          child: Text(
+            player.player.split(' ').last,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, shadows: [
+              Shadow(color: Colors.black, blurRadius: 2, offset: Offset(1, 1))
+            ]),
+          ),
         ),
       ],
     );
   }
+
+  Widget _buildPlaceholder() {
+    return const CircleAvatar(
+      backgroundColor: AppColor.info,
+      child: Icon(Icons.person, color: Colors.white54, size: 20),
+    );
+  }
 }
+

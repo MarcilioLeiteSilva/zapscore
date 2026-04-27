@@ -33,14 +33,26 @@ export class CompetitionsService {
   }
 
   async getTopScorers(leagueId: number, season: number) {
-    const cacheKey = `topscorers:${leagueId}:${season}`;
+    const cacheKey = `topscorers:local:${leagueId}:${season}`;
     const cached = await this.redis.getJson(cacheKey);
     if (cached) return cached;
 
-    const scorers = await this.apiFootball.getTopScorers({ league: leagueId, season });
-    
-    // Cache por 1 hora (artilharia muda com menos frequência)
-    if (scorers) {
+    const league = await this.prisma.league.findUnique({
+      where: { externalId: leagueId },
+    });
+
+    if (!league) return [];
+
+    const scorers = await this.prisma.scorer.findMany({
+      where: {
+        leagueId: league.id,
+        season,
+      },
+      orderBy: { rank: 'asc' },
+    });
+
+    // Cache por 1 hora
+    if (scorers.length > 0) {
       await this.redis.setJson(cacheKey, scorers, 3600);
     }
     

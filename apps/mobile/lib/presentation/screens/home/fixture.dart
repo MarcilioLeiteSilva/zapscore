@@ -86,6 +86,10 @@ class FixturePage extends StatelessWidget {
                     return Center(child: Text(state.message));
                   }
                   if (state is HomeLoaded) {
+                    final List<HomeCompetition> displayCompetitions = state.competitions.where((c) => c.matches.isNotEmpty).toList();
+                    if (displayCompetitions.isEmpty) {
+                      return const Center(child: Text('Sem jogos hoje'));
+                    }
                     return ListView.separated(
                       padding: const EdgeInsets.only(
                         left: 10,
@@ -93,11 +97,11 @@ class FixturePage extends StatelessWidget {
                         bottom: 120,
                       ),
                       itemBuilder: (_, i) {
-                        final comp = state.competitions[i];
+                        final comp = displayCompetitions[i];
                         return CardGroupFixtureItem(competition: comp);
                       },
                       separatorBuilder: (_, i) => const Gap(20),
-                      itemCount: state.competitions.length,
+                      itemCount: displayCompetitions.length,
                     );
                   }
                   return const SizedBox();
