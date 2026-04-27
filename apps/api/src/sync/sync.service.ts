@@ -24,29 +24,28 @@ export class SyncService {
   }
 
   async bootstrap(leagueId?: number, season?: number) {
-    const targetLeague = leagueId || this.defaultLeagueId;
+    const targetLeagues = leagueId ? [leagueId] : SUPPORTED_COMPETITIONS.map(c => c.externalId);
     const targetSeason = season || this.defaultSeason;
 
-    this.logger.log(`Starting full bootstrap for League ${targetLeague} Season ${targetSeason}`);
+    this.logger.log(`Starting full bootstrap for leagues: ${targetLeagues.join(', ')} Season ${targetSeason}`);
 
-    const resLeague = await this.syncLeague(targetLeague, targetSeason);
-    const resTeams = await this.syncTeams(targetLeague, targetSeason);
-    const resFixtures = await this.syncFixtures(targetLeague, targetSeason);
-    const resStandings = await this.syncStandings(targetLeague, targetSeason);
-    const resScorers = await this.syncScorers(targetLeague, targetSeason);
+    for (const id of targetLeagues) {
+      try {
+        await this.syncLeague(id, targetSeason);
+        await this.syncTeams(id, targetSeason);
+        await this.syncFixtures(id, targetSeason);
+        await this.syncStandings(id, targetSeason);
+        await this.syncScorers(id, targetSeason);
+      } catch (err) {
+        this.logger.error(`Error bootstrapping league ${id}: ${err.message}`);
+      }
+    }
 
     return {
       success: true,
       scope: {
-        leagueId: targetLeague,
+        leagues: targetLeagues,
         season: targetSeason,
-      },
-      steps: {
-        league: { ok: true, processed: resLeague.count },
-        teams: { ok: true, processed: resTeams.count },
-        fixtures: { ok: true, processed: resFixtures.count },
-        standings: { ok: true, processed: resStandings.count },
-        scorers: { ok: true, processed: resScorers.count },
       },
       finishedAt: new Date().toISOString(),
     };
