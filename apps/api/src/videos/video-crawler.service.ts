@@ -37,32 +37,42 @@ export class VideoCrawlerService {
   }
 
   private async crawlVideosForQuery(query: string, ids: { leagueId?: string; teamId?: string }) {
+    this.logger.debug(`Crawling videos for query: ${query}`);
     try {
-      // Buscamos especificamente por youtube e termos de futebol
-      const searchQuery = `${query} melhores momentos gols youtube`;
-      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+      // Query otimizada para encontrar vídeos do YouTube
+      const searchQuery = `${query} futebol melhores momentos gols`;
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}+site:youtube.com&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       
       const response = await firstValueFrom(this.http.get(url));
       const xml = response.data;
 
       const items = this.parseRss(xml);
+      this.logger.debug(`Found ${items.length} potential videos for ${query}`);
       
+      let savedCount = 0;
       for (const item of items) {
-        // Apenas vídeos do YouTube
-        if (!item.link.includes('youtube.com') && !item.link.includes('youtu.be')) continue;
+        if (!item.link) continue;
 
-        await this.prisma.video.upsert({
-          where: { videoUrl: item.link },
-          update: { thumbnailUrl: item.thumbnailUrl }, 
-          create: {
-            title: item.title,
-            description: item.description,
-            thumbnailUrl: item.thumbnailUrl,
-            videoUrl: item.link,
-            createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-            ...ids
-          }
-        });
+        try {
+          await this.prisma.video.upsert({
+            where: { videoUrl: item.link },
+            update: { thumbnailUrl: item.thumbnailUrl }, 
+            create: {
+              title: item.title,
+              description: item.description,
+              thumbnailUrl: item.thumbnailUrl,
+              videoUrl: item.link,
+              createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+              ...ids
+            }
+          });
+          savedCount++;
+        } catch (e) {
+          // Ignorar duplicados ou erros de inserção
+        }
+      }
+      if (savedCount > 0) {
+        this.logger.log(`Saved ${savedCount} videos for ${query}`);
       }
     } catch (err) {
       this.logger.error(`Error crawling videos for ${query}: ${err.message}`);
@@ -77,20 +87,35 @@ export class VideoCrawlerService {
     while ((match = itemRegex.exec(xml)) !== null) {
       const content = match[1];
       const description = this.extractTag(content, 'description');
+      const title = this.extractTag(content, 'title');
+      let link = this.extractTag(content, 'link');
       
-      // Tentar extrair thumbnail (Google News RSS costuma ter no img tag da descrição)
+      // Tentar extrair thumbnail e ID do YouTube da descrição
       const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
-      const thumbnailUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
+      let thumbnailUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
+
+      // Se a thumbnail for do YouTube, podemos extrair o ID real do vídeo
+      // Formatos comuns: i.ytimg.com/vi/ID/..., img.youtube.com/vi/ID/...
+      const ytIdMatch = /(?:vi\/|v=)([a-zA-Z0-9_-]{11})/.exec(thumbnailUrl || link);
+      
+      if (ytIdMatch) {
+        const videoId = ytIdMatch[1];
+        link = `https://www.youtube.com/watch?v=${videoId}`;
+        thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      } else if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
+        // Se não conseguimos identificar como YouTube, ignoramos
+        continue;
+      }
 
       items.push({
-        title: this.extractTag(content, 'title'),
-        link: this.extractTag(content, 'link'),
+        title: title.split(' - ')[0], // Limpar nome do canal no título
+        link: link,
         pubDate: this.extractTag(content, 'pubDate'),
         description: description.replace(/<[^>]*>?/gm, '').trim(),
         thumbnailUrl: thumbnailUrl,
       });
     }
-    return items.slice(0, 5);
+    return items.slice(0, 10);
   }
 
   private extractTag(content: string, tag: string) {
