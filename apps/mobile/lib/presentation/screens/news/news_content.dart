@@ -10,7 +10,6 @@ class NewsContentScreen extends StatefulWidget {
 
 class _NewsContentScreenState extends State<NewsContentScreen> {
   double _progress = 0;
-  InAppWebViewController? _webViewController;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +33,6 @@ class _NewsContentScreenState extends State<NewsContentScreen> {
               displayZoomControls: false,
             ),
             onWebViewCreated: (controller) {
-              _webViewController = controller;
             },
             onProgressChanged: (controller, progress) {
               setState(() {

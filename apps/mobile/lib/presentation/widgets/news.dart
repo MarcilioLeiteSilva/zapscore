@@ -66,12 +66,6 @@ class CardNewsItem extends StatelessWidget {
   final News? news;
   final Video? video;
 
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,12 +171,6 @@ class CardNewsCarouselItem extends StatelessWidget {
   final News? news;
   final Video? video;
 
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

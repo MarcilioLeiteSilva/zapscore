@@ -11,6 +11,7 @@ import 'package:zapscore/logic/models/league.dart';
 import 'package:zapscore/logic/models/team.dart';
 import 'package:zapscore/logic/models/fixture.dart';
 import 'package:zapscore/logic/models/video.dart';
+import 'package:zapscore/logic/models/news.dart';
 import '../presentation/screens/screens.dart';
 
 part 'colors.dart';
