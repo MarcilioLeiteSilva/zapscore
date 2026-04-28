@@ -13,21 +13,15 @@ export class VideoCrawlerService {
   ) {}
 
   async syncAllVideos() {
-    this.logger.log('Starting full video crawl from YouTube/Google RSS...');
+    this.logger.log('Starting full video crawl for monitored competitions...');
     
     try {
-      // 1. Sincronizar vídeos de competições
+      // 1. Sincronizar vídeos apenas de competições (evita ruído de times individuais)
       const leagues = await this.prisma.league.findMany();
+      this.logger.log(`Found ${leagues.length} leagues to crawl videos for.`);
+      
       for (const league of leagues) {
         await this.crawlVideosForQuery(league.name, { leagueId: league.id });
-      }
-
-      // 2. Sincronizar vídeos de clubes
-      const teams = await this.prisma.team.findMany({
-        where: { national: false }
-      });
-      for (const team of teams) {
-         await this.crawlVideosForQuery(team.name, { teamId: team.id });
       }
 
       this.logger.log('Video crawl finished successfully.');
@@ -39,8 +33,8 @@ export class VideoCrawlerService {
   private async crawlVideosForQuery(query: string, ids: { leagueId?: string; teamId?: string }) {
     this.logger.debug(`Crawling videos for query: ${query}`);
     try {
-      // Query otimizada para encontrar vídeos do YouTube
-      const searchQuery = `${query} futebol melhores momentos gols`;
+      // Query otimizada para encontrar vídeos exatos da competição no YouTube
+      const searchQuery = `futebol "${query}" melhores momentos gols`;
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}+site:youtube.com&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       
       const response = await firstValueFrom(this.http.get(url));
