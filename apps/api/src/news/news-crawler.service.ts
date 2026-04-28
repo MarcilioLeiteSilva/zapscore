@@ -24,25 +24,20 @@ export class NewsCrawlerService {
   ) {}
 
   /**
-   * Sincroniza notícias usando fontes diretas (Whitelist) e Google RSS como fallback
+   * Sincroniza notícias usando apenas fontes diretas (Whitelist)
+   * Eliminada a dependência do Google News para evitar retrabalho de decode.
    */
   async syncAllNews() {
-    this.logger.log('Starting Unified News Engine (Direct Sources + Discovery)...');
+    this.logger.log('Starting Clean News Engine (Direct Sources Only)...');
     
     try {
-      // 1. Sincronizar de fontes diretas (Mais estável e com imagem)
+      // Sincronizar apenas de fontes diretas (Estável, rápido e com imagem)
       for (const source of this.TRUSTED_SOURCES) {
         this.logger.log(`[SOURCE] Syncing from ${source.name}...`);
         await this.syncFromDirectRss(source);
       }
 
-      // 2. Sincronizar de competições via Google (Discovery)
-      const leagues = await this.prisma.league.findMany();
-      for (const league of leagues) {
-        await this.crawlNewsForQuery(league.name, { leagueId: league.id });
-      }
-
-      this.logger.log('Unified News Engine finished successfully.');
+      this.logger.log('Clean News Engine finished successfully.');
     } catch (err) {
       this.logger.error(`Global news sync failed: ${err.message}`);
     }
