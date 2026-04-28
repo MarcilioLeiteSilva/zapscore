@@ -158,7 +158,7 @@ export class NewsCrawlerService {
         const finalTitle = fullData?.title || item.title;
         const finalDescription = fullData?.description || item.description;
         const rawImage = fullData?.image || item.imageUrl || '';
-        const finalImage = this.cleanImageUrl(rawImage.trim()) || '';
+        let finalImage = this.cleanImageUrl(rawImage.trim()) || '';
         const finalSource = fullData?.source || source.name;
 
         // REGRA DE OURO: Se não tem imagem, DELETA e PULA.
@@ -173,6 +173,12 @@ export class NewsCrawlerService {
             }
           });
           continue;
+        }
+
+        // PROXY: Se a imagem for de um domínio que bloqueia hotlinking (ex: Trivela), usamos nosso proxy (APÓS VALIDAÇÃO)
+        const blockedDomains = ['trivela.com.br', 'media.trivela.com.br'];
+        if (finalImage && blockedDomains.some(d => finalImage.includes(d))) {
+          finalImage = `https://zapscore-zapscore-api.gtalg3.easypanel.host/news/proxy-image?url=${encodeURIComponent(finalImage)}`;
         }
 
         // CLASSIFICAÇÃO: Tenta encontrar time ou liga
