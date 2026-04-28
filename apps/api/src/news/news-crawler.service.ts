@@ -103,42 +103,35 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Resolve a URL real do Google News seguindo o redirecionamento
+   * Decodifica a URL real escondida no Base64 do Google News (Protobuf)
    */
   private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
-      console.log(`[RESOLVE] Attempting to unwrap: ${googleUrl.substring(0, 60)}...`);
-      const response = await firstValueFrom(this.http.get(googleUrl, { 
-        maxRedirects: 10,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Sec-Ch-Ua': '"Not/A)Brand";v="99", "Google Chrome";v="116", "Chromium";v="116"',
-          'Sec-Ch-Ua-Mobile': '?0',
-          'Sec-Ch-Ua-Platform': '"Windows"',
-          'Upgrade-Insecure-Requests': '1'
-        }
-      }));
+      const base64Part = googleUrl.split('articles/')[1].split('?')[0];
+      const buffer = Buffer.from(base64Part, 'base64');
       
-      let finalUrl = response.request.res.responseUrl || googleUrl;
+      // Converte para string e limpa caracteres de controle binários
+      const decodedStr = buffer.toString('binary');
       
-      // Se paramos no Google, o link real pode estar no HTML (meta refresh)
-      if (finalUrl.includes('google.com')) {
-          const $ = cheerio.load(response.data);
-          const metaRefresh = $('meta[http-equiv="refresh"]').attr('content');
-          if (metaRefresh && metaRefresh.includes('url=')) {
-              finalUrl = metaRefresh.split('url=')[1];
-              console.log(`[RESOLVE] Found link in meta-refresh: ${finalUrl}`);
-          }
+      // O link real sempre começa com http e termina antes de caracteres especiais do Protobuf
+      const match = decodedStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+)/);
+      
+      if (match) {
+        let realUrl = match[1];
+        // Limpeza final: remove qualquer caractere que não pertença a uma URL válida
+        realUrl = realUrl.replace(/[^\x20-\x7E]/g, ''); // Remove tudo que não é ASCII imprimível
+        realUrl = realUrl.split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0]; // Corta no primeiro caractere estranho
+        
+        console.log(`[DECODE] Success: ${realUrl}`);
+        return realUrl;
       }
-
-      console.log(`[RESOLVE] Success: ${finalUrl}`);
-      return finalUrl;
+      
+      console.log(`[DECODE] Failed to parse binary: ${googleUrl.substring(0, 50)}...`);
+      return googleUrl;
     } catch (e) {
-      console.log(`[RESOLVE] Error: ${e.message}`);
+      console.log(`[DECODE] Error: ${e.message}`);
       return googleUrl;
     }
   }
