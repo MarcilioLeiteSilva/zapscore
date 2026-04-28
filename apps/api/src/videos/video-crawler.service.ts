@@ -109,22 +109,22 @@ export class VideoCrawlerService {
       // Log de debug para o primeiro item
       if (totalFound === 1) {
         this.logger.debug(`DEBUG SAMPLE - Link: ${link}`);
-        this.logger.debug(`DEBUG SAMPLE - Desc: ${description.substring(0, 200)}`);
+        this.logger.debug(`DEBUG SAMPLE - Desc: ${description.substring(0, 500)}`);
       }
 
       // Tentar extrair thumbnail do YouTube
       const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
       let thumbnailUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
 
-      // Extração de ID do YouTube - SUPER AGRESSIVA
-      // Padrões: vi/ID, v=ID, embed/ID, shorts/ID, ou apenas o ID no final do link/descrição
-      // O ID do YouTube sempre tem 11 caracteres
-      const ytIdMatch = /(?:vi\/|v=|embed\/|shorts\/|youtube\.com\/watch\?v=|youtu\.be\/|articles\/)([a-zA-Z0-9_-]{11,})/.exec(thumbnailUrl || link || description);
+      // Extração de ID do YouTube - PRECISA
+      // Padrões: vi/ID, v=ID, embed/ID, shorts/ID, youtube.com/watch?v=ID, youtu.be/ID
+      // O ID do YouTube tem EXATAMENTE 11 caracteres e segue um padrão específico
+      const ytIdRegex = /(?:vi\/|v=|embed\/|shorts\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?=[^a-zA-Z0-9_-]|$)/;
+      const ytIdMatch = ytIdRegex.exec(thumbnailUrl || link || description);
       
       let videoId = null;
       if (ytIdMatch) {
-        // Pegamos apenas os primeiros 11 caracteres se o match for maior
-        videoId = ytIdMatch[1].substring(0, 11);
+        videoId = ytIdMatch[1];
         link = `https://www.youtube.com/watch?v=${videoId}`;
         thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
       } else if (link.includes('youtube.com') || link.includes('youtu.be')) {
@@ -137,8 +137,8 @@ export class VideoCrawlerService {
          }
       }
 
-      // Se não conseguimos um ID válido e o link não é explicitamente YouTube, ignoramos
-      if (!videoId && !link.includes('youtube.com') && !link.includes('youtu.be')) {
+      // Se não conseguimos um ID válido, ignoramos
+      if (!videoId) {
         continue;
       }
 
