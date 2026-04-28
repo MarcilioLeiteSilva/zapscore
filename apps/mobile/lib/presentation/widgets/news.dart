@@ -60,12 +60,18 @@ class CardStoryItem extends StatelessWidget {
     );
   }
 }
-
 class CardNewsItem extends StatelessWidget {
   const CardNewsItem({super.key, this.isVideo = false, this.news, this.video});
   final bool isVideo;
   final News? news;
   final Video? video;
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +81,13 @@ class CardNewsItem extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        context.pushNamed(isVideo ? screenWatchContent : screenNewsContent);
+        if (isVideo) {
+          context.pushNamed(screenWatchContent);
+        } else if (news?.externalUrl != null) {
+          _launchUrl(news!.externalUrl!);
+        } else {
+          context.pushNamed(screenNewsContent);
+        }
       },
       borderRadius: BorderRadius.circular(10),
       child: Ink(
@@ -120,17 +132,34 @@ class CardNewsItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
+                  if (news?.source != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        news!.source!.toUpperCase(),
+                        style: context.textTheme.labelSmall!.copyWith(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
                   Text(
                     title,
-                    maxLines: 3,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodySmall,
+                    style: context.textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600),
                   ),
-                  Text(
-                    date != null ? DateFormat('dd/MM/yyyy HH:mm').format(date) : '1 hour ago',
-                    style: context.textTheme.labelSmall!.copyWith(
-                      fontSize: 14,
-                    ),
+                  const Gap(4),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
+                      const Gap(4),
+                      Text(
+                        date != null ? DateFormat('dd/MM HH:mm').format(date) : 'Recently',
+                        style: context.textTheme.labelSmall,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -148,6 +177,13 @@ class CardNewsCarouselItem extends StatelessWidget {
   final News? news;
   final Video? video;
 
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
@@ -159,7 +195,13 @@ class CardNewsCarouselItem extends StatelessWidget {
       padding: const EdgeInsets.only(right: 5),
       child: InkWell(
         onTap: () {
-          context.pushNamed(isVideo ? screenWatchContent : screenNewsContent);
+          if (isVideo) {
+            context.pushNamed(screenWatchContent);
+          } else if (news?.externalUrl != null) {
+            _launchUrl(news!.externalUrl!);
+          } else {
+            context.pushNamed(screenNewsContent);
+          }
         },
         borderRadius: BorderRadius.circular(15),
         child: Column(
@@ -196,18 +238,33 @@ class CardNewsCarouselItem extends StatelessWidget {
                 ],
               ),
             ),
-            const Gap(5),
+            const Gap(8),
+            if (news?.source != null)
+              Text(
+                news!.source!.toUpperCase(),
+                style: context.textTheme.labelSmall!.copyWith(
+                  color: Theme.of(context).primaryColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              ),
+            const Gap(2),
             Text(
               title,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold),
             ),
-            const Gap(3),
-            Text(
-              date != null ? DateFormat('dd/MM/yyyy HH:mm').format(date) : '10 hours ago',
-              style: context.textTheme.labelSmall!.copyWith(
-                fontSize: 14,
-              ),
+            const Gap(4),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
+                const Gap(4),
+                Text(
+                  date != null ? DateFormat('dd/MM HH:mm').format(date) : 'Recently',
+                  style: context.textTheme.labelSmall,
+                ),
+              ],
             ),
           ],
         ),

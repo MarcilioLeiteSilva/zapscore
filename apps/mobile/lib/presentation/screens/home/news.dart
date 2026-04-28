@@ -30,7 +30,7 @@ class _NewsPageState extends State<NewsPage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => context.read<NewsCubit>().fetchNews(),
+        onRefresh: () => context.read<NewsCubit>().fetchNews(leagueId: selectedLeagueId),
         child: BlocBuilder<NewsCubit, NewsState>(
           builder: (context, state) {
             if (state is NewsLoading) {

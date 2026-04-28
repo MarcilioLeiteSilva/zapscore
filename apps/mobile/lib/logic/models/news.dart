@@ -7,6 +7,7 @@ class News {
   final String? author;
   final String? source;
   final String? content;
+  final String? externalUrl;
 
   News({
     required this.id,
@@ -17,6 +18,7 @@ class News {
     this.author,
     this.source,
     this.content,
+    this.externalUrl,
   });
 
   factory News.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class News {
       author: json['author'],
       source: json['source'],
       content: json['content'],
+      externalUrl: json['externalUrl'],
     );
   }
 }
