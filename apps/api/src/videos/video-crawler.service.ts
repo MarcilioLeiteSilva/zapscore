@@ -13,19 +13,34 @@ export class VideoCrawlerService {
   ) {}
 
   async syncAllVideos() {
-    this.logger.log('Starting full video crawl for monitored competitions...');
+    this.logger.log('Starting refined video crawl for 2026 season...');
     
     try {
       const leagues = await this.prisma.league.findMany();
       this.logger.log(`Found ${leagues.length} leagues to crawl videos for.`);
       
       for (const league of leagues) {
-        // Adicionamos o país para evitar ambiguidade (ex: Serie A do Brasil vs Itália)
+        // 1. Busca pela Competição 2026
         const countryContext = league.country ? ` ${league.country}` : '';
-        await this.crawlVideosForQuery(`${league.name}${countryContext}`, { leagueId: league.id });
+        await this.crawlVideosForQuery(`${league.name}${countryContext} 2026`, { leagueId: league.id });
+
+        // 2. Busca pelos Times da Competição 2026 (Melhores momentos e gols)
+        const teams = await this.prisma.team.findMany({
+          where: {
+            OR: [
+              { homeFixtures: { some: { leagueId: league.id } } },
+              { awayFixtures: { some: { leagueId: league.id } } }
+            ]
+          }
+        });
+
+        this.logger.debug(`Found ${teams.length} teams for league ${league.name}`);
+        for (const team of teams) {
+          await this.crawlVideosForQuery(`${team.name} 2026`, { leagueId: league.id, teamId: team.id });
+        }
       }
 
-      this.logger.log('Video crawl finished successfully.');
+      this.logger.log('Refined 2026 video crawl finished successfully.');
     } catch (err) {
       this.logger.error(`Global video crawl failed: ${err.message}`);
     }
