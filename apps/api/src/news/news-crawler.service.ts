@@ -144,9 +144,8 @@ export class NewsCrawlerService {
    */
   private async scrapeFullNewsData(url: string): Promise<{ title: string; description: string; image: string | null; source: string } | null> {
     try {
-      // Se não conseguimos decodificar a URL e ela ainda é do Google, tentamos escapar uma vez
       if (url.includes('google.com')) {
-          this.logger.debug(`[SCRAPE] Trying to escape Google: ${url}`);
+          console.log(`[SCRAPE] Escaping Google: ${url.substring(0, 50)}...`);
           const response = await firstValueFrom(this.http.get(url, { 
             timeout: 5000,
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' }
@@ -158,10 +157,11 @@ export class NewsCrawlerService {
           if (exitLink && !exitLink.includes('google.com')) {
               return this.scrapeFullNewsData(exitLink);
           }
-          return null; // Falhou em sair do Google
+          console.log(`[SCRAPE] Failed to escape Google`);
+          return null;
       }
 
-      this.logger.debug(`[SCRAPE] Visiting Source: ${url}`);
+      console.log(`[SCRAPE] Fetching Source: ${url}`);
       const response = await firstValueFrom(this.http.get(url, { 
         timeout: 8000,
         headers: {
@@ -171,20 +171,21 @@ export class NewsCrawlerService {
         }
       }));
       
-      const $ = cheerio.load(response.data);
+      const html = response.data;
+      console.log(`[SCRAPE] Received HTML: ${html.length} chars`);
       
-      // 1. Extrair Título
+      const $ = cheerio.load(html);
+      
       const title = $('meta[property="og:title"]').attr('content') || 
                     $('meta[name="twitter:title"]').attr('content') || 
                     $('title').text();
 
-      // 2. Extrair Descrição
       const description = $('meta[property="og:description"]').attr('content') || 
                           $('meta[name="twitter:description"]').attr('content') || 
                           $('meta[name="description"]').attr('content');
 
-      // 3. Extrair Imagem
       let image: string | null = null;
+      // JSON-LD deep search
       try {
         $('script[type="application/ld+json"]').each((_: any, el: any) => {
           const json = JSON.parse($(el).html() || '{}');
@@ -199,7 +200,6 @@ export class NewsCrawlerService {
               }
               if (obj.url) return findImg(obj.url);
               if (obj.image) return findImg(obj.image);
-              if (obj.thumbnailUrl) return findImg(obj.thumbnailUrl);
               return null;
           };
           image = findImg(json);
@@ -211,32 +211,15 @@ export class NewsCrawlerService {
       if (!image) {
         image = $('meta[property="og:image"]').attr('content') || 
                 $('meta[name="twitter:image"]').attr('content') ||
-                $('meta[name="twitter:image:src"]').attr('content') ||
-                $('link[rel="preload"][as="image"]').attr('href') ||
-                $('link[rel="image_src"]').attr('href') || null;
+                $('link[rel="preload"][as="image"]').attr('href') || null;
       }
 
-      // Fallback: tentar achar a maior imagem no corpo da notícia
-      if (!image) {
-        $('article img, .article img, .content img, main img').each((_: any, el: any) => {
-          const src = $(el).attr('src') || $(el).attr('data-src');
-          if (src && src.startsWith('http') && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar')) {
-            image = src;
-            return false; // Break
-          }
-          return true;
-        });
-      }
-
-      // 4. Extrair Fonte
       let source = $('meta[property="og:site_name"]').attr('content') || 
                      new URL(url).hostname.replace('www.', '');
       
       if (source.toLowerCase().includes('google')) source = '';
 
-      if (image && image.startsWith('//')) image = `https:${image}`;
-      
-      this.logger.debug(`[SCRAPE] Success: ${title}`);
+      console.log(`[SCRAPE] Found: Title=${!!title}, Image=${!!image}, Source=${source}`);
 
       return { 
         title: title?.trim() || '', 
@@ -245,7 +228,7 @@ export class NewsCrawlerService {
         source: source?.trim() || '' 
       };
     } catch (error) {
-      this.logger.debug(`[SCRAPE] Failed for ${url}: ${error.message}`);
+      console.log(`[SCRAPE] ERROR for ${url}: ${error.message}`);
       return null;
     }
   }
