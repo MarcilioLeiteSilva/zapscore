@@ -59,6 +59,15 @@ export class NewsCrawlerService {
       
       let newCount = 0;
       for (const item of items) {
+        // OTIMIZAÇÃO: Se já temos a notícia com imagem, não perdemos tempo com busca/scrape
+        const existing = await this.prisma.news.findUnique({
+          where: { externalUrl: item.link }
+        });
+        if (existing?.imageUrl) {
+          newCount++;
+          continue;
+        }
+
         // Decodifica a URL real antes de fazer o scraping (usando busca por título como fallback)
         const realUrl = await this.resolveGoogleNewsUrl(item.link, item.title, item.source);
         
@@ -103,94 +112,79 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Resolve a URL original buscando pelo título no Google (Primeiro) ou DuckDuckGo (Backup)
+   * Extrai a URL original diretamente do token CBMi (Base64/Protobuf)
+   * Técnica de extração de string pura do binário - À prova de bloqueio de IP.
+   */
+  private resolveByBase64(googleUrl: string): string | null {
+    try {
+      const token = googleUrl.split('articles/')[1]?.split('?')[0];
+      if (!token || !token.startsWith('CBM')) return null;
+
+      // Decodifica Base64 (Google usa o padrão URL-Safe)
+      const buffer = Buffer.from(token.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+      const decoded = buffer.toString('binary');
+      
+      // A URL aparece no meio do binário. Buscamos o padrão http
+      const match = decoded.match(/https?:\/\/[^\s\x00-\x1F\x7F-\x9F"<>\\^`{|}]+/);
+      
+      if (match) {
+        const url = match[0];
+        // Limpeza de caracteres residuais do Protobuf
+        const cleanUrl = url.replace(/[\x00-\x1F\x7F-\x9F].*$/, '');
+        if (cleanUrl.includes('.') && !cleanUrl.includes('google.com')) {
+          console.log(`[DECODE] SUCCESS: Found ${new URL(cleanUrl).hostname}`);
+          return cleanUrl;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Resolve a URL original buscando pelo título no Google (Backup)
    */
   private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
     const cleanTitle = title.split(' - ')[0].trim();
     const query = encodeURIComponent(`${cleanTitle} ${source || ''}`);
     
-    // TENTATIVA 1: GOOGLE SEARCH
     try {
-      console.log(`[SEARCH] Trying Google: ${cleanTitle}`);
-      const googleRes = await firstValueFrom(this.http.get(`https://www.google.com/search?q=${query}`, {
-        headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-          'Accept': 'text/html',
-          'Referer': 'https://www.google.com/'
-        },
-        timeout: 5000
-      }));
-
-      const $google = cheerio.load(googleRes.data);
-      // O Google costuma colocar os links em <a> dentro de h3 ou em estruturas específicas
-      let foundUrl: string | null = null;
-
-      $google('a').each((_, el) => {
-        const href = $google(el).attr('href');
-        if (href && href.startsWith('/url?q=')) {
-          const actualUrl = href.split('/url?q=')[1].split('&')[0];
-          const decoded = decodeURIComponent(actualUrl);
-          if (decoded.startsWith('http') && !decoded.includes('google.com')) {
-            foundUrl = decoded;
-            return false; // break
-          }
-        }
-        if (href && href.startsWith('http') && !href.includes('google.com') && !href.includes('webcache')) {
-          foundUrl = href;
-          return false; // break
-        }
-      });
-
-      if (foundUrl) {
-        console.log(`[SEARCH] Google SUCCESS: ${foundUrl}`);
-        return foundUrl;
-      }
-    } catch (e) {
-      console.log(`[SEARCH] Google Failed/Blocked: ${e.message}`);
-    }
-
-    // TENTATIVA 2: DUCKDUCKGO (Fallback estável)
-    try {
-      console.log(`[SEARCH] Trying DuckDuckGo Fallback...`);
-      const ddgRes = await firstValueFrom(this.http.get(`https://html.duckduckgo.com/html/?q=${query}`, {
+      console.log(`[SEARCH] Trying Fallback Search: ${cleanTitle}`);
+      const res = await firstValueFrom(this.http.get(`https://html.duckduckgo.com/html/?q=${query}`, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         timeout: 5000
       }));
-      
-      const $ddg = cheerio.load(ddgRes.data);
-      const firstLink = $ddg('a.result__a').first().attr('href');
-      
+      const $ = cheerio.load(res.data);
+      const firstLink = $('a.result__a').first().attr('href');
       if (firstLink) {
-        const url = firstLink.includes('uddg=') 
-          ? decodeURIComponent(firstLink.split('uddg=')[1].split('&')[0])
-          : firstLink;
-
-        if (url.startsWith('http') && !url.includes('google.com')) {
-          console.log(`[SEARCH] DuckDuckGo SUCCESS: ${url}`);
-          return url;
-        }
+        const url = firstLink.includes('uddg=') ? decodeURIComponent(firstLink.split('uddg=')[1].split('&')[0]) : firstLink;
+        if (url.startsWith('http') && !url.includes('google.com')) return url;
       }
     } catch (e) {
-      console.log(`[SEARCH] Search Engines Failed.`);
+      console.log(`[SEARCH] Fallback failed.`);
     }
-
     return null;
   }
 
   /**
-   * Resolve a URL original. Tenta batchexecute rápido, senao vai pra busca por título.
+   * Resolve a URL original. Tenta Decode Base64 (O mais rápido), senao busca por título.
    */
   private async resolveGoogleNewsUrl(googleUrl: string, title?: string, source?: string | null): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
-      // Tentativa 1: Busca pelo título (A mais robusta hoje)
+      // Tentativa 1: Decode Base64/Protobuf (Instantâneo e local)
+      const base64Url = this.resolveByBase64(googleUrl);
+      if (base64Url) return base64Url;
+
+      // Tentativa 2: Busca pelo título (Backup se o decode falhar)
       if (title) {
         const searchedUrl = await this.resolveBySearch(title, source);
         if (searchedUrl) return searchedUrl;
       }
 
-      // Tentativa 2: BatchExecute (como fallback)
+      // Tentativa 3: BatchExecute (Fallback final)
       const encodedUrl = googleUrl.split('articles/')[1]?.split('?')[0];
       const response = await firstValueFrom(this.http.get(googleUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }));
       const html = response.data;
