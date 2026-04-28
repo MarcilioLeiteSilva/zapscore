@@ -106,7 +106,7 @@ export class NewsCrawlerService {
    * Resolve a URL original buscando pelo título no buscador (DuckDuckGo HTML)
    * Esta é a forma mais estável de sair do domínio do Google News.
    */
-  private async resolveBySearch(title: string, source?: string): Promise<string | null> {
+  private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
     try {
       const query = encodeURIComponent(`${title} ${source || ''}`);
       console.log(`[SEARCH] Looking for original URL: ${title.substring(0, 30)}...`);
@@ -142,7 +142,7 @@ export class NewsCrawlerService {
   /**
    * Resolve a URL original. Tenta batchexecute rápido, senao vai pra busca por título.
    */
-  private async resolveGoogleNewsUrl(googleUrl: string, title?: string, source?: string): Promise<string> {
+  private async resolveGoogleNewsUrl(googleUrl: string, title?: string, source?: string | null): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
