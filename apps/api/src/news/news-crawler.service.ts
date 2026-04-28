@@ -113,6 +113,10 @@ export class NewsCrawlerService {
       const base64Part = googleUrl.split('articles/')[1].split('?')[0];
       const buffer = Buffer.from(base64Part.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
       
+      // Log para diagnóstico do binário
+      const decodedStr = buffer.toString('latin1');
+      console.log(`[DECODE] Binary Sample: ${decodedStr.substring(0, 100).replace(/[^\x20-\x7E]/g, '.')}`);
+
       // No Protobuf do Google News, a URL original geralmente segue o padrão:
       // [0x08, 0x01, 0x12, length, ...url...]
       let urlStartIndex = -1;
