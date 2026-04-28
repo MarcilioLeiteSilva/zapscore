@@ -49,29 +49,26 @@ export class VideoCrawlerService {
   private async crawlVideosForQuery(query: string, ids: { leagueId?: string; teamId?: string }) {
     this.logger.debug(`Crawling videos for query: ${query}`);
     try {
-      // Query 1: Mais específica
-      let searchQuery = `futebol ${query} melhores momentos gols`;
-      let url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}+site:youtube.com&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+      // Query 1: Focada em Gols e Melhores Momentos
+      let searchQuery = `site:youtube.com ${query} gols melhores momentos`;
+      let url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       
       let response = await firstValueFrom(this.http.get(url));
-      let xml = response.data;
-      let items = this.parseRss(xml);
+      let items = this.parseRss(response.data);
 
-      // Se não encontrar nada, tenta uma busca mais genérica (sem "melhores momentos")
+      // Query 2: Fallback se a primeira falhar
       if (items.length === 0) {
         this.logger.debug(`No specific results for ${query}, trying broader search...`);
-        searchQuery = `${query} futebol youtube`;
+        searchQuery = `site:youtube.com ${query} futebol`;
         url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
         response = await firstValueFrom(this.http.get(url));
-        xml = response.data;
-        items = this.parseRss(xml);
+        items = this.parseRss(response.data);
       }
-      this.logger.debug(`Found ${items.length} potential videos for ${query}`);
+      
+      this.logger.debug(`Found ${items.length} valid YouTube videos for ${query}`);
       
       let savedCount = 0;
       for (const item of items) {
-        if (!item.link) continue;
-
         try {
           await this.prisma.video.upsert({
             where: { videoUrl: item.link },
@@ -86,9 +83,7 @@ export class VideoCrawlerService {
             }
           });
           savedCount++;
-        } catch (e) {
-          // Ignorar duplicados ou erros de inserção
-        }
+        } catch (e) { }
       }
       if (savedCount > 0) {
         this.logger.log(`Saved ${savedCount} videos for ${query}`);
@@ -102,38 +97,45 @@ export class VideoCrawlerService {
     const items = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
+    let totalFound = 0;
 
     while ((match = itemRegex.exec(xml)) !== null) {
+      totalFound++;
       const content = match[1];
       const description = this.extractTag(content, 'description');
       const title = this.extractTag(content, 'title');
       let link = this.extractTag(content, 'link');
       
-      // Tentar extrair thumbnail e ID do YouTube da descrição
+      // Tentar extrair thumbnail do YouTube
       const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
       let thumbnailUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
 
-      // Se a thumbnail for do YouTube, podemos extrair o ID real do vídeo
-      // Formatos comuns: i.ytimg.com/vi/ID/..., img.youtube.com/vi/ID/...
-      const ytIdMatch = /(?:vi\/|v=)([a-zA-Z0-9_-]{11})/.exec(thumbnailUrl || link);
+      // Extração de ID do YouTube mais flexível
+      // Tenta na thumbnail, no link ou na descrição
+      const ytIdMatch = /(?:vi\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/.exec(thumbnailUrl || link || description);
       
       if (ytIdMatch) {
         const videoId = ytIdMatch[1];
         link = `https://www.youtube.com/watch?v=${videoId}`;
         thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
       } else if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
-        // Se não conseguimos identificar como YouTube, ignoramos
+        // Se for um link do Google News e não conseguirmos o ID do YT, não serve para o player
         continue;
       }
 
       items.push({
-        title: title.split(' - ')[0], // Limpar nome do canal no título
+        title: title.split(' - ')[0],
         link: link,
         pubDate: this.extractTag(content, 'pubDate'),
         description: description.replace(/<[^>]*>?/gm, '').trim(),
         thumbnailUrl: thumbnailUrl,
       });
     }
+    
+    if (totalFound > 0 && items.length === 0) {
+      this.logger.warn(`Found ${totalFound} RSS items but 0 were valid YouTube videos.`);
+    }
+
     return items.slice(0, 10);
   }
 
