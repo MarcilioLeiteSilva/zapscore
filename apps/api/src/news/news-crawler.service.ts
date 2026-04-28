@@ -196,11 +196,11 @@ export class NewsCrawlerService {
                           $('meta[name="description"]').attr('content');
 
       // 3. Extrair Imagem (A parte mais importante)
-      let image = null;
+      let image: string | null = null;
 
-      // Prioridade A: JSON-LD (Muitos sites usam para imagens de alta resolução)
+      // Prioridade A: JSON-LD
       try {
-        $('script[type="application/ld+json"]').each((_, el) => {
+        $('script[type="application/ld+json"]').each((_: any, el: any) => {
           const json = JSON.parse($(el).html() || '{}');
           if (json.image) {
             if (typeof json.image === 'string') image = json.image;
@@ -208,6 +208,7 @@ export class NewsCrawlerService {
             else if (json.image.url) image = json.image.url;
           }
           if (image) return false; // Break loop
+          return true;
         });
       } catch (e) {}
 
@@ -215,7 +216,7 @@ export class NewsCrawlerService {
       if (!image) {
         image = $('meta[property="og:image"]').attr('content') || 
                 $('meta[name="twitter:image"]').attr('content') ||
-                $('link[rel="image_src"]').attr('href');
+                $('link[rel="image_src"]').attr('href') || null;
       }
 
       // 4. Extrair Fonte
@@ -240,9 +241,6 @@ export class NewsCrawlerService {
     }
   }
 
-  /**
-   * Decode HTML entities comuns
-   */
   private decodeHtmlEntities(text: string): string {
     if (!text) return '';
     return text.replace(/&amp;/g, '&')
@@ -263,29 +261,7 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Decode HTML entities comuns
-   */
-  private decodeHtmlEntities(text: string): string {
-    if (!text) return '';
-    return text.replace(/&amp;/g, '&')
-               .replace(/&lt;/g, '<')
-               .replace(/&gt;/g, '>')
-               .replace(/&quot;/g, '"')
-               .replace(/&#39;/g, "'")
-               .replace(/&nbsp;/g, ' ')
-               .replace(/&ndash;/g, '-')
-               .replace(/&mdash;/g, '-');
-  }
-
-  private forceHighResGoogleImage(url: string): string {
-    if (url.includes('googleusercontent.com')) {
-      return url.split('=')[0] + '=s0';
-    }
-    return url;
-  }
-
-  /**
-   * Parser simples de RSS via Regex (Evita dependências extras)
+   * Parser simples de RSS via Regex
    */
   private parseRss(xml: string) {
     const items = [];
@@ -296,7 +272,6 @@ export class NewsCrawlerService {
       const content = match[1];
       const description = this.extractTag(content, 'description');
       
-      // Tentar extrair imagem da descrição (Google News coloca uma <img> lá)
       const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
       const imageUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
 
@@ -304,13 +279,12 @@ export class NewsCrawlerService {
         title: this.extractTag(content, 'title'),
         link: this.extractTag(content, 'link'),
         pubDate: this.extractTag(content, 'pubDate'),
-        description: description.replace(/<[^>]*>?/gm, '').trim(), // Limpar HTML da descrição
+        description: description.replace(/<[^>]*>?/gm, '').trim(),
         source: this.extractTag(content, 'source'),
         imageUrl: imageUrl,
       });
     }
-    // Limitamos a 5 notícias por busca para não sobrecarregar
-    return items.slice(0, 3); // Reduzi para 3 para compensar o tempo de fetch da imagem
+    return items.slice(0, 3);
   }
 
   private extractTag(content: string, tag: string) {
@@ -319,15 +293,7 @@ export class NewsCrawlerService {
     if (!match) return '';
     
     let text = match[1];
-    // Remove CDATA
     text = text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
-    // Decode HTML entities básicas
-    text = text.replace(/&amp;/g, '&')
-               .replace(/&lt;/g, '<')
-               .replace(/&gt;/g, '>')
-               .replace(/&quot;/g, '"')
-               .replace(/&#39;/g, "'");
-               
-    return text.trim();
+    return this.decodeHtmlEntities(text.trim());
   }
 }
