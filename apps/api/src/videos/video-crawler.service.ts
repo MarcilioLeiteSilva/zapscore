@@ -106,20 +106,39 @@ export class VideoCrawlerService {
       const title = this.extractTag(content, 'title');
       let link = this.extractTag(content, 'link');
       
+      // Log de debug para o primeiro item
+      if (totalFound === 1) {
+        this.logger.debug(`DEBUG SAMPLE - Link: ${link}`);
+        this.logger.debug(`DEBUG SAMPLE - Desc: ${description.substring(0, 200)}`);
+      }
+
       // Tentar extrair thumbnail do YouTube
       const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
       let thumbnailUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
 
-      // Extração de ID do YouTube mais flexível
-      // Tenta na thumbnail, no link ou na descrição
-      const ytIdMatch = /(?:vi\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/.exec(thumbnailUrl || link || description);
+      // Extração de ID do YouTube - SUPER AGRESSIVA
+      // Padrões: vi/ID, v=ID, embed/ID, shorts/ID, ou apenas o ID no final do link/descrição
+      // O ID do YouTube sempre tem 11 caracteres
+      const ytIdMatch = /(?:vi\/|v=|embed\/|shorts\/|youtube\.com\/watch\?v=|youtu\.be\/|articles\/)([a-zA-Z0-9_-]{11,})/.exec(thumbnailUrl || link || description);
       
+      let videoId = null;
       if (ytIdMatch) {
-        const videoId = ytIdMatch[1];
+        // Pegamos apenas os primeiros 11 caracteres se o match for maior
+        videoId = ytIdMatch[1].substring(0, 11);
         link = `https://www.youtube.com/watch?v=${videoId}`;
         thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-      } else if (!link.includes('youtube.com') && !link.includes('youtu.be')) {
-        // Se for um link do Google News e não conseguirmos o ID do YT, não serve para o player
+      } else if (link.includes('youtube.com') || link.includes('youtu.be')) {
+         // Se o link já é do youtube mas não pegou no regex, tentamos um fallback simples
+         const urlParts = link.split(/[v=/]/);
+         videoId = urlParts.find(p => p.length === 11);
+         if (videoId) {
+            link = `https://www.youtube.com/watch?v=${videoId}`;
+            thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+         }
+      }
+
+      // Se não conseguimos um ID válido e o link não é explicitamente YouTube, ignoramos
+      if (!videoId && !link.includes('youtube.com') && !link.includes('youtu.be')) {
         continue;
       }
 
@@ -128,7 +147,7 @@ export class VideoCrawlerService {
         link: link,
         pubDate: this.extractTag(content, 'pubDate'),
         description: description.replace(/<[^>]*>?/gm, '').trim(),
-        thumbnailUrl: thumbnailUrl,
+        thumbnailUrl: thumbnailUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null),
       });
     }
     
