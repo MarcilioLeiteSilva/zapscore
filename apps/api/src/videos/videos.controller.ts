@@ -6,7 +6,7 @@ export class VideosController {
   constructor(private readonly videosService: VideosService) {}
 
   @Get()
-  async findAll(@Query() query: { leagueId?: string; teamId?: string }) {
+  async findAll(@Query() query: { leagueId?: string; teamId?: string; limit?: string }) {
     return this.videosService.findAll(query);
   }
 

@@ -108,7 +108,6 @@ class _FixtureDetailsState extends State<FixtureDetails> {
                       const SummaryFixPage(),
                       ReportFixPage(
                         leagueId: currentFixture.leagueId,
-                        teamId: currentFixture.homeTeamId,
                       ),
                       const StatsFixPage(),
                       const LineupsFixPage(),

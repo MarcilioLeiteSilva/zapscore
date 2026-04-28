@@ -18,10 +18,10 @@ class VideoCubit extends Cubit<VideoState> {
   final ApiClient apiClient;
   VideoCubit(this.apiClient) : super(VideoInitial());
 
-  Future<void> fetchVideos({String? leagueId, String? teamId}) async {
+  Future<void> fetchVideos({String? leagueId, String? teamId, int limit = 100}) async {
     emit(VideoLoading());
     try {
-      final videos = await apiClient.getVideos(leagueId: leagueId, teamId: teamId);
+      final videos = await apiClient.getVideos(leagueId: leagueId, teamId: teamId, limit: limit);
       emit(VideoLoaded(videos));
     } catch (e) {
       emit(VideoError(e.toString()));

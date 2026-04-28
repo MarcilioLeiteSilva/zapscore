@@ -5,14 +5,17 @@ import { PrismaService } from '../prisma/prisma.service';
 export class VideosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(params: { leagueId?: string; teamId?: string }) {
-    const { leagueId, teamId } = params;
+  async findAll(params: { leagueId?: string; teamId?: string; limit?: string }) {
+    const { leagueId, teamId, limit } = params;
+    const take = limit ? parseInt(limit) : 100;
+    
     return this.prisma.video.findMany({
       where: {
         ...(leagueId && { leagueId }),
         ...(teamId && { teamId }),
       },
       orderBy: { createdAt: 'desc' },
+      take: take,
       include: {
         league: true,
         team: true,

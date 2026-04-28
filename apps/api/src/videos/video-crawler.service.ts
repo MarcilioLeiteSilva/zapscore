@@ -86,6 +86,28 @@ export class VideoCrawlerService {
 
       if (savedCount > 0) {
         this.logger.log(`Saved ${savedCount} videos for ${query}`);
+        
+        // Limpeza: Manter apenas os 100 mais recentes por liga para evitar inchaço no banco
+        if (ids.leagueId) {
+          const videoCount = await this.prisma.video.count({
+            where: { leagueId: ids.leagueId }
+          });
+
+          if (videoCount > 100) {
+            const videosToDelete = await this.prisma.video.findMany({
+              where: { leagueId: ids.leagueId },
+              orderBy: { createdAt: 'asc' },
+              take: videoCount - 100,
+            });
+
+            if (videosToDelete.length > 0) {
+              await this.prisma.video.deleteMany({
+                where: { id: { in: videosToDelete.map(v => v.id) } }
+              });
+              this.logger.debug(`Cleaned up ${videosToDelete.length} old videos for league ${ids.leagueId}`);
+            }
+          }
+        }
       }
     } catch (err) {
       this.logger.error(`Error crawling YouTube for ${query}: ${err.message}`);

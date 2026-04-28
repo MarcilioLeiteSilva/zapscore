@@ -36,10 +36,10 @@ class ApiClient {
     return [];
   }
 
-  Future<List<Video>> getVideos({String? leagueId, String? teamId}) async {
-    String url = '$baseUrl/videos';
-    if (leagueId != null) url += '?leagueId=$leagueId';
-    if (teamId != null) url += '${leagueId != null ? '&' : '?'}teamId=$teamId';
+  Future<List<Video>> getVideos({String? leagueId, String? teamId, int limit = 100}) async {
+    String url = '$baseUrl/videos?limit=$limit';
+    if (leagueId != null) url += '&leagueId=$leagueId';
+    if (teamId != null) url += '&teamId=$teamId';
 
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
