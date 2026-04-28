@@ -112,19 +112,122 @@ export class NewsCrawlerService {
       const parts = googleUrl.split('articles/');
       let base64Part = parts[1].split('?')[0];
       
+      // Limpeza de caracteres de preenchimento e ajuste de Base64Url
       base64Part = base64Part.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64Part.length % 4 !== 0) base64Part += '=';
+      
       const buffer = Buffer.from(base64Part, 'base64');
       const decoded = buffer.toString('binary'); 
       
-      const urlMatch = decoded.match(/(https?:\/\/[^\s\x00-\x1F\x7F]+)/);
+      // Regex sniper para achar a URL real ignorando o lixo binário do Protobuf
+      const urlMatch = decoded.match(/(https?:\/\/[a-zA-Z0-9\-\.\/\%\?\&\=\#\_\+]+)/);
       
       if (urlMatch) {
-        const cleanedUrl = urlMatch[1].replace(/[^\w\d\/\.\:\?\&\=\-\%\+_].*$/, '');
-        return cleanedUrl;
+        const cleanedUrl = urlMatch[1];
+        if (!cleanedUrl.includes('news.google.com')) {
+           this.logger.debug(`[DECODE] Found target: ${cleanedUrl}`);
+           return cleanedUrl;
+        }
       }
       return googleUrl;
     } catch (e) {
       return googleUrl;
+    }
+  }
+
+  /**
+   * Scraper Avançado via Cheerio: Extrai metadados profissionais (OG, Twitter, JSON-LD)
+   */
+  private async scrapeFullNewsData(url: string) {
+    try {
+      this.logger.debug(`[SCRAPE] Visiting: ${url}`);
+      const response = await firstValueFrom(this.http.get(url, { 
+        timeout: 8000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+          'Referer': 'https://www.google.com/'
+        }
+      }));
+      
+      const $ = cheerio.load(response.data);
+      let targetUrl = url;
+
+      // Se caímos em uma página do Google, tentamos achar o link de saída
+      if (url.includes('google.com')) {
+          const refreshLink = $('meta[http-equiv="refresh"]').attr('content');
+          if (refreshLink && refreshLink.includes('url=')) {
+              targetUrl = refreshLink.split('url=')[1];
+              this.logger.debug(`[REDIRECT] Found meta refresh: ${targetUrl}`);
+              return this.scrapeFullNewsData(targetUrl); // Tenta ler a página real
+          }
+          
+          // Procura o primeiro link que não seja do Google
+          const exitLink = $('a[href^="http"]').filter((_, el) => {
+              const href = $(el).attr('href') || '';
+              return !href.includes('google.com');
+          }).first().attr('href');
+
+          if (exitLink) {
+              this.logger.debug(`[REDIRECT] Found exit link: ${exitLink}`);
+              return this.scrapeFullNewsData(exitLink);
+          }
+
+          this.logger.warn(`[SCRAPE] Stuck on Google page: ${url}`);
+          return null; // Não extrai dados da página do Google
+      }
+      
+      // 1. Extrair Título
+      const title = $('meta[property="og:title"]').attr('content') || 
+                    $('meta[name="twitter:title"]').attr('content') || 
+                    $('title').text();
+
+      // 2. Extrair Descrição
+      const description = $('meta[property="og:description"]').attr('content') || 
+                          $('meta[name="twitter:description"]').attr('content') || 
+                          $('meta[name="description"]').attr('content');
+
+      // 3. Extrair Imagem
+      let image: string | null = null;
+      try {
+        $('script[type="application/ld+json"]').each((_: any, el: any) => {
+          const json = JSON.parse($(el).html() || '{}');
+          const findImg = (obj: any): string | null => {
+              if (!obj) return null;
+              if (typeof obj === 'string' && obj.startsWith('http')) return obj;
+              if (Array.isArray(obj)) return findImg(obj[0]);
+              if (obj.url) return obj.url;
+              if (obj.image) return findImg(obj.image);
+              return null;
+          };
+          image = findImg(json);
+          if (image) return false;
+          return true;
+        });
+      } catch (e) {}
+
+      if (!image) {
+        image = $('meta[property="og:image"]').attr('content') || 
+                $('meta[name="twitter:image"]').attr('content');
+      }
+
+      // 4. Extrair Fonte
+      const source = $('meta[property="og:site_name"]').attr('content') || 
+                     new URL(url).hostname.replace('www.', '');
+
+      if (image && image.startsWith('//')) image = `https:${image}`;
+      
+      this.logger.debug(`[SCRAPE] Success: ${title}`);
+
+      return { 
+        title: title?.trim(), 
+        description: description?.trim(), 
+        image, 
+        source: source?.trim() 
+      };
+    } catch (error) {
+      this.logger.debug(`[SCRAPE] Failed for ${url}: ${error.message}`);
+      return null;
     }
   }
 
@@ -164,81 +267,6 @@ export class NewsCrawlerService {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
     this.logger.log(`News Repairer finished. Total repaired: ${repairedCount}`);
-  }
-
-  /**
-   * Scraper Avançado via Cheerio: Extrai metadados profissionais (OG, Twitter, JSON-LD)
-   */
-  private async scrapeFullNewsData(url: string) {
-    try {
-      this.logger.debug(`[SCRAPE] Visiting: ${url}`);
-      const response = await firstValueFrom(this.http.get(url, { 
-        timeout: 8000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Referer': 'https://www.google.com/'
-        }
-      }));
-      
-      const $ = cheerio.load(response.data);
-      
-      // 1. Extrair Título
-      const title = $('meta[property="og:title"]').attr('content') || 
-                    $('meta[name="twitter:title"]').attr('content') || 
-                    $('title').text() || 
-                    $('h1').first().text();
-
-      // 2. Extrair Descrição
-      const description = $('meta[property="og:description"]').attr('content') || 
-                          $('meta[name="twitter:description"]').attr('content') || 
-                          $('meta[name="description"]').attr('content');
-
-      // 3. Extrair Imagem (A parte mais importante)
-      let image: string | null = null;
-
-      // Prioridade A: JSON-LD
-      try {
-        $('script[type="application/ld+json"]').each((_: any, el: any) => {
-          const json = JSON.parse($(el).html() || '{}');
-          if (json.image) {
-            if (typeof json.image === 'string') image = json.image;
-            else if (Array.isArray(json.image)) image = json.image[0];
-            else if (json.image.url) image = json.image.url;
-          }
-          if (image) return false; // Break loop
-          return true;
-        });
-      } catch (e) {}
-
-      // Prioridade B: OpenGraph / Twitter
-      if (!image) {
-        image = $('meta[property="og:image"]').attr('content') || 
-                $('meta[name="twitter:image"]').attr('content') ||
-                $('link[rel="image_src"]').attr('href') || null;
-      }
-
-      // 4. Extrair Fonte
-      const source = $('meta[property="og:site_name"]').attr('content') || 
-                     (url.startsWith('http') ? new URL(url).hostname.replace('www.', '') : null);
-
-      // Tratamento final da URL da imagem
-      if (image && image.startsWith('//')) image = `https:${image}`;
-      if (image && image.includes('googleusercontent.com')) image = this.forceHighResGoogleImage(image);
-
-      this.logger.debug(`[SCRAPE] Success: Title=${!!title}, Image=${!!image}`);
-
-      return { 
-        title: title?.trim(), 
-        description: description?.trim(), 
-        image, 
-        source: source?.trim() 
-      };
-    } catch (error) {
-      this.logger.debug(`[SCRAPE] Failed for ${url}: ${error.message}`);
-      return null;
-    }
   }
 
   private decodeHtmlEntities(text: string): string {
