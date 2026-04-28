@@ -253,7 +253,8 @@ export class NewsCrawlerService {
   /**
    * ROBÔ REPARADOR: Percorre as notícias do banco e tenta dar um "upgrade" nos dados
    */
-  async repairNewsData() {
+  async repairNewsData(): Promise<{ message: string; repaired: number; total: number }> {
+    console.log('[REPAIR] Starting News Repairer Robot...');
     this.logger.log('Starting News Repairer Robot...');
     
     const newsToRepair = await this.prisma.news.findMany({
@@ -261,12 +262,14 @@ export class NewsCrawlerService {
       take: 50
     });
 
-    this.logger.log(`Scanning ${newsToRepair.length} news items for potential repairs...`);
+    console.log(`[REPAIR] Found ${newsToRepair.length} items to process`);
+    this.logger.log(`Scanning ${newsToRepair.length} news items...`);
 
     let repairedCount = 0;
     for (const news of newsToRepair) {
       if (news.externalUrl) {
         const realUrl = this.decodeGoogleNewsUrl(news.externalUrl);
+        console.log(`[REPAIR] Decoded URL: ${realUrl.substring(0, 80)}`);
         const fullData = await this.scrapeFullNewsData(realUrl);
         
         if (fullData && (fullData.image || fullData.title)) {
@@ -280,12 +283,16 @@ export class NewsCrawlerService {
             }
           });
           repairedCount++;
-          this.logger.debug(`[REPAIR] Updated: ${fullData.title}`);
+          console.log(`[REPAIR] Updated: ${fullData.title?.substring(0, 60)}`);
         }
       }
       await new Promise(resolve => setTimeout(resolve, 300));
     }
-    this.logger.log(`News Repairer finished. Total repaired: ${repairedCount}`);
+
+    const msg = `Repair finished. Repaired ${repairedCount} of ${newsToRepair.length}`;
+    console.log(`[REPAIR] ${msg}`);
+    this.logger.log(msg);
+    return { message: msg, repaired: repairedCount, total: newsToRepair.length };
   }
 
   private decodeHtmlEntities(text: string): string {

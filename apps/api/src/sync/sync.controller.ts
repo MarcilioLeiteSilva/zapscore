@@ -85,7 +85,7 @@ export class SyncController {
   @Post('repair-news')
   async repairNews() {
     this.logger.log('Manual news repair triggered');
-    this.newsCrawler.repairNewsData(); // Roda em background
-    return { success: true, message: 'News repair process started in background' };
+    const result = await this.newsCrawler.repairNewsData();
+    return { success: true, ...result };
   }
 }
