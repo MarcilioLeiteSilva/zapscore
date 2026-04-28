@@ -142,7 +142,7 @@ export class NewsCrawlerService {
   /**
    * Scraper Avançado via Cheerio: Extrai metadados profissionais (OG, Twitter, JSON-LD)
    */
-  private async scrapeFullNewsData(url: string) {
+  private async scrapeFullNewsData(url: string): Promise<{ title: string; description: string; image: string | null; source: string } | null> {
     try {
       // Se não conseguimos decodificar a URL e ela ainda é do Google, tentamos escapar uma vez
       if (url.includes('google.com')) {
@@ -210,7 +210,7 @@ export class NewsCrawlerService {
 
       if (!image) {
         image = $('meta[property="og:image"]').attr('content') || 
-                $('meta[name="twitter:image"]').attr('content');
+                $('meta[name="twitter:image"]').attr('content') || null;
       }
 
       // 4. Extrair Fonte
