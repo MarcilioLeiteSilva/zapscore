@@ -81,4 +81,11 @@ export class SyncController {
     this.videoCrawler.syncAllVideos(); // Sem await para rodar em background
     return { success: true, message: 'Video sync started in background' };
   }
+
+  @Post('repair-news')
+  async repairNews() {
+    this.logger.log('Manual news repair triggered');
+    this.newsCrawler.repairNewsData(); // Roda em background
+    return { success: true, message: 'News repair process started in background' };
+  }
 }

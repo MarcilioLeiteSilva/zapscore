@@ -96,34 +96,85 @@ export class NewsCrawlerService {
   }
 
   /**
+   * ROBÔ REPARADOR: Percorre as notícias do banco e tenta dar um "upgrade" nos dados
+   * buscando informações diretamente no site de origem.
+   */
+  async repairNewsData() {
+    this.logger.log('Starting News Repairer Robot...');
+    
+    // Busca notícias que ainda têm imagem do Google ou estão incompletas
+    const newsToRepair = await this.prisma.news.findMany({
+      where: {
+        OR: [
+          { imageUrl: { contains: 'googleusercontent.com' } },
+          { imageUrl: null },
+          { source: { contains: 'Google News' } }
+        ]
+      },
+      take: 50 // Processa em lotes para não sobrecarregar
+    });
+
+    this.logger.log(`Found ${newsToRepair.length} news items to repair.`);
+
+    for (const news of newsToRepair) {
+      const fullData = await this.scrapeFullNewsData(news.externalUrl);
+      if (fullData) {
+        await this.prisma.news.update({
+          where: { id: news.id },
+          data: {
+            title: fullData.title || news.title,
+            description: fullData.description || news.description,
+            imageUrl: fullData.image || news.imageUrl,
+            source: fullData.source || news.source
+          }
+        });
+        this.logger.debug(`Repaired news: ${fullData.title}`);
+      }
+      // Pequena pausa para evitar bloqueios por excesso de requisições
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    this.logger.log('News Repairer finished task.');
+  }
+
+  /**
    * Scraper Avançado: Acessa a URL e extrai todos os dados via OpenGraph
    */
   private async scrapeFullNewsData(url: string) {
     try {
+      this.logger.debug(`Scraping source: ${url}`);
       const response = await firstValueFrom(this.http.get(url, { 
-        timeout: 5000,
+        timeout: 7000, // Aumentado para 7s para sites lentos
         headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1'
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
         }
       }));
       
       const html = response.data;
       
-      // Extração de dados via Regex (OpenGraph e Twitter Cards)
+      // Extração de dados via Regex (Reforçado)
       const getMeta = (property: string) => {
-        const regex = new RegExp(`<meta[^>]+(?:property|name)="${property}"[^>]+content="([^">]+)"`, 'i');
-        const regexAlt = new RegExp(`<meta[^>]+content="([^">]+)"[^>]+(?:property|name)="${property}"`, 'i');
-        const match = regex.exec(html) || regexAlt.exec(html);
-        return match ? this.decodeHtmlEntities(match[1]) : null;
+        const regexPatterns = [
+          new RegExp(`<meta[^>]+(?:property|name)="${property}"[^>]+content="([^">]+)"`, 'i'),
+          new RegExp(`<meta[^>]+content="([^">]+)"[^>]+(?:property|name)="${property}"`, 'i'),
+          new RegExp(`<meta[^>]+(?:property|name)='${property}'[^>]+content='([^'>]+)'`, 'i')
+        ];
+
+        for (const pattern of regexPatterns) {
+          const match = pattern.exec(html);
+          if (match) return this.decodeHtmlEntities(match[1]);
+        }
+        return null;
       };
 
-      const title = getMeta('og:title') || getMeta('twitter:title');
+      const title = getMeta('og:title') || getMeta('twitter:title') || getMeta('title');
       const description = getMeta('og:description') || getMeta('twitter:description');
       let image = getMeta('og:image') || getMeta('twitter:image');
       const source = getMeta('og:site_name') || new URL(url).hostname.replace('www.', '');
 
       if (image && image.startsWith('//')) image = `https:${image}`;
-      if (image) image = this.forceHighResGoogleImage(image);
+      if (image && image.includes('googleusercontent.com')) image = this.forceHighResGoogleImage(image);
 
       return { title, description, image, source };
     } catch (error) {
@@ -136,12 +187,15 @@ export class NewsCrawlerService {
    * Decode HTML entities comuns
    */
   private decodeHtmlEntities(text: string): string {
+    if (!text) return '';
     return text.replace(/&amp;/g, '&')
                .replace(/&lt;/g, '<')
                .replace(/&gt;/g, '>')
                .replace(/&quot;/g, '"')
                .replace(/&#39;/g, "'")
-               .replace(/&nbsp;/g, ' ');
+               .replace(/&nbsp;/g, ' ')
+               .replace(/&ndash;/g, '-')
+               .replace(/&mdash;/g, '-');
   }
 
   private forceHighResGoogleImage(url: string): string {
