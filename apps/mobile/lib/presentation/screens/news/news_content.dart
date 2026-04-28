@@ -31,6 +31,21 @@ class _NewsContentScreenState extends State<NewsContentScreen> {
               javaScriptEnabled: true,
               supportZoom: true,
               displayZoomControls: false,
+              contentBlockers: [
+                // Bloquear domínios de anúncios conhecidos
+                ContentBlocker(
+                  trigger: ContentBlockerTrigger(urlFilter: ".*googleadservices.*|.*doubleclick.*|.*googlesyndication.*|.*adservice.*|.*analytics.*|.*adsafeprotected.*|.*outbrain.*|.*taboola.*"),
+                  action: ContentBlockerAction(type: ContentBlockerActionType.BLOCK),
+                ),
+                // Esconder elementos de anúncios via CSS
+                ContentBlocker(
+                  trigger: ContentBlockerTrigger(urlFilter: ".*"),
+                  action: ContentBlockerAction(
+                    type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+                    selector: ".advertisement, .ads, .adsbygoogle, .banner, .newsletter, .social-share, .comments, #ads, #banner",
+                  ),
+                ),
+              ],
             ),
             onWebViewCreated: (controller) {
             },
