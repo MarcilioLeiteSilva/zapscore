@@ -16,12 +16,13 @@ export class VideoCrawlerService {
     this.logger.log('Starting full video crawl for monitored competitions...');
     
     try {
-      // 1. Sincronizar vídeos apenas de competições (evita ruído de times individuais)
       const leagues = await this.prisma.league.findMany();
       this.logger.log(`Found ${leagues.length} leagues to crawl videos for.`);
       
       for (const league of leagues) {
-        await this.crawlVideosForQuery(league.name, { leagueId: league.id });
+        // Adicionamos o país para evitar ambiguidade (ex: Serie A do Brasil vs Itália)
+        const countryContext = league.country ? ` ${league.country}` : '';
+        await this.crawlVideosForQuery(`${league.name}${countryContext}`, { leagueId: league.id });
       }
 
       this.logger.log('Video crawl finished successfully.');
@@ -33,14 +34,23 @@ export class VideoCrawlerService {
   private async crawlVideosForQuery(query: string, ids: { leagueId?: string; teamId?: string }) {
     this.logger.debug(`Crawling videos for query: ${query}`);
     try {
-      // Query otimizada para encontrar vídeos exatos da competição no YouTube
-      const searchQuery = `futebol "${query}" melhores momentos gols`;
-      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}+site:youtube.com&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+      // Query 1: Mais específica
+      let searchQuery = `futebol ${query} melhores momentos gols`;
+      let url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}+site:youtube.com&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       
-      const response = await firstValueFrom(this.http.get(url));
-      const xml = response.data;
+      let response = await firstValueFrom(this.http.get(url));
+      let xml = response.data;
+      let items = this.parseRss(xml);
 
-      const items = this.parseRss(xml);
+      // Se não encontrar nada, tenta uma busca mais genérica (sem "melhores momentos")
+      if (items.length === 0) {
+        this.logger.debug(`No specific results for ${query}, trying broader search...`);
+        searchQuery = `${query} futebol youtube`;
+        url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+        response = await firstValueFrom(this.http.get(url));
+        xml = response.data;
+        items = this.parseRss(xml);
+      }
       this.logger.debug(`Found ${items.length} potential videos for ${query}`);
       
       let savedCount = 0;
