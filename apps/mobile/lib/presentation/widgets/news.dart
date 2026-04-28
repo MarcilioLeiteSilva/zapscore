@@ -90,13 +90,24 @@ class CardNewsItem extends StatelessWidget {
           children: [
             Stack(
               children: [
-                SizedBox(
-                  width: 130,
-                  height: 100,
+                Container(
+                  width: 100, // Diminuído de 130 para 100
+                  height: 80,  // Diminuído de 100 para 80
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Theme.of(context).cardColor,
+                  ),
                   child: image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Image.network(image, fit: BoxFit.cover),
+                          child: Image.network(
+                            image, 
+                            fit: (image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                            },
+                          ),
                         )
                       : const CardNoImage(radius: 10),
                 ),
@@ -195,14 +206,19 @@ class CardNewsCarouselItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            SizedBox(
+              height: context.height * .25, // Reduzido de .3 para .25
               child: Stack(
                 children: [
                   image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(15),
-                          child: Image.network(image,
-                              fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                          child: Image.network(
+                            image,
+                            fit: (image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         )
                       : const CardNoImage(radius: 15),
                   if (isVideo)
