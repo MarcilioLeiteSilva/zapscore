@@ -71,12 +71,20 @@ export class NewsCrawlerService {
         const fullData = await this.scrapeFullNewsData(item.link);
         
         const finalTitle = fullData?.title || item.title;
-        const finalImage = fullData?.image || item.imageUrl;
+        const finalImage = (fullData?.image || item.imageUrl || '').trim();
         const finalSource = fullData?.source || source.name;
 
-        // REGRA: Sem imagem válida, deletamos se existir e pulamos
+        // REGRA DE OURO: Se não tem imagem, DELETA e PULA.
         if (!this.isValidImage(finalImage)) {
-          await this.prisma.news.deleteMany({ where: { externalUrl: item.link } });
+          this.logger.warn(`[PURGE] News without image deleted: ${finalTitle}`);
+          await this.prisma.news.deleteMany({
+            where: { 
+              OR: [
+                { externalUrl: item.link },
+                { title: finalTitle }
+              ]
+            }
+          });
           continue;
         }
 
@@ -85,7 +93,8 @@ export class NewsCrawlerService {
           update: { 
             title: finalTitle,
             imageUrl: finalImage,
-            source: finalSource
+            source: finalSource,
+            author: null // Forçamos null para evitar lixo no banco
           }, 
           create: {
             title: finalTitle,
@@ -93,6 +102,7 @@ export class NewsCrawlerService {
             source: finalSource,
             imageUrl: finalImage,
             externalUrl: item.link,
+            author: null,
             createdAt: item.pubDate ? new Date(item.pubDate) : new Date()
           }
         });
@@ -217,10 +227,19 @@ export class NewsCrawlerService {
     if (!url.startsWith('http')) return false;
     
     const lowerUrl = url.toLowerCase();
-    // Lista de padrões de "não-imagem" ou placeholders comuns
-    const blackList = ['placeholder', 'logo-ge', 'favicon', 'icon', 'default-image', 'spacer.gif'];
     
-    return !blackList.some(pattern => lowerUrl.includes(pattern));
+    // 1. Blacklist: Padrões de "não-imagem" ou placeholders
+    const blackList = ['placeholder', 'logo-ge', 'favicon', 'icon', 'default-image', 'spacer.gif'];
+    if (blackList.some(pattern => lowerUrl.includes(pattern))) return false;
+
+    // 2. Whitelist: Deve conter uma extensão de imagem válida
+    const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg'];
+    const hasImageExtension = extensions.some(ext => lowerUrl.includes(ext));
+
+    // 3. Caso especial: Links de imagem de CDNs que usam parâmetros (ex: ?format=jpg ou /image/123)
+    const isCdnImage = lowerUrl.includes('/image/') || lowerUrl.includes('/img/') || lowerUrl.includes('static');
+
+    return hasImageExtension || isCdnImage;
   }
 
   private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
