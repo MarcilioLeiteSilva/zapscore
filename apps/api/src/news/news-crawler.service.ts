@@ -8,37 +8,84 @@ import * as cheerio from 'cheerio';
 export class NewsCrawlerService {
   private readonly logger = new Logger(NewsCrawlerService.name);
 
+  private readonly TRUSTED_SOURCES = [
+    { name: 'GE', url: 'https://ge.globo.com/rss/ge/futebol/', domain: 'ge.globo.com' },
+    { name: 'UOL', url: 'https://noticias.uol.com.br/esporte/futebol/index.xml', domain: 'uol.com.br' },
+    { name: 'CBF', url: 'https://www.cbf.com.br/futebol-brasileiro/noticias/rss', domain: 'cbf.com.br' },
+    { name: 'Lance!', url: 'https://www.lance.com.br/rss/futebol', domain: 'lance.com.br' },
+    { name: 'Gazeta Esportiva', url: 'https://www.gazetaesportiva.com/feed/', domain: 'gazetaesportiva.com' },
+    { name: 'Terra', url: 'https://www.terra.com.br/rss/esportes/futebol/', domain: 'terra.com.br' },
+    { name: 'Itatiaia', url: 'https://www.itatiaia.com.br/rss', domain: 'itatiaia.com.br' }
+  ];
+
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
 
   /**
-   * Sincroniza notícias para todas as competições e times ativos
+   * Sincroniza notícias usando fontes diretas (Whitelist) e Google RSS como fallback
    */
   async syncAllNews() {
-    this.logger.log('Starting full news crawl from Google News RSS...');
+    this.logger.log('Starting Unified News Engine (Direct Sources + Discovery)...');
     
     try {
-      // 1. Sincronizar notícias de competições
+      // 1. Sincronizar de fontes diretas (Mais estável e com imagem)
+      for (const source of this.TRUSTED_SOURCES) {
+        this.logger.log(`[SOURCE] Syncing from ${source.name}...`);
+        await this.syncFromDirectRss(source);
+      }
+
+      // 2. Sincronizar de competições via Google (Discovery)
       const leagues = await this.prisma.league.findMany();
-      this.logger.log(`Found ${leagues.length} leagues to crawl news for.`);
       for (const league of leagues) {
         await this.crawlNewsForQuery(league.name, { leagueId: league.id });
       }
 
-      // 2. Sincronizar notícias de clubes
-      const teams = await this.prisma.team.findMany({
-        where: { national: false } // Focar em clubes primeiro
-      });
-      this.logger.log(`Found ${teams.length} teams to crawl news for.`);
-      for (const team of teams) {
-         await this.crawlNewsForQuery(team.name, { teamId: team.id });
-      }
-
-      this.logger.log('News crawl finished successfully.');
+      this.logger.log('Unified News Engine finished successfully.');
     } catch (err) {
-      this.logger.error(`Global news crawl failed: ${err.message}`);
+      this.logger.error(`Global news sync failed: ${err.message}`);
+    }
+  }
+
+  /**
+   * Coleta notícias diretamente de um RSS de portal (Sem redirecionamento do Google)
+   */
+  private async syncFromDirectRss(source: { name: string; url: string; domain: string }) {
+    try {
+      const response = await firstValueFrom(this.http.get(source.url, { timeout: 10000 }));
+      const items = this.parseRss(response.data);
+      this.logger.log(`[RSS] Found ${items.length} items for ${source.name}`);
+
+      for (const item of items) {
+        // Para RSS direto, o link já é o final. Fazemos apenas o scrape da imagem.
+        const fullData = await this.scrapeFullNewsData(item.link);
+        
+        const finalTitle = fullData?.title || item.title;
+        const finalImage = fullData?.image || item.imageUrl;
+        const finalSource = fullData?.source || source.name;
+
+        if (!finalTitle || !finalImage) continue; // Só salvamos se tiver imagem
+
+        await this.prisma.news.upsert({
+          where: { externalUrl: item.link },
+          update: { 
+            title: finalTitle,
+            imageUrl: finalImage,
+            source: finalSource
+          }, 
+          create: {
+            title: finalTitle,
+            description: fullData?.description || item.description,
+            source: finalSource,
+            imageUrl: finalImage,
+            externalUrl: item.link,
+            createdAt: item.pubDate ? new Date(item.pubDate) : new Date()
+          }
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`[SOURCE] Failed to sync from ${source.name}: ${err.message}`);
     }
   }
 
