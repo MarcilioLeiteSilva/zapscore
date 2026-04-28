@@ -91,18 +91,22 @@ class CardNewsItem extends StatelessWidget {
             Stack(
               children: [
                 Container(
-                  width: 60,  // Reduzido 50%
-                  height: 50, // Reduzido 50%
+                  width: 120, // Voltado para tamanho grande
+                  height: 90, 
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                     color: Theme.of(context).cardColor,
                   ),
                   child: image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            image, 
-                            fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
+                          child: Padding(
+                            padding: (image.contains('logo') || image.contains('badge')) 
+                                ? const EdgeInsets.all(20.0) // Ícone pequeno se for logo
+                                : EdgeInsets.zero,
+                            child: Image.network(
+                              image, 
+                              fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
                             loadingBuilder: (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return const Center(child: CircularProgressIndicator(strokeWidth: 2));
@@ -207,17 +211,22 @@ class CardNewsCarouselItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: context.height * .18, // Reduzido para .18 (aprox 30% de redução)
+              height: context.height * .30, // Voltado para tamanho grande (30%)
               child: Stack(
                 children: [
                   image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(15),
-                          child: Image.network(
-                            image,
-                            fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
-                            width: double.infinity,
-                            height: double.infinity,
+                          child: Padding(
+                            padding: (image != null && (image.contains('logo') || image.contains('badge')))
+                                ? const EdgeInsets.all(40.0) // Ícone bem pequeno e centralizado no banner
+                                : EdgeInsets.zero,
+                            child: Image.network(
+                              image,
+                              fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
                           ),
                         )
                       : const CardNoImage(radius: 15),
