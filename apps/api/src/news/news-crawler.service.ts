@@ -332,7 +332,7 @@ export class NewsCrawlerService {
           console.log(`[REPAIR] Scraper returned NULL for: ${realUrl}`);
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     const msg = `Repair finished. Repaired ${repairedCount} of ${newsToRepair.length}`;
