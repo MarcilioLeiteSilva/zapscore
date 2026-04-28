@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, Post, Body, Put, Delete, Res, Logger } from '@nestjs/common';
 import { NewsService } from './news.service';
 import { HttpService } from '@nestjs/axios';
-import { Response } from 'express';
+import * as express from 'express';
 import { firstValueFrom } from 'rxjs';
 
 @Controller('news')
@@ -14,7 +14,7 @@ export class NewsController {
   ) {}
 
   @Get('proxy-image')
-  async proxyImage(@Query('url') url: string, @Res() res: Response) {
+  async proxyImage(@Query('url') url: string, @Res() res: express.Response) {
     if (!url) return res.status(400).send('URL is required');
 
     try {
