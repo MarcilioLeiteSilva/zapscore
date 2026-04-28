@@ -203,9 +203,10 @@ export class NewsCrawlerService {
       const response = await firstValueFrom(this.http.get(url, { 
         timeout: 8000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9',
+          'Referer': 'https://www.google.com/'
         }
       }));
       
@@ -268,7 +269,9 @@ export class NewsCrawlerService {
         source: source?.trim() || '' 
       };
     } catch (error) {
-      console.log(`[SCRAPE] ERROR for ${url}: ${error.message}`);
+      const status = error.response?.status;
+      const msg = error.message;
+      console.log(`[SCRAPE] ERROR for ${url.substring(0, 40)}: Status ${status || 'UNK'} - ${msg}`);
       return null;
     }
   }
