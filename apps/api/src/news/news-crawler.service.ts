@@ -135,8 +135,8 @@ export class NewsCrawlerService {
       }
 
       // Fallback: Busca binária simples por "http" se o marcador mudar
-      const decodedStr = buffer.toString('latin1');
-      const httpMatch = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
+      const fallbackStr = buffer.toString('latin1');
+      const httpMatch = fallbackStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
       if (httpMatch) {
         const realUrl = httpMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
         console.log(`[DECODE] Success (Binary): ${realUrl}`);
