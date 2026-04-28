@@ -99,17 +99,15 @@ export class NewsCrawlerService {
       }
     } catch (err) {
       this.logger.error(`[ERROR] Crawling news for ${query}: ${err.message}`);
-    }
-  }
-
-  /**
+   /**
    * Resolve a URL original buscando pelo título no buscador (DuckDuckGo HTML)
-   * Esta é a forma mais estável de sair do domínio do Google News.
    */
   private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
     try {
-      const query = encodeURIComponent(`${title} ${source || ''}`);
-      console.log(`[SEARCH] Looking for original URL: ${title.substring(0, 30)}...`);
+      // Limpa o título (remove o " - Fonte" que o Google coloca no final)
+      const cleanTitle = title.split(' - ')[0].trim();
+      const query = encodeURIComponent(`${cleanTitle} ${source || ''}`);
+      console.log(`[SEARCH] Query: ${cleanTitle} | Source: ${source}`);
       
       const response = await fetch(`https://html.duckduckgo.com/html/?q=${query}`, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' }
@@ -117,21 +115,19 @@ export class NewsCrawlerService {
       
       const html = await response.text();
       const $ = cheerio.load(html);
-      
-      // O DuckDuckGo HTML coloca os links reais em .result__url ou no a.result__a
       const firstLink = $('a.result__a').first().attr('href');
       
       if (firstLink) {
-        // Alguns links do DDG vêm com redirecionamento interno, limpamos se necessário
         const url = firstLink.includes('uddg=') 
           ? decodeURIComponent(firstLink.split('uddg=')[1].split('&')[0])
           : firstLink;
 
         if (url.startsWith('http') && !url.includes('google.com')) {
-          console.log(`[SEARCH] SUCCESS: Found ${new URL(url).hostname}`);
+          console.log(`[SEARCH] FOUND URL: ${url}`);
           return url;
         }
       }
+      console.log(`[SEARCH] No link found for query.`);
       return null;
     } catch (e) {
       console.log(`[SEARCH] ERROR: ${e.message}`);
