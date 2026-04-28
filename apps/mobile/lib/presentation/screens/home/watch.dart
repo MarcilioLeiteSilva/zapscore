@@ -134,28 +134,6 @@ class _WatchPageState extends State<WatchPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: Text(
-                          'Short Live Streaming',
-                          style: context.textTheme.bodyMedium,
-                        ),
-                      ),
-                      const Gap(10),
-                      SizedBox(
-                        width: context.width,
-                        height: context.height * .25,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          itemBuilder: (_, i) {
-                            return const CardStoryItem();
-                          },
-                          separatorBuilder: (_, i) => const Gap(10),
-                          itemCount: 5,
-                        ),
-                      ),
-                      const Gap(20),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
                           'Highlights',
                           style: context.textTheme.bodyMedium,
                         ),

@@ -105,7 +105,7 @@ abstract class RouterApp {
       GoRoute(
         path: '/$screenWatchContent',
         name: screenWatchContent,
-        builder: (context, state) => const WatchContentScreen(),
+        builder: (context, state) => WatchContentScreen(video: state.extra as Video),
       ),
       GoRoute(
         path: '/$screenAbout',

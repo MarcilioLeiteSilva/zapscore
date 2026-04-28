@@ -83,8 +83,8 @@ class CardNewsItem extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        if (isVideo) {
-          context.pushNamed(screenWatchContent);
+        if (isVideo && video != null) {
+          context.pushNamed(screenWatchContent, extra: video);
         } else if (news?.externalUrl != null) {
           _launchUrl(news!.externalUrl!);
         } else {
@@ -199,8 +199,8 @@ class CardNewsCarouselItem extends StatelessWidget {
       padding: const EdgeInsets.only(right: 5),
       child: InkWell(
         onTap: () {
-          if (isVideo) {
-            context.pushNamed(screenWatchContent);
+          if (isVideo && video != null) {
+            context.pushNamed(screenWatchContent, extra: video);
           } else if (news?.externalUrl != null) {
             _launchUrl(news!.externalUrl!);
           } else {

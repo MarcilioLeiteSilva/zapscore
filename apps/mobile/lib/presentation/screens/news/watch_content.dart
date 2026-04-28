@@ -1,37 +1,32 @@
 part of '../screens.dart';
 
 class WatchContentScreen extends StatefulWidget {
-  const WatchContentScreen({super.key});
+  final Video video;
+  const WatchContentScreen({super.key, required this.video});
 
   @override
   State<WatchContentScreen> createState() => _WatchContentScreenState();
 }
 
 class _WatchContentScreenState extends State<WatchContentScreen> {
-  late VideoPlayerController _videoPlayerController;
-  ChewieController? _chewieController;
+  late YoutubePlayerController _controller;
 
   @override
   void initState() {
     super.initState();
-    _videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"),
+    final videoId = YoutubePlayer.convertUrlToId(widget.video.videoUrl) ?? '';
+    _controller = YoutubePlayerController(
+      initialVideoId: videoId,
+      flags: const YoutubePlayerFlags(
+        autoPlay: true,
+        mute: false,
+      ),
     );
-    _videoPlayerController.initialize().then((_) {
-      _chewieController = ChewieController(
-        videoPlayerController: _videoPlayerController,
-        autoPlay: false,
-        looping: false,
-      );
-      setState(() {});
-    });
   }
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
-    _chewieController?.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -39,6 +34,7 @@ class _WatchContentScreenState extends State<WatchContentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(widget.video.title, style: const TextStyle(fontSize: 16)),
         actions: [
           IconButton(
             onPressed: () {},
@@ -52,66 +48,70 @@ class _WatchContentScreenState extends State<WatchContentScreen> {
       ),
       body: Column(
         children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _chewieController != null
-                ? Chewie(controller: _chewieController!)
-                : const Center(child: CircularProgressIndicator()),
+          YoutubePlayer(
+            controller: _controller,
+            showVideoProgressIndicator: true,
+            progressIndicatorColor: AppColor.primary,
+            progressColors: const ProgressBarColors(
+              playedColor: AppColor.primary,
+              handleColor: AppColor.primary,
+            ),
           ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               children: [
-                const Gap(10),
+                const Gap(15),
                 Text(
-                  'Ronaldo denies mega-money AL Nassr deal is signed and sealed',
-                  style: context.textTheme.bodyLarge,
+                  widget.video.title,
+                  style: context.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const Gap(10),
                 Row(
                   children: [
+                    if (widget.video.leagueLogo != null) ...[
+                      Image.network(widget.video.leagueLogo!, height: 20),
+                      const Gap(10),
+                    ],
                     Text(
-                      '125k views - 10 hours ago',
-                      style:
-                          context.textTheme.labelSmall!.copyWith(fontSize: 13),
-                    ),
-                    const Gap(10),
-                  ],
-                ),
-                const Gap(5),
-                const Row(
-                  children: [
-                    Text(
-                      '#football',
-                      style: TextStyle(fontSize: 13, color: AppColor.primary),
-                    ),
-                    Gap(5),
-                    Text(
-                      '#worldcup',
-                      style: TextStyle(fontSize: 13, color: AppColor.primary),
-                    ),
-                    Gap(5),
-                    Text(
-                      '#cristianoronaldo',
-                      style: TextStyle(fontSize: 13, color: AppColor.primary),
+                      'Highlights - 2026 Season',
+                      style: context.textTheme.labelSmall!.copyWith(fontSize: 13),
                     ),
                   ],
                 ),
+                if (widget.video.description != null && widget.video.description!.isNotEmpty) ...[
+                  const Gap(15),
+                  Text(
+                    widget.video.description!,
+                    style: context.textTheme.bodySmall,
+                  ),
+                ],
                 const Divider(height: 35),
                 Text(
-                  'Related News',
+                  'More Videos',
                   style: context.textTheme.bodyMedium,
                 ),
                 const Gap(10),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const ScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemBuilder: (_, i) {
-                    return const CardNewsItem();
+                BlocBuilder<VideoCubit, VideoState>(
+                  builder: (context, state) {
+                    if (state is VideoLoaded) {
+                      final relatedVideos = state.videos.where((v) => v.id != widget.video.id).take(5).toList();
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemBuilder: (_, i) {
+                          return CardNewsItem(
+                            isVideo: true,
+                            video: relatedVideos[i],
+                          );
+                        },
+                        separatorBuilder: (_, i) => const Gap(15),
+                        itemCount: relatedVideos.length,
+                      );
+                    }
+                    return const SizedBox();
                   },
-                  separatorBuilder: (_, i) => const Gap(15),
-                  itemCount: 5,
                 ),
                 const Gap(90),
               ],

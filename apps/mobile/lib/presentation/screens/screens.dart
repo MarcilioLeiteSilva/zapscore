@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chewie/chewie.dart';
 import 'package:video_player/video_player.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'package:flutter/material.dart';
 
@@ -33,6 +34,7 @@ import '../../logic/models/team.dart';
 import '../../logic/models/fixture_stat.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/player.dart';
+import '../../logic/models/video.dart';
 import '../widgets/widgets.dart';
 
 part 'splash.dart';
