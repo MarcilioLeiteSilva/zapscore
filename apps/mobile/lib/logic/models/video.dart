@@ -17,6 +17,8 @@ class Video {
     required this.videoUrl,
     required this.date,
     this.duration,
+    this.leagueLogo,
+    this.teamLogo,
   });
 
   factory Video.fromJson(Map<String, dynamic> json) {
