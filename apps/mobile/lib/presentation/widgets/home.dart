@@ -13,8 +13,8 @@ class HomeNavBottom extends StatelessWidget {
           height: 80,
           padding: const EdgeInsets.symmetric(horizontal: 15),
           decoration: BoxDecoration(
-            color: AppColor.background.withOpacity(.7),
-            borderRadius: BorderRadius.circular(10),
+            color: Theme.of(context).scaffoldBackgroundColor.withOpacity(.8),
+            borderRadius: BorderRadius.circular(15),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -24,7 +24,7 @@ class HomeNavBottom extends StatelessWidget {
                   context.read<SettingCubit>().updateHomeIndex(0);
                 },
                 selected: index == 0,
-                label: 'Home',
+                label: 'home'.tr(context),
                 icon: Assets.homeLine,
                 solidIcon: Assets.homeSolid,
               ),
@@ -33,7 +33,7 @@ class HomeNavBottom extends StatelessWidget {
                   context.read<SettingCubit>().updateHomeIndex(1);
                 },
                 selected: index == 1,
-                label: 'Favorites',
+                label: 'favourite'.tr(context),
                 icon: Assets.star,
                 solidIcon: Assets.starSolid,
               ),
@@ -42,7 +42,7 @@ class HomeNavBottom extends StatelessWidget {
                   context.read<SettingCubit>().updateHomeIndex(2);
                 },
                 selected: index == 2,
-                label: 'News',
+                label: 'news'.tr(context),
                 icon: Assets.newsLine,
                 solidIcon: Assets.newsSolid,
               ),
@@ -51,7 +51,7 @@ class HomeNavBottom extends StatelessWidget {
                   context.read<SettingCubit>().updateHomeIndex(3);
                 },
                 selected: index == 3,
-                label: 'Watch',
+                label: 'watch'.tr(context),
                 icon: Assets.watchLine,
                 solidIcon: Assets.watchSolid,
               ),
@@ -60,7 +60,7 @@ class HomeNavBottom extends StatelessWidget {
                   context.read<SettingCubit>().updateHomeIndex(4);
                 },
                 selected: index == 4,
-                label: 'Account',
+                label: 'account'.tr(context),
                 icon: Assets.accountLine,
                 solidIcon: Assets.accountSolid,
               ),
@@ -93,12 +93,12 @@ class HomeTabBottomNavItem extends StatelessWidget {
         children: [
           SvgPicture.asset(
             selected ? solidIcon : icon,
-            color: selected ? AppColor.primary : AppColor.hint,
+            color: selected ? Theme.of(context).primaryColor : context.appColors.hint,
           ),
           Text(
             label,
             style: context.textTheme.labelSmall!.copyWith(
-              color: selected ? AppColor.primary : AppColor.hint,
+              color: selected ? Theme.of(context).primaryColor : context.appColors.hint,
             ),
           ),
         ],
@@ -113,12 +113,12 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColor.background,
+      backgroundColor: context.appColors.drawerBackground,
       child: Column(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColor.primary,
+            decoration: BoxDecoration(
+              color: context.appColors.drawerHeader,
             ),
             child: Center(
               child: Column(
@@ -156,14 +156,14 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.settings_outlined, color: Colors.white),
-            title: const Text('Configurações',
-                style: TextStyle(color: Colors.white)),
+            title: Text('account'.tr(context),
+                style: const TextStyle(color: Colors.white)),
             onTap: () {
               context.read<SettingCubit>().updateHomeIndex(4);
               Navigator.pop(context);
             },
           ),
-          const Divider(color: AppColor.info, indent: 15, endIndent: 15),
+          Divider(color: context.appColors.info, indent: 15, endIndent: 15),
           const Padding(
             padding: EdgeInsets.only(left: 15, top: 10, bottom: 10),
             child: Align(

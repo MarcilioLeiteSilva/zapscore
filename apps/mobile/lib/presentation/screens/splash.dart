@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             LoadingAnimationWidget.hexagonDots(
-              color: AppColor.primary,
+              color: Theme.of(context).primaryColor,
               size: 30,
             ),
           ],

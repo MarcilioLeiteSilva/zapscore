@@ -53,11 +53,15 @@ class MyApp extends StatelessWidget {
           create: (BuildContext context) => VideoCubit(apiClient)..fetchVideos(),
         ),
       ],
-      child: MaterialApp.router(
-        routerConfig: RouterApp.router,
-        title: AppText.appName,
-        theme: AppTheme.darTheme(context),
-        builder: EasyLoading.init(),
+      child: BlocBuilder<SettingCubit, SettingState>(
+        builder: (context, state) {
+          return MaterialApp.router(
+            routerConfig: RouterApp.router,
+            title: AppText.appName,
+            theme: AppTheme.getTheme(context, state.theme),
+            builder: EasyLoading.init(),
+          );
+        },
       ),
     );
   }

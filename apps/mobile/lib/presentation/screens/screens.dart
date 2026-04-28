@@ -52,7 +52,7 @@ part 'home/favourite.dart';
 part 'home/watch.dart';
 part 'home/news.dart';
 part 'home/home.dart';
-part 'home/account.dart';
+part 'home/settings.dart';
 part 'home/live.dart';
 part 'home/search.dart';
 
@@ -78,3 +78,5 @@ part 'settings/general.dart';
 part 'settings/help_center.dart';
 part 'settings/notification.dart';
 part 'settings/security.dart';
+part 'settings/languages.dart';
+part 'settings/theme.dart';

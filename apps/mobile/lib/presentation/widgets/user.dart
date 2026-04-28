@@ -16,7 +16,7 @@ class CardLogin extends StatelessWidget {
         width: context.width,
         padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
-          color: color ?? AppColor.primary,
+          color: color ?? Theme.of(context).primaryColor,
           borderRadius: BorderRadius.circular(50),
         ),
         child: Center(
@@ -62,7 +62,7 @@ class CardBirth extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'dd/MM/yyyy',
         hintStyle: context.textTheme.bodySmall!.copyWith(
-          color: AppColor.hint,
+          color: context.appColors.hint,
           fontSize: 15,
         ),
         label: Text(
@@ -94,7 +94,7 @@ class LoginBarIndicator extends StatelessWidget {
         borderRadius: BorderRadius.circular(50),
         child: LinearProgressIndicator(
           value: value,
-          backgroundColor: AppColor.info,
+          backgroundColor: context.appColors.info,
         ),
       ),
     );
@@ -211,7 +211,7 @@ class CardNoImage extends StatelessWidget {
       height: context.height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        color: AppColor.info.withOpacity(.6),
+        color: context.appColors.info?.withOpacity(.6),
       ),
       padding: const EdgeInsets.all(10),
       child: Center(
@@ -230,7 +230,7 @@ class CardSearchFollow extends StatelessWidget {
     return Container(
       width: context.width,
       decoration: BoxDecoration(
-        color: AppColor.card,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(10),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -273,7 +273,7 @@ class DialogProfileDone extends StatelessWidget {
             'Account Setup\nSuccessful!!',
             textAlign: TextAlign.center,
             style: context.textTheme.bodyLarge!.copyWith(
-              color: AppColor.primary,
+              color: Theme.of(context).primaryColor,
             ),
           ),
           const Gap(10),
@@ -286,7 +286,7 @@ class DialogProfileDone extends StatelessWidget {
           ),
           const Gap(15),
           LoadingAnimationWidget.hexagonDots(
-            color: AppColor.primary,
+            color: Theme.of(context).primaryColor,
             size: 40,
           ),
         ],
@@ -315,7 +315,7 @@ class DialogPasswordResetDone extends StatelessWidget {
             'Password Reset\nEmail Sent',
             textAlign: TextAlign.center,
             style: context.textTheme.bodyLarge!.copyWith(
-              color: AppColor.primary,
+              color: Theme.of(context).primaryColor,
             ),
           ),
           const Gap(10),

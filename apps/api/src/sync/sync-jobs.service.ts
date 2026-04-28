@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SyncService } from './sync.service';
 import { CompetitionsService } from '../competitions/competitions.service';
+import { NewsCrawlerService } from '../news/news-crawler.service';
 
 @Injectable()
 export class SyncJobsService {
@@ -10,6 +11,7 @@ export class SyncJobsService {
   constructor(
     private readonly syncService: SyncService,
     private readonly competitionsService: CompetitionsService,
+    private readonly newsCrawler: NewsCrawlerService,
   ) {}
 
   // A cada 5 minutos: Sincroniza jogos ao vivo
@@ -51,6 +53,18 @@ export class SyncJobsService {
           this.logger.error(`Daily sync failed for ${comp.name}: ${err.message}`);
         }
       }
+    }
+  }
+  
+  // A cada 2 horas: Sincroniza notícias
+  @Cron(CronExpression.EVERY_2_HOURS)
+  async handleNewsSync() {
+    this.logger.log('Starting scheduled news sync...');
+    try {
+      await this.newsCrawler.syncAllNews();
+      this.logger.log('News sync completed successfully.');
+    } catch (err) {
+      this.logger.error(`News sync job failed: ${err.message}`);
     }
   }
 }

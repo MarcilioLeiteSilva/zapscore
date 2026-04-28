@@ -1,0 +1,107 @@
+part of 'helpers.dart';
+
+class AppTranslation {
+  static const Map<String, Map<String, String>> _translations = {
+    'pt': {
+      'account': 'Configurações',
+      'profile': 'Perfil',
+      'theme': 'Tema',
+      'notifications': 'Notificações',
+      'general': 'Geral',
+      'languages': 'Idiomas',
+      'share': 'Compartilhar',
+      'help': 'Ajuda',
+      'about': 'Sobre',
+      'logout': 'Sair do App',
+      'select_language': 'Selecione o Idioma',
+      'home': 'Início',
+      'favourite': 'Favoritos',
+      'watch': 'Assista',
+      'news': 'Notícias',
+      'live': 'Ao Vivo',
+      'no_games': 'Nenhum jogo ao vivo no momento',
+      'matches': 'Partidas',
+      'competitions': 'Competições',
+      'teams': 'Times',
+      'no_favorites': 'Nenhum favorito ainda',
+      'no_fav_matches': 'Nenhuma partida favorita ainda',
+      'no_fav_competitions': 'Nenhuma competição favorita ainda',
+      'no_fav_teams': 'Nenhum time favorito ainda',
+      'trending_news': 'Notícias em Destaque',
+      'logout_confirm': 'Tem certeza que deseja sair?',
+      'cancel': 'Cancelar',
+      'yes_logout': 'Sim, Sair',
+    },
+    'en': {
+      'account': 'Settings',
+      'profile': 'Profile',
+      'theme': 'Theme',
+      'notifications': 'Notifications',
+      'general': 'General',
+      'languages': 'Languages',
+      'share': 'Share',
+      'help': 'Help',
+      'about': 'About',
+      'logout': 'Logout',
+      'select_language': 'Select Language',
+      'home': 'Home',
+      'favourite': 'Favorites',
+      'watch': 'Watch',
+      'news': 'News',
+      'live': 'Live',
+      'no_games': 'No live games at the moment',
+      'matches': 'Matches',
+      'competitions': 'Competitions',
+      'teams': 'Teams',
+      'no_favorites': 'No favorites yet',
+      'no_fav_matches': 'No favorite matches yet',
+      'no_fav_competitions': 'No favorite competitions yet',
+      'no_fav_teams': 'No favorite teams yet',
+      'trending_news': 'Trending News',
+      'logout_confirm': 'Are you sure you want to log out?',
+      'cancel': 'Cancel',
+      'yes_logout': 'Yes, Logout',
+    },
+    'es': {
+      'account': 'Configuraciones',
+      'profile': 'Perfil',
+      'theme': 'Tema',
+      'notifications': 'Notificaciones',
+      'general': 'General',
+      'languages': 'Idiomas',
+      'share': 'Compartir',
+      'help': 'Ayuda',
+      'about': 'Sobre',
+      'logout': 'Cerrar Sesión',
+      'select_language': 'Seleccionar Idioma',
+      'home': 'Inicio',
+      'favourite': 'Favoritos',
+      'watch': 'Ver',
+      'news': 'Noticias',
+      'live': 'En Vivo',
+      'no_games': 'No hay juegos en vivo en este momento',
+      'matches': 'Partidos',
+      'competitions': 'Competiciones',
+      'teams': 'Equipos',
+      'no_favorites': 'Aún no hay favoritos',
+      'no_fav_matches': 'Aún no hay partidos favoritos',
+      'no_fav_competitions': 'Aún no hay competiciones favoritas',
+      'no_fav_teams': 'Aún no hay equipos favoritos',
+      'trending_news': 'Noticias de Tendencia',
+      'logout_confirm': '¿Estás seguro de que quieres cerrar sesión?',
+      'cancel': 'Cancelar',
+      'yes_logout': 'Sí, Cerrar Sesión',
+    },
+  };
+
+  static String translate(BuildContext context, String key) {
+    final language = context.read<SettingCubit>().state.language;
+    return _translations[language]?[key] ?? key;
+  }
+}
+
+extension TranslationExtension on String {
+  String tr(BuildContext context) {
+    return AppTranslation.translate(context, this);
+  }
+}

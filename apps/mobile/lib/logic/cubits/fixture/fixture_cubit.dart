@@ -19,6 +19,18 @@ class FixtureCubit extends Cubit<FixtureState> {
       final fixture = await apiClient.getFixtureDetails(id);
       emit(FixtureLoaded(fixture));
       
+      // Se o jogo estiver ao vivo ou NS (perto do início) e não tiver escalações, tenta forçar um sync no backend
+      if ((isLive(fixture.statusShort) || fixture.statusShort == 'NS') && fixture.lineups.isEmpty) {
+         apiClient.syncFixture(fixture.externalId).then((_) {
+            // Recarrega os detalhes após o sync (silenciosamente)
+            apiClient.getFixtureDetails(id).then((updated) {
+               if (state is FixtureLoaded) {
+                 emit(FixtureLoaded(updated));
+               }
+            });
+         });
+      }
+
       // Se o jogo estiver ao vivo, inicia o auto-refresh se ainda não estiver rodando
       if (isLive(fixture.statusShort) && _refreshTimer == null) {
         startAutoRefresh(id);

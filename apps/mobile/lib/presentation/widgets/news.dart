@@ -30,7 +30,7 @@ class CardStoryItem extends StatelessWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: AppColor.primary,
+                      color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.circular(5),
                     ),
                     padding: const EdgeInsets.symmetric(

@@ -24,6 +24,8 @@ const String screenGeneral = "general-sett";
 const String screenHelpCenter = "help-center-sett";
 const String screenEditNotification = "editnotif-sett";
 const String screenSecurity = "securty-sett";
+const String screenLanguages = "languages-sett";
+const String screenTheme = "theme-sett";
 
 abstract class RouterApp {
   static final router = GoRouter(
@@ -134,6 +136,16 @@ abstract class RouterApp {
         path: '/$screenSecurity',
         name: screenSecurity,
         builder: (context, state) => const SecurityScreen(),
+      ),
+      GoRoute(
+        path: '/$screenLanguages',
+        name: screenLanguages,
+        builder: (context, state) => const LanguagesScreen(),
+      ),
+      GoRoute(
+        path: '/$screenTheme',
+        name: screenTheme,
+        builder: (context, state) => const ThemeScreen(),
       ),
       GoRoute(
         path: '/$screenPlayer',

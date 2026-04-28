@@ -46,7 +46,7 @@ class _FollowScreenState extends State<FollowScreen> {
                   Expanded(
                     child: CardLogin(
                       label: 'Skip',
-                      color: AppColor.info,
+                      color: context.appColors.info,
                       onTap: () {},
                     ),
                   ),

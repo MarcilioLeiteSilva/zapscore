@@ -13,8 +13,7 @@ class CardSubstitutionPlayers extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: AppColor.card,
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,8 +58,7 @@ class CardSubstitution extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: AppColor.card,
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,8 +122,8 @@ class PlayerSubstitutionItem extends StatelessWidget {
               height: 32,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
+                color: Theme.of(context).cardColor.withOpacity(0.5),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColor.info, width: 1),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
@@ -217,8 +215,7 @@ class PlayerSubstitutionPlayerItem extends StatelessWidget {
                 height: 35,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColor.info, width: 1),
-                  color: AppColor.cardDark,
+                  color: Theme.of(context).cardColor.withOpacity(0.5),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
@@ -274,14 +271,13 @@ class CardLineup extends StatelessWidget {
     final homeLineup = fixture.lineups.where((l) => l.teamId == fixture.homeTeam?.externalId && l.isStart).toList();
     final awayLineup = fixture.lineups.where((l) => l.teamId == fixture.awayTeam?.externalId && l.isStart).toList();
 
-    if (homeLineup.isEmpty || awayLineup.isEmpty) {
+    if (homeLineup.isEmpty && awayLineup.isEmpty) {
       return Container(
         width: context.width,
         height: 200,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
-          color: AppColor.card,
-          border: Border.all(color: AppColor.info, width: 1),
+          color: Theme.of(context).cardColor.withOpacity(0.8),
         ),
         child: const Center(child: Text('Escalações ainda não disponíveis')),
       );
@@ -326,17 +322,35 @@ class CardLineup extends StatelessWidget {
   Widget _buildTeamLineup(BuildContext context, List<FixtureLineup> lineup, {required bool isAway}) {
     // Group by grid row (e.g. 1:1 -> row 1)
     Map<int, List<FixtureLineup>> rows = {};
+    List<FixtureLineup> noGridPlayers = [];
+
     for (var player in lineup) {
       final gridParts = player.grid?.split(':');
-      if (gridParts != null && gridParts.length == 2) {
+      if (gridParts != null && gridParts.length >= 2) {
         final row = int.tryParse(gridParts[0]) ?? 0;
         if (!rows.containsKey(row)) rows[row] = [];
         rows[row]!.add(player);
+      } else {
+        noGridPlayers.add(player);
       }
     }
 
     final sortedRowKeys = rows.keys.toList()..sort();
     final displayRows = isAway ? sortedRowKeys.reversed.toList() : sortedRowKeys;
+
+    if (rows.isEmpty && lineup.isNotEmpty) {
+      // Fallback for missing grid data: show in rows of 3 or 4
+      return Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        alignment: WrapAlignment.center,
+        children: lineup.map((p) => PlayerLineupItem(
+          player: p,
+          isWhite: isAway,
+          events: fixture.events.where((e) => e.playerId == p.externalPlayerId).toList(),
+        )).toList(),
+      );
+    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -401,11 +415,7 @@ class PlayerLineupItem extends StatelessWidget {
                 height: 38,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isWhite ? Colors.white : AppColor.primary,
-                    width: 2,
-                  ),
-                  color: AppColor.cardDark,
+                  color: isWhite ? Colors.white.withOpacity(0.2) : Theme.of(context).primaryColor.withOpacity(0.2),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
@@ -413,9 +423,9 @@ class PlayerLineupItem extends StatelessWidget {
                       ? Image.network(
                           player.playerPhoto!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          errorBuilder: (_, __, ___) => _buildPlaceholder(context),
                         )
-                      : _buildPlaceholder(),
+                      : _buildPlaceholder(context),
                 ),
               ),
               Positioned(
@@ -472,10 +482,10 @@ class PlayerLineupItem extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
-    return const CircleAvatar(
-      backgroundColor: AppColor.info,
-      child: Icon(Icons.person, color: Colors.white54, size: 20),
+  Widget _buildPlaceholder(BuildContext context) {
+    return CircleAvatar(
+      backgroundColor: context.appColors.info,
+      child: const Icon(Icons.person, color: Colors.white54, size: 20),
     );
   }
 }

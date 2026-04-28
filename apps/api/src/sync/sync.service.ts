@@ -98,6 +98,59 @@ export class SyncService {
     return { count };
   }
 
+  async syncByExternalId(externalId: number) {
+    this.logger.log(`Manual sync requested for fixture ${externalId}`);
+    try {
+      const fixtureData = await this.apiFootball.getFixtures({ id: externalId });
+      if (!fixtureData || fixtureData.length === 0) {
+        throw new Error(`Fixture ${externalId} not found in API-Football`);
+      }
+
+      const data = fixtureData[0];
+      const league = await this.prisma.league.findUnique({
+        where: { externalId: data.league.id }
+      });
+
+      if (!league) {
+        // Se a liga não existe, sincroniza ela primeiro
+        await this.syncLeague(data.league.id, data.league.season);
+      }
+
+      const [homeTeam, awayTeam] = await Promise.all([
+        this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+        this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+      ]);
+
+      if (!homeTeam) await this.syncTeams(data.league.id, data.league.season);
+      if (!awayTeam) await this.syncTeams(data.league.id, data.league.season);
+
+      // Busca novamente após sincronizar dependências se necessário
+      const [finalHome, finalAway] = await Promise.all([
+        this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+        this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+      ]);
+
+      if (!finalHome || !finalAway) {
+        throw new Error(`Failed to sync teams for fixture ${externalId}`);
+      }
+
+      const finalLeague = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
+      const fixtureMapped = ApiFootballMapper.toFixture(data, finalLeague.id, finalHome.id, finalAway.id);
+      
+      await this.prisma.fixture.upsert({
+        where: { externalId: fixtureMapped.externalId },
+        update: fixtureMapped,
+        create: fixtureMapped as any,
+      });
+
+      await this.syncFixtureDetail(externalId);
+      return { success: true };
+    } catch (err) {
+      this.logger.error(`Error in syncByExternalId ${externalId}: ${err.message}`);
+      throw err;
+    }
+  }
+
   async syncFixtures(leagueId?: number, season?: number) {
     const targetLeague = leagueId || this.defaultLeagueId;
     const targetSeason = season || this.defaultSeason;
@@ -191,12 +244,13 @@ export class SyncService {
 
       // 3. Sincronizar Escalações
       const lineups = await this.apiFootball.get('/fixtures/lineups', { fixture: externalFixtureId });
-      if (lineups) {
+      if (lineups && lineups.length > 0) {
         await this.prisma.fixtureLineup.deleteMany({ where: { fixtureId: fixture.id } });
         for (const l of lineups) {
           const teamId = l.team.id;
-          for (const p of l.startXI) {
-            await this.prisma.fixtureLineup.create({
+          if (l.startXI && l.startXI.length > 0) {
+            for (const p of l.startXI) {
+              await this.prisma.fixtureLineup.create({
                 data: {
                   fixtureId: fixture.id,
                   teamId,
@@ -210,6 +264,8 @@ export class SyncService {
                 }
               });
             }
+          }
+          if (l.substitutes && l.substitutes.length > 0) {
             for (const p of l.substitutes) {
               await this.prisma.fixtureLineup.create({
                 data: {
@@ -224,6 +280,7 @@ export class SyncService {
                 }
               });
             }
+          }
         }
       }
     } catch (err) {
@@ -269,6 +326,28 @@ export class SyncService {
             this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
           }
         }
+
+        // --- NOVIDADE: Verificar jogos que estavam LIVE no banco mas não estão mais na lista de LIVE da API ---
+        const league = await this.prisma.league.findUnique({ where: { externalId: leagueId } });
+        if (league) {
+          const liveInDb = await this.prisma.fixture.findMany({
+            where: {
+              leagueId: league.id,
+              statusShort: { in: ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'] }
+            }
+          });
+
+          const apiLiveIds = liveFixtures.map(f => f.fixture.id);
+          const finishedFixtures = liveInDb.filter(f => !apiLiveIds.includes(f.externalId));
+
+          for (const f of finishedFixtures) {
+            this.logger.log(`Detectado fim de jogo provável para fixture ${f.externalId}. Sincronizando status final...`);
+            await this.syncByExternalId(f.externalId).catch(err => 
+              this.logger.error(`Erro ao sincronizar status final da fixture ${f.externalId}: ${err.message}`)
+            );
+          }
+        }
+        // ---------------------------------------------------------------------------------------------------
       }
       return { count: totalSynced };
     } catch (err) {

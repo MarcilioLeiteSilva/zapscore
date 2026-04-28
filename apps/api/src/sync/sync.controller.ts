@@ -1,11 +1,15 @@
-import { Controller, Post, Body, Logger } from '@nestjs/common';
+import { Controller, Post, Body, Logger, Param, ParseIntPipe } from '@nestjs/common';
 import { SyncService } from './sync.service';
+import { NewsCrawlerService } from '../news/news-crawler.service';
 
 @Controller('sync')
 export class SyncController {
   private readonly logger = new Logger(SyncController.name);
 
-  constructor(private readonly syncService: SyncService) {}
+  constructor(
+    private readonly syncService: SyncService,
+    private readonly newsCrawler: NewsCrawlerService,
+  ) {}
 
   @Post('bootstrap')
   async syncBootstrap(@Body() body: { leagueId?: number; season?: number }) {
@@ -26,6 +30,11 @@ export class SyncController {
   @Post('fixtures')
   async syncFixtures(@Body() body: { leagueId?: number; season?: number }) {
     return this.syncService.syncFixtures(body.leagueId, body.season);
+  }
+
+  @Post('fixture/:id')
+  async syncFixture(@Param('id', ParseIntPipe) id: number) {
+    return this.syncService.syncByExternalId(id);
   }
 
   @Post('standings')
@@ -55,5 +64,12 @@ export class SyncController {
   async repairPhotos() {
     this.logger.log('Repair photos triggered');
     return this.syncService.repairPhotos();
+  }
+
+  @Post('news')
+  async syncNews() {
+    this.logger.log('Manual news sync triggered');
+    await this.newsCrawler.syncAllNews();
+    return { success: true, message: 'News sync started in background' };
   }
 }

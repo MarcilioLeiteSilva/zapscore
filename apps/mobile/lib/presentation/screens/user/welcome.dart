@@ -36,7 +36,7 @@ class WelcomeScreen extends StatelessWidget {
                     Text(
                       "Welcome 👋",
                       style: context.textTheme.headlineLarge!.copyWith(
-                        color: AppColor.primary,
+                        color: Theme.of(context).primaryColor,
                         fontSize: 40,
                       ),
                     ),
@@ -55,7 +55,7 @@ class WelcomeScreen extends StatelessWidget {
                     const Gap(20),
                     CardLogin(
                       label: 'I Already Have on Account!',
-                      color: AppColor.info,
+                      color: context.appColors.info,
                       onTap: () {
                         context.pushNamed(screenLogin);
                       },

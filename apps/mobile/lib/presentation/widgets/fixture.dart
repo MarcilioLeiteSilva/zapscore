@@ -9,7 +9,7 @@ class CardSlideLeagueHome extends StatelessWidget {
     return Container(
       width: context.width,
       height: 42,
-      color: AppColor.background,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Material(
         color: Colors.transparent,
         child: ListView.separated(
@@ -37,11 +37,7 @@ class CheepLeagueItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(50),
       child: Ink(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(50),
-          border: Border.all(
-            color: AppColor.primary,
-            width: 1,
-          ),
+          color: Theme.of(context).cardColor.withOpacity(0.5),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
@@ -98,7 +94,7 @@ class CardCalendarHome extends StatelessWidget {
                     children: dates
                         .map(
                           (model) => CardCalendarItem(
-                            select: model.day == selectedDate.day &&
+                            select: !state.isLiveSelected && model.day == selectedDate.day &&
                                 selectedDate.month == model.month,
                             date: model,
                             onTap: () {
@@ -140,7 +136,7 @@ class CardCalendarHome extends StatelessWidget {
                   icon: SvgPicture.asset(
                     Assets.calendar,
                     height: 25,
-                    color: AppColor.primary,
+                    color: Theme.of(context).primaryColor,
                   ),
                 ),
               ],
@@ -158,50 +154,56 @@ class CardLiveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LiveCubit, LiveState>(
-      builder: (context, state) {
-        final isLive = state is LiveLoaded && state.fixtures.isNotEmpty;
-        
-        return InkWell(
-          onTap: () => context.pushNamed(screenLive),
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            decoration: BoxDecoration(
+      builder: (context, liveState) {
+        return BlocBuilder<SettingCubit, SettingState>(
+          builder: (context, settingState) {
+            final isLive = liveState is LiveLoaded && liveState.fixtures.isNotEmpty;
+            final isSelected = settingState.isLiveSelected;
+            
+            return InkWell(
+              onTap: () {
+                context.read<SettingCubit>().toggleLive();
+                if (!isSelected) {
+                  context.read<LiveCubit>().fetchLiveFixtures();
+                }
+              },
               borderRadius: BorderRadius.circular(30),
-              color: isLive ? Colors.red.withOpacity(0.1) : null,
-              border: Border.all(
-                color: isLive ? Colors.red : AppColor.primary,
-                width: 1,
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 7,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isLive) ...[
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const Gap(5),
-                ],
-                Text(
-                  'Live',
-                  style: context.textTheme.bodySmall!.copyWith(
-                    fontSize: 16,
-                    color: isLive ? Colors.red : AppColor.primary,
-                    fontWeight: isLive ? FontWeight.bold : null,
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  color: isSelected ? Colors.red : (isLive ? Colors.red.withOpacity(0.15) : Theme.of(context).cardColor.withOpacity(0.3)),
                 ),
-              ],
-            ),
-          ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 7,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isLive && !isSelected) ...[
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const Gap(5),
+                    ],
+                    Text(
+                      'Live',
+                      style: context.textTheme.bodySmall!.copyWith(
+                        fontSize: 16,
+                        color: isSelected ? Colors.white : (isLive ? Colors.red : Theme.of(context).primaryColor),
+                        fontWeight: (isLive || isSelected) ? FontWeight.bold : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -226,7 +228,7 @@ class CardCalendarItem extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: select ? AppColor.primary : null,
+          color: select ? Theme.of(context).primaryColor : null,
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: 8,
@@ -267,12 +269,15 @@ class CardGroupFixtureItem extends StatelessWidget {
     return Ink(
       width: context.width,
       decoration: BoxDecoration(
-        color: AppColor.card,
-        border: Border.all(
-          color: AppColor.info,
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(10),
+        color: Theme.of(context).cardColor.withOpacity(0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        borderRadius: BorderRadius.circular(15),
       ),
       padding: const EdgeInsets.only(
         left: 15,
@@ -450,7 +455,7 @@ class CardFixtureItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColor.background.withOpacity(0.5),
+                  color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -589,8 +594,7 @@ class CardBasicInfo extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: AppColor.card,
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.5),
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -661,7 +665,7 @@ class CardFixtureDetail extends StatelessWidget {
       ),
       margin: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: AppColor.primary,
+        color: context.appColors.darkGreen,
         borderRadius: BorderRadius.circular(15),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
@@ -803,8 +807,7 @@ class CardFormInfoFixture extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: AppColor.card,
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.7),
       ),
       child: Column(
         children: [
@@ -912,7 +915,7 @@ class CardFormMatch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.5),
         borderRadius: BorderRadius.circular(30),
       ),
       padding: const EdgeInsets.symmetric(

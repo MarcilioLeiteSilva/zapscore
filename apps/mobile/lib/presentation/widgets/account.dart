@@ -16,16 +16,23 @@ class CardSettingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<SettingCubit>().state.theme;
+    final iconColor = theme == 'white' ? Colors.grey[800] : Colors.white;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
           children: [
             CircleAvatar(
-              radius: 28,
+              radius: 24,
               backgroundColor: color,
-              child: SvgPicture.asset(icon),
+              child: SvgPicture.asset(
+                icon, 
+                color: fullColor ?? iconColor,
+                width: 24,
+              ),
             ),
             const Gap(10),
             Expanded(
@@ -55,9 +62,9 @@ class SheetLogOut extends StatelessWidget {
   Widget build(BuildContext context) {
     return Ink(
       width: context.width,
-      decoration: const BoxDecoration(
-          color: AppColor.background,
-          borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           )),
@@ -66,9 +73,9 @@ class SheetLogOut extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Logout',
+            'logout'.tr(context),
             style: context.textTheme.headlineSmall!.copyWith(
-              color: AppColor.logout,
+              color: context.appColors.logout,
             ),
           ),
           const Divider(
@@ -76,22 +83,22 @@ class SheetLogOut extends StatelessWidget {
             indent: 20,
             height: 40,
           ),
-          const Text('Are you sure you want to log out?'),
+          Text('logout_confirm'.tr(context)),
           const Gap(20),
           Row(
             children: [
               Expanded(
                 child: CardLogin(
-                  label: 'Cancel',
-                  color: AppColor.info,
+                  label: 'cancel'.tr(context),
+                  color: context.appColors.info,
                   onTap: () => Navigator.pop(context),
                 ),
               ),
               const Gap(10),
               Expanded(
                 child: CardLogin(
-                  label: 'Yes, Logout',
-                  color: AppColor.primary,
+                  label: 'yes_logout'.tr(context),
+                  color: Theme.of(context).primaryColor,
                   onTap: () {
                     context.pushReplacement("/");
                   },
@@ -128,7 +135,7 @@ class CardTileSwitch extends StatelessWidget {
             value: value,
             onChanged: onChange,
             trackOutlineColor:
-                const MaterialStatePropertyAll(AppColor.background),
+                MaterialStatePropertyAll(Theme.of(context).scaffoldBackgroundColor),
           ),
         ],
       ),

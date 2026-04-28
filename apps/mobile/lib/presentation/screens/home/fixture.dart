@@ -76,35 +76,101 @@ class FixturePage extends StatelessWidget {
               ];
             },
             body: RefreshIndicator(
-              onRefresh: () => context.read<HomeCubit>().fetchHomeData(),
-              child: Builder(
-                builder: (context) {
-                  if (state is HomeLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (state is HomeError) {
-                    return Center(child: Text(state.message));
-                  }
-                  if (state is HomeLoaded) {
-                    final List<HomeCompetition> displayCompetitions = state.competitions.where((c) => c.matches.isNotEmpty).toList();
-                    if (displayCompetitions.isEmpty) {
-                      return const Center(child: Text('Sem jogos hoje'));
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.only(
-                        left: 10,
-                        right: 10,
-                        bottom: 120,
-                      ),
-                      itemBuilder: (_, i) {
-                        final comp = displayCompetitions[i];
-                        return CardGroupFixtureItem(competition: comp);
+              onRefresh: () async {
+                if (context.read<SettingCubit>().state.isLiveSelected) {
+                  await context.read<LiveCubit>().fetchLiveFixtures();
+                } else {
+                  await context.read<HomeCubit>().fetchHomeData();
+                }
+              },
+              child: BlocBuilder<SettingCubit, SettingState>(
+                builder: (context, settingState) {
+                  if (settingState.isLiveSelected) {
+                    return BlocBuilder<LiveCubit, LiveState>(
+                      builder: (context, liveState) {
+                        if (liveState is LiveLoading) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (liveState is LiveError) {
+                          return Center(child: Text(liveState.message));
+                        }
+                        if (liveState is LiveLoaded) {
+                          if (liveState.fixtures.isEmpty) {
+                            return Center(child: Text('no_games'.tr(context)));
+                          }
+
+                          final groupedFixtures = <String, List<Fixture>>{};
+                          final localLeagues = <String, League>{};
+
+                          for (var fixture in liveState.fixtures) {
+                            final league = fixture.league;
+                            final leagueId = league?.id.toString() ?? 'unknown';
+                            
+                            if (!groupedFixtures.containsKey(leagueId)) {
+                              groupedFixtures[leagueId] = [];
+                              localLeagues[leagueId] = league ?? League(id: '0', externalId: 0, name: 'Outros');
+                            }
+                            groupedFixtures[leagueId]!.add(fixture);
+                          }
+
+                          final List<HomeCompetition> competitions = groupedFixtures.entries.map((entry) {
+                            return HomeCompetition(
+                              league: localLeagues[entry.key]!,
+                              matches: entry.value,
+                            );
+                          }).toList();
+
+                          competitions.sort((a, b) => a.league.name.compareTo(b.league.name));
+
+                          return ListView.separated(
+                            padding: const EdgeInsets.only(
+                              left: 10,
+                              right: 10,
+                              bottom: 120,
+                            ),
+                            itemBuilder: (_, i) {
+                              final comp = competitions[i];
+                              return CardGroupFixtureItem(competition: comp);
+                            },
+                            separatorBuilder: (_, i) => const Gap(20),
+                            itemCount: competitions.length,
+                          );
+                        }
+                        return const SizedBox();
                       },
-                      separatorBuilder: (_, i) => const Gap(20),
-                      itemCount: displayCompetitions.length,
                     );
                   }
-                  return const SizedBox();
+
+                  return Builder(
+                    builder: (context) {
+                      if (state is HomeLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (state is HomeError) {
+                        return Center(child: Text(state.message));
+                      }
+                      if (state is HomeLoaded) {
+                        final List<HomeCompetition> displayCompetitions = state.competitions.where((c) => c.matches.isNotEmpty).toList();
+                        if (displayCompetitions.isEmpty) {
+                          return const Center(child: Text('Sem jogos hoje'));
+                        }
+                        return ListView.separated(
+                          padding: const EdgeInsets.only(
+                            left: 10,
+                            right: 10,
+                            bottom: 120,
+                          ),
+                          itemBuilder: (_, i) {
+                            final comp = displayCompetitions[i];
+                            return CardGroupFixtureItem(competition: comp);
+                          },
+                          separatorBuilder: (_, i) => const Gap(20),
+                          itemCount: displayCompetitions.length,
+                        );
+                      }
+                      return const SizedBox();
+                    },
+                  );
                 },
               ),
             ),

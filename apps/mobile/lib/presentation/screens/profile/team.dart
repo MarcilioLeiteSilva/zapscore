@@ -78,7 +78,7 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
             Container(
               width: context.width,
               height: 62,
-              color: AppColor.background,
+              color: Theme.of(context).scaffoldBackgroundColor,
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Material(
                 color: Colors.transparent,

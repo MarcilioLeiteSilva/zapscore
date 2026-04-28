@@ -35,7 +35,14 @@ class _SearchScreenState extends State<SearchScreen> {
             context.read<SearchCubit>().search(value);
           },
           hintText: 'search Country, Competition, etc',
-          leading: SvgPicture.asset(Assets.searchLine),
+          leading: SvgPicture.asset(
+            Assets.searchLine,
+            color: Theme.of(context).brightness == Brightness.light ? Colors.grey : Colors.white70,
+          ),
+          backgroundColor: MaterialStatePropertyAll(
+            Theme.of(context).brightness == Brightness.light ? Colors.grey[200] : Colors.white.withOpacity(0.1),
+          ),
+          elevation: const MaterialStatePropertyAll(0),
           keyboardType: TextInputType.name,
           padding: const MaterialStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 15)),

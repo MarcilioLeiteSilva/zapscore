@@ -46,7 +46,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
       body: isLoading
           ? Center(
               child: LoadingAnimationWidget.staggeredDotsWave(
-                color: AppColor.primary,
+                color: Theme.of(context).primaryColor,
                 size: 40,
               ),
             )
@@ -83,7 +83,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         children: [
           CircleAvatar(
             radius: 50,
-            backgroundColor: AppColor.info,
+            backgroundColor: context.appColors.info,
             backgroundImage: player!.photo != null ? NetworkImage(player!.photo!) : null,
             child: player!.photo == null ? const Icon(Icons.person, size: 50, color: Colors.white54) : null,
           ),
@@ -132,7 +132,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Personal Information", style: context.textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold)),
-          const Divider(height: 30, color: AppColor.info),
+          Divider(height: 30, color: context.appColors.info),
           _buildInfoRow("Birth Date", player!.birthDate ?? 'N/A'),
           _buildInfoRow("Birth Place", "${player!.birthPlace ?? ''}, ${player!.birthCountry ?? ''}"),
           _buildInfoRow("Height", player!.height ?? 'N/A'),
@@ -184,7 +184,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                 Image.network(team['logo'], width: 24, height: 24),
             ],
           ),
-          const Divider(height: 30, color: AppColor.info),
+          Divider(height: 30, color: context.appColors.info),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -197,7 +197,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem("Rating", games['rating']?.toString()?.substring(0, 3) ?? '0.0'),
+              _buildStatItem("Rating", (games['rating']?.toString() ?? '0.0').substring(0, 3)),
               _buildStatItem("Yellow", cards['yellow']?.toString() ?? '0', color: Colors.yellow),
               _buildStatItem("Red", cards['red']?.toString() ?? '0', color: Colors.red),
             ],

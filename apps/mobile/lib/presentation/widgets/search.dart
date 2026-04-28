@@ -44,9 +44,15 @@ class CardSearchFixture extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: AppColor.card,
-              border: Border.all(color: AppColor.info, width: 1),
+              color: Theme.of(context).cardColor.withOpacity(0.8),
               borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             padding: const EdgeInsets.symmetric(vertical: 15),
             child: CardFixtureItem(
@@ -78,15 +84,16 @@ class CardCheepTabSearch extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: select ? AppColor.primary : null,
-          border: select ? null : Border.all(color: AppColor.primary, width: 1),
+          color: select ? Theme.of(context).primaryColor : Theme.of(context).cardColor.withOpacity(0.5),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Center(
           child: Text(
             label,
             style: context.textTheme.bodySmall!.copyWith(
-              color: select ? Colors.white : AppColor.primary,
+              color: select 
+                ? context.appColors.darkGreen
+                : Theme.of(context).primaryColor,
               fontSize: 15,
             ),
           ),
@@ -286,7 +293,7 @@ class PageSearchTeams extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColor.card,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: CardFollowItem(

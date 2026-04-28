@@ -23,9 +23,8 @@ class MatchTeamPage extends StatelessWidget {
               final fixture = state.fixtures[i];
               return Container(
                 decoration: BoxDecoration(
-                  color: AppColor.card,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColor.info, width: 1),
+                  color: Theme.of(context).cardColor.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: CardFixtureItem(
                   fixture: fixture,
@@ -74,9 +73,8 @@ class TeamOverview extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColor.card,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColor.info, width: 1),
+                      color: Theme.of(context).cardColor.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(15),
                     ),
                     child: CardFixtureItem(fixture: lastMatch, showDivider: false),
                   ),
@@ -111,9 +109,9 @@ class TeamOverview extends StatelessWidget {
               Container(
                 width: context.width,
                 decoration: BoxDecoration(
-                  color: AppColor.card,
+                  color: Theme.of(context).cardColor,
                   border: Border.all(
-                    color: AppColor.info,
+                    color: context.appColors.info ?? Colors.transparent,
                     width: 1,
                   ),
                   borderRadius: BorderRadius.circular(10),
@@ -143,8 +141,7 @@ class CardFormInfoTeam extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: AppColor.card,
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.8),
       ),
       child: Column(
         children: [
@@ -222,8 +219,7 @@ class TeamTablePage extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
-                  color: AppColor.card,
-                  border: Border.all(color: AppColor.info, width: 1),
+                  color: Theme.of(context).cardColor.withOpacity(0.8),
                 ),
                 child: Table(
                   columnWidths: const {
@@ -237,11 +233,11 @@ class TeamTablePage extends StatelessWidget {
                     7: FlexColumnWidth(1.2),
                   },
                   children: [
-                    const TableRow(
+                    TableRow(
                       decoration: BoxDecoration(
                         border: Border(
                             bottom: BorderSide(
-                          color: AppColor.info,
+                          color: context.appColors.info ?? Colors.transparent,
                           width: 1,
                         )),
                       ),
@@ -283,10 +279,10 @@ class TeamTablePage extends StatelessWidget {
                     ),
                     for (final standing in state.standings)
                       TableRow(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           border: Border(
                               bottom: BorderSide(
-                            color: AppColor.info,
+                            color: context.appColors.info ?? Colors.transparent,
                             width: 1,
                           )),
                         ),
@@ -416,8 +412,7 @@ class TeamStatePage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              color: AppColor.card,
-              border: Border.all(color: AppColor.info, width: 1),
+              color: Theme.of(context).cardColor.withOpacity(0.8),
             ),
             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             child: Column(
@@ -430,9 +425,9 @@ class TeamStatePage extends StatelessWidget {
                     3: FlexColumnWidth(1),
                   },
                   children: [
-                    const TableRow(
+                    TableRow(
                       decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: AppColor.info, width: 1)),
+                        border: Border(bottom: BorderSide(color: context.appColors.info ?? Colors.transparent, width: 1)),
                       ),
                       children: [
                         TableTileItem('ESTATÍSTICA', padding: EdgeInsets.only(bottom: 15)),
@@ -443,8 +438,8 @@ class TeamStatePage extends StatelessWidget {
                     ),
                     for (var stat in listStats)
                       TableRow(
-                        decoration: const BoxDecoration(
-                          border: Border(bottom: BorderSide(color: AppColor.info, width: 1)),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: context.appColors.info ?? Colors.transparent, width: 1)),
                         ),
                         children: [
                           TableTileItem(stat['name']!, padding: const EdgeInsets.symmetric(vertical: 15)),

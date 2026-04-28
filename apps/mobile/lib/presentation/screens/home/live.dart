@@ -27,7 +27,7 @@ class _LivePageState extends State<LivePage> {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        title: const Text('LIVE Match'),
+        title: Text('live'.tr(context)),
         centerTitle: false,
       ),
       body: RefreshIndicator(
@@ -42,7 +42,7 @@ class _LivePageState extends State<LivePage> {
             }
             if (state is LiveLoaded) {
               if (state.fixtures.isEmpty) {
-                return const Center(child: Text('Nenhum jogo ao vivo no momento'));
+                return Center(child: Text('no_games'.tr(context)));
               }
 
               // Agrupar jogos por liga

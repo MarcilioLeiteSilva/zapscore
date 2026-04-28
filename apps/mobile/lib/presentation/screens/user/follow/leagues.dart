@@ -25,12 +25,12 @@ class FollowLeague extends StatelessWidget {
           Expanded(
             child: Ink(
               decoration: BoxDecoration(
-                color: AppColor.card,
+                color: Theme.of(context).cardColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(10),
                   topRight: Radius.circular(10),
                 ),
-                border: Border.all(color: AppColor.info, width: 1),
+                border: Border.all(color: Theme.of(context).primaryColor, width: 1),
               ),
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(vertical: 10),

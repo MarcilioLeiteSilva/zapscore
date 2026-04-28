@@ -9,22 +9,14 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
-  List<String> listLeague = [
-    "All",
-    "Football",
-    "World Cup",
-    "Premier League",
-    "La Liga",
-    "Serie A",
-    "Al Botoula Pro"
-  ];
+  String? selectedLeagueId;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        title: const Text("News"),
+        title: Text("news".tr(context)),
         centerTitle: false,
         actions: [
           IconButton(
@@ -57,31 +49,52 @@ class _NewsPageState extends State<NewsPage> {
 
               return ListView(
                 children: [
-                  Container(
-                    width: context.width,
-                    height: 60,
-                    color: AppColor.background,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        itemBuilder: (_, i) {
-                          return CardCheepTabSearch(
-                            select: indexTab == i,
-                            label: listLeague[i],
-                            onTap: () {
-                              setState(() {
-                                indexTab = i;
-                              });
+                  BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, homeState) {
+                      final List<Map<String, String?>> categories = [
+                        {'name': 'All', 'id': null}
+                      ];
+                      
+                      if (homeState is HomeLoaded) {
+                        for (var comp in homeState.competitions) {
+                          categories.add({
+                            'name': comp.league.name,
+                            'id': comp.league.id
+                          });
+                        }
+                      }
+
+                      return Container(
+                        width: context.width,
+                        height: 60,
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            itemBuilder: (_, i) {
+                              final cat = categories[i];
+                              final isSelected = indexTab == i;
+                              return CardCheepTabSearch(
+                                select: isSelected,
+                                label: cat['name']!,
+                                onTap: () {
+                                  setState(() {
+                                    indexTab = i;
+                                    selectedLeagueId = cat['id'];
+                                  });
+                                  context.read<NewsCubit>().fetchNews(leagueId: selectedLeagueId);
+                                },
+                              );
                             },
-                          );
-                        },
-                        separatorBuilder: (_, i) => const Gap(10),
-                        itemCount: listLeague.length,
-                      ),
-                    ),
+                            separatorBuilder: (_, i) => const Gap(10),
+                            itemCount: categories.length,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const Gap(10),
                   if (carouselNews.isNotEmpty)
@@ -102,7 +115,7 @@ class _NewsPageState extends State<NewsPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
-                      'Trending News',
+                      'trending_news'.tr(context),
                       style: context.textTheme.bodyMedium,
                     ),
                   ),

@@ -59,7 +59,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
             Container(
               width: context.width,
               height: 60,
-              color: AppColor.background,
+              color: Theme.of(context).scaffoldBackgroundColor,
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Material(
                 color: Colors.transparent,

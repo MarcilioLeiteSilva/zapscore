@@ -58,7 +58,7 @@ class LoginScreen extends StatelessWidget {
                       child: Text(
                         'Forgot Password?',
                         style: context.textTheme.labelSmall!.copyWith(
-                          color: AppColor.primary,
+                          color: Theme.of(context).primaryColor,
                         ),
                       ),
                     ),

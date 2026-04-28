@@ -195,11 +195,14 @@ model News {
   source      String?
   leagueId    String?
   teamId      String?
+  playerId    String?
+  externalUrl String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   league      League? @relation(fields: [leagueId], references: [id])
   team        Team?   @relation(fields: [teamId], references: [id])
+  player      Player? @relation(fields: [playerId], references: [id])
 }
 
 model Video {
@@ -256,6 +259,8 @@ model Player {
   statisticsJson   String?  @db.Text // Store full stats as JSON string for flexibility
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  news             News[]
 
   @@index([externalId])
 }

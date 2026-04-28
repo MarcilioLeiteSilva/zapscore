@@ -50,9 +50,8 @@ class CardMatchLeague extends StatelessWidget {
           itemBuilder: (_, i) {
             return Ink(
               decoration: BoxDecoration(
-                color: AppColor.card,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColor.info, width: 1),
+                color: Theme.of(context).cardColor.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(15),
               ),
               child: const CardFollowItem(),
             );
@@ -99,12 +98,21 @@ class OverviewPage extends StatelessWidget {
                   return Ink(
                     width: context.width,
                     decoration: BoxDecoration(
-                      color: AppColor.card,
-                      border: Border.all(
-                        color: AppColor.info,
-                        width: 1,
+                      color: Theme.of(context).cardColor.withOpacity(0.8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: context.appColors.info ?? Colors.transparent,
+                          width: 1,
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(10),
                     ),
                     padding: const EdgeInsets.only(
                       left: 15,
@@ -129,12 +137,8 @@ class OverviewPage extends StatelessWidget {
               Container(
                 width: context.width,
                 decoration: BoxDecoration(
-                  color: AppColor.card,
-                  border: Border.all(
-                    color: AppColor.info,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).cardColor.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 padding:
                     const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -187,7 +191,7 @@ class CardTopScores extends StatelessWidget {
               '$rank',
               style: context.textTheme.bodySmall!.copyWith(
                 fontWeight: FontWeight.bold,
-                color: rank <= 3 ? AppColor.primary : null,
+                color: rank <= 3 ? Theme.of(context).primaryColor : null,
               ),
             ),
           ),
@@ -200,9 +204,9 @@ class CardTopScores extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     child: Image.network(item.playerPhoto!, fit: BoxFit.cover),
                   )
-                : const CircleAvatar(
-                    backgroundColor: AppColor.info,
-                    child: Icon(Icons.person, color: Colors.white54),
+                : CircleAvatar(
+                    backgroundColor: context.appColors.info,
+                    child: const Icon(Icons.person, color: Colors.white54),
                   ),
           ),
           const Gap(10),
@@ -241,7 +245,7 @@ class CardTopScores extends StatelessWidget {
           Text(
             '${item.goals} Gols',
             style: context.textTheme.bodySmall!.copyWith(
-              color: AppColor.primary,
+              color: Theme.of(context).primaryColor,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -273,8 +277,7 @@ class TableLeaguePage extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
-                  color: AppColor.card,
-                  border: Border.all(color: AppColor.info, width: 1),
+                  color: Theme.of(context).cardColor.withOpacity(0.8),
                 ),
                 child: Table(
                   columnWidths: const {
@@ -288,13 +291,14 @@ class TableLeaguePage extends StatelessWidget {
                     7: FlexColumnWidth(1.2),
                   },
                   children: [
-                    const TableRow(
+                    TableRow(
                       decoration: BoxDecoration(
                         border: Border(
-                            bottom: BorderSide(
-                          color: AppColor.info,
-                          width: 1,
-                        )),
+                          bottom: BorderSide(
+                            color: context.appColors.info ?? Colors.transparent,
+                            width: 1,
+                          ),
+                        ),
                       ),
                       children: [
                         TableTileItem(
@@ -334,12 +338,13 @@ class TableLeaguePage extends StatelessWidget {
                     ),
                     for (final standing in state.standings)
                       TableRow(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           border: Border(
-                              bottom: BorderSide(
-                            color: AppColor.info,
-                            width: 1,
-                          )),
+                            bottom: BorderSide(
+                              color: context.appColors.info ?? Colors.transparent,
+                              width: 1,
+                            ),
+                          ),
                         ),
                         children: [
                           TableTileItem(
@@ -486,9 +491,7 @@ class RoundLeaguePage extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(15),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: AppColor.info)),
-                ),
+                decoration: const BoxDecoration(),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -542,9 +545,8 @@ class CardFixtureLeagueItem extends StatelessWidget {
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(fixture.date);
     return Ink(
       decoration: BoxDecoration(
-        color: AppColor.card,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColor.info, width: 1),
+        color: Theme.of(context).cardColor.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,12 +610,8 @@ class TopScoresList extends StatelessWidget {
               return Ink(
                 width: context.width,
                 decoration: BoxDecoration(
-                  color: AppColor.card,
-                  border: Border.all(
-                    color: AppColor.info,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).cardColor.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 padding:
                     const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
@@ -683,12 +681,8 @@ class CardTopScoreItem extends StatelessWidget {
         return Ink(
           width: context.width,
           decoration: BoxDecoration(
-            color: AppColor.card,
-            border: Border.all(
-              color: AppColor.info,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(10),
+            color: Theme.of(context).cardColor.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(15),
           ),
           padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
           child: Column(
@@ -725,7 +719,7 @@ class CardTopScoreItem extends StatelessWidget {
                   child: Text(
                     'Ver Tudo',
                     style: context.textTheme.bodySmall!.copyWith(
-                      color: AppColor.primary,
+                      color: Theme.of(context).primaryColor,
                       fontSize: 15,
                     ),
                   ),

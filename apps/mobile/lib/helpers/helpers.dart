@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:zapscore/logic/cubits/setting/setting_cubit.dart';
 
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:go_router/go_router.dart';
@@ -17,3 +19,4 @@ part 'router.dart';
 part 'constants.dart';
 part 'assets.dart';
 part 'date_format.dart';
+part 'translations.dart';

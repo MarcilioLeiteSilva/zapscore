@@ -28,8 +28,8 @@ class StatsFixPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
-                  color: AppColor.card,
-                  border: Border.all(color: AppColor.info, width: 1),
+                  color: Theme.of(context).cardColor,
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1),
                 ),
                 child: Column(
                   children: [

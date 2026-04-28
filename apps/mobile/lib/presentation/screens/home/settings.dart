@@ -1,21 +1,15 @@
 part of '../screens.dart';
 
-class AccountPage extends StatelessWidget {
-  const AccountPage({super.key});
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
-        title: const Text('Account'),
+        title: Text('account'.tr(context)),
         centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: SvgPicture.asset(Assets.more),
-          ),
-        ],
       ),
       body: ListView(
         children: [
@@ -34,9 +28,9 @@ class AccountPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Mouad Zizi'),
+                      const Text('User Profile'), // Placeholder standard
                       Text(
-                        'moad.devloper@gmail.com',
+                        'user@zapscore.com',
                         style: context.textTheme.labelSmall,
                       ),
                     ],
@@ -44,7 +38,10 @@ class AccountPage extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: SvgPicture.asset(Assets.edit),
+                  icon: SvgPicture.asset(
+                    Assets.edit,
+                    color: context.watch<SettingCubit>().state.theme == 'white' ? Colors.grey[800] : Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -52,23 +49,31 @@ class AccountPage extends StatelessWidget {
           const Gap(10),
           const Divider(height: 30, endIndent: 10, indent: 10),
           CardSettingItem(
-            label: 'Personal Info',
-            icon: Assets.accountSetting,
-            color: Colors.orange.withOpacity(.2),
+            label: 'profile'.tr(context),
+            icon: Assets.accountLine,
+            color: Colors.orange.withOpacity(.1),
             onTap: () {
               context.pushNamed(screenEditInfo);
             },
           ),
           CardSettingItem(
-            label: 'Notification',
-            icon: Assets.bellSetting,
-            color: Colors.deepPurple.withOpacity(.2),
+            label: 'theme'.tr(context),
+            icon: Assets.eye,
+            color: Colors.blue.withOpacity(.1),
+            onTap: () {
+              context.pushNamed(screenTheme);
+            },
+          ),
+          CardSettingItem(
+            label: 'notifications'.tr(context),
+            icon: Assets.bell,
+            color: Colors.deepPurple.withOpacity(.1),
             onTap: () {
               context.pushNamed(screenEditNotification);
             },
           ),
           CardSettingItem(
-            label: 'General',
+            label: 'general'.tr(context),
             icon: Assets.general,
             color: Colors.pinkAccent.withOpacity(.1),
             onTap: () {
@@ -76,29 +81,7 @@ class AccountPage extends StatelessWidget {
             },
           ),
           CardSettingItem(
-            label: 'Security',
-            icon: Assets.securite,
-            color: Colors.greenAccent.withOpacity(.1),
-            onTap: () {
-              context.pushNamed(screenSecurity);
-            },
-          ),
-          /*   CardSettingItem(
-            label: 'Dark Mode',
-            icon: Assets.eye,
-            color: Colors.blue.withOpacity(.1),
-            onTap: () {},
-          ),*/
-          CardSettingItem(
-            label: 'Help Center',
-            icon: Assets.help,
-            color: Colors.orange.withOpacity(.1),
-            onTap: () {
-              context.pushNamed(screenHelpCenter);
-            },
-          ),
-          CardSettingItem(
-            label: 'About ${AppText.appName}',
+            label: 'about'.tr(context),
             icon: Assets.info,
             color: Colors.deepPurpleAccent.withOpacity(.1),
             onTap: () {
@@ -106,10 +89,10 @@ class AccountPage extends StatelessWidget {
             },
           ),
           CardSettingItem(
-            label: 'Logout',
+            label: 'logout'.tr(context),
             icon: Assets.logout,
-            color: AppColor.logout.withOpacity(.1),
-            fullColor: AppColor.logout,
+            color: context.appColors.logout?.withOpacity(.1) ?? Colors.red.withOpacity(.1),
+            fullColor: context.appColors.logout,
             onTap: () {
               showModalBottomSheet(
                   context: context, builder: (builder) => const SheetLogOut());

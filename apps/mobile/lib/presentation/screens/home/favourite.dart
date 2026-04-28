@@ -9,7 +9,7 @@ class FavoritePage extends StatefulWidget {
 
 class _FavoritePageState extends State<FavoritePage> {
   int indexTab = 0;
-  List<String> listTab = ["Matches", "Competitions", "Teams"];
+  List<String> listTab = ["matches", "competitions", "teams"];
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class _FavoritePageState extends State<FavoritePage> {
         headerSliverBuilder: (_, i) {
           return [
             SliverAppBar(
-              title: const Text('Favorites'),
+              title: Text('favourite'.tr(context)),
               centerTitle: false,
               pinned: true,
               actions: [
@@ -55,7 +55,7 @@ class _FavoritePageState extends State<FavoritePage> {
                       itemBuilder: (_, i) {
                         return CardCheepTabSearch(
                           select: indexTab == i,
-                          label: listTab[i],
+                          label: listTab[i].tr(context),
                           onTap: () {
                             setState(() {
                               indexTab = i;
@@ -86,7 +86,7 @@ class _FavoritePageState extends State<FavoritePage> {
                     child: [
                       // Tab Matches
                       state.favoriteFixtures.isEmpty
-                          ? const Center(child: Text('No favorite matches yet'))
+                          ? Center(child: Text('no_fav_matches'.tr(context)))
                           : ListView.separated(
                               padding: const EdgeInsets.only(
                                 left: 10,
@@ -105,8 +105,8 @@ class _FavoritePageState extends State<FavoritePage> {
                             ),
                       // Tab Competitions
                       state.favoriteLeagues.isEmpty
-                          ? const Center(
-                              child: Text('No favorite competitions yet'))
+                          ? Center(
+                              child: Text('no_fav_competitions'.tr(context)))
                           : ListView.separated(
                               padding: const EdgeInsets.only(
                                 left: 10,
@@ -145,7 +145,7 @@ class _FavoritePageState extends State<FavoritePage> {
                             ),
                       // Tab Teams
                       state.favoriteTeams.isEmpty
-                          ? const Center(child: Text('No favorite teams yet'))
+                          ? Center(child: Text('no_fav_teams'.tr(context)))
                           : ListView.separated(
                               padding: const EdgeInsets.only(
                                 left: 10,
@@ -191,7 +191,7 @@ class _FavoritePageState extends State<FavoritePage> {
               return Center(child: Text(state.message));
             }
 
-            return const Center(child: Text('No favorites yet'));
+            return Center(child: Text('no_favorites'.tr(context)));
           },
         ),
       ),

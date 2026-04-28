@@ -7,58 +7,42 @@ class GeneralScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('General'),
+        title: Text('general'.tr(context)),
       ),
       body: ListView(
         children: [
           ListTile(
+            leading: const Icon(Icons.language, color: Colors.blue),
             title: Text(
-              'Automatic refresh',
+              'languages'.tr(context),
               style: context.textTheme.bodyMedium,
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              context.pushNamed(screenLanguages);
+            },
           ),
           ListTile(
+            leading: const Icon(Icons.share, color: Colors.green),
             title: Text(
-              'Clear Cache',
+              'share'.tr(context),
               style: context.textTheme.bodyMedium,
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              // Share functionality
+            },
           ),
           ListTile(
+            leading: const Icon(Icons.help_outline, color: Colors.orange),
             title: Text(
-              'Vibration',
+              'help'.tr(context),
               style: context.textTheme.bodyMedium,
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-          ),
-          ListTile(
-            title: Text(
-              'Privacy and Cookies',
-              style: context.textTheme.bodyMedium,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-          ),
-          ListTile(
-            title: Text(
-              'News Publishers',
-              style: context.textTheme.bodyMedium,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-          ),
-          ListTile(
-            title: Text(
-              'Video Publishers',
-              style: context.textTheme.bodyMedium,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-          ),
-          ListTile(
-            title: Text(
-              'Consent Preferences',
-              style: context.textTheme.bodyMedium,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              context.pushNamed(screenHelpCenter);
+            },
           ),
         ],
       ),

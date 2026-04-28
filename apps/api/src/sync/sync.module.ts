@@ -7,9 +7,10 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { SyncJobsService } from './sync-jobs.service';
 import { SyncContentService } from './sync-content.service';
 import { CompetitionsModule } from '../competitions/competitions.module';
+import { NewsModule } from '../news/news.module';
 
 @Module({
-  imports: [PrismaModule, ApiFootballModule, CompetitionsModule],
+  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule],
   controllers: [SyncController],
   providers: [SyncService, SyncJobsService, SyncContentService],
   exports: [SyncService],

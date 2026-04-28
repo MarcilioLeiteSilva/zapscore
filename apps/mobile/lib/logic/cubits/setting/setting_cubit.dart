@@ -18,5 +18,12 @@ class SettingCubit extends Cubit<SettingState> {
       emit(state.copyWith(showCalendar: !state.showCalendar));
 
   void updateCalendarDate(DateTime date) =>
-      emit(state.copyWith(showCalendar: false, selectedDate: date));
+      emit(state.copyWith(showCalendar: false, selectedDate: date, isLiveSelected: false));
+
+  void toggleLive() => 
+      emit(state.copyWith(isLiveSelected: !state.isLiveSelected, showCalendar: false));
+
+  void updateLanguage(String lang) => emit(state.copyWith(language: lang));
+
+  void updateTheme(String theme) => emit(state.copyWith(theme: theme));
 }

@@ -265,4 +265,12 @@ class ApiClient {
     }
     return null;
   }
+
+  Future<void> syncFixture(int externalId) async {
+    try {
+      await http.post(Uri.parse('$baseUrl/sync/fixture/$externalId'));
+    } catch (e) {
+      print('Sync failed: $e');
+    }
+  }
 }

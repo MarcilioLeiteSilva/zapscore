@@ -43,7 +43,7 @@ class SummaryFixPage extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(15),
-                  color: AppColor.card,
+                  color: Theme.of(context).cardColor,
                   border: Border.all(color: AppColor.info, width: 1),
                 ),
                 child: Column(

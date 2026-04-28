@@ -23,10 +23,14 @@ export class FixturesService {
   }) {
     const { leagueId, season, teamId, date, round, status, limit = 50, page = 1 } = params;
     
-    // Cache Key
-    const cacheKey = this.redis.generateKey('fixtures:list', params);
-    const cached = await this.redis.getJson(cacheKey);
-    if (cached) return cached;
+    // Bypass cache for LIVE matches to ensure real-time data
+    const isLiveRequest = status?.trim().toUpperCase() === 'LIVE';
+    const cacheKey = isLiveRequest ? null : this.redis.generateKey('fixtures:list', params);
+    
+    if (cacheKey) {
+      const cached = await this.redis.getJson(cacheKey);
+      if (cached) return cached;
+    }
 
     const where: any = {};
     if (leagueId) where.league = { externalId: leagueId };
@@ -37,7 +41,14 @@ export class FixturesService {
       const end = new Date(date); end.setHours(23, 59, 59, 999);
       where.date = { gte: start, lte: end };
     }
-    if (status) where.statusShort = status;
+    if (status) {
+      const LIVE_STATUSES = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'];
+      if (isLiveRequest) {
+        where.statusShort = { in: LIVE_STATUSES };
+      } else {
+        where.statusShort = status;
+      }
+    }
 
     const data = await this.prisma.fixture.findMany({
       where,
@@ -47,8 +58,10 @@ export class FixturesService {
       skip: (page - 1) * limit,
     });
 
-    // Cache the result for 5 minutes (fixtures can change often but not constantly)
-    await this.redis.setJson(cacheKey, data, 300);
+    // Cache the result if not a live request
+    if (cacheKey) {
+      await this.redis.setJson(cacheKey, data, 300);
+    }
     return data;
   }
 
