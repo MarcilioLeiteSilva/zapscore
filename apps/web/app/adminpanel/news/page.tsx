@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Newspaper, Plus, Trash2, Edit2, Eye, X, Loader2 } from "lucide-react";
+import { Newspaper, Plus, Trash2, Edit2, Eye, X, Loader2, Globe } from "lucide-react";
+import Link from "next/link";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
@@ -77,13 +78,22 @@ export default function AdminNewsPage() {
           <h2 className="text-4xl font-black text-white uppercase tracking-tight italic">Gestão de Notícias</h2>
           <p className="text-slate-400 mt-2 font-medium">Controle o feed de notícias da plataforma em tempo real.</p>
         </div>
-        <button 
-          onClick={() => openModal()}
-          className="bg-orange-600 hover:bg-orange-500 text-white px-8 py-4 rounded-2xl font-black shadow-2xl transition-all transform hover:-translate-y-1 flex items-center space-x-2"
-        >
-          <Plus size={20} />
-          <span>NOVA NOTÍCIA</span>
-        </button>
+        <div className="flex space-x-4">
+          <Link 
+            href="/adminpanel/news/sources"
+            className="bg-slate-800 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-black shadow-2xl transition-all transform hover:-translate-y-1 flex items-center space-x-2 border border-slate-700"
+          >
+            <Globe size={20} className="text-orange-500" />
+            <span>GERENCIAR FONTES</span>
+          </Link>
+          <button 
+            onClick={() => openModal()}
+            className="bg-orange-600 hover:bg-orange-500 text-white px-8 py-4 rounded-2xl font-black shadow-2xl transition-all transform hover:-translate-y-1 flex items-center space-x-2"
+          >
+            <Plus size={20} />
+            <span>NOVA NOTÍCIA</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
