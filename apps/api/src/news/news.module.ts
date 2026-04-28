@@ -5,10 +5,11 @@ import { PrismaModule } from '../prisma/prisma.module';
 
 import { HttpModule } from '@nestjs/axios';
 import { NewsCrawlerService } from './news-crawler.service';
+import { NewsSourceController } from './news-source.controller';
 
 @Module({
   imports: [PrismaModule, HttpModule],
-  controllers: [NewsController],
+  controllers: [NewsController, NewsSourceController],
   providers: [NewsService, NewsCrawlerService],
   exports: [NewsCrawlerService],
 })

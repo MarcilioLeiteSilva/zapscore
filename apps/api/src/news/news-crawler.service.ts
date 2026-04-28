@@ -25,7 +25,6 @@ export class NewsCrawlerService {
 
   /**
    * Sincroniza notícias usando apenas fontes diretas (Whitelist)
-   * Eliminada a dependência do Google News para evitar retrabalho de decode.
    */
   async syncAllNews() {
     this.logger.log('Starting Clean News Engine (Direct Sources Only)...');
@@ -37,7 +36,7 @@ export class NewsCrawlerService {
           OR: [
             { imageUrl: null },
             { imageUrl: '' },
-            { imageUrl: { startsWith: 'data:image' } } // Remove base64/placeholders
+            { imageUrl: { startsWith: 'data:image' } }
           ]
         }
       });
@@ -45,10 +44,28 @@ export class NewsCrawlerService {
         this.logger.log(`[PURGE] Removed ${purge.count} news items without valid images.`);
       }
 
-      // 2. Sincronizar apenas de fontes diretas
-      for (const source of this.TRUSTED_SOURCES) {
+      // 2. BUSCAR FONTES: Lê do banco de dados (NewsSource)
+      let sources = await this.prisma.newsSource.findMany({
+        where: { active: true }
+      });
+
+      // Se o banco estiver vazio, usamos as fontes fixas iniciais
+      if (sources.length === 0) {
+        this.logger.log('[SOURCE] DB empty. Using initial trusted sources fallback.');
+        sources = this.TRUSTED_SOURCES as any[];
+      }
+
+      for (const source of sources) {
         this.logger.log(`[SOURCE] Syncing from ${source.name}...`);
-        await this.syncFromDirectRss(source);
+        await this.syncFromDirectRss(source as any);
+        
+        // Atualiza data do último sync se a fonte for do banco
+        if (source.id) {
+          await this.prisma.newsSource.update({
+            where: { id: source.id },
+            data: { lastSync: new Date() }
+          }).catch(() => {});
+        }
       }
 
       this.logger.log('Clean News Engine finished successfully.');
