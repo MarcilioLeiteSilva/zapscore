@@ -107,10 +107,11 @@ class CardNewsItem extends StatelessWidget {
                             child: Image.network(
                               image, 
                               fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                            },
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                              },
+                            ),
                           ),
                         )
                       : const CardNoImage(radius: 10),

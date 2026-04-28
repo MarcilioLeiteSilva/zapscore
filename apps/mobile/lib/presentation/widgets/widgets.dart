@@ -10,7 +10,6 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:pattern_formatter/date_formatter.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:zapscore/helpers/helpers.dart';
 
 import '../../logic/cubits/setting/setting_cubit.dart';
