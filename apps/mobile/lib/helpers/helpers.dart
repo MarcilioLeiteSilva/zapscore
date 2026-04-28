@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:zapscore/logic/models/league.dart';
 import 'package:zapscore/logic/models/team.dart';
 import 'package:zapscore/logic/models/fixture.dart';
+import 'package:zapscore/logic/models/video.dart';
 import '../presentation/screens/screens.dart';
 
 part 'colors.dart';
