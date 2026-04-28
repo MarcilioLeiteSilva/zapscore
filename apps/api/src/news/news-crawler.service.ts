@@ -103,22 +103,62 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Resolve a URL original buscando pelo título no buscador (DuckDuckGo HTML)
+   * Resolve a URL original buscando pelo título no Google (Primeiro) ou DuckDuckGo (Backup)
    */
   private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
+    const cleanTitle = title.split(' - ')[0].trim();
+    const query = encodeURIComponent(`${cleanTitle} ${source || ''}`);
+    
+    // TENTATIVA 1: GOOGLE SEARCH
     try {
-      // Limpa o título (remove o " - Fonte" que o Google coloca no final)
-      const cleanTitle = title.split(' - ')[0].trim();
-      const query = encodeURIComponent(`${cleanTitle} ${source || ''}`);
-      console.log(`[SEARCH] Query: ${cleanTitle} | Source: ${source}`);
-      
-      const response = await fetch(`https://html.duckduckgo.com/html/?q=${query}`, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' }
+      console.log(`[SEARCH] Trying Google: ${cleanTitle}`);
+      const googleRes = await firstValueFrom(this.http.get(`https://www.google.com/search?q=${query}`, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+          'Accept': 'text/html',
+          'Referer': 'https://www.google.com/'
+        },
+        timeout: 5000
+      }));
+
+      const $google = cheerio.load(googleRes.data);
+      // O Google costuma colocar os links em <a> dentro de h3 ou em estruturas específicas
+      let foundUrl: string | null = null;
+
+      $google('a').each((_, el) => {
+        const href = $google(el).attr('href');
+        if (href && href.startsWith('/url?q=')) {
+          const actualUrl = href.split('/url?q=')[1].split('&')[0];
+          const decoded = decodeURIComponent(actualUrl);
+          if (decoded.startsWith('http') && !decoded.includes('google.com')) {
+            foundUrl = decoded;
+            return false; // break
+          }
+        }
+        if (href && href.startsWith('http') && !href.includes('google.com') && !href.includes('webcache')) {
+          foundUrl = href;
+          return false; // break
+        }
       });
+
+      if (foundUrl) {
+        console.log(`[SEARCH] Google SUCCESS: ${foundUrl}`);
+        return foundUrl;
+      }
+    } catch (e) {
+      console.log(`[SEARCH] Google Failed/Blocked: ${e.message}`);
+    }
+
+    // TENTATIVA 2: DUCKDUCKGO (Fallback estável)
+    try {
+      console.log(`[SEARCH] Trying DuckDuckGo Fallback...`);
+      const ddgRes = await firstValueFrom(this.http.get(`https://html.duckduckgo.com/html/?q=${query}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        timeout: 5000
+      }));
       
-      const html = await response.text();
-      const $ = cheerio.load(html);
-      const firstLink = $('a.result__a').first().attr('href');
+      const $ddg = cheerio.load(ddgRes.data);
+      const firstLink = $ddg('a.result__a').first().attr('href');
       
       if (firstLink) {
         const url = firstLink.includes('uddg=') 
@@ -126,16 +166,15 @@ export class NewsCrawlerService {
           : firstLink;
 
         if (url.startsWith('http') && !url.includes('google.com')) {
-          console.log(`[SEARCH] FOUND URL: ${url}`);
+          console.log(`[SEARCH] DuckDuckGo SUCCESS: ${url}`);
           return url;
         }
       }
-      console.log(`[SEARCH] No link found for query.`);
-      return null;
     } catch (e) {
-      console.log(`[SEARCH] ERROR: ${e.message}`);
-      return null;
+      console.log(`[SEARCH] Search Engines Failed.`);
     }
+
+    return null;
   }
 
   /**
@@ -153,20 +192,21 @@ export class NewsCrawlerService {
 
       // Tentativa 2: BatchExecute (como fallback)
       const encodedUrl = googleUrl.split('articles/')[1]?.split('?')[0];
-      const response = await fetch(googleUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-      const html = await response.text();
+      const response = await firstValueFrom(this.http.get(googleUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }));
+      const html = response.data;
       const $ = cheerio.load(html);
       const sig = $('[data-n-a-sg]').attr('data-n-a-sg');
       const ts = $('[data-n-a-ts]').attr('data-n-a-ts');
 
       if (sig && ts && encodedUrl) {
         const payload = `f.req=[[["W679rd","[[\\"${encodedUrl}\\",\\"${ts}\\",\\"${sig}\\"]]",null,"generic"]]]`;
-        const batchRes = await fetch('https://news.google.com/_/Dotsu9PostApi/batchexecute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-          body: payload
-        });
-        const batchText = await batchRes.text();
+        const batchRes = await firstValueFrom(this.http.post('https://news.google.com/_/Dotsu9PostApi/batchexecute', 
+          payload,
+          {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+          }
+        ));
+        const batchText = batchRes.data;
         const match = batchText.match(/https?:\/\/[^\s\\"]+/);
         if (match && !match[0].includes('google.com')) return match[0].replace(/\\/g, '');
       }
