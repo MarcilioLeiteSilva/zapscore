@@ -111,17 +111,20 @@ export class NewsCrawlerService {
       const parts = googleUrl.split('articles/');
       let base64Part = parts[1].split('?')[0];
       
-      // Ajuste para Base64Url (Google usa isso às vezes)
+      // Ajuste para Base64Url
       base64Part = base64Part.replace(/-/g, '+').replace(/_/g, '/');
       
       const buffer = Buffer.from(base64Part, 'base64');
-      const decoded = buffer.toString('binary'); // Usar binary para ver caracteres crus
+      const decoded = buffer.toString('binary'); 
       
-      const urlMatch = decoded.match(/https?:\/\/[^\s\x00-\x1F\x7F]+/);
+      // Busca por qualquer coisa que pareça uma URL absoluta
+      const urlMatch = decoded.match(/(https?:\/\/[^\s\x00-\x1F\x7F]+)/);
       
       if (urlMatch) {
-        this.logger.debug(`Decoded URL: ${urlMatch[0]}`);
-        return urlMatch[0];
+        // Limpa a URL de caracteres de controle binários que podem vir do Protobuf
+        const cleanedUrl = urlMatch[1].replace(/[^\w\d\/\.\:\?\&\=\-\%\+_].*$/, '');
+        this.logger.debug(`[DECODE] Success: ${cleanedUrl}`);
+        return cleanedUrl;
       }
       return googleUrl;
     } catch (e) {
@@ -160,7 +163,7 @@ export class NewsCrawlerService {
             }
           });
           repairedCount++;
-          this.logger.debug(`[REPAIR SUCCESS] ${fullData.title}`);
+          this.logger.debug(`[REPAIR] Updated: ${fullData.title}`);
         }
       }
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -173,12 +176,15 @@ export class NewsCrawlerService {
    */
   private async scrapeFullNewsData(url: string) {
     try {
-      this.logger.debug(`Scraping source: ${url}`);
+      this.logger.debug(`[SCRAPE] Visiting: ${url}`);
       const response = await firstValueFrom(this.http.get(url, { 
-        timeout: 5000,
+        timeout: 6000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       }));
       
@@ -187,9 +193,8 @@ export class NewsCrawlerService {
       // Extração de dados via Regex (Reforçado)
       const getMeta = (property: string) => {
         const regexPatterns = [
-          new RegExp(`<meta[^>]+(?:property|name)="${property}"[^>]+content="([^">]+)"`, 'i'),
-          new RegExp(`<meta[^>]+content="([^">]+)"[^>]+(?:property|name)="${property}"`, 'i'),
-          new RegExp(`<meta[^>]+(?:property|name)='${property}'[^>]+content='([^'>]+)'`, 'i')
+          new RegExp(`<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["']`, 'i'),
+          new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${property}["']`, 'i')
         ];
 
         for (const pattern of regexPatterns) {
@@ -202,14 +207,16 @@ export class NewsCrawlerService {
       const title = getMeta('og:title') || getMeta('twitter:title') || getMeta('title');
       const description = getMeta('og:description') || getMeta('twitter:description');
       let image = getMeta('og:image') || getMeta('twitter:image');
-      const source = getMeta('og:site_name') || new URL(url).hostname.replace('www.', '');
+      const source = getMeta('og:site_name') || (url.startsWith('http') ? new URL(url).hostname.replace('www.', '') : null);
 
       if (image && image.startsWith('//')) image = `https:${image}`;
       if (image && image.includes('googleusercontent.com')) image = this.forceHighResGoogleImage(image);
 
+      this.logger.debug(`[SCRAPE] Success: Title=${!!title}, Image=${!!image}`);
+
       return { title, description, image, source };
     } catch (error) {
-      this.logger.debug(`Failed to scrape full data for ${url}: ${error.message}`);
+      this.logger.debug(`[SCRAPE] Failed for ${url}: ${error.message}`);
       return null;
     }
   }
