@@ -109,26 +109,36 @@ export class NewsCrawlerService {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
-      this.logger.debug(`[RESOLVE] Following: ${googleUrl.substring(0, 50)}...`);
+      console.log(`[RESOLVE] Attempting to unwrap: ${googleUrl.substring(0, 60)}...`);
       const response = await firstValueFrom(this.http.get(googleUrl, { 
-        maxRedirects: 5,
+        maxRedirects: 10,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Sec-Ch-Ua': '"Not/A)Brand";v="99", "Google Chrome";v="116", "Chromium";v="116"',
+          'Sec-Ch-Ua-Mobile': '?0',
+          'Sec-Ch-Ua-Platform': '"Windows"',
+          'Upgrade-Insecure-Requests': '1'
         }
       }));
       
-      // O link final após os redirecionamentos
-      const finalUrl = response.request.res.responseUrl || googleUrl;
+      let finalUrl = response.request.res.responseUrl || googleUrl;
       
-      if (finalUrl.includes('google.com/consent') || finalUrl.includes('accounts.google.com')) {
-          console.log(`[RESOLVE] Stuck on Google Consent page`);
-          return googleUrl;
+      // Se paramos no Google, o link real pode estar no HTML (meta refresh)
+      if (finalUrl.includes('google.com')) {
+          const $ = cheerio.load(response.data);
+          const metaRefresh = $('meta[http-equiv="refresh"]').attr('content');
+          if (metaRefresh && metaRefresh.includes('url=')) {
+              finalUrl = metaRefresh.split('url=')[1];
+              console.log(`[RESOLVE] Found link in meta-refresh: ${finalUrl}`);
+          }
       }
 
-      console.log(`[RESOLVE] Resolved to: ${finalUrl}`);
+      console.log(`[RESOLVE] Success: ${finalUrl}`);
       return finalUrl;
     } catch (e) {
-      this.logger.error(`[RESOLVE] Failed: ${e.message}`);
+      console.log(`[RESOLVE] Error: ${e.message}`);
       return googleUrl;
     }
   }
