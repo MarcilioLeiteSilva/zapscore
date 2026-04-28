@@ -148,7 +148,7 @@ export class NewsCrawlerService {
           console.log(`[SCRAPE] Escaping Google: ${url.substring(0, 50)}...`);
           const response = await firstValueFrom(this.http.get(url, { 
             timeout: 5000,
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' }
+            headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1' }
           }));
           const $ = cheerio.load(response.data);
           const refreshLink = $('meta[http-equiv="refresh"]').attr('content');
@@ -165,14 +165,14 @@ export class NewsCrawlerService {
       const response = await firstValueFrom(this.http.get(url, { 
         timeout: 8000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Referer': 'https://www.google.com/'
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9'
         }
       }));
       
       const html = response.data;
-      console.log(`[SCRAPE] Received HTML: ${html.length} chars`);
+      console.log(`[SCRAPE] HTML Preview (500 chars): ${html.substring(0, 500).replace(/\n/g, ' ')}`);
       
       const $ = cheerio.load(html);
       
@@ -188,7 +188,8 @@ export class NewsCrawlerService {
       // JSON-LD deep search
       try {
         $('script[type="application/ld+json"]').each((_: any, el: any) => {
-          const json = JSON.parse($(el).html() || '{}');
+          const jsonStr = $(el).html() || '{}';
+          const json = JSON.parse(jsonStr);
           const findImg = (obj: any): string | null => {
               if (!obj) return null;
               if (typeof obj === 'string' && obj.startsWith('http')) return obj;
@@ -211,7 +212,8 @@ export class NewsCrawlerService {
       if (!image) {
         image = $('meta[property="og:image"]').attr('content') || 
                 $('meta[name="twitter:image"]').attr('content') ||
-                $('link[rel="preload"][as="image"]').attr('href') || null;
+                $('link[rel="preload"][as="image"]').attr('href') || 
+                $('link[rel="icon"]').attr('href') || null;
       }
 
       let source = $('meta[property="og:site_name"]').attr('content') || 
