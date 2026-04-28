@@ -103,38 +103,61 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Decodifica a URL real escondida no Base64 do Google News (Protobuf)
-   * Técnica de Dupla Decodificação (Double-Base64)
+   * Decodifica a URL real usando a técnica de BatchExecute (Engenharia Reversa do Google)
    */
   private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
-      const base64Part = googleUrl.split('articles/')[1].split('?')[0];
-      const buffer = Buffer.from(base64Part.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-      const decodedStr = buffer.toString('latin1');
-
-      // Busca por força bruta: Encontra todos os blocos que parecem Base64 no binário
-      const candidates = decodedStr.match(/[a-zA-Z0-9\-_]{30,}/g) || [];
+      console.log(`[RESOLVE] Phase 1: Fetching tokens from Google Page...`);
+      const response = await fetch(googleUrl, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
+        }
+      });
       
-      for (const candidate of candidates) {
-        try {
-          const innerBuffer = Buffer.from(candidate.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-          const possibleUrlStr = innerBuffer.toString('latin1');
-          const urlMatch = possibleUrlStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+)/);
-          
-          if (urlMatch) {
-            const realUrl = urlMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-            console.log(`[DECODE] Brute-Force Success: ${realUrl}`);
-            return realUrl;
-          }
-        } catch (e) { /* continua para o próximo candidato */ }
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      
+      // Busca os tokens escondidos no HTML
+      const articleEl = $('article').first() || $('body');
+      const sig = articleEl.attr('data-n-a-sg') || $('[data-n-a-sg]').attr('data-n-a-sg');
+      const ts = articleEl.attr('data-n-a-ts') || $('[data-n-a-ts]').attr('data-n-a-ts');
+      const encodedUrl = googleUrl.split('articles/')[1]?.split('?')[0];
+
+      if (sig && ts && encodedUrl) {
+        console.log(`[RESOLVE] Phase 2: Calling BatchExecute API...`);
+        // O payload mágico do Google para decodificar a URL
+        const payload = `f.req=[[["W679rd","[[\\"${encodedUrl}\\",\\"${ts}\\",\\"${sig}\\"]]",null,"generic"]]]`;
+        
+        const batchRes = await fetch('https://news.google.com/_/Dotsu9PostApi/batchexecute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: payload
+        });
+        
+        const batchText = await batchRes.text();
+        // A URL real vem dentro de uma string JSON aninhada no retorno
+        const match = batchText.match(/https?:\/\/[^\s\\"]+/);
+        
+        if (match && !match[0].includes('google.com')) {
+          console.log(`[RESOLVE] Phase 3: SUCCESS! Real URL found: ${match[0]}`);
+          return match[0];
+        }
       }
 
-      console.log(`[DECODE] Failed. Candidates tried: ${candidates.length}. Binary: ${decodedStr.substring(0, 50)}`);
+      // Fallback para link canônico se o batchexecute falhar
+      const canonical = $('link[rel="canonical"]').attr('href');
+      if (canonical && !canonical.includes('google.com')) {
+        console.log(`[RESOLVE] Fallback SUCCESS: ${canonical}`);
+        return canonical;
+      }
+
+      console.log(`[RESOLVE] FAILED: Could not exit Google domain.`);
       return googleUrl;
     } catch (e) {
-      console.log(`[RESOLVE] Error: ${e.message}`);
+      console.log(`[RESOLVE] ERROR: ${e.message}`);
       return googleUrl;
     }
   }
