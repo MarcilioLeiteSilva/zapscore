@@ -100,24 +100,24 @@ export class NewsCrawlerService {
 
   /**
    * Decodifica a URL real escondida nos links do Google News RSS
-   * Ex: https://news.google.com/rss/articles/CBMi... -> https://ge.globo.com/...
    */
   private decodeGoogleNewsUrl(googleUrl: string): string {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
       const parts = googleUrl.split('articles/');
-      if (parts.length < 2) return googleUrl;
+      let base64Part = parts[1].split('?')[0];
       
-      const base64Part = parts[1].split('?')[0];
+      // Ajuste para Base64Url (Google usa isso às vezes)
+      base64Part = base64Part.replace(/-/g, '+').replace(/_/g, '/');
+      
       const buffer = Buffer.from(base64Part, 'base64');
-      const decoded = buffer.toString('utf-8');
+      const decoded = buffer.toString('binary'); // Usar binary para ver caracteres crus
       
-      // A URL real geralmente está no meio do binário decodificado
-      // Procuramos por http... até o fim da string ou algum caractere de controle
       const urlMatch = decoded.match(/https?:\/\/[^\s\x00-\x1F\x7F]+/);
       
       if (urlMatch) {
+        this.logger.debug(`Decoded URL: ${urlMatch[0]}`);
         return urlMatch[0];
       }
       return googleUrl;
@@ -128,30 +128,25 @@ export class NewsCrawlerService {
 
   /**
    * ROBÔ REPARADOR: Percorre as notícias do banco e tenta dar um "upgrade" nos dados
-   * buscando informações diretamente no site de origem.
    */
   async repairNewsData() {
     this.logger.log('Starting News Repairer Robot...');
     
-    // Busca notícias que ainda têm imagem do Google ou estão incompletas
+    // Busca as últimas 100 notícias para garantir que temos volume de teste
     const newsToRepair = await this.prisma.news.findMany({
-      where: {
-        OR: [
-          { imageUrl: { contains: 'googleusercontent.com' } },
-          { imageUrl: null },
-          { source: { contains: 'Google News' } }
-        ]
-      },
-      take: 50 // Processa em lotes para não sobrecarregar
+      orderBy: { createdAt: 'desc' },
+      take: 100
     });
 
-    this.logger.log(`Found ${newsToRepair.length} news items to repair.`);
+    this.logger.log(`Scanning ${newsToRepair.length} news items for potential repairs...`);
 
+    let repairedCount = 0;
     for (const news of newsToRepair) {
       if (news.externalUrl) {
         const realUrl = this.decodeGoogleNewsUrl(news.externalUrl);
         const fullData = await this.scrapeFullNewsData(realUrl);
-        if (fullData) {
+        
+        if (fullData && (fullData.image || fullData.title)) {
           await this.prisma.news.update({
             where: { id: news.id },
             data: {
@@ -161,13 +156,13 @@ export class NewsCrawlerService {
               source: fullData.source || news.source
             }
           });
-          this.logger.debug(`Repaired news: ${fullData.title}`);
+          repairedCount++;
+          this.logger.debug(`[REPAIR SUCCESS] ${fullData.title}`);
         }
       }
-      // Pequena pausa para evitar bloqueios por excesso de requisições
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
-    this.logger.log('News Repairer finished task.');
+    this.logger.log(`News Repairer finished. Total repaired: ${repairedCount}`);
   }
 
   /**
