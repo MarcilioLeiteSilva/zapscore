@@ -70,6 +70,25 @@ export class VideoCrawlerService {
       
       let savedCount = 0;
       for (const item of items) {
+        // Trava de Segurança 1: Filtro de Título (Temporada 2026 ou Europeia 25/26)
+        const titleUpper = item.title.toUpperCase();
+        const hasSeasonYear = titleUpper.includes('2026') || titleUpper.includes('25/26') || titleUpper.includes('26/27');
+        
+        // Trava de Segurança 2: Filtro de Idade (Bloquear vídeos com mais de 1 ano)
+        const ageLower = (item.publishedAt || '').toLowerCase();
+        const isOld = ageLower.includes('year') || ageLower.includes('ano');
+
+        // Trava de Segurança 3: Filtro de Relevância (Deve conter o nome do time ou da liga)
+        // Se estivermos buscando por time, o nome do time deve estar no título
+        // Se for por liga, o nome da liga ou o ano deve estar presente (o ano já checamos acima)
+        const queryUpper = query.split(' 2026')[0].toUpperCase(); // Pega apenas o nome (ex: FLAMENGO)
+        const isRelevant = titleUpper.includes(queryUpper);
+
+        if (!hasSeasonYear || isOld || !isRelevant) {
+          this.logger.debug(`Skipping irrelevant/old/unrelated video: ${item.title} (${item.publishedAt})`);
+          continue;
+        }
+
         try {
           await this.prisma.video.upsert({
             where: { videoUrl: item.link },
@@ -79,7 +98,7 @@ export class VideoCrawlerService {
               description: item.description,
               thumbnailUrl: item.thumbnailUrl,
               videoUrl: item.link,
-              createdAt: new Date(), // YouTube scraping leve não dá data exata facilmente
+              createdAt: new Date(),
               ...ids
             }
           });
@@ -137,12 +156,14 @@ export class VideoCrawlerService {
         const title = video.title?.runs?.[0]?.text || '';
         const videoId = video.videoId;
         const description = video.detailedMetadataSnippets?.[0]?.snippetText?.runs?.map((r: any) => r.text).join('') || '';
+        const publishedTime = video.publishedTimeText?.simpleText || '';
 
         items.push({
           title: title,
           link: `https://www.youtube.com/watch?v=${videoId}`,
           description: description,
           thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          publishedAt: publishedTime, // Novo campo para filtro
         });
 
         if (items.length >= 10) break;
