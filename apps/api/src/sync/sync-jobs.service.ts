@@ -70,8 +70,8 @@ export class SyncJobsService {
     }
   }
 
-  // A cada 3 horas: Sincroniza vídeos/melhores momentos
-  @Cron(CronExpression.EVERY_3_HOURS)
+  // Uma vez por dia: Sincroniza vídeos/melhores momentos
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleVideoSync() {
     this.logger.log('Starting scheduled video sync...');
     try {

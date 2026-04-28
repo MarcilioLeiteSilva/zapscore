@@ -16,6 +16,9 @@ export class VideoCrawlerService {
     this.logger.log('Starting refined video crawl for 2026 season...');
     
     try {
+      // 0. Limpeza: Remover vídeos que não sejam da temporada 2026
+      await this.purgeNon2026Videos();
+      
       const leagues = await this.prisma.league.findMany();
       this.logger.log(`Found ${leagues.length} leagues to crawl videos for.`);
       
@@ -148,5 +151,25 @@ export class VideoCrawlerService {
       this.logger.error(`Error parsing YouTube JSON: ${e.message}`);
     }
     return items;
+  }
+
+  private async purgeNon2026Videos() {
+    try {
+      const result = await this.prisma.video.deleteMany({
+        where: {
+          NOT: {
+            title: {
+              contains: '2026',
+              mode: 'insensitive',
+            },
+          },
+        },
+      });
+      if (result.count > 0) {
+        this.logger.log(`Purged ${result.count} old/non-2026 videos from database.`);
+      }
+    } catch (error) {
+      this.logger.error(`Error purging old videos: ${error.message}`);
+    }
   }
 }
