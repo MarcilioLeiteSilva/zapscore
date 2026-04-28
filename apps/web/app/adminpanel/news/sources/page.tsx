@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Globe, Plus, Trash2, ArrowLeft, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Newspaper, Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
@@ -21,7 +21,7 @@ export default function SourcesPage() {
       setLoading(true);
       const res = await fetch(`${API_URL}/news-sources`);
       const data = await res.json();
-      setSources(data);
+      setSources(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Erro ao carregar fontes:", e);
     } finally {
@@ -90,7 +90,6 @@ export default function SourcesPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-8">
-        {/* Formulario */}
         <div className="col-span-1">
           <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6">
             <h3 className="text-xl font-black text-white uppercase italic">Adicionar Fonte</h3>
@@ -124,7 +123,6 @@ export default function SourcesPage() {
           </div>
         </div>
 
-        {/* Lista */}
         <div className="col-span-2">
           <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
@@ -146,12 +144,12 @@ export default function SourcesPage() {
                     <tr><td colSpan={3} className="p-12 text-center text-slate-500"><Loader2 className="animate-spin mx-auto mb-2" /></td></tr>
                   ) : sources.length === 0 ? (
                     <tr><td colSpan={3} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest">Nenhuma fonte manual cadastrada.</td></tr>
-                  ) : sources.map((source) => (
+                  ) : sources.map((source: any) => (
                     <tr key={source.id} className="hover:bg-slate-800/40 transition-all">
                       <td className="p-6">
                         <div className="flex items-center space-x-4">
                           <div className="p-3 bg-slate-800 rounded-xl text-orange-500">
-                            <Globe size={20} />
+                            <Newspaper size={20} />
                           </div>
                           <div>
                             <p className="font-bold text-white">{source.name}</p>
@@ -161,11 +159,9 @@ export default function SourcesPage() {
                       </td>
                       <td className="p-6 text-center">
                         <button onClick={() => toggleActive(source.id, source.active)}>
-                          {source.active ? (
-                            <CheckCircle className="text-green-500 mx-auto" size={24} />
-                          ) : (
-                            <XCircle className="text-red-500 mx-auto" size={24} />
-                          )}
+                          <span className={source.active ? "text-green-500 font-bold" : "text-red-500 font-bold"}>
+                            {source.active ? "ATIVO" : "INATIVO"}
+                          </span>
                         </button>
                       </td>
                       <td className="p-6 text-right">

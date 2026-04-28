@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Newspaper, Video, LayoutDashboard, ChevronLeft, Globe } from "lucide-react";
+import { Newspaper, Video, LayoutDashboard, ChevronLeft } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/adminpanel/news/sources" 
             className="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group"
           >
-            <Globe size={20} className="text-slate-400 group-hover:text-orange-500" />
+            <Newspaper size={20} className="text-slate-400 group-hover:text-orange-500" />
             <span>Fontes de Notícias</span>
           </Link>
 
