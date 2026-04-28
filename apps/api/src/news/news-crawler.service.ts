@@ -257,22 +257,33 @@ export class NewsCrawlerService {
     let repairedCount = 0;
     for (const news of newsToRepair) {
       if (news.externalUrl) {
+        console.log(`[REPAIR] Processing: ${news.title.substring(0, 40)}`);
         const realUrl = await this.resolveGoogleNewsUrl(news.externalUrl);
-        console.log(`[REPAIR] Decoded URL: ${realUrl.substring(0, 80)}`);
+        
+        if (realUrl === news.externalUrl) {
+          console.log(`[REPAIR] Could not resolve real URL for: ${news.title}`);
+        } else {
+          console.log(`[REPAIR] Resolved to: ${realUrl.substring(0, 60)}`);
+        }
+
         const fullData = await this.scrapeFullNewsData(realUrl);
         
-        if (fullData && (fullData.image || fullData.title)) {
-          await this.prisma.news.update({
-            where: { id: news.id },
-            data: {
-              title: fullData.title || news.title,
-              description: fullData.description || news.description,
-              imageUrl: fullData.image || news.imageUrl,
-              source: fullData.source || news.source
-            }
-          });
-          repairedCount++;
-          console.log(`[REPAIR] Updated: ${fullData.title?.substring(0, 60)}`);
+        if (fullData) {
+          console.log(`[REPAIR] Scraper Result: Title=${!!fullData.title}, Image=${!!fullData.image}`);
+          if (fullData.image || fullData.title) {
+            await this.prisma.news.update({
+              where: { id: news.id },
+              data: {
+                title: fullData.title || news.title,
+                description: fullData.description || news.description,
+                imageUrl: fullData.image || news.imageUrl,
+                source: fullData.source || news.source
+              }
+            });
+            repairedCount++;
+          }
+        } else {
+          console.log(`[REPAIR] Scraper returned NULL for: ${realUrl}`);
         }
       }
       await new Promise(resolve => setTimeout(resolve, 300));
