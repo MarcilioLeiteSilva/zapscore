@@ -46,14 +46,15 @@ export class NewsCrawlerService {
    */
   private async crawlNewsForQuery(query: string, ids: { leagueId?: string; teamId?: string; playerId?: string }) {
     try {
-      // Filtramos por futebol para maior precisão
+      this.logger.log(`[CRAWL] Searching news for: "${query}"`);
       const searchQuery = `${query} futebol`;
       const url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
       
-      const response = await firstValueFrom(this.http.get(url));
+      const response = await firstValueFrom(this.http.get(url, { timeout: 10000 }));
       const xml = response.data;
 
       const items = this.parseRss(xml);
+      this.logger.log(`[RSS] Found ${items.length} items in RSS for "${query}"`);
       
       let newCount = 0;
       for (const item of items) {
@@ -67,6 +68,8 @@ export class NewsCrawlerService {
         const finalDescription = fullData?.description || item.description;
         const finalImage = fullData?.image || item.imageUrl;
         const finalSource = fullData?.source || item.source;
+
+        if (!finalTitle) continue; // Pula se não tiver título
 
         // Usamos upsert para evitar duplicados
         await this.prisma.news.upsert({
@@ -91,10 +94,10 @@ export class NewsCrawlerService {
       }
       
       if (newCount > 0) {
-        this.logger.debug(`Processed ${newCount} high-quality news items for "${query}"`);
+        this.logger.debug(`[SUCCESS] Processed ${newCount} news items for "${query}"`);
       }
     } catch (err) {
-      this.logger.error(`Error crawling news for ${query}: ${err.message}`);
+      this.logger.error(`[ERROR] Crawling news for ${query}: ${err.message}`);
     }
   }
 
