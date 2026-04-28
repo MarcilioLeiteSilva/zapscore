@@ -18,10 +18,49 @@ export class NewsCrawlerService {
     { name: 'Itatiaia', url: 'https://www.itatiaia.com.br/rss', domain: 'itatiaia.com.br' }
   ];
 
+  private teams: any[] = [];
+  private leagues: any[] = [];
+
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Carrega times e ligas do banco para o classificador
+   */
+  private async initClassificationData() {
+    this.teams = await this.prisma.team.findMany({ select: { id: true, name: true } });
+    this.leagues = await this.prisma.league.findMany({ select: { id: true, name: true } });
+    this.logger.log(`[CLASSIFIER] Loaded ${this.teams.length} teams and ${this.leagues.length} leagues for classification.`);
+  }
+
+  /**
+   * Tenta encontrar time ou liga no texto da notícia
+   */
+  private classifyNews(title: string, description: string): { teamId: string | null; leagueId: string | null } {
+    const text = `${title} ${description}`.toLowerCase();
+    let teamId = null;
+    let leagueId = null;
+
+    // Busca Time
+    for (const team of this.teams) {
+      if (text.includes(team.name.toLowerCase())) {
+        teamId = team.id;
+        break;
+      }
+    }
+
+    // Busca Liga
+    for (const league of this.leagues) {
+      if (text.includes(league.name.toLowerCase())) {
+        leagueId = league.id;
+        break;
+      }
+    }
+
+    return { teamId, leagueId };
+  }
 
   /**
    * Sincroniza notícias usando apenas fontes diretas (Whitelist)
@@ -30,6 +69,9 @@ export class NewsCrawlerService {
     this.logger.log('Starting Clean News Engine (Direct Sources Only)...');
     
     try {
+      // 0. Inicializa dados de classificação
+      await this.initClassificationData();
+
       // 1. FAXINA: Deleta tudo que está sem imagem no banco antes de começar
       const purge = await this.prisma.news.deleteMany({
         where: {
@@ -84,10 +126,20 @@ export class NewsCrawlerService {
       this.logger.log(`[RSS] Found ${items.length} items for ${source.name}`);
 
       for (const item of items) {
-        // Para RSS direto, o link já é o final. Fazemos apenas o scrape da imagem.
+        // Filtro de Ano (Opcional: se o título tiver um ano diferente de 2026, ignoramos)
+        // Mas o mais seguro é olhar a data de publicação (pubDate)
+        const itemDate = item.pubDate ? new Date(item.pubDate) : new Date();
+        const itemYear = itemDate.getFullYear();
+
+        // Se a notícia for muito velha (ex: 2025 pra trás), pulamos se o título não tiver "2026"
+        if (itemYear < 2026 && !item.title.includes('2026')) {
+           continue;
+        }
+
         const fullData = await this.scrapeFullNewsData(item.link);
         
         const finalTitle = fullData?.title || item.title;
+        const finalDescription = fullData?.description || item.description;
         const finalImage = (fullData?.image || item.imageUrl || '').trim();
         const finalSource = fullData?.source || source.name;
 
@@ -105,22 +157,30 @@ export class NewsCrawlerService {
           continue;
         }
 
+        // CLASSIFICAÇÃO: Tenta encontrar time ou liga
+        const { teamId, leagueId } = this.classifyNews(finalTitle, finalDescription);
+
         await this.prisma.news.upsert({
           where: { externalUrl: item.link },
           update: { 
             title: finalTitle,
+            description: finalDescription,
             imageUrl: finalImage,
             source: finalSource,
-            author: null // Forçamos null para evitar lixo no banco
+            teamId: teamId || undefined,
+            leagueId: leagueId || undefined,
+            author: null
           }, 
           create: {
             title: finalTitle,
-            description: fullData?.description || item.description,
+            description: finalDescription,
             source: finalSource,
             imageUrl: finalImage,
             externalUrl: item.link,
+            teamId: teamId,
+            leagueId: leagueId,
             author: null,
-            createdAt: item.pubDate ? new Date(item.pubDate) : new Date()
+            createdAt: itemDate
           }
         });
       }
