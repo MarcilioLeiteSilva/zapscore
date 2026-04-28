@@ -1,7 +1,15 @@
 part of '../screens.dart';
 
-class WatchPage extends StatelessWidget {
+class WatchPage extends StatefulWidget {
   const WatchPage({super.key});
+
+  @override
+  State<WatchPage> createState() => _WatchPageState();
+}
+
+class _WatchPageState extends State<WatchPage> {
+  int indexTab = 0;
+  String? selectedLeagueId;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +30,7 @@ class WatchPage extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => context.read<VideoCubit>().fetchVideos(),
+        onRefresh: () => context.read<VideoCubit>().fetchVideos(leagueId: selectedLeagueId),
         child: BlocBuilder<VideoCubit, VideoState>(
           builder: (context, state) {
             if (state is VideoLoading) {
@@ -32,7 +40,7 @@ class WatchPage extends StatelessWidget {
               return Center(child: Text(state.message));
             }
             if (state is VideoLoaded) {
-              if (state.videos.isEmpty) {
+              if (state.videos.isEmpty && indexTab == 0) {
                 return const Center(child: Text('Nenhum vídeo encontrado'));
               }
 
@@ -41,7 +49,55 @@ class WatchPage extends StatelessWidget {
 
               return ListView(
                 children: [
+                  BlocBuilder<HomeCubit, HomeState>(
+                    builder: (context, homeState) {
+                      final List<Map<String, String?>> categories = [
+                        {'name': 'All', 'id': null}
+                      ];
+                      
+                      if (homeState is HomeLoaded) {
+                        for (var comp in homeState.competitions) {
+                          categories.add({
+                            'name': comp.league.name,
+                            'id': comp.league.id
+                          });
+                        }
+                      }
+
+                      return Container(
+                        width: context.width,
+                        height: 60,
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            itemBuilder: (_, i) {
+                              final cat = categories[i];
+                              final isSelected = indexTab == i;
+                              return CardCheepTabSearch(
+                                select: isSelected,
+                                label: cat['name']!,
+                                onTap: () {
+                                  setState(() {
+                                    indexTab = i;
+                                    selectedLeagueId = cat['id'];
+                                  });
+                                  context.read<VideoCubit>().fetchVideos(leagueId: selectedLeagueId);
+                                },
+                              );
+                            },
+                            separatorBuilder: (_, i) => const Gap(10),
+                            itemCount: categories.length,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                   const Gap(10),
+                  if (carouselVideos.isNotEmpty)
                   SizedBox(
                     width: context.width,
                     height: context.height * .3,

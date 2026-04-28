@@ -6,6 +6,8 @@ class Video {
   final String videoUrl;
   final DateTime date;
   final String? duration;
+  final String? leagueLogo;
+  final String? teamLogo;
 
   Video({
     required this.id,
@@ -26,6 +28,8 @@ class Video {
       videoUrl: json['videoUrl'] ?? '',
       date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
       duration: json['duration'],
+      leagueLogo: json['league']?['logo'],
+      teamLogo: json['team']?['logo'],
     );
   }
 }

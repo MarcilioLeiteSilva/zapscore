@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SyncService } from './sync.service';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
+import { VideoCrawlerService } from '../videos/video-crawler.service';
 
 @Injectable()
 export class SyncJobsService {
@@ -12,6 +13,7 @@ export class SyncJobsService {
     private readonly syncService: SyncService,
     private readonly competitionsService: CompetitionsService,
     private readonly newsCrawler: NewsCrawlerService,
+    private readonly videoCrawler: VideoCrawlerService,
   ) {}
 
   // A cada 5 minutos: Sincroniza jogos ao vivo
@@ -65,6 +67,18 @@ export class SyncJobsService {
       this.logger.log('News sync completed successfully.');
     } catch (err) {
       this.logger.error(`News sync job failed: ${err.message}`);
+    }
+  }
+
+  // A cada 3 horas: Sincroniza vídeos/melhores momentos
+  @Cron(CronExpression.EVERY_3_HOURS)
+  async handleVideoSync() {
+    this.logger.log('Starting scheduled video sync...');
+    try {
+      await this.videoCrawler.syncAllVideos();
+      this.logger.log('Video sync completed successfully.');
+    } catch (err) {
+      this.logger.error(`Video sync job failed: ${err.message}`);
     }
   }
 }

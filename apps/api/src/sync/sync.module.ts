@@ -8,9 +8,10 @@ import { SyncJobsService } from './sync-jobs.service';
 import { SyncContentService } from './sync-content.service';
 import { CompetitionsModule } from '../competitions/competitions.module';
 import { NewsModule } from '../news/news.module';
+import { VideosModule } from '../videos/videos.module';
 
 @Module({
-  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule],
+  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule, VideosModule],
   controllers: [SyncController],
   providers: [SyncService, SyncJobsService, SyncContentService],
   exports: [SyncService],

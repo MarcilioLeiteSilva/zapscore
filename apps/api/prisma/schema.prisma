@@ -210,7 +210,7 @@ model Video {
   title       String
   description String?  @db.Text
   thumbnailUrl String?
-  videoUrl    String
+  videoUrl    String   @unique
   duration    String?
   leagueId    String?
   teamId      String?

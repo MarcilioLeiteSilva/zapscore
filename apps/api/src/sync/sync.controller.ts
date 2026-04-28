@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Logger, Param, ParseIntPipe } from '@nestjs/common';
 import { SyncService } from './sync.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
+import { VideoCrawlerService } from '../videos/video-crawler.service';
 
 @Controller('sync')
 export class SyncController {
@@ -9,6 +10,7 @@ export class SyncController {
   constructor(
     private readonly syncService: SyncService,
     private readonly newsCrawler: NewsCrawlerService,
+    private readonly videoCrawler: VideoCrawlerService,
   ) {}
 
   @Post('bootstrap')
@@ -71,5 +73,12 @@ export class SyncController {
     this.logger.log('Manual news sync triggered');
     await this.newsCrawler.syncAllNews();
     return { success: true, message: 'News sync started in background' };
+  }
+
+  @Post('videos')
+  async syncVideos() {
+    this.logger.log('Manual video sync triggered');
+    await this.videoCrawler.syncAllVideos();
+    return { success: true, message: 'Video sync started in background' };
   }
 }
