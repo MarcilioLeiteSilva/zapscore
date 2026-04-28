@@ -338,7 +338,7 @@ export class NewsCrawlerService {
         imageUrl: imageUrl,
       });
     }
-    return items.slice(0, 3);
+    return items.slice(0, 20);
   }
 
   private extractTag(content: string, tag: string) {
