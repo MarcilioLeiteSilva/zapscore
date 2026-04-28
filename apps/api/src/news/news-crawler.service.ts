@@ -104,40 +104,39 @@ export class NewsCrawlerService {
 
   /**
    * Decodifica a URL real escondida no Base64 do Google News (Protobuf)
-   * Técnica avançada de extração de bytes
+   * Usa a técnica de busca por marcadores de campo Protobuf (0x08 0x01 0x12)
    */
   private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
       const base64Part = googleUrl.split('articles/')[1].split('?')[0];
-      // Decodifica Base64 considerando o formato Base64URL do Google
       const buffer = Buffer.from(base64Part.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
       
-      // O link real está no buffer, mas o Google insere bytes de controle.
-      // Vamos procurar a sequência "http" e capturar até o fim da string válida.
-      const decodedStr = buffer.toString('latin1');
-      const httpMatch = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
-      
-      if (httpMatch) {
-        const realUrl = httpMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-        console.log(`[DECODE] Success: ${realUrl}`);
-        return realUrl;
+      // No Protobuf do Google News, a URL original geralmente segue o padrão:
+      // [0x08, 0x01, 0x12, length, ...url...]
+      let urlStartIndex = -1;
+      for (let i = 0; i < buffer.length - 3; i++) {
+        if (buffer[i] === 0x08 && buffer[i+1] === 0x01 && buffer[i+2] === 0x12) {
+          urlStartIndex = i + 4; // Pula os marcadores e o byte de tamanho
+          const length = buffer[i+3];
+          if (urlStartIndex + length <= buffer.length) {
+            const realUrl = buffer.toString('utf-8', urlStartIndex, urlStartIndex + length);
+            if (realUrl.startsWith('http')) {
+              console.log(`[DECODE] Success (Protobuf): ${realUrl}`);
+              return realUrl;
+            }
+          }
+        }
       }
 
-      // Se falhar a decodificação binária, tentamos o FETCH nativo (Redirecionamento Real)
-      console.log(`[DECODE] Binary failed, trying native fetch...`);
-      const response = await fetch(googleUrl, {
-        redirect: 'follow',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36'
-        }
-      });
-      
-      const finalUrl = response.url;
-      if (finalUrl && !finalUrl.includes('google.com')) {
-        console.log(`[FETCH] Success: ${finalUrl}`);
-        return finalUrl;
+      // Fallback: Busca binária simples por "http" se o marcador mudar
+      const decodedStr = buffer.toString('latin1');
+      const httpMatch = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
+      if (httpMatch) {
+        const realUrl = httpMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
+        console.log(`[DECODE] Success (Binary): ${realUrl}`);
+        return realUrl;
       }
 
       return googleUrl;
@@ -251,12 +250,13 @@ export class NewsCrawlerService {
     this.logger.log('Starting News Repairer Robot...');
     
     const newsToRepair = await this.prisma.news.findMany({
+      where: { imageUrl: null },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
 
-    console.log(`[REPAIR] Found ${newsToRepair.length} items to process`);
-    this.logger.log(`Scanning ${newsToRepair.length} news items...`);
+    console.log(`[REPAIR] Found ${newsToRepair.length} items WITHOUT images to process`);
+    this.logger.log(`Scanning ${newsToRepair.length} news items without images...`);
 
     let repairedCount = 0;
     for (const news of newsToRepair) {
