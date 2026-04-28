@@ -57,15 +57,24 @@ export class NewsCrawlerService {
       
       let newCount = 0;
       for (const item of items) {
+        // Tentar buscar imagem de alta resolução diretamente no site da notícia
+        let highResImage = item.imageUrl;
+        try {
+          const fetchedImage = await this.fetchHighResImage(item.link);
+          if (fetchedImage) highResImage = fetchedImage;
+        } catch (e) {
+          this.logger.debug(`Could not fetch high-res image for ${item.link}: ${e.message}`);
+        }
+
         // Usamos upsert com update vazio para evitar duplicados sem sobrescrever dados manuais
         await this.prisma.news.upsert({
           where: { externalUrl: item.link },
-          update: { imageUrl: item.imageUrl }, 
+          update: { imageUrl: highResImage }, 
           create: {
             title: item.title,
             description: item.description,
             source: item.source,
-            imageUrl: item.imageUrl,
+            imageUrl: highResImage,
             externalUrl: item.link,
             createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
             ...ids
@@ -79,6 +88,36 @@ export class NewsCrawlerService {
       }
     } catch (err) {
       this.logger.error(`Error crawling news for ${query}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Acessa a URL da notícia e tenta extrair a imagem original (og:image)
+   */
+  private async fetchHighResImage(url: string): Promise<string | null> {
+    try {
+      // Timeout curto para não travar o processo (3 segundos)
+      const response = await firstValueFrom(this.http.get(url, { 
+        timeout: 3000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      }));
+      
+      const html = response.data;
+      // Regex para buscar <meta property="og:image" content="...">
+      const ogImageMatch = /<meta[^>]+property="og:image"[^>]+content="([^">]+)"/i.exec(html) || 
+                           /<meta[^>]+content="([^">]+)"[^>]+property="og:image"/i.exec(html) ||
+                           /<meta[^>]+name="twitter:image"[^>]+content="([^">]+)"/i.exec(html);
+
+      if (ogImageMatch && ogImageMatch[1]) {
+        let imageUrl = ogImageMatch[1];
+        if (imageUrl.startsWith('//')) imageUrl = `https:${imageUrl}`;
+        return imageUrl;
+      }
+      return null;
+    } catch (error) {
+      return null;
     }
   }
 
@@ -108,7 +147,7 @@ export class NewsCrawlerService {
       });
     }
     // Limitamos a 5 notícias por busca para não sobrecarregar
-    return items.slice(0, 10); // Aumentado para 10 para ter mais opções
+    return items.slice(0, 3); // Reduzi para 3 para compensar o tempo de fetch da imagem
   }
 
   private extractTag(content: string, tag: string) {
