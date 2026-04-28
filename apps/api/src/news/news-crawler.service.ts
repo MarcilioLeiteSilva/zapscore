@@ -111,28 +111,23 @@ export class NewsCrawlerService {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
       const parts = googleUrl.split('articles/');
-      let base64Part = parts[1].split('?')[0];
+      const base64Part = parts[1].split('?')[0];
       
-      // Ajuste de Base64Url
-      base64Part = base64Part.replace(/-/g, '+').replace(/_/g, '/');
-      while (base64Part.length % 4 !== 0) base64Part += '=';
-      
+      // Decodificação base64 padrão
       const buffer = Buffer.from(base64Part, 'base64');
-      
-      // O Protobuf do Google News geralmente tem a URL começando após os primeiros bytes de controle
-      // Vamos procurar a primeira ocorrência de "http" no buffer
       const decodedStr = buffer.toString('utf-8');
-      const httpIndex = decodedStr.indexOf('http');
       
-      if (httpIndex !== -1) {
-        // A URL termina antes de caracteres de controle binários (0x00-0x1F)
-        let cleanedUrl = decodedStr.substring(httpIndex);
-        const match = cleanedUrl.match(/^(https?:\/\/[a-zA-Z0-9\-\.\/\%\?\&\=\#\_\+]+)/);
-        if (match) {
-          this.logger.debug(`[DECODE] Success: ${match[1]}`);
-          return match[1];
-        }
+      // Busca agressiva por qualquer URL absoluta no blob
+      const match = decodedStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F]+)/);
+      
+      if (match) {
+        // Limpa a URL de lixo Protobuf no final
+        const cleanedUrl = match[1].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
+        console.log(`[DECODE] Success: ${cleanedUrl}`);
+        return cleanedUrl;
       }
+      
+      console.log(`[DECODE] Failed for: ${googleUrl.substring(0, 50)}...`);
       return googleUrl;
     } catch (e) {
       return googleUrl;
