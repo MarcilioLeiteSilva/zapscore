@@ -555,7 +555,8 @@ export class NewsCrawlerService {
       where: {
         OR: [
           { imageUrl: null },
-          { imageUrl: '' }
+          { imageUrl: '' },
+          { imageUrl: { contains: 'thumbor' } } // NOVO: Focar nos links problemáticos
         ]
       },
       orderBy: { createdAt: 'desc' },
