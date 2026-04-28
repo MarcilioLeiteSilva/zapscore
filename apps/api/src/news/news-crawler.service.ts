@@ -57,8 +57,11 @@ export class NewsCrawlerService {
       
       let newCount = 0;
       for (const item of items) {
+        // Decodifica a URL real antes de fazer o scraping
+        const realUrl = this.decodeGoogleNewsUrl(item.link);
+        
         // Tentar buscar todos os dados da notícia diretamente no site de origem (Full Scraping)
-        const fullData = await this.scrapeFullNewsData(item.link);
+        const fullData = await this.scrapeFullNewsData(realUrl);
         
         const finalTitle = fullData?.title || item.title;
         const finalDescription = fullData?.description || item.description;
@@ -96,6 +99,34 @@ export class NewsCrawlerService {
   }
 
   /**
+   * Decodifica a URL real escondida nos links do Google News RSS
+   * Ex: https://news.google.com/rss/articles/CBMi... -> https://ge.globo.com/...
+   */
+  private decodeGoogleNewsUrl(googleUrl: string): string {
+    try {
+      if (!googleUrl.includes('articles/')) return googleUrl;
+      
+      const parts = googleUrl.split('articles/');
+      if (parts.length < 2) return googleUrl;
+      
+      const base64Part = parts[1].split('?')[0];
+      const buffer = Buffer.from(base64Part, 'base64');
+      const decoded = buffer.toString('utf-8');
+      
+      // A URL real geralmente está no meio do binário decodificado
+      // Procuramos por http... até o fim da string ou algum caractere de controle
+      const urlMatch = decoded.match(/https?:\/\/[^\s\x00-\x1F\x7F]+/);
+      
+      if (urlMatch) {
+        return urlMatch[0];
+      }
+      return googleUrl;
+    } catch (e) {
+      return googleUrl;
+    }
+  }
+
+  /**
    * ROBÔ REPARADOR: Percorre as notícias do banco e tenta dar um "upgrade" nos dados
    * buscando informações diretamente no site de origem.
    */
@@ -118,7 +149,8 @@ export class NewsCrawlerService {
 
     for (const news of newsToRepair) {
       if (news.externalUrl) {
-        const fullData = await this.scrapeFullNewsData(news.externalUrl);
+        const realUrl = this.decodeGoogleNewsUrl(news.externalUrl);
+        const fullData = await this.scrapeFullNewsData(realUrl);
         if (fullData) {
           await this.prisma.news.update({
             where: { id: news.id },
