@@ -57,24 +57,28 @@ export class NewsCrawlerService {
       
       let newCount = 0;
       for (const item of items) {
-        // Tentar buscar imagem de alta resolução diretamente no site da notícia
-        let highResImage = this.forceHighResGoogleImage(item.imageUrl || '');
-        try {
-          const fetchedImage = await this.fetchHighResImage(item.link);
-          if (fetchedImage) highResImage = fetchedImage;
-        } catch (e) {
-          this.logger.debug(`Could not fetch high-res image for ${item.link}: ${e.message}`);
-        }
+        // Tentar buscar todos os dados da notícia diretamente no site de origem (Full Scraping)
+        const fullData = await this.scrapeFullNewsData(item.link);
+        
+        const finalTitle = fullData?.title || item.title;
+        const finalDescription = fullData?.description || item.description;
+        const finalImage = fullData?.image || item.imageUrl;
+        const finalSource = fullData?.source || item.source;
 
-        // Usamos upsert com update vazio para evitar duplicados sem sobrescrever dados manuais
+        // Usamos upsert para evitar duplicados
         await this.prisma.news.upsert({
           where: { externalUrl: item.link },
-          update: { imageUrl: highResImage }, 
+          update: { 
+            title: finalTitle,
+            description: finalDescription,
+            imageUrl: finalImage,
+            source: finalSource
+          }, 
           create: {
-            title: item.title,
-            description: item.description,
-            source: item.source,
-            imageUrl: highResImage,
+            title: finalTitle,
+            description: finalDescription,
+            source: finalSource,
+            imageUrl: finalImage,
             externalUrl: item.link,
             createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
             ...ids
@@ -84,7 +88,7 @@ export class NewsCrawlerService {
       }
       
       if (newCount > 0) {
-        this.logger.debug(`Processed ${newCount} news items for "${query}"`);
+        this.logger.debug(`Processed ${newCount} high-quality news items for "${query}"`);
       }
     } catch (err) {
       this.logger.error(`Error crawling news for ${query}: ${err.message}`);
@@ -92,40 +96,56 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Acessa a URL da notícia e tenta extrair a imagem original (og:image)
+   * Scraper Avançado: Acessa a URL e extrai todos os dados via OpenGraph
    */
-  private async fetchHighResImage(url: string): Promise<string | null> {
+  private async scrapeFullNewsData(url: string) {
     try {
-      // Timeout curto para não travar o processo (3 segundos)
       const response = await firstValueFrom(this.http.get(url, { 
-        timeout: 4000,
+        timeout: 5000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1'
         }
       }));
       
       const html = response.data;
-      const ogImageMatch = /<meta[^>]+property="og:image"[^>]+content="([^">]+)"/i.exec(html) || 
-                           /<meta[^>]+content="([^">]+)"[^>]+property="og:image"/i.exec(html) ||
-                           /<meta[^>]+name="twitter:image"[^>]+content="([^">]+)"/i.exec(html);
+      
+      // Extração de dados via Regex (OpenGraph e Twitter Cards)
+      const getMeta = (property: string) => {
+        const regex = new RegExp(`<meta[^>]+(?:property|name)="${property}"[^>]+content="([^">]+)"`, 'i');
+        const regexAlt = new RegExp(`<meta[^>]+content="([^">]+)"[^>]+(?:property|name)="${property}"`, 'i');
+        const match = regex.exec(html) || regexAlt.exec(html);
+        return match ? this.decodeHtmlEntities(match[1]) : null;
+      };
 
-      if (ogImageMatch && ogImageMatch[1]) {
-        let imageUrl = ogImageMatch[1];
-        if (imageUrl.startsWith('//')) imageUrl = `https:${imageUrl}`;
-        return this.forceHighResGoogleImage(imageUrl);
-      }
-      return null;
+      const title = getMeta('og:title') || getMeta('twitter:title');
+      const description = getMeta('og:description') || getMeta('twitter:description');
+      let image = getMeta('og:image') || getMeta('twitter:image');
+      const source = getMeta('og:site_name') || new URL(url).hostname.replace('www.', '');
+
+      if (image && image.startsWith('//')) image = `https:${image}`;
+      if (image) image = this.forceHighResGoogleImage(image);
+
+      return { title, description, image, source };
     } catch (error) {
+      this.logger.debug(`Failed to scrape full data for ${url}: ${error.message}`);
       return null;
     }
   }
 
   /**
-   * Se for uma imagem do Google UserContent, força a resolução máxima
+   * Decode HTML entities comuns
    */
+  private decodeHtmlEntities(text: string): string {
+    return text.replace(/&amp;/g, '&')
+               .replace(/&lt;/g, '<')
+               .replace(/&gt;/g, '>')
+               .replace(/&quot;/g, '"')
+               .replace(/&#39;/g, "'")
+               .replace(/&nbsp;/g, ' ');
+  }
+
   private forceHighResGoogleImage(url: string): string {
     if (url.includes('googleusercontent.com')) {
-      // Remove parâmetros de redimensionamento (ex: =s0-w300-rw) e força =s0 (original)
       return url.split('=')[0] + '=s0';
     }
     return url;
