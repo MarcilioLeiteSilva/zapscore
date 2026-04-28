@@ -157,7 +157,8 @@ export class NewsCrawlerService {
         
         const finalTitle = fullData?.title || item.title;
         const finalDescription = fullData?.description || item.description;
-        const finalImage = (fullData?.image || item.imageUrl || '').trim();
+        const rawImage = fullData?.image || item.imageUrl || '';
+        const finalImage = this.cleanImageUrl(rawImage.trim()) || '';
         const finalSource = fullData?.source || source.name;
 
         // REGRA DE OURO: Se não tem imagem, DELETA e PULA.
@@ -323,22 +324,57 @@ export class NewsCrawlerService {
     }
   }
 
+  private cleanImageUrl(url: string | null): string | null {
+    if (!url) return null;
+    let target = url.trim();
+
+    // Se for Thumbor, tenta extrair o link interno
+    if (target.toLowerCase().includes('/thumbor/') && target.toLowerCase().includes('http')) {
+      const parts = target.split('http');
+      if (parts.length > 2) {
+        target = decodeURIComponent('http' + parts[parts.length - 1]);
+      }
+    }
+
+    // Limpa parâmetros de resize que podem quebrar o acesso direto em alguns CDNs
+    if (target.includes('?')) {
+       // Mas mantém se for algo essencial como format ou token
+       // Por enquanto vamos apenas garantir que a URL base seja válida
+    }
+
+    return target;
+  }
+
   private isValidImage(url?: string | null): boolean {
     if (!url || typeof url !== 'string') return false;
-    if (!url.startsWith('http')) return false;
     
-    const lowerUrl = url.toLowerCase();
+    let targetUrl = url.trim();
+    const lowerUrl = targetUrl.toLowerCase();
     
     // 1. Blacklist: Padrões de "não-imagem" ou placeholders
-    const blackList = ['placeholder', 'logo-ge', 'favicon', 'icon', 'default-image', 'spacer.gif'];
+    const blackList = ['placeholder', 'logo-ge', 'favicon', 'icon', 'default-image', 'spacer.gif', 'loading'];
     if (blackList.some(pattern => lowerUrl.includes(pattern))) return false;
 
-    // 2. Whitelist: Deve conter uma extensão de imagem válida
+    // 2. Especial: Tratar URLs do Thumbor (Trivela e outros)
+    // Se a URL contém outra URL de imagem dentro (comum em processadores), tentamos extrair a fonte original
+    if (lowerUrl.includes('/thumbor/') && lowerUrl.includes('http')) {
+       const parts = targetUrl.split('http');
+       if (parts.length > 2) {
+          // Pega a última parte que começa com http e limpa caracteres de escape
+          const rawSource = 'http' + parts[parts.length - 1];
+          const decodedSource = decodeURIComponent(rawSource);
+          if (this.isValidImage(decodedSource)) {
+             return true; 
+          }
+       }
+    }
+
+    // 3. Whitelist: Deve conter uma extensão de imagem válida
     const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.svg'];
     const hasImageExtension = extensions.some(ext => lowerUrl.includes(ext));
 
-    // 3. Caso especial: Links de imagem de CDNs que usam parâmetros (ex: ?format=jpg ou /image/123)
-    const isCdnImage = lowerUrl.includes('/image/') || lowerUrl.includes('/img/') || lowerUrl.includes('static');
+    // 4. Caso especial: Links de imagem de CDNs que usam parâmetros
+    const isCdnImage = lowerUrl.includes('/image/') || lowerUrl.includes('/img/') || lowerUrl.includes('static') || lowerUrl.includes('wp-content/uploads');
 
     return hasImageExtension || isCdnImage;
   }
