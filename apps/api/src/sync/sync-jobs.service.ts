@@ -58,8 +58,8 @@ export class SyncJobsService {
     }
   }
   
-  // A cada 1 hora: Sincroniza notícias
-  @Cron(CronExpression.EVERY_HOUR)
+  // A cada 12 horas: Sincroniza notícias
+  @Cron('0 */12 * * *')
   async handleNewsSync() {
     this.logger.log('Starting scheduled news sync...');
     try {
