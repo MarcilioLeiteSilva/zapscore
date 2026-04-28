@@ -103,7 +103,7 @@ export class VideoCrawlerService {
       const contents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
       if (!contents) return [];
 
-      const videoList = contents.find(c => c.itemSectionRenderer)?.itemSectionRenderer?.contents || [];
+      const videoList = contents.find((c: any) => c.itemSectionRenderer)?.itemSectionRenderer?.contents || [];
 
       for (const item of videoList) {
         const video = item.videoRenderer;
@@ -111,7 +111,7 @@ export class VideoCrawlerService {
 
         const title = video.title?.runs?.[0]?.text || '';
         const videoId = video.videoId;
-        const description = video.detailedMetadataSnippets?.[0]?.snippetText?.runs?.map(r => r.text).join('') || '';
+        const description = video.detailedMetadataSnippets?.[0]?.snippetText?.runs?.map((r: any) => r.text).join('') || '';
 
         items.push({
           title: title,
