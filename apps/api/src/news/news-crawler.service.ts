@@ -224,10 +224,10 @@ export class NewsCrawlerService {
       this.logger.debug(`[SCRAPE] Success: ${title}`);
 
       return { 
-        title: title?.trim(), 
-        description: description?.trim(), 
+        title: title?.trim() || '', 
+        description: description?.trim() || '', 
         image, 
-        source: source?.trim() 
+        source: source?.trim() || '' 
       };
     } catch (error) {
       this.logger.debug(`[SCRAPE] Failed for ${url}: ${error.message}`);
