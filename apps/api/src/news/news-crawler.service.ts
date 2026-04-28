@@ -99,7 +99,10 @@ export class NewsCrawlerService {
       }
     } catch (err) {
       this.logger.error(`[ERROR] Crawling news for ${query}: ${err.message}`);
-   /**
+    }
+  }
+
+  /**
    * Resolve a URL original buscando pelo título no buscador (DuckDuckGo HTML)
    */
   private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
