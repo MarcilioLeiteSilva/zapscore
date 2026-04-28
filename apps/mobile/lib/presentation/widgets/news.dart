@@ -91,10 +91,10 @@ class CardNewsItem extends StatelessWidget {
             Stack(
               children: [
                 Container(
-                  width: 100, // Diminuído de 130 para 100
-                  height: 80,  // Diminuído de 100 para 80
+                  width: 60,  // Reduzido 50%
+                  height: 50, // Reduzido 50%
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     color: Theme.of(context).cardColor,
                   ),
                   child: image != null
@@ -207,7 +207,7 @@ class CardNewsCarouselItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: context.height * .25, // Reduzido de .3 para .25
+              height: context.height * .18, // Reduzido para .18 (aprox 30% de redução)
               child: Stack(
                 children: [
                   image != null

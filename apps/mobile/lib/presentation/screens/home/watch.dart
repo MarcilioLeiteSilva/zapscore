@@ -29,7 +29,7 @@ class _WatchPageState extends State<WatchPage> {
 
         return Container(
           width: context.width,
-          height: 60,
+          height: 45, // Reduzido de 60 para 45
           color: Theme.of(context).scaffoldBackgroundColor,
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Material(

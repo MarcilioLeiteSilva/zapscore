@@ -82,10 +82,10 @@ class CardCheepTabSearch extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
       child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: select ? Theme.of(context).primaryColor : Theme.of(context).cardColor.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(20), // Reduzido de 30 para 20
         ),
         child: Center(
           child: Text(
@@ -94,7 +94,7 @@ class CardCheepTabSearch extends StatelessWidget {
               color: select 
                 ? context.appColors.darkGreen
                 : Theme.of(context).primaryColor,
-              fontSize: 15,
+              fontSize: 12, // Reduzido de 15 para 12
             ),
           ),
         ),
