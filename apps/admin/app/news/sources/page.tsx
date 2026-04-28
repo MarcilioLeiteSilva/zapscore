@@ -29,7 +29,7 @@ export default function SourcesPage() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -52,7 +52,7 @@ export default function SourcesPage() {
     }
   };
 
-  const toggleActive = async (id, currentStatus) => {
+  const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       await fetch(`${API_URL}/news-sources/${id}`, {
         method: "PUT",
@@ -65,7 +65,7 @@ export default function SourcesPage() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Deletar esta fonte permanentemente?")) return;
     try {
       await fetch(`${API_URL}/news-sources/${id}`, { method: "DELETE" });
