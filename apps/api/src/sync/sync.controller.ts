@@ -71,14 +71,14 @@ export class SyncController {
   @Post('news')
   async syncNews() {
     this.logger.log('Manual news sync triggered');
-    await this.newsCrawler.syncAllNews();
+    this.newsCrawler.syncAllNews(); // Sem await para rodar em background
     return { success: true, message: 'News sync started in background' };
   }
 
   @Post('videos')
   async syncVideos() {
     this.logger.log('Manual video sync triggered');
-    await this.videoCrawler.syncAllVideos();
+    this.videoCrawler.syncAllVideos(); // Sem await para rodar em background
     return { success: true, message: 'Video sync started in background' };
   }
 }
