@@ -43,20 +43,36 @@ export class NewsCrawlerService {
     let teamId = null;
     let leagueId = null;
 
-    // Busca Time
-    for (const team of this.teams) {
-      if (text.includes(team.name.toLowerCase())) {
-        teamId = team.id;
-        break;
+    // Busca Time (Ordenamos por tamanho de nome para evitar falsos positivos com nomes curtos dentro de nomes longos)
+    const sortedTeams = [...this.teams].sort((a, b) => b.name.length - a.name.length);
+    for (const team of sortedTeams) {
+      const name = team.name.toLowerCase();
+      // Se o nome for longo, buscamos ele todo. Se for curto (ex: Avaí), buscamos com espaços ou no início.
+      if (name.length > 4) {
+        if (text.includes(name)) {
+          teamId = team.id;
+          break;
+        }
+      } else {
+        const regex = new RegExp(`\\b${name}\\b`, 'i');
+        if (regex.test(text)) {
+          teamId = team.id;
+          break;
+        }
       }
     }
 
     // Busca Liga
     for (const league of this.leagues) {
-      if (text.includes(league.name.toLowerCase())) {
+      const name = league.name.toLowerCase();
+      if (text.includes(name)) {
         leagueId = league.id;
         break;
       }
+      
+      // Fallbacks comuns para ligas brasileiras
+      if (name === 'serie a' && (text.includes('brasileirão') || text.includes('série a'))) leagueId = league.id;
+      if (name === 'serie b' && (text.includes('série b'))) leagueId = league.id;
     }
 
     return { teamId, leagueId };
@@ -72,13 +88,14 @@ export class NewsCrawlerService {
       // 0. Inicializa dados de classificação
       await this.initClassificationData();
 
-      // 1. FAXINA: Deleta tudo que está sem imagem no banco antes de começar
+      // 1. FAXINA: Deleta tudo que está sem imagem OU sem vínculo com time/liga
       const purge = await this.prisma.news.deleteMany({
         where: {
           OR: [
             { imageUrl: null },
             { imageUrl: '' },
-            { imageUrl: { startsWith: 'data:image' } }
+            { imageUrl: { startsWith: 'data:image' } },
+            { AND: [{ teamId: null }, { leagueId: null }] } // NOVO: Remove notícias sem vínculo
           ]
         }
       });
@@ -159,6 +176,13 @@ export class NewsCrawlerService {
 
         // CLASSIFICAÇÃO: Tenta encontrar time ou liga
         const { teamId, leagueId } = this.classifyNews(finalTitle, finalDescription);
+
+        // REGRA DE RIGOR: Se não pertence a nenhuma liga ou time monitorado, DESCARTA.
+        if (!teamId && !leagueId) {
+          // Opcional: Se quiser limpar o que já existe e agora não bate mais na regra, descomente abaixo
+          // await this.prisma.news.deleteMany({ where: { externalUrl: item.link } });
+          continue;
+        }
 
         await this.prisma.news.upsert({
           where: { externalUrl: item.link },
