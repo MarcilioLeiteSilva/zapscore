@@ -266,13 +266,21 @@ export class NewsCrawlerService {
     this.logger.log('Starting News Repairer Robot...');
     
     const newsToRepair = await this.prisma.news.findMany({
-      where: { imageUrl: null },
+      where: {
+        OR: [
+          { imageUrl: null },
+          { imageUrl: '' }
+        ]
+      },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
 
-    console.log(`[REPAIR] Found ${newsToRepair.length} items WITHOUT images to process`);
-    this.logger.log(`Scanning ${newsToRepair.length} news items without images...`);
+    console.log(`[REPAIR] Found ${newsToRepair.length} items to repair (imageUrl is null or empty)`);
+    if (newsToRepair.length === 0) {
+      const sample = await this.prisma.news.findMany({ take: 3, orderBy: { createdAt: 'desc' } });
+      console.log(`[REPAIR] DB Sample (Recent): ${JSON.stringify(sample.map(n => ({ id: n.id, img: n.imageUrl })))}`);
+    }
 
     let repairedCount = 0;
     for (const news of newsToRepair) {
