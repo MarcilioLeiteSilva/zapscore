@@ -104,7 +104,7 @@ export class NewsCrawlerService {
 
   /**
    * Decodifica a URL real escondida no Base64 do Google News (Protobuf)
-   * Usa a técnica de busca por marcadores de campo Protobuf (0x08 0x01 0x12)
+   * Técnica de Dupla Decodificação (Double-Base64)
    */
   private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     try {
@@ -112,37 +112,34 @@ export class NewsCrawlerService {
       
       const base64Part = googleUrl.split('articles/')[1].split('?')[0];
       const buffer = Buffer.from(base64Part.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-      
-      // Log para diagnóstico do binário
       const decodedStr = buffer.toString('latin1');
-      console.log(`[DECODE] Binary Sample: ${decodedStr.substring(0, 100).replace(/[^\x20-\x7E]/g, '.')}`);
 
-      // No Protobuf do Google News, a URL original geralmente segue o padrão:
-      // [0x08, 0x01, 0x12, length, ...url...]
-      let urlStartIndex = -1;
-      for (let i = 0; i < buffer.length - 3; i++) {
-        if (buffer[i] === 0x08 && buffer[i+1] === 0x01 && buffer[i+2] === 0x12) {
-          urlStartIndex = i + 4; // Pula os marcadores e o byte de tamanho
-          const length = buffer[i+3];
-          if (urlStartIndex + length <= buffer.length) {
-            const realUrl = buffer.toString('utf-8', urlStartIndex, urlStartIndex + length);
-            if (realUrl.startsWith('http')) {
-              console.log(`[DECODE] Success (Protobuf): ${realUrl}`);
-              return realUrl;
-            }
-          }
+      // Procura o padrão AU_yqL que indica o início da URL codificada internamente
+      const nestedMatch = decodedStr.match(/AU_yqL[a-zA-Z0-9\-_]+/);
+      
+      if (nestedMatch) {
+        const innerBase64 = nestedMatch[0];
+        const innerBuffer = Buffer.from(innerBase64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+        const finalStr = innerBuffer.toString('latin1');
+        
+        // Agora buscamos a URL real dentro do segundo nível
+        const urlMatch = finalStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+)/);
+        if (urlMatch) {
+          const realUrl = urlMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
+          console.log(`[DECODE] Double-Decode Success: ${realUrl}`);
+          return realUrl;
         }
       }
 
-      // Fallback: Busca binária simples por "http" se o marcador mudar
-      const fallbackStr = buffer.toString('latin1');
-      const httpMatch = fallbackStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
+      // Fallback: Busca binária simples no primeiro nível
+      const httpMatch = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
       if (httpMatch) {
         const realUrl = httpMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-        console.log(`[DECODE] Success (Binary): ${realUrl}`);
+        console.log(`[DECODE] Primary Success: ${realUrl}`);
         return realUrl;
       }
 
+      console.log(`[DECODE] Failed both methods. Binary: ${decodedStr.substring(0, 50)}`);
       return googleUrl;
     } catch (e) {
       console.log(`[RESOLVE] Error: ${e.message}`);
