@@ -60,7 +60,7 @@ export class NewsCrawlerService {
       let newCount = 0;
       for (const item of items) {
         // Decodifica a URL real antes de fazer o scraping
-        const realUrl = this.decodeGoogleNewsUrl(item.link);
+        const realUrl = await this.resolveGoogleNewsUrl(item.link);
         
         // Tentar buscar todos os dados da notícia diretamente no site de origem (Full Scraping)
         const fullData = await this.scrapeFullNewsData(realUrl);
@@ -103,33 +103,32 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Decodifica a URL real escondida nos links do Google News RSS
-   * Formato: CBMi... (Protobuf Base64)
+   * Resolve a URL real do Google News seguindo o redirecionamento
    */
-  private decodeGoogleNewsUrl(googleUrl: string): string {
+  private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
-      const parts = googleUrl.split('articles/');
-      const base64Part = parts[1].split('?')[0];
+      this.logger.debug(`[RESOLVE] Following: ${googleUrl.substring(0, 50)}...`);
+      const response = await firstValueFrom(this.http.get(googleUrl, { 
+        maxRedirects: 5,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1'
+        }
+      }));
       
-      // Decodificação base64 padrão
-      const buffer = Buffer.from(base64Part, 'base64');
-      const decodedStr = buffer.toString('utf-8');
+      // O link final após os redirecionamentos
+      const finalUrl = response.request.res.responseUrl || googleUrl;
       
-      // Busca agressiva por qualquer URL absoluta no blob
-      const match = decodedStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F]+)/);
-      
-      if (match) {
-        // Limpa a URL de lixo Protobuf no final
-        const cleanedUrl = match[1].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-        console.log(`[DECODE] Success: ${cleanedUrl}`);
-        return cleanedUrl;
+      if (finalUrl.includes('google.com/consent') || finalUrl.includes('accounts.google.com')) {
+          console.log(`[RESOLVE] Stuck on Google Consent page`);
+          return googleUrl;
       }
-      
-      console.log(`[DECODE] Failed for: ${googleUrl.substring(0, 50)}...`);
-      return googleUrl;
+
+      console.log(`[RESOLVE] Resolved to: ${finalUrl}`);
+      return finalUrl;
     } catch (e) {
+      this.logger.error(`[RESOLVE] Failed: ${e.message}`);
       return googleUrl;
     }
   }
@@ -248,7 +247,7 @@ export class NewsCrawlerService {
     let repairedCount = 0;
     for (const news of newsToRepair) {
       if (news.externalUrl) {
-        const realUrl = this.decodeGoogleNewsUrl(news.externalUrl);
+        const realUrl = await this.resolveGoogleNewsUrl(news.externalUrl);
         console.log(`[REPAIR] Decoded URL: ${realUrl.substring(0, 80)}`);
         const fullData = await this.scrapeFullNewsData(realUrl);
         
