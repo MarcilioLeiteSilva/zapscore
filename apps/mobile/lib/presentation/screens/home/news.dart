@@ -8,6 +8,9 @@ class NewsPage extends StatefulWidget {
 }
 
 class _NewsPageState extends State<NewsPage> {
+  int indexTab = 0;
+  String? selectedLeagueId;
+
   Widget _buildCompetitionFilters() {
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, homeState) {
