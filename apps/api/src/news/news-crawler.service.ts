@@ -145,26 +145,14 @@ export class NewsCrawlerService {
     try {
       this.logger.debug(`Scraping source: ${url}`);
       const response = await firstValueFrom(this.http.get(url, { 
-        timeout: 10000, // 10 segundos para lidar com redirecionamentos lentos
-        maxRedirects: 5,
+        timeout: 5000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Referer': 'https://www.google.com/',
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         }
       }));
       
-      const finalUrl = response.config.url || url;
-      this.logger.debug(`Final URL after redirect: ${finalUrl}`);
-      
       const html = response.data;
-      
-      // Se ainda estivermos no Google News, falhamos em sair do redirecionador
-      if (finalUrl.includes('news.google.com') && html.includes('redirect')) {
-          this.logger.warn(`Stuck on Google Redirect page for: ${url}`);
-          return null;
-      }
       
       // Extração de dados via Regex (Reforçado)
       const getMeta = (property: string) => {
