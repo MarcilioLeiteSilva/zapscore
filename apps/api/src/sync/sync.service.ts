@@ -135,6 +135,9 @@ export class SyncService {
       }
 
       const finalLeague = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
+      if (!finalLeague) {
+        throw new Error(`Failed to sync league ${data.league.id} for fixture ${externalId}`);
+      }
       const fixtureMapped = ApiFootballMapper.toFixture(data, finalLeague.id, finalHome.id, finalAway.id);
       
       await this.prisma.fixture.upsert({
@@ -337,7 +340,7 @@ export class SyncService {
             }
           });
 
-          const apiLiveIds = liveFixtures.map(f => f.fixture.id);
+          const apiLiveIds = liveFixtures.map((f: any) => f.fixture.id);
           const finishedFixtures = liveInDb.filter(f => !apiLiveIds.includes(f.externalId));
 
           for (const f of finishedFixtures) {
