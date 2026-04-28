@@ -8,6 +8,8 @@ class News {
   final String? source;
   final String? content;
   final String? externalUrl;
+  final String? leagueLogo;
+  final String? teamLogo;
 
   News({
     required this.id,
@@ -19,6 +21,8 @@ class News {
     this.source,
     this.content,
     this.externalUrl,
+    this.leagueLogo,
+    this.teamLogo,
   });
 
   factory News.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,8 @@ class News {
       source: json['source'],
       content: json['content'],
       externalUrl: json['externalUrl'],
+      leagueLogo: json['league']?['logo'],
+      teamLogo: json['team']?['logo'],
     );
   }
 }

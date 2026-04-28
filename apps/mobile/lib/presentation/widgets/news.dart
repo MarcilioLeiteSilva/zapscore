@@ -76,7 +76,7 @@ class CardNewsItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
-    final image = isVideo ? video?.thumbnailUrl : news?.imageUrl;
+    final image = isVideo ? video?.thumbnailUrl : (news?.imageUrl ?? news?.leagueLogo ?? news?.teamLogo);
     final date = isVideo ? video?.date : news?.date;
 
     return InkWell(
@@ -187,7 +187,7 @@ class CardNewsCarouselItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
-    final image = isVideo ? video?.thumbnailUrl : news?.imageUrl;
+    final image = isVideo ? video?.thumbnailUrl : (news?.imageUrl ?? news?.leagueLogo ?? news?.teamLogo);
     final date = isVideo ? video?.date : news?.date;
 
     return Ink(

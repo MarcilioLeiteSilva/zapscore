@@ -60,11 +60,12 @@ export class NewsCrawlerService {
         // Usamos upsert com update vazio para evitar duplicados sem sobrescrever dados manuais
         await this.prisma.news.upsert({
           where: { externalUrl: item.link },
-          update: {}, 
+          update: { imageUrl: item.imageUrl }, 
           create: {
             title: item.title,
             description: item.description,
             source: item.source,
+            imageUrl: item.imageUrl,
             externalUrl: item.link,
             createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
             ...ids
@@ -91,16 +92,23 @@ export class NewsCrawlerService {
 
     while ((match = itemRegex.exec(xml)) !== null) {
       const content = match[1];
+      const description = this.extractTag(content, 'description');
+      
+      // Tentar extrair imagem da descrição (Google News coloca uma <img> lá)
+      const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
+      const imageUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
+
       items.push({
         title: this.extractTag(content, 'title'),
         link: this.extractTag(content, 'link'),
         pubDate: this.extractTag(content, 'pubDate'),
-        description: this.extractTag(content, 'description'),
+        description: description.replace(/<[^>]*>?/gm, '').trim(), // Limpar HTML da descrição
         source: this.extractTag(content, 'source'),
+        imageUrl: imageUrl,
       });
     }
     // Limitamos a 5 notícias por busca para não sobrecarregar
-    return items.slice(0, 5);
+    return items.slice(0, 10); // Aumentado para 10 para ter mais opções
   }
 
   private extractTag(content: string, tag: string) {
