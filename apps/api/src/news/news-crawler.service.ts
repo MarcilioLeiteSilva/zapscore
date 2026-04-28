@@ -65,7 +65,11 @@ export class NewsCrawlerService {
         const finalImage = fullData?.image || item.imageUrl;
         const finalSource = fullData?.source || source.name;
 
-        if (!finalTitle || !finalImage) continue; // Só salvamos se tiver imagem
+        // REGRA: Sem imagem válida, deletamos se existir e pulamos
+        if (!finalImage || !finalImage.startsWith('http')) {
+          await this.prisma.news.deleteMany({ where: { externalUrl: item.link } });
+          continue;
+        }
 
         await this.prisma.news.upsert({
           where: { externalUrl: item.link },
@@ -125,6 +129,12 @@ export class NewsCrawlerService {
         const finalDescription = fullData?.description || item.description;
         const finalImage = fullData?.image || item.imageUrl;
         const finalSource = fullData?.source || item.source;
+
+        // REGRA: Sem imagem válida, deletamos se existir e pulamos
+        if (!finalImage || !finalImage.startsWith('http')) {
+          await this.prisma.news.deleteMany({ where: { externalUrl: item.link } });
+          continue;
+        }
 
         if (!finalTitle) continue;
 
