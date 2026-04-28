@@ -100,7 +100,7 @@ abstract class RouterApp {
       GoRoute(
         path: '/$screenNewsContent',
         name: screenNewsContent,
-        builder: (context, state) => const NewsContentScreen(),
+        builder: (context, state) => NewsContentScreen(news: state.extra as News),
       ),
       GoRoute(
         path: '/$screenWatchContent',

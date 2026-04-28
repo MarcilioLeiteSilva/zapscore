@@ -1,83 +1,73 @@
 part of '../screens.dart';
 
-class NewsContentScreen extends StatelessWidget {
-  const NewsContentScreen({super.key});
+class NewsContentScreen extends StatefulWidget {
+  final News news;
+  const NewsContentScreen({super.key, required this.news});
+
+  @override
+  State<NewsContentScreen> createState() => _NewsContentScreenState();
+}
+
+class _NewsContentScreenState extends State<NewsContentScreen> {
+  double _progress = 0;
+  InAppWebViewController? _webViewController;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text(widget.news.source?.toUpperCase() ?? 'NEWS', style: const TextStyle(fontSize: 16)),
         actions: [
           IconButton(
             onPressed: () {},
             icon: SvgPicture.asset(Assets.share),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: SvgPicture.asset(Assets.more),
-          ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+      body: Stack(
         children: [
-          const Gap(10),
-          SizedBox(
-            width: context.width,
-            height: context.height * .3,
-            child: const CardNoImage(radius: 15),
-          ),
-          const Gap(10),
-          Text(
-            'Ronaldo denies mega-money AL Nassr deal is signed and sealed',
-            style: context.textTheme.bodyLarge,
-          ),
-          const Gap(10),
-          Row(
-            children: [
-              Text(
-                '10 hours ago .',
-                style: context.textTheme.labelSmall!.copyWith(fontSize: 13),
-              ),
-              const Gap(10),
-              const Text(
-                '#football',
-                style: TextStyle(fontSize: 13, color: AppColor.primary),
-              ),
-              const Gap(5),
-              const Text(
-                '#worldcup',
-                style: TextStyle(fontSize: 13, color: AppColor.primary),
-              ),
-              const Gap(5),
-              const Text(
-                '#cristianoronaldo',
-                style: TextStyle(fontSize: 13, color: AppColor.primary),
-              ),
-            ],
-          ),
-          const Gap(10),
-          Text(
-            AppText.newsBody,
-            style: context.textTheme.bodySmall,
-          ),
-          const Gap(10),
-          Text(
-            'Related News',
-            style: context.textTheme.bodyMedium,
-          ),
-          const Gap(10),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const ScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemBuilder: (_, i) {
-              return const CardNewsItem();
+          InAppWebView(
+            initialUrlRequest: URLRequest(url: WebUri(widget.news.externalUrl ?? '')),
+            initialSettings: InAppWebViewSettings(
+              javaScriptEnabled: true,
+              supportZoom: true,
+              displayZoomControls: false,
+            ),
+            onWebViewCreated: (controller) {
+              _webViewController = controller;
             },
-            separatorBuilder: (_, i) => const Gap(15),
-            itemCount: 5,
+            onProgressChanged: (controller, progress) {
+              setState(() {
+                _progress = progress / 100;
+              });
+            },
+            onLoadStop: (controller, url) async {
+              // Script para suprimir cabeçalho, rodapé e menus
+              await controller.evaluateJavascript(source: """
+                (function() {
+                  const selectors = [
+                    'header', 'footer', '.header', '.footer', 'nav', '.nav', 
+                    '.menu', '#header', '#footer', '.advertisement', '.ads',
+                    '.sidebar', 'aside', '.newsletter-box', '.related-posts'
+                  ];
+                  selectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => el.style.display = 'none');
+                  });
+                  // Ajuste de margem para evitar buracos brancos no topo
+                  document.body.style.paddingTop = '0';
+                  document.body.style.marginTop = '0';
+                })();
+              """);
+            },
           ),
-          const Gap(90),
+          if (_progress < 1.0)
+            LinearProgressIndicator(
+              value: _progress,
+              color: AppColor.primary,
+              backgroundColor: Colors.transparent,
+              minHeight: 3,
+            ),
         ],
       ),
     );

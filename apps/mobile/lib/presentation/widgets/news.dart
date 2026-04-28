@@ -85,10 +85,8 @@ class CardNewsItem extends StatelessWidget {
       onTap: () {
         if (isVideo && video != null) {
           context.pushNamed(screenWatchContent, extra: video);
-        } else if (news?.externalUrl != null) {
-          _launchUrl(news!.externalUrl!);
-        } else {
-          context.pushNamed(screenNewsContent);
+        } else if (news != null) {
+          context.pushNamed(screenNewsContent, extra: news);
         }
       },
       borderRadius: BorderRadius.circular(10),
@@ -201,10 +199,8 @@ class CardNewsCarouselItem extends StatelessWidget {
         onTap: () {
           if (isVideo && video != null) {
             context.pushNamed(screenWatchContent, extra: video);
-          } else if (news?.externalUrl != null) {
-            _launchUrl(news!.externalUrl!);
-          } else {
-            context.pushNamed(screenNewsContent);
+          } else if (news != null) {
+            context.pushNamed(screenNewsContent, extra: news);
           }
         },
         borderRadius: BorderRadius.circular(15),

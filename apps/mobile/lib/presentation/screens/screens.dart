@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'package:flutter/material.dart';
 
@@ -33,6 +34,7 @@ import '../../logic/models/fixture_stat.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/player.dart';
 import '../../logic/models/video.dart';
+import '../../logic/models/news.dart';
 import '../widgets/widgets.dart';
 
 part 'splash.dart';
