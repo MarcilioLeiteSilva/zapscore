@@ -31,7 +31,21 @@ export class NewsCrawlerService {
     this.logger.log('Starting Clean News Engine (Direct Sources Only)...');
     
     try {
-      // Sincronizar apenas de fontes diretas (Estável, rápido e com imagem)
+      // 1. FAXINA: Deleta tudo que está sem imagem no banco antes de começar
+      const purge = await this.prisma.news.deleteMany({
+        where: {
+          OR: [
+            { imageUrl: null },
+            { imageUrl: '' },
+            { imageUrl: { startsWith: 'data:image' } } // Remove base64/placeholders
+          ]
+        }
+      });
+      if (purge.count > 0) {
+        this.logger.log(`[PURGE] Removed ${purge.count} news items without valid images.`);
+      }
+
+      // 2. Sincronizar apenas de fontes diretas
       for (const source of this.TRUSTED_SOURCES) {
         this.logger.log(`[SOURCE] Syncing from ${source.name}...`);
         await this.syncFromDirectRss(source);
@@ -61,7 +75,7 @@ export class NewsCrawlerService {
         const finalSource = fullData?.source || source.name;
 
         // REGRA: Sem imagem válida, deletamos se existir e pulamos
-        if (!finalImage || !finalImage.startsWith('http')) {
+        if (!this.isValidImage(finalImage)) {
           await this.prisma.news.deleteMany({ where: { externalUrl: item.link } });
           continue;
         }
@@ -126,7 +140,7 @@ export class NewsCrawlerService {
         const finalSource = fullData?.source || item.source;
 
         // REGRA: Sem imagem válida, deletamos se existir e pulamos
-        if (!finalImage || !finalImage.startsWith('http')) {
+        if (!this.isValidImage(finalImage)) {
           await this.prisma.news.deleteMany({ where: { externalUrl: item.link } });
           continue;
         }
@@ -198,9 +212,17 @@ export class NewsCrawlerService {
     }
   }
 
-  /**
-   * Resolve a URL original buscando pelo título no Google (Backup)
-   */
+  private isValidImage(url?: string | null): boolean {
+    if (!url || typeof url !== 'string') return false;
+    if (!url.startsWith('http')) return false;
+    
+    const lowerUrl = url.toLowerCase();
+    // Lista de padrões de "não-imagem" ou placeholders comuns
+    const blackList = ['placeholder', 'logo-ge', 'favicon', 'icon', 'default-image', 'spacer.gif'];
+    
+    return !blackList.some(pattern => lowerUrl.includes(pattern));
+  }
+
   private async resolveBySearch(title: string, source?: string | null): Promise<string | null> {
     const cleanTitle = title.split(' - ')[0].trim();
     const query = encodeURIComponent(`${cleanTitle} ${source || ''}`);
