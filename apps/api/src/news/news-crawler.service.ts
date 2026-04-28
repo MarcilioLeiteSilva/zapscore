@@ -117,18 +117,20 @@ export class NewsCrawlerService {
     this.logger.log(`Found ${newsToRepair.length} news items to repair.`);
 
     for (const news of newsToRepair) {
-      const fullData = await this.scrapeFullNewsData(news.externalUrl);
-      if (fullData) {
-        await this.prisma.news.update({
-          where: { id: news.id },
-          data: {
-            title: fullData.title || news.title,
-            description: fullData.description || news.description,
-            imageUrl: fullData.image || news.imageUrl,
-            source: fullData.source || news.source
-          }
-        });
-        this.logger.debug(`Repaired news: ${fullData.title}`);
+      if (news.externalUrl) {
+        const fullData = await this.scrapeFullNewsData(news.externalUrl);
+        if (fullData) {
+          await this.prisma.news.update({
+            where: { id: news.id },
+            data: {
+              title: fullData.title || news.title,
+              description: fullData.description || news.description,
+              imageUrl: fullData.image || news.imageUrl,
+              source: fullData.source || news.source
+            }
+          });
+          this.logger.debug(`Repaired news: ${fullData.title}`);
+        }
       }
       // Pequena pausa para evitar bloqueios por excesso de requisições
       await new Promise(resolve => setTimeout(resolve, 500));
