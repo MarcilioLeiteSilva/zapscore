@@ -47,25 +47,23 @@ export class VideoCrawlerService {
   }
 
   private async crawlVideosForQuery(query: string, ids: { leagueId?: string; teamId?: string }) {
-    this.logger.debug(`Crawling videos for query: ${query}`);
+    this.logger.debug(`Crawling YouTube for query: ${query}`);
     try {
-      // Query 1: Focada em Gols e Melhores Momentos
-      let searchQuery = `site:youtube.com ${query} gols melhores momentos`;
-      let url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+      // Busca direta no YouTube ordenada por data (sp=CAI%3D)
+      const searchQuery = `${query} gols melhores momentos`;
+      const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}&sp=CAI%253D`;
       
-      let response = await firstValueFrom(this.http.get(url));
-      let items = this.parseRss(response.data);
+      const response = await firstValueFrom(
+        this.http.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          },
+        })
+      );
 
-      // Query 2: Fallback se a primeira falhar
-      if (items.length === 0) {
-        this.logger.debug(`No specific results for ${query}, trying broader search...`);
-        searchQuery = `site:youtube.com ${query} futebol`;
-        url = `https://news.google.com/rss/search?q=${encodeURIComponent(searchQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
-        response = await firstValueFrom(this.http.get(url));
-        items = this.parseRss(response.data);
-      }
-      
-      this.logger.debug(`Found ${items.length} valid YouTube videos for ${query}`);
+      const items = this.parseYouTubeHtml(response.data);
+      this.logger.debug(`Found ${items.length} videos on YouTube for ${query}`);
       
       let savedCount = 0;
       for (const item of items) {
@@ -78,93 +76,55 @@ export class VideoCrawlerService {
               description: item.description,
               thumbnailUrl: item.thumbnailUrl,
               videoUrl: item.link,
-              createdAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+              createdAt: new Date(), // YouTube scraping leve não dá data exata facilmente
               ...ids
             }
           });
           savedCount++;
         } catch (e) { }
       }
+
       if (savedCount > 0) {
         this.logger.log(`Saved ${savedCount} videos for ${query}`);
       }
     } catch (err) {
-      this.logger.error(`Error crawling videos for ${query}: ${err.message}`);
+      this.logger.error(`Error crawling YouTube for ${query}: ${err.message}`);
     }
   }
 
-  private parseRss(xml: string) {
+  private parseYouTubeHtml(html: string) {
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let totalFound = 0;
+    try {
+      // Extrai o JSON de dados iniciais do YouTube
+      const jsonMatch = /var ytInitialData = ({[\s\S]*?});<\/script>/.exec(html);
+      if (!jsonMatch) return [];
 
-    while ((match = itemRegex.exec(xml)) !== null) {
-      totalFound++;
-      const content = match[1];
-      const description = this.extractTag(content, 'description');
-      const title = this.extractTag(content, 'title');
-      let link = this.extractTag(content, 'link');
-      
-      // Log de debug para o primeiro item
-      if (totalFound === 1) {
-        this.logger.debug(`DEBUG SAMPLE - Link: ${link}`);
-        this.logger.debug(`DEBUG SAMPLE - Desc: ${description.substring(0, 500)}`);
+      const data = JSON.parse(jsonMatch[1]);
+      const contents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
+      if (!contents) return [];
+
+      const videoList = contents.find(c => c.itemSectionRenderer)?.itemSectionRenderer?.contents || [];
+
+      for (const item of videoList) {
+        const video = item.videoRenderer;
+        if (!video || !video.videoId) continue;
+
+        const title = video.title?.runs?.[0]?.text || '';
+        const videoId = video.videoId;
+        const description = video.detailedMetadataSnippets?.[0]?.snippetText?.runs?.map(r => r.text).join('') || '';
+
+        items.push({
+          title: title,
+          link: `https://www.youtube.com/watch?v=${videoId}`,
+          description: description,
+          thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        });
+
+        if (items.length >= 10) break;
       }
-
-      // Tentar extrair thumbnail do YouTube
-      const imgMatch = /<img[^>]+src="([^">]+)"/g.exec(description);
-      let thumbnailUrl = imgMatch ? imgMatch[1].replace(/^\/\//, 'https://') : null;
-
-      // Extração de ID do YouTube - PRECISA
-      // Padrões: vi/ID, v=ID, embed/ID, shorts/ID, youtube.com/watch?v=ID, youtu.be/ID
-      // O ID do YouTube tem EXATAMENTE 11 caracteres e segue um padrão específico
-      const ytIdRegex = /(?:vi\/|v=|embed\/|shorts\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(?=[^a-zA-Z0-9_-]|$)/;
-      const ytIdMatch = ytIdRegex.exec(thumbnailUrl || link || description);
-      
-      let videoId = null;
-      if (ytIdMatch) {
-        videoId = ytIdMatch[1];
-        link = `https://www.youtube.com/watch?v=${videoId}`;
-        thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-      } else if (link.includes('youtube.com') || link.includes('youtu.be')) {
-         // Se o link já é do youtube mas não pegou no regex, tentamos um fallback simples
-         const urlParts = link.split(/[v=/]/);
-         videoId = urlParts.find(p => p.length === 11);
-         if (videoId) {
-            link = `https://www.youtube.com/watch?v=${videoId}`;
-            thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-         }
-      }
-
-      // Se não conseguimos um ID válido, ignoramos
-      if (!videoId) {
-        continue;
-      }
-
-      items.push({
-        title: title.split(' - ')[0],
-        link: link,
-        pubDate: this.extractTag(content, 'pubDate'),
-        description: description.replace(/<[^>]*>?/gm, '').trim(),
-        thumbnailUrl: thumbnailUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null),
-      });
+    } catch (e) {
+      this.logger.error(`Error parsing YouTube JSON: ${e.message}`);
     }
-    
-    if (totalFound > 0 && items.length === 0) {
-      this.logger.warn(`Found ${totalFound} RSS items but 0 were valid YouTube videos.`);
-    }
-
-    return items.slice(0, 10);
-  }
-
-  private extractTag(content: string, tag: string) {
-    const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`);
-    const match = regex.exec(content);
-    if (!match) return '';
-    let text = match[1];
-    text = text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
-    text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-    return text.trim();
+    return items;
   }
 }
