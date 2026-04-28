@@ -104,6 +104,7 @@ export class NewsCrawlerService {
 
   /**
    * Decodifica a URL real escondida nos links do Google News RSS
+   * Formato: CBMi... (Protobuf Base64)
    */
   private decodeGoogleNewsUrl(googleUrl: string): string {
     try {
@@ -112,21 +113,24 @@ export class NewsCrawlerService {
       const parts = googleUrl.split('articles/');
       let base64Part = parts[1].split('?')[0];
       
-      // Limpeza de caracteres de preenchimento e ajuste de Base64Url
+      // Ajuste de Base64Url
       base64Part = base64Part.replace(/-/g, '+').replace(/_/g, '/');
       while (base64Part.length % 4 !== 0) base64Part += '=';
       
       const buffer = Buffer.from(base64Part, 'base64');
-      const decoded = buffer.toString('binary'); 
       
-      // Regex sniper para achar a URL real ignorando o lixo binário do Protobuf
-      const urlMatch = decoded.match(/(https?:\/\/[a-zA-Z0-9\-\.\/\%\?\&\=\#\_\+]+)/);
+      // O Protobuf do Google News geralmente tem a URL começando após os primeiros bytes de controle
+      // Vamos procurar a primeira ocorrência de "http" no buffer
+      const decodedStr = buffer.toString('utf-8');
+      const httpIndex = decodedStr.indexOf('http');
       
-      if (urlMatch) {
-        const cleanedUrl = urlMatch[1];
-        if (!cleanedUrl.includes('news.google.com')) {
-           this.logger.debug(`[DECODE] Found target: ${cleanedUrl}`);
-           return cleanedUrl;
+      if (httpIndex !== -1) {
+        // A URL termina antes de caracteres de controle binários (0x00-0x1F)
+        let cleanedUrl = decodedStr.substring(httpIndex);
+        const match = cleanedUrl.match(/^(https?:\/\/[a-zA-Z0-9\-\.\/\%\?\&\=\#\_\+]+)/);
+        if (match) {
+          this.logger.debug(`[DECODE] Success: ${match[1]}`);
+          return match[1];
         }
       }
       return googleUrl;
@@ -140,42 +144,34 @@ export class NewsCrawlerService {
    */
   private async scrapeFullNewsData(url: string) {
     try {
-      this.logger.debug(`[SCRAPE] Visiting: ${url}`);
+      // Se não conseguimos decodificar a URL e ela ainda é do Google, tentamos escapar uma vez
+      if (url.includes('google.com')) {
+          this.logger.debug(`[SCRAPE] Trying to escape Google: ${url}`);
+          const response = await firstValueFrom(this.http.get(url, { 
+            timeout: 5000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' }
+          }));
+          const $ = cheerio.load(response.data);
+          const refreshLink = $('meta[http-equiv="refresh"]').attr('content');
+          const exitLink = refreshLink?.includes('url=') ? refreshLink.split('url=')[1] : $('a[href^="http"]').filter((_, el) => !$(el).attr('href')?.includes('google.com')).first().attr('href');
+          
+          if (exitLink && !exitLink.includes('google.com')) {
+              return this.scrapeFullNewsData(exitLink);
+          }
+          return null; // Falhou em sair do Google
+      }
+
+      this.logger.debug(`[SCRAPE] Visiting Source: ${url}`);
       const response = await firstValueFrom(this.http.get(url, { 
         timeout: 8000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
           'Referer': 'https://www.google.com/'
         }
       }));
       
       const $ = cheerio.load(response.data);
-      let targetUrl = url;
-
-      // Se caímos em uma página do Google, tentamos achar o link de saída
-      if (url.includes('google.com')) {
-          const refreshLink = $('meta[http-equiv="refresh"]').attr('content');
-          if (refreshLink && refreshLink.includes('url=')) {
-              targetUrl = refreshLink.split('url=')[1];
-              this.logger.debug(`[REDIRECT] Found meta refresh: ${targetUrl}`);
-              return this.scrapeFullNewsData(targetUrl); // Tenta ler a página real
-          }
-          
-          // Procura o primeiro link que não seja do Google
-          const exitLink = $('a[href^="http"]').filter((_, el) => {
-              const href = $(el).attr('href') || '';
-              return !href.includes('google.com');
-          }).first().attr('href');
-
-          if (exitLink) {
-              this.logger.debug(`[REDIRECT] Found exit link: ${exitLink}`);
-              return this.scrapeFullNewsData(exitLink);
-          }
-
-          this.logger.warn(`[SCRAPE] Stuck on Google page: ${url}`);
-          return null; // Não extrai dados da página do Google
-      }
       
       // 1. Extrair Título
       const title = $('meta[property="og:title"]').attr('content') || 
@@ -195,9 +191,15 @@ export class NewsCrawlerService {
           const findImg = (obj: any): string | null => {
               if (!obj) return null;
               if (typeof obj === 'string' && obj.startsWith('http')) return obj;
-              if (Array.isArray(obj)) return findImg(obj[0]);
-              if (obj.url) return obj.url;
+              if (Array.isArray(obj)) {
+                  for (const item of obj) {
+                      const res = findImg(item);
+                      if (res) return res;
+                  }
+              }
+              if (obj.url) return findImg(obj.url);
               if (obj.image) return findImg(obj.image);
+              if (obj.thumbnailUrl) return findImg(obj.thumbnailUrl);
               return null;
           };
           image = findImg(json);
@@ -212,8 +214,10 @@ export class NewsCrawlerService {
       }
 
       // 4. Extrair Fonte
-      const source = $('meta[property="og:site_name"]').attr('content') || 
+      let source = $('meta[property="og:site_name"]').attr('content') || 
                      new URL(url).hostname.replace('www.', '');
+      
+      if (source.toLowerCase().includes('google')) source = '';
 
       if (image && image.startsWith('//')) image = `https:${image}`;
       
