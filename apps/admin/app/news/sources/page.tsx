@@ -7,7 +7,7 @@ import Link from "next/link";
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
 export default function SourcesPage() {
-  const [sources, setSources] = useState([]);
+  const [sources, setSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ name: "", url: "" });
   const [submitting, setSubmitting] = useState(false);
