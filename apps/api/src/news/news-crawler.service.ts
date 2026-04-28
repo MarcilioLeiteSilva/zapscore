@@ -114,32 +114,24 @@ export class NewsCrawlerService {
       const buffer = Buffer.from(base64Part.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
       const decodedStr = buffer.toString('latin1');
 
-      // Procura o padrão AU_yqL que indica o início da URL codificada internamente
-      const nestedMatch = decodedStr.match(/AU_yqL[a-zA-Z0-9\-_]+/);
+      // Busca por força bruta: Encontra todos os blocos que parecem Base64 no binário
+      const candidates = decodedStr.match(/[a-zA-Z0-9\-_]{30,}/g) || [];
       
-      if (nestedMatch) {
-        const innerBase64 = nestedMatch[0];
-        const innerBuffer = Buffer.from(innerBase64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-        const finalStr = innerBuffer.toString('latin1');
-        
-        // Agora buscamos a URL real dentro do segundo nível
-        const urlMatch = finalStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+)/);
-        if (urlMatch) {
-          const realUrl = urlMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-          console.log(`[DECODE] Double-Decode Success: ${realUrl}`);
-          return realUrl;
-        }
+      for (const candidate of candidates) {
+        try {
+          const innerBuffer = Buffer.from(candidate.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+          const possibleUrlStr = innerBuffer.toString('latin1');
+          const urlMatch = possibleUrlStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+)/);
+          
+          if (urlMatch) {
+            const realUrl = urlMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
+            console.log(`[DECODE] Brute-Force Success: ${realUrl}`);
+            return realUrl;
+          }
+        } catch (e) { /* continua para o próximo candidato */ }
       }
 
-      // Fallback: Busca binária simples no primeiro nível
-      const httpMatch = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
-      if (httpMatch) {
-        const realUrl = httpMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-        console.log(`[DECODE] Primary Success: ${realUrl}`);
-        return realUrl;
-      }
-
-      console.log(`[DECODE] Failed both methods. Binary: ${decodedStr.substring(0, 50)}`);
+      console.log(`[DECODE] Failed. Candidates tried: ${candidates.length}. Binary: ${decodedStr.substring(0, 50)}`);
       return googleUrl;
     } catch (e) {
       console.log(`[RESOLVE] Error: ${e.message}`);
