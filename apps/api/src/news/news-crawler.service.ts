@@ -210,7 +210,22 @@ export class NewsCrawlerService {
 
       if (!image) {
         image = $('meta[property="og:image"]').attr('content') || 
-                $('meta[name="twitter:image"]').attr('content') || null;
+                $('meta[name="twitter:image"]').attr('content') ||
+                $('meta[name="twitter:image:src"]').attr('content') ||
+                $('link[rel="preload"][as="image"]').attr('href') ||
+                $('link[rel="image_src"]').attr('href') || null;
+      }
+
+      // Fallback: tentar achar a maior imagem no corpo da notícia
+      if (!image) {
+        $('article img, .article img, .content img, main img').each((_: any, el: any) => {
+          const src = $(el).attr('src') || $(el).attr('data-src');
+          if (src && src.startsWith('http') && !src.includes('logo') && !src.includes('icon') && !src.includes('avatar')) {
+            image = src;
+            return false; // Break
+          }
+          return true;
+        });
       }
 
       // 4. Extrair Fonte
