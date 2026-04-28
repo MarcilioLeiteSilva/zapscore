@@ -59,8 +59,8 @@ export class NewsCrawlerService {
       
       let newCount = 0;
       for (const item of items) {
-        // Decodifica a URL real antes de fazer o scraping
-        const realUrl = await this.resolveGoogleNewsUrl(item.link);
+        // Decodifica a URL real antes de fazer o scraping (usando busca por título como fallback)
+        const realUrl = await this.resolveGoogleNewsUrl(item.link, item.title, item.source);
         
         // Tentar buscar todos os dados da notícia diretamente no site de origem (Full Scraping)
         const fullData = await this.scrapeFullNewsData(realUrl);
@@ -103,61 +103,77 @@ export class NewsCrawlerService {
   }
 
   /**
-   * Decodifica a URL real usando a técnica de BatchExecute (Engenharia Reversa do Google)
+   * Resolve a URL original buscando pelo título no buscador (DuckDuckGo HTML)
+   * Esta é a forma mais estável de sair do domínio do Google News.
    */
-  private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
+  private async resolveBySearch(title: string, source?: string): Promise<string | null> {
     try {
-      if (!googleUrl.includes('articles/')) return googleUrl;
+      const query = encodeURIComponent(`${title} ${source || ''}`);
+      console.log(`[SEARCH] Looking for original URL: ${title.substring(0, 30)}...`);
       
-      console.log(`[RESOLVE] Phase 1: Fetching tokens from Google Page...`);
-      const response = await fetch(googleUrl, {
-        headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8'
-        }
+      const response = await fetch(`https://html.duckduckgo.com/html/?q=${query}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' }
       });
       
       const html = await response.text();
       const $ = cheerio.load(html);
       
-      // Busca os tokens escondidos no HTML
-      const articleEl = $('article').first() || $('body');
-      const sig = articleEl.attr('data-n-a-sg') || $('[data-n-a-sg]').attr('data-n-a-sg');
-      const ts = articleEl.attr('data-n-a-ts') || $('[data-n-a-ts]').attr('data-n-a-ts');
+      // O DuckDuckGo HTML coloca os links reais em .result__url ou no a.result__a
+      const firstLink = $('a.result__a').first().attr('href');
+      
+      if (firstLink) {
+        // Alguns links do DDG vêm com redirecionamento interno, limpamos se necessário
+        const url = firstLink.includes('uddg=') 
+          ? decodeURIComponent(firstLink.split('uddg=')[1].split('&')[0])
+          : firstLink;
+
+        if (url.startsWith('http') && !url.includes('google.com')) {
+          console.log(`[SEARCH] SUCCESS: Found ${new URL(url).hostname}`);
+          return url;
+        }
+      }
+      return null;
+    } catch (e) {
+      console.log(`[SEARCH] ERROR: ${e.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Resolve a URL original. Tenta batchexecute rápido, senao vai pra busca por título.
+   */
+  private async resolveGoogleNewsUrl(googleUrl: string, title?: string, source?: string): Promise<string> {
+    try {
+      if (!googleUrl.includes('articles/')) return googleUrl;
+      
+      // Tentativa 1: Busca pelo título (A mais robusta hoje)
+      if (title) {
+        const searchedUrl = await this.resolveBySearch(title, source);
+        if (searchedUrl) return searchedUrl;
+      }
+
+      // Tentativa 2: BatchExecute (como fallback)
       const encodedUrl = googleUrl.split('articles/')[1]?.split('?')[0];
+      const response = await fetch(googleUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      const sig = $('[data-n-a-sg]').attr('data-n-a-sg');
+      const ts = $('[data-n-a-ts]').attr('data-n-a-ts');
 
       if (sig && ts && encodedUrl) {
-        console.log(`[RESOLVE] Phase 2: Calling BatchExecute API...`);
-        // O payload mágico do Google para decodificar a URL
         const payload = `f.req=[[["W679rd","[[\\"${encodedUrl}\\",\\"${ts}\\",\\"${sig}\\"]]",null,"generic"]]]`;
-        
         const batchRes = await fetch('https://news.google.com/_/Dotsu9PostApi/batchexecute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           body: payload
         });
-        
         const batchText = await batchRes.text();
-        // A URL real vem dentro de uma string JSON aninhada no retorno
         const match = batchText.match(/https?:\/\/[^\s\\"]+/);
-        
-        if (match && !match[0].includes('google.com')) {
-          console.log(`[RESOLVE] Phase 3: SUCCESS! Real URL found: ${match[0]}`);
-          return match[0];
-        }
+        if (match && !match[0].includes('google.com')) return match[0].replace(/\\/g, '');
       }
 
-      // Fallback para link canônico se o batchexecute falhar
-      const canonical = $('link[rel="canonical"]').attr('href');
-      if (canonical && !canonical.includes('google.com')) {
-        console.log(`[RESOLVE] Fallback SUCCESS: ${canonical}`);
-        return canonical;
-      }
-
-      console.log(`[RESOLVE] FAILED: Could not exit Google domain.`);
       return googleUrl;
     } catch (e) {
-      console.log(`[RESOLVE] ERROR: ${e.message}`);
       return googleUrl;
     }
   }
@@ -286,7 +302,8 @@ export class NewsCrawlerService {
     for (const news of newsToRepair) {
       if (news.externalUrl) {
         console.log(`[REPAIR] Processing: ${news.title.substring(0, 40)}`);
-        const realUrl = await this.resolveGoogleNewsUrl(news.externalUrl);
+        // Resolve a URL real (usando busca por título como estratégia primária agora)
+        const realUrl = await this.resolveGoogleNewsUrl(news.externalUrl, news.title, news.source);
         
         if (realUrl === news.externalUrl) {
           console.log(`[REPAIR] Could not resolve real URL for: ${news.title}`);
