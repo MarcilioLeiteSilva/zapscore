@@ -116,6 +116,7 @@ export class NewsCrawlerService {
    * Técnica de extração de string pura do binário - À prova de bloqueio de IP.
    */
   private resolveByBase64(googleUrl: string): string | null {
+    // Manual Base64/Protobuf extraction logic (stable)
     try {
       const token = googleUrl.split('articles/')[1]?.split('?')[0];
       if (!token || !token.startsWith('CBM')) return null;
@@ -124,8 +125,11 @@ export class NewsCrawlerService {
       const buffer = Buffer.from(token.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
       const decoded = buffer.toString('binary');
       
-      // A URL aparece no meio do binário. Buscamos o padrão http
-      const match = decoded.match(/https?:\/\/[^\s\x00-\x1F\x7F-\x9F"<>\\^`{|}]+/);
+      // LOG DE DIAGNÓSTICO: Vamos ver o que tem dentro do binário
+      console.log(`[DECODE] Binary Sample: ${decoded.substring(0, 100).replace(/[^a-zA-Z0-9:/._-]/g, '.')}`);
+
+      // Busca agressiva por http
+      const match = decoded.match(/https?:\/\/[^\s\\"\]]+/);
       
       if (match) {
         const url = match[0];
