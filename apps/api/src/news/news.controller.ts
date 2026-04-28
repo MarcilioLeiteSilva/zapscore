@@ -6,7 +6,7 @@ export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
   @Get()
-  async findAll(@Query() query: { leagueId?: string; teamId?: string }) {
+  async findAll(@Query() query: { leagueId?: string; teamId?: string; limit?: string }) {
     return this.newsService.findAll(query);
   }
 

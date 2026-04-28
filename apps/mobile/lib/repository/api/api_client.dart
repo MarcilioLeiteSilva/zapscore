@@ -21,10 +21,10 @@ class ApiClient {
     }
   }
 
-  Future<List<News>> getNews({String? leagueId, String? teamId}) async {
-    String url = '$baseUrl/news';
-    if (leagueId != null) url += '?leagueId=$leagueId';
-    if (teamId != null) url += '${leagueId != null ? '&' : '?'}teamId=$teamId';
+  Future<List<News>> getNews({String? leagueId, String? teamId, int limit = 100}) async {
+    String url = '$baseUrl/news?limit=$limit';
+    if (leagueId != null) url += '&leagueId=$leagueId';
+    if (teamId != null) url += '&teamId=$teamId';
     
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {

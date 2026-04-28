@@ -18,10 +18,10 @@ class NewsCubit extends Cubit<NewsState> {
   final ApiClient apiClient;
   NewsCubit(this.apiClient) : super(NewsInitial());
 
-  Future<void> fetchNews({String? leagueId, String? teamId}) async {
+  Future<void> fetchNews({String? leagueId, String? teamId, int limit = 100}) async {
     emit(NewsLoading());
     try {
-      final news = await apiClient.getNews(leagueId: leagueId, teamId: teamId);
+      final news = await apiClient.getNews(leagueId: leagueId, teamId: teamId, limit: limit);
       emit(NewsLoaded(news));
     } catch (e) {
       emit(NewsError(e.toString()));
