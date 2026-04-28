@@ -58,7 +58,7 @@ export class NewsCrawlerService {
       let newCount = 0;
       for (const item of items) {
         // Tentar buscar imagem de alta resolução diretamente no site da notícia
-        let highResImage = item.imageUrl;
+        let highResImage = this.forceHighResGoogleImage(item.imageUrl || '');
         try {
           const fetchedImage = await this.fetchHighResImage(item.link);
           if (fetchedImage) highResImage = fetchedImage;
@@ -98,14 +98,13 @@ export class NewsCrawlerService {
     try {
       // Timeout curto para não travar o processo (3 segundos)
       const response = await firstValueFrom(this.http.get(url, { 
-        timeout: 3000,
+        timeout: 4000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1'
         }
       }));
       
       const html = response.data;
-      // Regex para buscar <meta property="og:image" content="...">
       const ogImageMatch = /<meta[^>]+property="og:image"[^>]+content="([^">]+)"/i.exec(html) || 
                            /<meta[^>]+content="([^">]+)"[^>]+property="og:image"/i.exec(html) ||
                            /<meta[^>]+name="twitter:image"[^>]+content="([^">]+)"/i.exec(html);
@@ -113,12 +112,23 @@ export class NewsCrawlerService {
       if (ogImageMatch && ogImageMatch[1]) {
         let imageUrl = ogImageMatch[1];
         if (imageUrl.startsWith('//')) imageUrl = `https:${imageUrl}`;
-        return imageUrl;
+        return this.forceHighResGoogleImage(imageUrl);
       }
       return null;
     } catch (error) {
       return null;
     }
+  }
+
+  /**
+   * Se for uma imagem do Google UserContent, força a resolução máxima
+   */
+  private forceHighResGoogleImage(url: string): string {
+    if (url.includes('googleusercontent.com')) {
+      // Remove parâmetros de redimensionamento (ex: =s0-w300-rw) e força =s0 (original)
+      return url.split('=')[0] + '=s0';
+    }
+    return url;
   }
 
   /**
