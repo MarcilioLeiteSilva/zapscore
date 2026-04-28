@@ -104,33 +104,45 @@ export class NewsCrawlerService {
 
   /**
    * Decodifica a URL real escondida no Base64 do Google News (Protobuf)
+   * Técnica avançada de extração de bytes
    */
   private async resolveGoogleNewsUrl(googleUrl: string): Promise<string> {
     try {
       if (!googleUrl.includes('articles/')) return googleUrl;
       
       const base64Part = googleUrl.split('articles/')[1].split('?')[0];
-      const buffer = Buffer.from(base64Part, 'base64');
+      // Decodifica Base64 considerando o formato Base64URL do Google
+      const buffer = Buffer.from(base64Part.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
       
-      // latin1 preserva os bytes originais melhor que utf-8 para binários
+      // O link real está no buffer, mas o Google insere bytes de controle.
+      // Vamos procurar a sequência "http" e capturar até o fim da string válida.
       const decodedStr = buffer.toString('latin1');
+      const httpMatch = decodedStr.match(/https?:\/\/[^\s\x00-\x1F\x7F-\xFF]+/);
       
-      // Regex ultra-agressiva: Procura http até encontrar um caractere binário ou espaço
-      const match = decodedStr.match(/(https?:\/\/[^\s\x00-\x08\x0b-\x1f\x7f-\xff]+)/);
-      
-      if (match) {
-        let realUrl = match[1];
-        // Limpeza básica de qualquer resíduo do Protobuf
-        realUrl = realUrl.split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
-        
+      if (httpMatch) {
+        const realUrl = httpMatch[0].split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
         console.log(`[DECODE] Success: ${realUrl}`);
         return realUrl;
       }
+
+      // Se falhar a decodificação binária, tentamos o FETCH nativo (Redirecionamento Real)
+      console.log(`[DECODE] Binary failed, trying native fetch...`);
+      const response = await fetch(googleUrl, {
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36'
+        }
+      });
       
-      console.log(`[DECODE] Failed. Sample: ${decodedStr.substring(0, 50)}`);
+      const finalUrl = response.url;
+      if (finalUrl && !finalUrl.includes('google.com')) {
+        console.log(`[FETCH] Success: ${finalUrl}`);
+        return finalUrl;
+      }
+
       return googleUrl;
     } catch (e) {
-      console.log(`[DECODE] Error: ${e.message}`);
+      console.log(`[RESOLVE] Error: ${e.message}`);
       return googleUrl;
     }
   }
