@@ -112,23 +112,22 @@ export class NewsCrawlerService {
       const base64Part = googleUrl.split('articles/')[1].split('?')[0];
       const buffer = Buffer.from(base64Part, 'base64');
       
-      // Converte para string e limpa caracteres de controle binários
-      const decodedStr = buffer.toString('binary');
+      // latin1 preserva os bytes originais melhor que utf-8 para binários
+      const decodedStr = buffer.toString('latin1');
       
-      // O link real sempre começa com http e termina antes de caracteres especiais do Protobuf
-      const match = decodedStr.match(/(https?:\/\/[^\s\x00-\x1F\x7F-\x9F]+)/);
+      // Regex ultra-agressiva: Procura http até encontrar um caractere binário ou espaço
+      const match = decodedStr.match(/(https?:\/\/[^\s\x00-\x08\x0b-\x1f\x7f-\xff]+)/);
       
       if (match) {
         let realUrl = match[1];
-        // Limpeza final: remove qualquer caractere que não pertença a uma URL válida
-        realUrl = realUrl.replace(/[^\x20-\x7E]/g, ''); // Remove tudo que não é ASCII imprimível
-        realUrl = realUrl.split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0]; // Corta no primeiro caractere estranho
+        // Limpeza básica de qualquer resíduo do Protobuf
+        realUrl = realUrl.split(/[^\w\d\/\.\:\?\&\=\-\%\+_]/)[0];
         
         console.log(`[DECODE] Success: ${realUrl}`);
         return realUrl;
       }
       
-      console.log(`[DECODE] Failed to parse binary: ${googleUrl.substring(0, 50)}...`);
+      console.log(`[DECODE] Failed. Sample: ${decodedStr.substring(0, 50)}`);
       return googleUrl;
     } catch (e) {
       console.log(`[DECODE] Error: ${e.message}`);
@@ -262,8 +261,9 @@ export class NewsCrawlerService {
         const fullData = await this.scrapeFullNewsData(realUrl);
         
         if (fullData) {
-          console.log(`[REPAIR] Scraper Result: Title=${!!fullData.title}, Image=${!!fullData.image}`);
+          console.log(`[REPAIR] Result for ${realUrl.substring(0, 40)}: Title=${!!fullData.title}, Image=${!!fullData.image}`);
           if (fullData.image || fullData.title) {
+            console.log(`[REPAIR] Updating database for ID: ${news.id}`);
             await this.prisma.news.update({
               where: { id: news.id },
               data: {
