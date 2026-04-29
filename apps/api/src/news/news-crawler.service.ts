@@ -10,6 +10,7 @@ export class NewsCrawlerService {
 
   private readonly TRUSTED_SOURCES = [
     { name: 'GE', url: 'https://ge.globo.com/rss/ge/futebol/', domain: 'ge.globo.com' },
+    { name: 'Trivela', url: 'https://trivela.com.br/feed/', domain: 'trivela.com.br' },
     { name: 'UOL', url: 'https://noticias.uol.com.br/esporte/futebol/index.xml', domain: 'uol.com.br' },
     { name: 'CBF', url: 'https://www.cbf.com.br/futebol-brasileiro/noticias/rss', domain: 'cbf.com.br' },
     { name: 'Lance!', url: 'https://www.lance.com.br/rss/futebol', domain: 'lance.com.br' },
