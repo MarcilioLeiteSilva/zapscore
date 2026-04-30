@@ -100,39 +100,8 @@ export class TeamsService {
       };
     }
 
-    // 2. Fallback to Standing table
-    const standing = await this.prisma.standing.findFirst({
-      where: {
-        teamId: team.id,
-        leagueId: league.id,
-        season,
-      },
-    });
-
-    if (standing) {
-      return {
-        fixtures: {
-          played: { total: standing.played },
-          wins: { total: standing.win },
-          draws: { total: standing.draw },
-          loses: { total: standing.lose },
-        },
-        goals: {
-          for: { 
-            total: { total: standing.goalsFor },
-            average: { total: (standing.goalsFor / standing.played || 0).toFixed(2) }
-          },
-          against: { 
-            total: { total: standing.goalsAgainst },
-            average: { total: (standing.goalsAgainst / standing.played || 0).toFixed(2) }
-          },
-        },
-        clean_sheet: { total: 0 },
-        failed_to_score: { total: 0 },
-      };
-    }
-
-    // 3. Final Fallback: Aggregate manually from match history
+    // 2. Aggregate manually from match history (fixtures)
+    // We skip the Standing table because it often lacks detailed goal data
     const fixtures = await this.prisma.fixture.findMany({
       where: {
         leagueId: league.id,
