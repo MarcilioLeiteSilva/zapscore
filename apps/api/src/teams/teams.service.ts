@@ -51,12 +51,26 @@ export class TeamsService {
     });
   }
 
-  async getTeamStats(teamExternalId: number, leagueExternalId: number, season: number = 2026) {
-    // 1. Try to find aggregated statistics in TeamStatistic table
+  async getTeamStats(teamExternalId: number, leagueExternalId: number, season: number) {
+    // 0. Find internal records first to ensure we have valid IDs
+    const league = await this.prisma.league.findUnique({
+      where: { externalId: leagueExternalId },
+      select: { id: true }
+    });
+    const team = await this.prisma.team.findUnique({
+      where: { externalId: teamExternalId },
+      select: { id: true }
+    });
+
+    if (!league || !team) {
+      return null;
+    }
+
+    // 1. Try to get detailed statistics
     const statsRecord = await this.prisma.teamStatistic.findFirst({
       where: {
-        team: { externalId: teamExternalId },
-        league: { externalId: leagueExternalId },
+        teamId: team.id,
+        leagueId: league.id,
         season,
       },
     });
@@ -70,27 +84,27 @@ export class TeamsService {
           loses: { total: statsRecord.losesTotal },
         },
         goals: {
-          for: { 
+          for: {
             total: { total: statsRecord.goalsForTotal },
-            average: { total: statsRecord.goalsForAverage.toFixed(2) }
+            average: { total: statsRecord.goalsForAverage?.toString() || '0' },
           },
-          against: { 
+          against: {
             total: { total: statsRecord.goalsAgainstTotal },
-            average: { total: statsRecord.goalsAgainstAvg.toFixed(2) }
+            average: { total: statsRecord.goalsAgainstAvg?.toString() || '0' },
           },
         },
         clean_sheet: { total: statsRecord.cleanSheets },
         failed_to_score: { total: statsRecord.failedToScore },
-        average_possession: statsRecord.avgPossession,
-        average_shots: statsRecord.avgShots,
+        average_possession: statsRecord.avgPossession?.toFixed(0) || null,
+        average_shots: statsRecord.avgShots?.toFixed(1) || null,
       };
     }
 
-    // 2. Fallback to Standing table if detailed stats are not yet calculated
+    // 2. Fallback to Standing table
     const standing = await this.prisma.standing.findFirst({
       where: {
-        team: { externalId: teamExternalId },
-        league: { externalId: leagueExternalId },
+        teamId: team.id,
+        leagueId: league.id,
         season,
       },
     });
@@ -118,23 +132,16 @@ export class TeamsService {
       };
     }
 
-    // 3. Final Fallback: Aggregate manually from match history (fixtures)
-    const team = await this.prisma.team.findUnique({
-      where: { externalId: teamExternalId },
-      select: { id: true },
-    });
-
-    if (!team) return null;
-
+    // 3. Final Fallback: Aggregate manually from match history
     const fixtures = await this.prisma.fixture.findMany({
       where: {
-        league: { externalId: leagueExternalId },
+        leagueId: league.id,
         season,
         OR: [
           { homeTeamId: team.id },
           { awayTeamId: team.id },
         ],
-        statusShort: 'FT', // Finished matches only
+        statusShort: 'FT',
       },
       include: {
         stats: true,
@@ -175,7 +182,6 @@ export class TeamsService {
       if (opponentGoals === 0) cleanSheets++;
       if (teamGoals === 0) failedToScore++;
 
-      // Process stats for this team in this fixture
       const teamStats = f.stats.filter(s => s.teamId === teamExternalId);
       for (const s of teamStats) {
         if (s.type === 'Ball Possession' && s.value) {
