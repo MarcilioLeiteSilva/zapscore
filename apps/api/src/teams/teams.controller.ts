@@ -5,6 +5,11 @@ import { TeamsService } from './teams.service';
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
+  @Get('health')
+  health() {
+    return { status: 'ok', version: '2026-04-30-v1', commit: 'f609265' };
+  }
+
   @Get()
   async findAll(@Query() query: {
     leagueId?: string;
