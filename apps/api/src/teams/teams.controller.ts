@@ -5,11 +5,6 @@ import { TeamsService } from './teams.service';
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
-  @Get('health')
-  health() {
-    return { status: 'ok', version: '2026-04-30-v1', commit: 'f609265' };
-  }
-
   @Get()
   async findAll(@Query() query: {
     leagueId?: string;
@@ -23,9 +18,9 @@ export class TeamsController {
     });
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.teamsService.findOne(id);
+  @Get('health')
+  health() {
+    return { status: 'ok', version: '2026-04-30-v2', commit: '708e615' };
   }
 
   @Get('statistics')
@@ -39,5 +34,10 @@ export class TeamsController {
       parseInt(query.leagueId),
       query.season ? parseInt(query.season) : 2026,
     );
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.teamsService.findOne(id);
   }
 }
