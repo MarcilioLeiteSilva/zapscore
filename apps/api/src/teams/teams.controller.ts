@@ -32,7 +32,7 @@ export class TeamsController {
     return this.teamsService.getTeamStats(
       parseInt(query.teamId),
       parseInt(query.leagueId),
-      query.season ? parseInt(query.season) : undefined,
+      query.season ? parseInt(query.season) : 2026,
     );
   }
 }
