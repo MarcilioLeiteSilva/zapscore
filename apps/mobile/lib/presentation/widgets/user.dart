@@ -102,13 +102,19 @@ class LoginBarIndicator extends StatelessWidget {
 }
 
 class CardFollowItem extends StatelessWidget {
-  const CardFollowItem({super.key, this.onNotif, this.onTap, this.team});
+  const CardFollowItem(
+      {super.key, this.onNotif, this.onTap, this.team, this.league});
   final Function(bool?)? onNotif;
   final Function()? onTap;
   final Team? team;
+  final League? league;
 
   @override
   Widget build(BuildContext context) {
+    final String? logo = team?.logo ?? league?.logo;
+    final String name = team?.name ?? league?.name ?? 'Unknown';
+    final String? subtitle = team?.country ?? (league != null ? 'Competition' : null);
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -118,10 +124,11 @@ class CardFollowItem extends StatelessWidget {
             SizedBox(
               width: 55,
               height: 55,
-              child: team != null && team!.logo != null
+              child: logo != null
                   ? Image.network(
-                      team!.logo!,
-                      errorBuilder: (_, __, ___) => const CardNoImage(radius: 5),
+                      logo,
+                      errorBuilder: (_, __, ___) =>
+                          const CardNoImage(radius: 5),
                     )
                   : const CardNoImage(radius: 5),
             ),
@@ -131,26 +138,36 @@ class CardFollowItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    team?.name ?? 'Unknown Team',
+                    name,
                     style: context.textTheme.bodyMedium,
                   ),
-                  Text(
-                    team?.country ?? 'Unknown Country',
-                    style: context.textTheme.labelSmall,
-                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle,
+                      style: context.textTheme.labelSmall,
+                    ),
                 ],
               ),
             ),
-            if (team != null)
+            if (team != null || league != null)
               BlocBuilder<FavoriteCubit, FavoriteState>(
                 builder: (context, state) {
-                  final isFav =
-                      context.read<FavoriteCubit>().isTeamFavorite(team!.id);
+                  final bool isFav = team != null
+                      ? context.read<FavoriteCubit>().isTeamFavorite(team!.id)
+                      : context
+                          .read<FavoriteCubit>()
+                          .isLeagueFavorite(league!.externalId.toString());
                   return LikeButton(
                     size: 25,
                     isLiked: isFav,
                     onTap: (val) async {
-                      context.read<FavoriteCubit>().toggleTeam(team!.id);
+                      if (team != null) {
+                        context.read<FavoriteCubit>().toggleTeam(team!.id);
+                      } else {
+                        context
+                            .read<FavoriteCubit>()
+                            .toggleLeague(league!.externalId.toString());
+                      }
                       return !val;
                     },
                     circleColor: const CircleColor(
@@ -200,6 +217,71 @@ class CardFollowItem extends StatelessWidget {
   }
 }
 
+class CardTeamNotifSettings extends StatelessWidget {
+  const CardTeamNotifSettings({
+    super.key,
+    required this.team,
+    required this.matchesNotif,
+    required this.newsNotif,
+    required this.onMatchesChanged,
+    required this.onNewsChanged,
+  });
+
+  final Team team;
+  final bool matchesNotif;
+  final bool newsNotif;
+  final Function(bool) onMatchesChanged;
+  final Function(bool) onNewsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 45,
+            height: 45,
+            child: team.logo != null
+                ? Image.network(
+                    team.logo!,
+                    errorBuilder: (_, __, ___) => const CardNoImage(radius: 5),
+                  )
+                : const CardNoImage(radius: 5),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Text(
+              team.name,
+              style: context.textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Gap(10),
+          // Matches Checkbox
+          Checkbox(
+            value: matchesNotif,
+            onChanged: (v) => onMatchesChanged(v ?? false),
+            activeColor: Theme.of(context).primaryColor,
+            checkColor: Colors.black,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
+          const Gap(25),
+          // News Checkbox
+          Checkbox(
+            value: newsNotif,
+            onChanged: (v) => onNewsChanged(v ?? false),
+            activeColor: Theme.of(context).primaryColor,
+            checkColor: Colors.black,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          ),
+          const Gap(8),
+        ],
+      ),
+    );
+  }
+}
+
 class CardNoImage extends StatelessWidget {
   const CardNoImage({super.key, this.radius = 0});
   final double radius;
@@ -222,8 +304,9 @@ class CardNoImage extends StatelessWidget {
 }
 
 class CardSearchFollow extends StatelessWidget {
-  const CardSearchFollow({super.key, required this.label});
+  const CardSearchFollow({super.key, required this.label, this.onChanged});
   final String label;
+  final Function(String)? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +323,7 @@ class CardSearchFollow extends StatelessWidget {
           const Gap(10),
           Expanded(
             child: TextField(
+              onChanged: onChanged,
               decoration: InputDecoration(
                 hintText: label,
                 border: InputBorder.none,

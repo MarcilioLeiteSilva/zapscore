@@ -12,6 +12,8 @@ import 'logic/cubits/news/news_cubit.dart';
 import 'logic/cubits/video/video_cubit.dart';
 import 'repository/locale/favorite_repository.dart';
 
+import 'repository/locale/user_repository.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp());
@@ -20,6 +22,7 @@ void main() {
 class MyApp extends StatelessWidget {
   final ApiClient apiClient = ApiClient();
   final FavoriteRepository favoriteRepository = FavoriteRepository();
+  final UserRepository userRepository = UserRepository();
   MyApp({super.key});
 
   @override
@@ -27,7 +30,8 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<SettingCubit>(
-          create: (BuildContext context) => SettingCubit(),
+          create: (BuildContext context) =>
+              SettingCubit(userRepository: userRepository),
         ),
         BlocProvider<HomeCubit>(
           create: (BuildContext context) =>

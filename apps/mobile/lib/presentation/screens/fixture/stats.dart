@@ -16,7 +16,7 @@ class StatsFixPage extends StatelessWidget {
           final statTypes = fix.stats.map((s) => s.type).toSet().toList();
 
           if (statTypes.isEmpty) {
-            return const Center(child: Text('Nenhuma estatística disponível'));
+            return Center(child: Text('no_stats'.tr(context)));
           }
 
           return ListView(
@@ -75,7 +75,7 @@ class StatsFixPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(homeStat, style: context.textTheme.bodySmall!.copyWith(fontSize: 15)),
-            Text(type, style: context.textTheme.bodySmall!.copyWith(fontSize: 15)),
+            Text(getStatTranslation(type, context), style: context.textTheme.bodySmall!.copyWith(fontSize: 15)),
             Text(awayStat, style: context.textTheme.bodySmall!.copyWith(fontSize: 15)),
           ],
         ),

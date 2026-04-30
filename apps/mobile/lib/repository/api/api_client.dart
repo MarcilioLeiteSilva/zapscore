@@ -52,15 +52,23 @@ class ApiClient {
   }
 
   Future<List<League>> getStoredLeagues() async {
-    final response = await http.get(Uri.parse('$baseUrl/competitions/stored'));
-    if (response.statusCode == 200) {
-      final data = _decodeResponse(response);
-      if (data is List) {
-        return data.map((item) => League.fromJson(item)).toList();
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/competitions/stored'))
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final data = _decodeResponse(response);
+        if (data is List) {
+          return data.map((item) => League.fromJson(item)).toList();
+        }
+        return [];
+      } else {
+        print('Error loading leagues: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to load leagues: ${response.statusCode}');
       }
-      return [];
-    } else {
-      throw Exception('Failed to load leagues');
+    } catch (e) {
+      print('Connection error: $e');
+      throw Exception('Connection error: $e');
     }
   }
 
@@ -217,7 +225,7 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> getTeamStats(String teamId, int leagueId) async {
-    final response = await http.get(Uri.parse('$baseUrl/teams/statistics?teamId=$teamId&leagueId=$leagueId'));
+    final response = await http.get(Uri.parse('$baseUrl/teams/statistics?teamId=$teamId&leagueId=$leagueId&season=2026'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is Map<String, dynamic>) {

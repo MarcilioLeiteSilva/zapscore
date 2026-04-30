@@ -1,8 +1,9 @@
 part of '../screens.dart';
 
 class TeamProfileScreen extends StatefulWidget {
-  const TeamProfileScreen({super.key, required this.team});
+  const TeamProfileScreen({super.key, required this.team, this.leagueId});
   final Team team;
+  final int? leagueId;
 
   @override
   State<TeamProfileScreen> createState() => _TeamProfileScreenState();
@@ -10,18 +11,22 @@ class TeamProfileScreen extends StatefulWidget {
 
 class _TeamProfileScreenState extends State<TeamProfileScreen> {
   int indexTab = 0;
-  List<String> listLeague = [
-    "Overview",
-    "Matches",
-    "Table",
-    "News",
-    "Team Stats"
-  ];
+
+  List<String> getTabs(BuildContext context) {
+    return [
+      'overview'.tr(context),
+      'matches'.tr(context),
+      'table'.tr(context),
+      'news'.tr(context),
+      'team_stats'.tr(context),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => TeamCubit(ApiClient())..fetchTeamData(widget.team.externalId),
+      create: (context) => TeamCubit(context.read<HomeCubit>().apiClient)
+        ..fetchTeamData(widget.team.externalId, preferredLeagueId: widget.leagueId),
       child: Scaffold(
         appBar: AppBar(
           title: Row(
@@ -86,9 +91,10 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   itemBuilder: (_, i) {
+                    final tabs = getTabs(context);
                     return CardCheepTabSearch(
                       select: indexTab == i,
-                      label: listLeague[i],
+                      label: tabs[i],
                       onTap: () {
                         setState(() {
                           indexTab = i;
@@ -97,7 +103,7 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
                     );
                   },
                   separatorBuilder: (_, i) => const Gap(10),
-                  itemCount: listLeague.length,
+                  itemCount: getTabs(context).length,
                 ),
               ),
             ),
@@ -106,7 +112,7 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
                 const TeamOverview(),
                 const MatchTeamPage(),
                 const TeamTablePage(),
-                const NewsLeaguePage(),
+                TeamNewsPage(teamId: widget.team.id, leagueId: widget.leagueId),
                 const TeamStatePage(),
               ][indexTab],
             ),

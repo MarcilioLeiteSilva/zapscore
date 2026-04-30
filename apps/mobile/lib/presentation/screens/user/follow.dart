@@ -47,7 +47,13 @@ class _FollowScreenState extends State<FollowScreen> {
                     child: CardLogin(
                       label: 'Skip',
                       color: context.appColors.info,
-                      onTap: () {},
+                      onTap: () {
+                        indexPage++;
+                        controller.animateToPage(indexPage,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.linear);
+                        setState(() {});
+                      },
                     ),
                   ),
                   const Gap(10),

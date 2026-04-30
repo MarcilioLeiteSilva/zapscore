@@ -13,7 +13,20 @@ class SearchCubit extends Cubit<SearchState> {
 
   Future<void> search(String query) async {
     if (query.isEmpty) {
-      emit(SearchInitial());
+      // Fetch initial popular/stored data
+      emit(SearchLoading());
+      try {
+        final leagues = await apiClient.getStoredLeagues();
+        // For teams, we don't have a stored list yet, so maybe search for "Brasil" or common teams
+        // Or just show leagues for now as popular
+        emit(SearchLoaded(
+          teams: [],
+          leagues: leagues,
+          fixtures: [],
+        ));
+      } catch (e) {
+        emit(SearchInitial());
+      }
       return;
     }
 
@@ -49,5 +62,9 @@ class SearchCubit extends Cubit<SearchState> {
     } catch (e) {
       emit(SearchError(e.toString()));
     }
+  }
+
+  void clear() {
+    emit(SearchInitial());
   }
 }

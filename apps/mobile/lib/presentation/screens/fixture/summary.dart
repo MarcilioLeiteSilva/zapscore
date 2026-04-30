@@ -79,13 +79,13 @@ class SummaryFixPage extends StatelessWidget {
                           homeValue: shotsHome,
                           awayValue: shotsAway,
                         ),
-                        const Gap(20),
+                        const Gap(10),
                         CardEventPossession(
                           icon: Assets.corner,
                           homeValue: cornersHome,
                           awayValue: cornersAway,
                         ),
-                        const Gap(20),
+                        const Gap(10),
                         CardEventPossession(
                           icon: Assets.yellowCard,
                           homeValue: yellowHome,

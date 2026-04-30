@@ -3,10 +3,87 @@ part of '../screens.dart';
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
+  Widget _buildProfileHeader(BuildContext context) {
+    return BlocBuilder<SettingCubit, SettingState>(
+      builder: (context, state) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).cardColor,
+                Theme.of(context).cardColor.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border:
+                      Border.all(color: Theme.of(context).primaryColor, width: 2),
+                  image: state.userPhoto != null
+                      ? DecorationImage(
+                          image: FileImage(File(state.userPhoto!)),
+                          fit: BoxFit.cover,
+                        )
+                      : const DecorationImage(
+                          image: NetworkImage(AppText.avatar),
+                          fit: BoxFit.cover,
+                        ),
+                ),
+              ),
+              const Gap(15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state.userName ?? 'ZapScore User',
+                      style: context.textTheme.headlineSmall!.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      state.userNickname ?? 'user@zapscore.com',
+                      style: context.textTheme.bodySmall!.copyWith(
+                        color:
+                            context.textTheme.bodySmall!.color?.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => context.pushNamed(screenEditInfo),
+                icon: CircleAvatar(
+                  backgroundColor:
+                      Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: SvgPicture.asset(
+                    Assets.edit,
+                    width: 18,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       appBar: AppBar(
         title: Text('account'.tr(context)),
         centerTitle: false,
@@ -16,35 +93,7 @@ class SettingsPage extends StatelessWidget {
           const Gap(10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                const SizedBox(
-                  width: 65,
-                  height: 65,
-                  child: CardNoImage(radius: 100),
-                ),
-                const Gap(10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('User Profile'), // Placeholder standard
-                      Text(
-                        'user@zapscore.com',
-                        style: context.textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: SvgPicture.asset(
-                    Assets.edit,
-                    color: context.watch<SettingCubit>().state.theme == 'white' ? Colors.grey[800] : Colors.white,
-                  ),
-                ),
-              ],
-            ),
+            child: _buildProfileHeader(context),
           ),
           const Gap(10),
           const Divider(height: 30, endIndent: 10, indent: 10),

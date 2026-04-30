@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repository/api/api_client.dart';
 import '../../models/fixture.dart';
+import '../../models/standing.dart';
 
 part 'fixture_state.dart';
 
@@ -17,7 +18,19 @@ class FixtureCubit extends Cubit<FixtureState> {
     }
     try {
       final fixture = await apiClient.getFixtureDetails(id);
-      emit(FixtureLoaded(fixture));
+      
+      Standing? homeStanding;
+      Standing? awayStanding;
+      List<Standing> standings = [];
+      try {
+        standings = await apiClient.getStandings(fixture.league?.externalId ?? 0, season: fixture.season);
+        homeStanding = standings.where((s) => s.teamId == fixture.homeTeam?.externalId).firstOrNull;
+        awayStanding = standings.where((s) => s.teamId == fixture.awayTeam?.externalId).firstOrNull;
+      } catch (e) {
+        print('Error fetching standings for form: $e');
+      }
+
+      emit(FixtureLoaded(fixture, standings: standings, homeStanding: homeStanding, awayStanding: awayStanding));
       
       // Se o jogo estiver ao vivo ou NS (perto do início) e não tiver escalações, tenta forçar um sync no backend
       if ((isLive(fixture.statusShort) || fixture.statusShort == 'NS') && fixture.lineups.isEmpty) {

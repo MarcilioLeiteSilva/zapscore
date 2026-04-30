@@ -19,50 +19,60 @@ class HomeNavBottom extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              HomeTabBottomNavItem(
-                onTap: () {
-                  context.read<SettingCubit>().updateHomeIndex(0);
-                },
-                selected: index == 0,
-                label: 'home'.tr(context),
-                icon: Assets.homeLine,
-                solidIcon: Assets.homeSolid,
+              Expanded(
+                child: HomeTabBottomNavItem(
+                  onTap: () {
+                    context.read<SettingCubit>().updateHomeIndex(0);
+                  },
+                  selected: index == 0,
+                  label: 'home'.tr(context),
+                  icon: Assets.homeLine,
+                  solidIcon: Assets.homeSolid,
+                ),
               ),
-              HomeTabBottomNavItem(
-                onTap: () {
-                  context.read<SettingCubit>().updateHomeIndex(1);
-                },
-                selected: index == 1,
-                label: 'favourite'.tr(context),
-                icon: Assets.star,
-                solidIcon: Assets.starSolid,
+              Expanded(
+                child: HomeTabBottomNavItem(
+                  onTap: () {
+                    context.read<SettingCubit>().updateHomeIndex(1);
+                  },
+                  selected: index == 1,
+                  label: 'favourite'.tr(context),
+                  icon: Assets.star,
+                  solidIcon: Assets.starSolid,
+                ),
               ),
-              HomeTabBottomNavItem(
-                onTap: () {
-                  context.read<SettingCubit>().updateHomeIndex(2);
-                },
-                selected: index == 2,
-                label: 'news'.tr(context),
-                icon: Assets.newsLine,
-                solidIcon: Assets.newsSolid,
+              Expanded(
+                child: HomeTabBottomNavItem(
+                  onTap: () {
+                    context.read<SettingCubit>().updateHomeIndex(2);
+                  },
+                  selected: index == 2,
+                  label: 'news'.tr(context),
+                  icon: Assets.newsLine,
+                  solidIcon: Assets.newsSolid,
+                ),
               ),
-              HomeTabBottomNavItem(
-                onTap: () {
-                  context.read<SettingCubit>().updateHomeIndex(3);
-                },
-                selected: index == 3,
-                label: 'watch'.tr(context),
-                icon: Assets.watchLine,
-                solidIcon: Assets.watchSolid,
+              Expanded(
+                child: HomeTabBottomNavItem(
+                  onTap: () {
+                    context.read<SettingCubit>().updateHomeIndex(3);
+                  },
+                  selected: index == 3,
+                  label: 'watch'.tr(context),
+                  icon: Assets.watchLine,
+                  solidIcon: Assets.watchSolid,
+                ),
               ),
-              HomeTabBottomNavItem(
-                onTap: () {
-                  context.read<SettingCubit>().updateHomeIndex(4);
-                },
-                selected: index == 4,
-                label: 'account'.tr(context),
-                icon: Assets.accountLine,
-                solidIcon: Assets.accountSolid,
+              Expanded(
+                child: HomeTabBottomNavItem(
+                  onTap: () {
+                    context.read<SettingCubit>().updateHomeIndex(4);
+                  },
+                  selected: index == 4,
+                  label: 'account'.tr(context),
+                  icon: Assets.accountLine,
+                  solidIcon: Assets.accountSolid,
+                ),
               ),
             ],
           ),
@@ -86,18 +96,24 @@ class HomeTabBottomNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onTap,
-      icon: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SvgPicture.asset(
             selected ? solidIcon : icon,
+            height: 22, // Fixado tamanho para evitar variações
             color: selected ? Theme.of(context).primaryColor : context.appColors.hint,
           ),
+          const Gap(4),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: context.textTheme.labelSmall!.copyWith(
+              fontSize: 10, // Levemente menor para caber melhor
               color: selected ? Theme.of(context).primaryColor : context.appColors.hint,
             ),
           ),
@@ -140,15 +156,15 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading:
                 const Icon(Icons.emoji_events_outlined, color: Colors.white),
-            title: const Text('Competições',
-                style: TextStyle(color: Colors.white)),
+            title: Text('competitions'.tr(context),
+                style: const TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
             leading: const Icon(Icons.newspaper_outlined, color: Colors.white),
-            title: const Text('Notícias', style: TextStyle(color: Colors.white)),
+            title: Text('news'.tr(context), style: const TextStyle(color: Colors.white)),
             onTap: () {
               context.read<SettingCubit>().updateHomeIndex(2);
               Navigator.pop(context);
@@ -164,13 +180,13 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           Divider(color: context.appColors.info, indent: 15, endIndent: 15),
-          const Padding(
-            padding: EdgeInsets.only(left: 15, top: 10, bottom: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 15, top: 10, bottom: 10),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Redes sociais',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                'redes_sociais'.tr(context),
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
             ),
           ),
@@ -194,11 +210,11 @@ class AppDrawer extends StatelessWidget {
             onTap: () {},
           ),
           const Spacer(),
-          const Padding(
-            padding: EdgeInsets.all(20),
+          Padding(
+            padding: const EdgeInsets.all(20),
             child: Text(
-              'Version 1.0.0',
-              style: TextStyle(color: Colors.white38, fontSize: 10),
+              '${'version'.tr(context)} 1.0.0',
+              style: const TextStyle(color: Colors.white38, fontSize: 10),
             ),
           ),
         ],

@@ -22,7 +22,7 @@ class FixturePage extends StatelessWidget {
           }
 
         return Scaffold(
-          drawer: const AppDrawer(),
+          drawer: AppDrawer(),
           body: NestedScrollView(
             headerSliverBuilder: (_, ie) {
               return [

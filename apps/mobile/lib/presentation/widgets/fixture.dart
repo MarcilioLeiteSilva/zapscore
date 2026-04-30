@@ -382,10 +382,16 @@ class CardFixtureItem extends StatelessWidget {
                       const PulsingLiveIndicator(),
                     const Gap(5),
                     Text(
-                      isLive(fix.statusShort) ? '${fix.elapsed}\'' : (fix.statusShort ?? 'TBD'),
+                      isLive(fix.statusShort)
+                          ? '${fix.elapsed}\''
+                          : getShortStatus(
+                              fix.statusShort, fix.statusLong, context),
                       style: context.textTheme.bodySmall!.copyWith(
-                        color: isLive(fix.statusShort) ? Colors.red : (fix.statusShort == 'FT' ? Colors.green : null),
-                        fontWeight: isLive(fix.statusShort) ? FontWeight.bold : null,
+                        color: isLive(fix.statusShort)
+                            ? Colors.red
+                            : (fix.statusShort == 'FT' ? Colors.green : null),
+                        fontWeight:
+                            isLive(fix.statusShort) ? FontWeight.bold : null,
                         fontSize: 12,
                       ),
                     ),
@@ -399,7 +405,11 @@ class CardFixtureItem extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         if (fix.homeTeam != null) {
-                          context.pushNamed(screenTeam, extra: fix.homeTeam);
+                          context.pushNamed(
+                            screenTeam, 
+                            extra: fix.homeTeam,
+                            queryParameters: {'leagueId': fix.league?.externalId.toString() ?? ''},
+                          );
                         }
                       },
                       child: Row(
@@ -426,7 +436,11 @@ class CardFixtureItem extends StatelessWidget {
                     InkWell(
                       onTap: () {
                         if (fix.awayTeam != null) {
-                          context.pushNamed(screenTeam, extra: fix.awayTeam);
+                          context.pushNamed(
+                            screenTeam, 
+                            extra: fix.awayTeam,
+                            queryParameters: {'leagueId': fix.league?.externalId.toString() ?? ''},
+                          );
                         }
                       },
                       child: Row(
@@ -596,29 +610,34 @@ class CardBasicInfo extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         color: Theme.of(context).cardColor.withOpacity(0.5),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        runSpacing: 15,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CardInfoTileItem(
             icon: Assets.calendarLine,
             label: DateFormat('dd MMM yyyy, HH:mm').format(fixture!.date),
           ),
-          if (fixture!.venueName != null)
+          if (fixture!.venueName != null) ...[
+            const Gap(15),
             CardInfoTileItem(
               icon: Assets.mapPinLine,
               label: fixture!.venueName!,
             ),
-          if (fixture!.venueCity != null)
+          ],
+          if (fixture!.venueCity != null) ...[
+            const Gap(15),
             CardInfoTileItem(
               icon: Assets.mapPinLine,
               label: fixture!.venueCity!,
             ),
-          if (fixture!.round != null)
+          ],
+          if (fixture!.round != null) ...[
+            const Gap(15),
             CardInfoTileItem(
               icon: Assets.userLine,
               label: fixture!.round!,
             ),
+          ],
         ],
       ),
     );
@@ -632,16 +651,17 @@ class CardInfoTileItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         SvgPicture.asset(
           icon,
           width: 18,
         ),
         const Gap(10),
-        Text(
-          label,
-          style: context.textTheme.bodySmall,
+        Expanded(
+          child: Text(
+            label,
+            style: context.textTheme.bodySmall,
+          ),
         ),
       ],
     );
@@ -675,11 +695,17 @@ class CardFixtureDetail extends StatelessWidget {
             children: [
               Text(
                 fix.league?.name ?? 'Competition',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: context.textTheme.headlineSmall,
               ),
               if (fix.league?.country != null)
                 Text(
                   fix.league!.country!,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: context.textTheme.bodySmall!.copyWith(
                     fontSize: 15,
                   ),
@@ -690,79 +716,106 @@ class CardFixtureDetail extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              InkWell(
-                onTap: () {
-                  if (fix.homeTeam != null) {
-                    context.pushNamed(screenTeam, extra: fix.homeTeam);
-                  }
-                },
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (fix.homeTeam != null) {
+                      context.pushNamed(
+                        screenTeam, 
+                        extra: fix.homeTeam,
+                        queryParameters: {'leagueId': fix.league?.externalId.toString() ?? ''},
+                      );
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        width: 70,
+                        height: 70,
+                        child: fix.homeTeam?.logo != null
+                            ? Image.network(fix.homeTeam!.logo!,
+                                fit: BoxFit.contain)
+                            : const CardNoImage(radius: 5),
+                      ),
+                      const Gap(5),
+                      Text(
+                        fix.homeTeam?.name ?? 'Home',
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Column(
                   children: [
-                    SizedBox(
-                      width: 70,
-                      height: 70,
-                      child: fix.homeTeam?.logo != null
-                          ? Image.network(fix.homeTeam!.logo!, fit: BoxFit.contain)
-                          : const CardNoImage(radius: 5),
+                    Text(
+                      '${fix.homeGoals ?? 0} : ${fix.awayGoals ?? 0}',
+                      style: context.textTheme.headlineMedium!.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 45,
+                      ),
                     ),
                     const Gap(5),
-                    Text(
-                      fix.homeTeam?.name ?? 'Home',
-                      style: context.textTheme.bodySmall,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (isLive(fix.statusShort)) ...[
+                          const PulsingLiveIndicator(),
+                          const Gap(8),
+                        ],
+                        Text(
+                          isLive(fix.statusShort)
+                              ? '${fix.elapsed}\''
+                              : getShortStatus(
+                                  fix.statusShort, fix.statusLong, context),
+                          style: context.textTheme.bodySmall!.copyWith(
+                            fontSize: 16,
+                            fontWeight:
+                                isLive(fix.statusShort) ? FontWeight.bold : null,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              Column(
-                children: [
-                  Text(
-                    '${fix.homeGoals ?? 0} : ${fix.awayGoals ?? 0}',
-                    style: context.textTheme.headlineMedium!.copyWith(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 45,
-                    ),
-                  ),
-                  const Gap(5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    if (fix.awayTeam != null) {
+                      context.pushNamed(
+                        screenTeam, 
+                        extra: fix.awayTeam,
+                        queryParameters: {'leagueId': fix.league?.externalId.toString() ?? ''},
+                      );
+                    }
+                  },
+                  child: Column(
                     children: [
-                      if (isLive(fix.statusShort)) ...[
-                        const PulsingLiveIndicator(),
-                        const Gap(8),
-                      ],
+                      SizedBox(
+                        width: 70,
+                        height: 70,
+                        child: fix.awayTeam?.logo != null
+                            ? Image.network(fix.awayTeam!.logo!,
+                                fit: BoxFit.contain)
+                            : const CardNoImage(radius: 5),
+                      ),
+                      const Gap(5),
                       Text(
-                        isLive(fix.statusShort) ? '${fix.elapsed}\'' : (fix.statusLong ?? 'TBD'),
-                        style: context.textTheme.bodySmall!.copyWith(
-                          fontSize: 16,
-                          fontWeight: isLive(fix.statusShort) ? FontWeight.bold : null,
-                          color: isLive(fix.statusShort) ? Colors.white : Colors.white70,
-                        ),
+                        fix.awayTeam?.name ?? 'Away',
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.textTheme.bodySmall,
                       ),
                     ],
                   ),
-                ],
-              ),
-              InkWell(
-                onTap: () {
-                  if (fix.awayTeam != null) {
-                    context.pushNamed(screenTeam, extra: fix.awayTeam);
-                  }
-                },
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: 70,
-                      height: 70,
-                      child: fix.awayTeam?.logo != null
-                          ? Image.network(fix.awayTeam!.logo!, fit: BoxFit.contain)
-                          : const CardNoImage(radius: 5),
-                    ),
-                    const Gap(5),
-                    Text(
-                      fix.awayTeam?.name ?? 'Away',
-                      style: context.textTheme.bodySmall,
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -797,11 +850,19 @@ class CardFixtureDetail extends StatelessWidget {
 }
 
 class CardFormInfoFixture extends StatelessWidget {
-  const CardFormInfoFixture({super.key});
+  const CardFormInfoFixture({
+    super.key,
+    required this.homeTeamName,
+    required this.awayTeamName,
+    this.homeForm,
+    this.awayForm,
+  });
+
+  final String homeTeamName, awayTeamName;
+  final String? homeForm, awayForm;
 
   @override
   Widget build(BuildContext context) {
-    List<String> forms = ['L', 'L', 'L', 'W', 'L'];
     return Container(
       width: context.width,
       padding: const EdgeInsets.symmetric(vertical: 15),
@@ -811,138 +872,120 @@ class CardFormInfoFixture extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Text(
-                  'Chelsea',
-                  style: context.textTheme.bodySmall!.copyWith(
-                    fontSize: 16,
-                  ),
-                ),
-                const Spacer(),
-                for (var form in forms)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: CircleAvatar(
-                      radius: 10,
-                      backgroundColor: form == 'L' ? Colors.red : Colors.green,
-                      child: Text(
-                        form,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const Gap(15),
-          SizedBox(
-            width: context.width,
-            height: 45,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              scrollDirection: Axis.horizontal,
-              itemCount: 4,
-              itemBuilder: (_, i) {
-                return const CardFormMatch();
-              },
-              separatorBuilder: (_, i) => const Gap(10),
-            ),
-          ),
-          const Divider(
-            height: 50,
-            endIndent: 15,
-            indent: 15,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                Text(
-                  'Arsenal',
-                  style: context.textTheme.bodySmall!.copyWith(
-                    fontSize: 16,
-                  ),
-                ),
-                const Spacer(),
-                for (var form in forms)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: CircleAvatar(
-                      radius: 10,
-                      backgroundColor: form == 'L' ? Colors.red : Colors.green,
-                      child: Text(
-                        form,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const Gap(15),
-          SizedBox(
-            width: context.width,
-            height: 45,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              scrollDirection: Axis.horizontal,
-              itemCount: 4,
-              itemBuilder: (_, i) {
-                return const CardFormMatch();
-              },
-              separatorBuilder: (_, i) => const Gap(10),
-            ),
-          ),
+          _buildFormRow(context, homeTeamName, homeForm),
+          const Divider(height: 30, indent: 10, endIndent: 10),
+          _buildFormRow(context, awayTeamName, awayForm),
         ],
       ),
     );
   }
+
+  Widget _buildFormRow(BuildContext context, String teamName, String? form) {
+    List<String> forms = form?.split('').reversed.take(5).toList().reversed.toList() ?? [];
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              teamName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.textTheme.bodySmall!.copyWith(
+                fontSize: 15,
+              ),
+            ),
+          ),
+          const Gap(10),
+          if (forms.isEmpty)
+             const Text('N/A', style: TextStyle(fontSize: 12, color: Colors.white54))
+          else
+            for (var f in forms)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: CircleAvatar(
+                  radius: 10,
+                  backgroundColor: _getFormColor(f),
+                  child: Text(
+                    f,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Color _getFormColor(String form) {
+    switch (form.toUpperCase()) {
+      case 'W':
+        return Colors.green;
+      case 'L':
+        return Colors.red;
+      case 'D':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
+  }
 }
 
 class CardFormMatch extends StatelessWidget {
-  const CardFormMatch({super.key});
+  const CardFormMatch({super.key, required this.fixture});
+  final Fixture fixture;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(30),
+    return InkWell(
+      onTap: () => context.pushNamed(
+        screenFixtureDetails,
+        extra: fixture,
       ),
-      padding: const EdgeInsets.symmetric(
-        vertical: 8,
-        horizontal: 18,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(
-            width: 25,
-            height: 25,
-            child: CardNoImage(radius: 5),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              '1-0',
-              style: context.textTheme.bodySmall,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        padding: const EdgeInsets.symmetric(
+          vertical: 8,
+          horizontal: 14,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: fixture.homeTeam?.logo != null
+                  ? Image.network(fixture.homeTeam!.logo!, fit: BoxFit.contain)
+                  : const CardNoImage(radius: 5),
             ),
-          ),
-          const SizedBox(
-            width: 25,
-            height: 25,
-            child: CardNoImage(radius: 5),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                '${fixture.homeGoals ?? 0}-${fixture.awayGoals ?? 0}',
+                style: context.textTheme.bodySmall!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: fixture.awayTeam?.logo != null
+                  ? Image.network(fixture.awayTeam!.logo!, fit: BoxFit.contain)
+                  : const CardNoImage(radius: 5),
+            ),
+          ],
+        ),
       ),
     );
   }

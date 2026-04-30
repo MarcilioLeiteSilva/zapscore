@@ -403,11 +403,13 @@ class TableTileItem extends StatelessWidget {
     this.padding,
     this.isTop = false,
     this.isCrossCenter = false,
+    this.style,
   });
   final String text;
   final EdgeInsetsGeometry? padding;
   final bool isTop;
   final bool isCrossCenter;
+  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -419,7 +421,7 @@ class TableTileItem extends StatelessWidget {
             ? CrossAxisAlignment.center
             : CrossAxisAlignment.start,
         children: [
-          Text(text, style: const TextStyle(fontSize: 15)),
+          Text(text, style: style ?? const TextStyle(fontSize: 15)),
           if (isTop) ...[
             const Gap(3),
             Container(

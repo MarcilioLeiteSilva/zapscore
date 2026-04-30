@@ -285,7 +285,7 @@ class CardLineup extends StatelessWidget {
 
     return SizedBox(
       width: context.width,
-      height: context.height * .75,
+      height: context.height * .85, // Aumentado de 75% para 85% para evitar overflow
       child: Stack(
         children: [
           Positioned.fill(
@@ -411,8 +411,8 @@ class PlayerLineupItem extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isWhite ? Colors.white.withOpacity(0.2) : Theme.of(context).primaryColor.withOpacity(0.2),

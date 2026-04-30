@@ -212,14 +212,14 @@ class CardNewsCarouselItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: context.height * .30, // Voltado para tamanho grande (30%)
+              height: context.height * .22, // Reduzido de 30% para 22% para evitar overflow
               child: Stack(
                 children: [
                   image != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(15),
                           child: Padding(
-                            padding: (image != null && (image.contains('logo') || image.contains('badge')))
+                            padding: (image.contains('logo') || image.contains('badge'))
                                 ? const EdgeInsets.all(40.0) // Ícone bem pequeno e centralizado no banner
                                 : EdgeInsets.zero,
                             child: Image.network(

@@ -45,7 +45,7 @@ class CardOverallLastFive extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Overall',
+            'overall'.tr(context),
             style: context.textTheme.bodySmall,
           ),
           const Divider(height: 30),
@@ -53,15 +53,15 @@ class CardOverallLastFive extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Wins 24",
+                "${'wins'.tr(context)} 24",
                 style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
               ),
               Text(
-                "Draws 9",
+                "${'draws'.tr(context)} 9",
                 style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
               ),
               Text(
-                "Wins 16",
+                "${'wins'.tr(context)} 16",
                 style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
               ),
             ],
@@ -70,7 +70,7 @@ class CardOverallLastFive extends StatelessWidget {
           const CardIndicatorThreeH2H(),
           const Divider(height: 30),
           Text(
-            'Last 5',
+            'last_5'.tr(context),
             style: context.textTheme.bodySmall,
           ),
           const Divider(height: 30),
@@ -78,15 +78,15 @@ class CardOverallLastFive extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Wins 2",
+                "${'wins'.tr(context)} 2",
                 style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
               ),
               Text(
-                "Draws 0",
+                "${'draws'.tr(context)} 0",
                 style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
               ),
               Text(
-                "Wins 3",
+                "${'wins'.tr(context)} 3",
                 style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
               ),
             ],

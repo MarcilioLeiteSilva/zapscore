@@ -20,7 +20,12 @@ class InfoFixPage extends StatelessWidget {
                 ),
               ),
               const Gap(15),
-              const CardFormInfoFixture(),
+              CardFormInfoFixture(
+                homeTeamName: state.fixture.homeTeam?.name ?? 'Home',
+                awayTeamName: state.fixture.awayTeam?.name ?? 'Away',
+                homeForm: state.homeStanding?.form,
+                awayForm: state.awayStanding?.form,
+              ),
             ],
           );
         }

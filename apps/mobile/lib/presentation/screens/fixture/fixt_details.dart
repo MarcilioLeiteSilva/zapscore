@@ -13,13 +13,13 @@ class _FixtureDetailsState extends State<FixtureDetails> {
 
   int indexTab = 0;
   List<String> tabs = [
-    "Info",
-    "Summary",
-    "Report",
-    "Stats",
-    "Lineups",
-    "Table",
-    "H2H"
+    "info",
+    "summary",
+    "report",
+    "stats",
+    "lineups",
+    "table",
+    "h2h"
   ];
 
   @override
@@ -37,7 +37,7 @@ class _FixtureDetailsState extends State<FixtureDetails> {
               headerSliverBuilder: (context, bol) {
                 return [
                   SliverAppBar(
-                    title: const Text('Match Details'),
+                    title: Text('match_details'.tr(context)),
                     centerTitle: true,
                     pinned: true,
                     expandedHeight: context.height * .43,
@@ -84,7 +84,7 @@ class _FixtureDetailsState extends State<FixtureDetails> {
                             itemBuilder: (_, i) {
                               return CardCheepTabSearch(
                                 select: indexTab == i,
-                                label: tabs[i],
+                                label: tabs[i].tr(context),
                                 onTap: () {
                                   setState(() {
                                     indexTab = i;

@@ -48,3 +48,60 @@ bool isLive(String? status) {
   const liveStatuses = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE', 'LIVE '];
   return liveStatuses.contains(status.toUpperCase().trim());
 }
+
+String getShortStatus(
+    String? statusShort, String? statusLong, BuildContext context) {
+  if (statusShort == null) return 'TBD';
+
+  // Status Vivo (Live)
+  if (isLive(statusShort)) return 'status_live'.tr(context);
+
+  switch (statusShort.toUpperCase().trim()) {
+    case 'FT':
+    case 'AET':
+      return 'status_finished'.tr(context);
+    case 'PEN':
+      return 'status_penalties'.tr(context);
+    case 'INT':
+    case 'ABD':
+    case 'SUSP':
+      return 'status_interrupted'.tr(context);
+    case 'PST':
+      return 'status_postponed'.tr(context);
+    case 'NS':
+      // Se for NS e tiver hora, exibe a hora. Se não, exibe 'Fut'
+      return statusLong?.contains(':') == true
+          ? statusLong!
+          : 'status_future'.tr(context);
+    default:
+      return statusShort;
+  }
+}
+String getStatTranslation(String type, BuildContext context) {
+  final normalized = type.toLowerCase().trim();
+
+  final Map<String, String> typeToKey = {
+    'shots on goal': 'stat_shots_on_goal',
+    'shots off goal': 'stat_shots_off_goal',
+    'total shots': 'stat_total_shots',
+    'blocked shots': 'stat_blocked_shots',
+    'shots insidebox': 'stat_shots_insidebox',
+    'shots outsidebox': 'stat_shots_outsidebox',
+    'fouls': 'stat_fouls',
+    'corner kicks': 'stat_corner_kicks',
+    'offsides': 'stat_offsides',
+    'ball possession': 'stat_ball_possession',
+    'yellow cards': 'stat_yellow_cards',
+    'red cards': 'stat_red_cards',
+    'goalkeeper saves': 'stat_goalkeeper_saves',
+    'total passes': 'stat_total_passes',
+    'passes accurate': 'stat_passes_accurate',
+    'passes %': 'stat_passes_percent',
+    'expected_goals': 'stat_expected_goals',
+  };
+
+  final key = typeToKey[normalized];
+  if (key != null) return key.tr(context);
+
+  return type; // Retorna o original se não encontrar tradução
+}

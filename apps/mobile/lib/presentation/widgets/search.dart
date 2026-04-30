@@ -319,15 +319,27 @@ class PageSearchNews extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const ScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-      itemBuilder: (_, i) {
-        return const CardNewsItem();
+    return BlocBuilder<NewsCubit, NewsState>(
+      builder: (context, state) {
+        if (state is NewsLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is NewsLoaded) {
+          final newsList = state.news;
+          if (newsList.isEmpty) {
+            return const Center(child: Text('No news found'));
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+            itemBuilder: (_, i) {
+              return CardNewsItem(news: newsList[i]);
+            },
+            separatorBuilder: (_, i) => const Gap(15),
+            itemCount: newsList.length,
+          );
+        }
+        return const Center(child: Text('Failed to load news'));
       },
-      separatorBuilder: (_, i) => const Gap(15),
-      itemCount: 10,
     );
   }
 }
@@ -337,15 +349,30 @@ class PageSearchWatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const ScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-      itemBuilder: (_, i) {
-        return const CardNewsItem(isVideo: true);
+    return BlocBuilder<VideoCubit, VideoState>(
+      builder: (context, state) {
+        if (state is VideoLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is VideoLoaded) {
+          final videoList = state.videos;
+          if (videoList.isEmpty) {
+            return const Center(child: Text('No videos found'));
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+            itemBuilder: (_, i) {
+              return CardNewsItem(
+                isVideo: true,
+                video: videoList[i],
+              );
+            },
+            separatorBuilder: (_, i) => const Gap(15),
+            itemCount: videoList.length,
+          );
+        }
+        return const Center(child: Text('Failed to load videos'));
       },
-      separatorBuilder: (_, i) => const Gap(15),
-      itemCount: 10,
     );
   }
 }

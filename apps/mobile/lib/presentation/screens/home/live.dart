@@ -25,7 +25,7 @@ class _LivePageState extends State<LivePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       appBar: AppBar(
         title: Text('live'.tr(context)),
         centerTitle: false,

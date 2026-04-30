@@ -94,8 +94,11 @@ abstract class RouterApp {
       GoRoute(
         path: '/$screenTeam',
         name: screenTeam,
-        builder: (context, state) =>
-            TeamProfileScreen(team: state.extra as Team),
+        builder: (context, state) {
+          final team = state.extra as Team;
+          final leagueId = int.tryParse(state.uri.queryParameters['leagueId'] ?? '');
+          return TeamProfileScreen(team: team, leagueId: leagueId);
+        },
       ),
       GoRoute(
         path: '/$screenNewsContent',

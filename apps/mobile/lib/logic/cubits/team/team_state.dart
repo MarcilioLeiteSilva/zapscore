@@ -10,11 +10,13 @@ class TeamLoaded extends TeamState {
   final List<Fixture> fixtures;
   final List<Standing> standings;
   final Map<String, dynamic>? stats;
+  final String? leagueName;
 
   TeamLoaded({
     required this.fixtures,
     this.standings = const [],
     this.stats,
+    this.leagueName,
   });
 }
 

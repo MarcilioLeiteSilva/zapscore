@@ -8,7 +8,10 @@ class FixtureLoading extends FixtureState {}
 
 class FixtureLoaded extends FixtureState {
   final Fixture fixture;
-  FixtureLoaded(this.fixture);
+  final List<Standing> standings;
+  final Standing? homeStanding;
+  final Standing? awayStanding;
+  FixtureLoaded(this.fixture, {this.standings = const [], this.homeStanding, this.awayStanding});
 }
 
 class FixtureError extends FixtureState {

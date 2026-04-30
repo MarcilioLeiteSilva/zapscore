@@ -64,7 +64,7 @@ class _NewsPageState extends State<NewsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(),
       appBar: AppBar(
         title: Text("news".tr(context)),
         centerTitle: false,
@@ -116,7 +116,7 @@ class _NewsPageState extends State<NewsPage> {
                       if (carouselNews.isNotEmpty)
                         SizedBox(
                           width: context.width,
-                          height: context.height * .3,
+                          height: context.height * .35,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: 10),

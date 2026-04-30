@@ -619,28 +619,33 @@ class EventCardsRight extends StatelessWidget {
           : null,
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              "${event.time}'",
-              style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-            ),
+          Text(
+            "${event.time}'",
+            style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
           ),
-          Row(
-            children: [
-              SvgPicture.asset(
-                Assets.yellowCard,
-                width: 14,
-                color: isRed ? Colors.redAccent : null,
-              ),
-              const Gap(10),
-              PlayerEventPhoto(photo: event.playerPhoto),
-              const Gap(10),
-              Text(
-                event.player ?? '',
-                maxLines: 1,
-                style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
-              ),
-            ],
+          const Gap(10),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SvgPicture.asset(
+                  Assets.yellowCard,
+                  width: 14,
+                  color: isRed ? Colors.redAccent : null,
+                ),
+                const Gap(10),
+                PlayerEventPhoto(photo: event.playerPhoto),
+                const Gap(10),
+                Flexible(
+                  child: Text(
+                    event.player ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall!.copyWith(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

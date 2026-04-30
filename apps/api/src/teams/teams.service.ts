@@ -95,29 +95,127 @@ export class TeamsService {
       },
     });
 
-    if (!standing) {
+    if (standing) {
+      return {
+        fixtures: {
+          played: { total: standing.played },
+          wins: { total: standing.win },
+          draws: { total: standing.draw },
+          loses: { total: standing.lose },
+        },
+        goals: {
+          for: { 
+            total: { total: standing.goalsFor },
+            average: { total: (standing.goalsFor / standing.played || 0).toFixed(2) }
+          },
+          against: { 
+            total: { total: standing.goalsAgainst },
+            average: { total: (standing.goalsAgainst / standing.played || 0).toFixed(2) }
+          },
+        },
+        clean_sheet: { total: 0 },
+        failed_to_score: { total: 0 },
+      };
+    }
+
+    // 3. Final Fallback: Aggregate manually from match history (fixtures)
+    const team = await this.prisma.team.findUnique({
+      where: { externalId: teamExternalId },
+      select: { id: true },
+    });
+
+    if (!team) return null;
+
+    const fixtures = await this.prisma.fixture.findMany({
+      where: {
+        league: { externalId: leagueExternalId },
+        season,
+        OR: [
+          { homeTeamId: team.id },
+          { awayTeamId: team.id },
+        ],
+        statusShort: 'FT', // Finished matches only
+      },
+      include: {
+        stats: true,
+      },
+    });
+
+    if (fixtures.length === 0) {
       return null;
+    }
+
+    let played = 0;
+    let wins = 0;
+    let draws = 0;
+    let losses = 0;
+    let goalsFor = 0;
+    let goalsAgainst = 0;
+    let cleanSheets = 0;
+    let failedToScore = 0;
+    
+    let totalPossession = 0;
+    let possessionCount = 0;
+    let totalShots = 0;
+    let shotsCount = 0;
+
+    for (const f of fixtures) {
+      played++;
+      const isHome = f.homeTeamId === team.id;
+      const teamGoals = isHome ? (f.homeGoals ?? 0) : (f.awayGoals ?? 0);
+      const opponentGoals = isHome ? (f.awayGoals ?? 0) : (f.homeGoals ?? 0);
+
+      goalsFor += teamGoals;
+      goalsAgainst += opponentGoals;
+
+      if (teamGoals > opponentGoals) wins++;
+      else if (teamGoals < opponentGoals) losses++;
+      else draws++;
+
+      if (opponentGoals === 0) cleanSheets++;
+      if (teamGoals === 0) failedToScore++;
+
+      // Process stats for this team in this fixture
+      const teamStats = f.stats.filter(s => s.teamId === teamExternalId);
+      for (const s of teamStats) {
+        if (s.type === 'Ball Possession' && s.value) {
+          const val = parseInt(s.value.replace('%', ''));
+          if (!isNaN(val)) {
+            totalPossession += val;
+            possessionCount++;
+          }
+        }
+        if (s.type === 'Total Shots' && s.value) {
+          const val = parseInt(s.value);
+          if (!isNaN(val)) {
+            totalShots += val;
+            shotsCount++;
+          }
+        }
+      }
     }
 
     return {
       fixtures: {
-        played: { total: standing.played },
-        wins: { total: standing.win },
-        draws: { total: standing.draw },
-        loses: { total: standing.lose },
+        played: { total: played },
+        wins: { total: wins },
+        draws: { total: draws },
+        loses: { total: losses },
       },
       goals: {
         for: { 
-          total: { total: standing.goalsFor },
-          average: { total: (standing.goalsFor / standing.played || 0).toFixed(2) }
+          total: { total: goalsFor },
+          average: { total: (goalsFor / played).toFixed(2) }
         },
         against: { 
-          total: { total: standing.goalsAgainst },
-          average: { total: (standing.goalsAgainst / standing.played || 0).toFixed(2) }
+          total: { total: goalsAgainst },
+          average: { total: (goalsAgainst / played).toFixed(2) }
         },
       },
-      clean_sheet: { total: 0 },
-      failed_to_score: { total: 0 },
+      clean_sheet: { total: cleanSheets },
+      failed_to_score: { total: failedToScore },
+      average_possession: possessionCount > 0 ? (totalPossession / possessionCount).toFixed(0) : null,
+      average_shots: shotsCount > 0 ? (totalShots / shotsCount).toFixed(1) : null,
     };
   }
 }
