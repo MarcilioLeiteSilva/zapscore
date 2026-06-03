@@ -52,6 +52,8 @@ export class ApiFootballMapper {
       season: season,
       rank: apiStanding.rank,
       points: apiStanding.points,
+      goalsFor: apiStanding.all.goals.for ?? 0,
+      goalsAgainst: apiStanding.all.goals.against ?? 0,
       goalsDiff: apiStanding.goalsDiff,
       played: apiStanding.all.played,
       win: apiStanding.all.win,
