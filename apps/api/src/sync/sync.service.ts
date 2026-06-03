@@ -428,6 +428,16 @@ export class SyncService {
 
     for (const group of firstStanding) {
       for (const item of group) {
+        // Evitar que rankings comparativos secundários (como "Ranking of third-placed teams")
+        // sobrescrevam a classificação principal dos grupos nas copas
+        if (item.group && (
+          item.group.toLowerCase().includes('ranking of') ||
+          item.group.toLowerCase().includes('third-placed') ||
+          item.group.toLowerCase().includes('best third')
+        )) {
+          continue;
+        }
+
         const team = await this.prisma.team.findUnique({
           where: { externalId: item.team.id },
         });
