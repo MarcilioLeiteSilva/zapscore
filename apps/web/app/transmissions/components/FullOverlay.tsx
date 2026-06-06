@@ -22,6 +22,13 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const tabTimer = setInterval(() => {
+      setActiveTab((prev) => (prev + 1) % 4);
+    }, 10000); // 10s
+    return () => clearInterval(tabTimer);
+  }, []);
+
   const timeStr = now.toLocaleTimeString('pt-BR', { hour12: false });
   const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -162,6 +169,8 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
           <div className="tx-tabs-header">
             <button className={`tx-tab-btn ${activeTab === 0 ? 'active' : ''}`} onClick={() => setActiveTab(0)}>ESCALAÇÃO</button>
             <button className={`tx-tab-btn ${activeTab === 1 ? 'active' : ''}`} onClick={() => setActiveTab(1)}>ESTATÍSTICAS</button>
+            <button className={`tx-tab-btn ${activeTab === 2 ? 'active' : ''}`} onClick={() => setActiveTab(2)}>EVENTOS</button>
+            <button className={`tx-tab-btn ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>PARTIDA</button>
           </div>
 
           <div className="tx-carousel-content">
@@ -232,6 +241,63 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
                     Estatísticas não disponíveis no momento.
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 2 && (
+              <div className="tx-events-list tx-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {(!fixture.events || fixture.events.length === 0) ? (
+                  <div className="tx-state-message" style={{marginTop: '40px'}}>Nenhum evento registrado ainda.</div>
+                ) : (
+                  [...fixture.events].reverse().slice(0, 10).map((event, idx) => {
+                    const isGoal = event.type === 'Goal';
+                    const isYellow = event.type === 'Card' && event.detail?.includes('Yellow');
+                    const isRed = event.type === 'Card' && event.detail?.includes('Red');
+                    const isSubst = event.type === 'subst';
+                    const icon = isGoal ? '⚽' : isSubst ? '🔄' : '📋';
+                    
+                    return (
+                      <div key={idx} style={{ 
+                        display: 'flex', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.05)', 
+                        borderRadius: '8px', borderLeft: isGoal ? '4px solid var(--tx-green)' : '4px solid transparent' 
+                      }}>
+                        <div style={{ width: '40px', fontWeight: 'bold', color: 'var(--tx-gold)' }}>{event.time}'</div>
+                        <div style={{ width: '40px', fontSize: '1.2rem', textAlign: 'center' }}>
+                          {isYellow ? <span style={{display: 'inline-block', width: '12px', height: '16px', background: '#facc15', borderRadius: '2px'}}></span> : 
+                           isRed ? <span style={{display: 'inline-block', width: '12px', height: '16px', background: '#ef4444', borderRadius: '2px'}}></span> : icon}
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 'bold' }}>{event.player}</span>
+                          <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{event.detail} {event.assist ? `(Ass: ${event.assist})` : ''}</span>
+                        </div>
+                        <img src={getLogoUrl(event.teamId === fixture.homeTeam.externalId ? fixture.homeTeam.logo : fixture.awayTeam.logo)} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {activeTab === 3 && (
+              <div className="tx-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px', justifyContent: 'center', height: '100%', padding: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px' }}>
+                  <span style={{ color: 'var(--tx-gold)', fontFamily: 'var(--font-head)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>ESTÁDIO</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 'bold', textAlign: 'center' }}>{fixture.venueName || 'A definir'}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px' }}>
+                  <span style={{ color: 'var(--tx-gold)', fontFamily: 'var(--font-head)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>CIDADE</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 'bold', textAlign: 'center' }}>{fixture.venueCity || 'A definir'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px' }}>
+                    <span style={{ color: 'var(--tx-gold)', fontFamily: 'var(--font-head)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>RODADA</span>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{fixture.round || '-'}</span>
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px' }}>
+                    <span style={{ color: 'var(--tx-gold)', fontFamily: 'var(--font-head)', fontSize: '0.9rem', letterSpacing: '0.1em' }}>ÁRBITRO</span>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', textAlign: 'center' }}>{(fixture as any).referee || 'A definir'}</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
