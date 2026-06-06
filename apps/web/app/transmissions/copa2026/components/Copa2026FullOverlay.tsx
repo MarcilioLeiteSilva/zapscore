@@ -82,7 +82,7 @@ export default function Copa2026FullOverlay({ leagueId }: FullOverlayProps) {
 
       <header className="tx-top-bar">
         <div className="tx-badge" style={{ borderColor: 'var(--tx-gold)' }}>
-          <span className="tx-badge__top">COPA DO MUNDO</span>
+          <span className="tx-badge__top">AMISTOSO</span>
           <span className="tx-badge__mid">🏆</span>
           <span className="tx-badge__bot">TRANSMISSÃO</span>
         </div>

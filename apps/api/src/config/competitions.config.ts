@@ -56,6 +56,14 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     type: 'cup',
     activeSeasons: [2026],
   },
+  {
+    code: 'AMISTOSOS_INT',
+    externalId: 10,
+    name: 'Amistosos Internacionais',
+    country: 'World',
+    type: 'cup',
+    activeSeasons: [2026],
+  },
 ];
 
 export const DEFAULT_COMPETITION = {
