@@ -25,10 +25,7 @@ const MOCK_FIXTURE = {
   referee: 'Árbitro A Definir',
   
   // Exemplo de como adicionar eventos manualmente
-  events: [
-    // { time: 10, type: 'Card', detail: 'Yellow Card', player: 'Vini Jr', teamId: 6 },
-    // { time: 15, type: 'Goal', detail: 'Normal Goal', player: 'Rodrygo', assist: 'Paquetá', teamId: 6 },
-  ],
+  events: [] as any[],
   
   // Exemplo de escalação manual
   lineups: [
