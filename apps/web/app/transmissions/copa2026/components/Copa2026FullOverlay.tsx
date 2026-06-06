@@ -1,15 +1,74 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFixturePolling } from '../../hooks/useFixturePolling';
+
+// DADOS ESTÁTICOS PARA EDIÇÃO MANUAL (NÃO USA API)
+const MOCK_FIXTURE = {
+  statusShort: 'LIVE', // 'NS' (Aguardando), 'LIVE' (Ao vivo), 'FT' (Fim)
+  statusLong: 'Ao Vivo',
+  elapsed: 12, // Minutos de jogo
+  homeGoals: 0,
+  awayGoals: 0,
+  homeTeam: {
+    externalId: 6,
+    name: 'Brasil',
+    logo: 'https://media.api-sports.io/football/teams/6.png'
+  },
+  awayTeam: {
+    externalId: 32,
+    name: 'Egito',
+    logo: 'https://media.api-sports.io/football/teams/32.png'
+  },
+  venueName: 'Estádio do Amistoso',
+  venueCity: 'Cidade',
+  round: 'Amistoso Internacional',
+  referee: 'Árbitro A Definir',
+  
+  // Exemplo de como adicionar eventos manualmente
+  events: [
+    // { time: 10, type: 'Card', detail: 'Yellow Card', player: 'Vini Jr', teamId: 6 },
+    // { time: 15, type: 'Goal', detail: 'Normal Goal', player: 'Rodrygo', assist: 'Paquetá', teamId: 6 },
+  ],
+  
+  // Exemplo de escalação manual
+  lineups: [
+    // Brasil
+    { teamId: 6, isStart: true, number: 1, player: 'Alisson' },
+    { teamId: 6, isStart: true, number: 2, player: 'Danilo' },
+    { teamId: 6, isStart: true, number: 3, player: 'Marquinhos' },
+    { teamId: 6, isStart: true, number: 4, player: 'Gabriel Magalhães' },
+    { teamId: 6, isStart: true, number: 6, player: 'Wendell' },
+    { teamId: 6, isStart: true, number: 5, player: 'Bruno Guimarães' },
+    { teamId: 6, isStart: true, number: 8, player: 'Lucas Paquetá' },
+    { teamId: 6, isStart: true, number: 10, player: 'Rodrygo' },
+    { teamId: 6, isStart: true, number: 7, player: 'Vini Jr' },
+    { teamId: 6, isStart: true, number: 11, player: 'Raphinha' },
+    { teamId: 6, isStart: true, number: 9, player: 'Endrick' },
+    // Egito
+    { teamId: 32, isStart: true, number: 1, player: 'El Shenawy' },
+    { teamId: 32, isStart: true, number: 2, player: 'Gaber' },
+    { teamId: 32, isStart: true, number: 6, player: 'Hegazy' },
+    { teamId: 32, isStart: true, number: 4, player: 'Abdelmonem' },
+    { teamId: 32, isStart: true, number: 13, player: 'Fotouh' },
+    { teamId: 32, isStart: true, number: 5, player: 'Hamdi' },
+    { teamId: 32, isStart: true, number: 8, player: 'Ashour' },
+    { teamId: 32, isStart: true, number: 17, player: 'Elneny' },
+    { teamId: 32, isStart: true, number: 10, player: 'Salah' },
+    { teamId: 32, isStart: true, number: 7, player: 'Trezeguet' },
+    { teamId: 32, isStart: true, number: 11, player: 'Mohamed' },
+  ]
+};
+
 
 interface FullOverlayProps {
   leagueId: number;
 }
 
 export default function Copa2026FullOverlay({ leagueId }: FullOverlayProps) {
-  const { fixture, loading, error } = useFixturePolling(leagueId, undefined, 15000);
   const [now, setNow] = useState(new Date());
+
+  // Usando dados estáticos editáveis
+  const fixture = MOCK_FIXTURE;
 
   const getLogoUrl = (url: string | undefined | null) => {
     if (!url) return '';
@@ -23,22 +82,6 @@ export default function Copa2026FullOverlay({ leagueId }: FullOverlayProps) {
 
   const timeStr = now.toLocaleTimeString('pt-BR', { hour12: false });
   const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
-
-  if (loading) {
-    return (
-      <div className="tx-full-page" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div className="tx-spinner"></div>
-      </div>
-    );
-  }
-
-  if (error || !fixture) {
-    return (
-      <div className="tx-full-page" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div className="tx-state-message">Aguardando Partida...</div>
-      </div>
-    );
-  }
 
   const isLive = ['LIVE', '1H', '2H', 'HT', 'ET', 'BT', 'P'].includes(fixture.statusShort);
   const isScheduled = ['NS', 'TBD'].includes(fixture.statusShort);
@@ -63,14 +106,14 @@ export default function Copa2026FullOverlay({ leagueId }: FullOverlayProps) {
   };
 
   const newsItems = [
-    `Copa do Mundo FIFA 2026`,
+    `Amistoso da Seleção`,
     `Acompanhe todos os detalhes de ${fixture.homeTeam.name} x ${fixture.awayTeam.name}.`,
     `Partida realizada em ${fixture.venueName}, ${fixture.venueCity}.`
   ];
 
   if (fixture.events && fixture.events.length > 0) {
     const lastEvent = fixture.events[fixture.events.length - 1];
-    newsItems.push(`ÚLTIMO LANCE: ${lastEvent.time}' - ${lastEvent.type} de ${lastEvent.player} (${lastEvent.detail})`);
+    newsItems.push(`ÚLTIMO LANCE: ${lastEvent.time}' - ${lastEvent.type} de ${lastEvent.player} (${lastEvent.detail || ''})`);
   }
 
   const homePlayers = fixture.lineups?.filter((l: any) => l.teamId === fixture.homeTeam.externalId && l.isStart) || [];
@@ -109,7 +152,7 @@ export default function Copa2026FullOverlay({ leagueId }: FullOverlayProps) {
           <div className="tx-clock-card">
             <span className="tx-clock-flag">🌎</span>
             <div className="tx-clock-info">
-              <span className="tx-clock-label">COPA 2026</span>
+              <span className="tx-clock-label">AMISTOSO</span>
               <span className="tx-clock-time">{timeStr}</span>
               <span className="tx-clock-date">{dateStr}</span>
             </div>
