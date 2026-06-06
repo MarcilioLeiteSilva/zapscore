@@ -124,7 +124,14 @@ export function useFixturePolling(
         const allFixtures = Array.isArray(data) ? data : [];
         setFixtures(allFixtures);
         const best = pickBestFixture(allFixtures);
-        setFixture(best);
+        
+        // Fetch full details (with lineups, stats, events) for the best fixture
+        if (best && best.id) {
+          const fullFixture = await apiFetch(getApiUrl(`/fixtures/${best.id}`));
+          setFixture(fullFixture);
+        } else {
+          setFixture(best);
+        }
       }
       setError(null);
     } catch (err: any) {
