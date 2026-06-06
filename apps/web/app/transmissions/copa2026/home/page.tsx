@@ -1,4 +1,4 @@
-import Copa2026HomeOverlay from '../../components/Copa2026HomeOverlay';
+import Copa2026HomeOverlay from '../components/Copa2026HomeOverlay';
 
 export default function Copa2026HomeRoute() {
   // World Cup league ID is 1
