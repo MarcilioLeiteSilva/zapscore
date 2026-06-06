@@ -6,9 +6,9 @@ import React, { useState, useEffect } from 'react';
 const MOCK_FIXTURE = {
   statusShort: 'LIVE', // 'NS' (Aguardando), 'LIVE' (Ao vivo), 'FT' (Fim)
   statusLong: 'Ao Vivo',
-  elapsed: 12, // Minutos de jogo
-  homeGoals: 0,
-  awayGoals: 0,
+  elapsed: 45, // Minutos de jogo
+  homeGoals: 1,
+  awayGoals: 1,
   homeTeam: {
     externalId: 6,
     name: 'Brasil',
