@@ -12,6 +12,11 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [now, setNow] = useState(new Date());
 
+  const getLogoUrl = (url: string | undefined | null) => {
+    if (!url) return '';
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  };
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
@@ -117,11 +122,11 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
         <div className="tx-score-banner-wrapper">
           <div className="tx-score-banner">
             <span className="tx-score-team">{fixture.homeTeam.name.substring(0, 3).toUpperCase()}</span>
-            <img src={fixture.homeTeam.logo} alt="" className="tx-score-logo" />
+            <img src={getLogoUrl(fixture.homeTeam.logo)} alt="" className="tx-score-logo" />
             <span className="tx-score-digits">{fixture.homeGoals ?? 0}</span>
             <span className="tx-score-separator">:</span>
             <span className="tx-score-digits">{fixture.awayGoals ?? 0}</span>
-            <img src={fixture.awayTeam.logo} alt="" className="tx-score-logo" />
+            <img src={getLogoUrl(fixture.awayTeam.logo)} alt="" className="tx-score-logo" />
             <span className="tx-score-team">{fixture.awayTeam.name.substring(0, 3).toUpperCase()}</span>
             
             <div className={getLiveTagClass()}>
@@ -165,7 +170,7 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
                 {/* Home Lineup */}
                 <div>
                   <div className="tx-lineup-title">
-                    <img src={fixture.homeTeam.logo} alt="" />
+                    <img src={getLogoUrl(fixture.homeTeam.logo)} alt="" />
                     {fixture.homeTeam.name}
                   </div>
                   <div className="tx-lineup-list">
@@ -181,7 +186,7 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
                 {/* Away Lineup */}
                 <div>
                   <div className="tx-lineup-title">
-                    <img src={fixture.awayTeam.logo} alt="" />
+                    <img src={getLogoUrl(fixture.awayTeam.logo)} alt="" />
                     {fixture.awayTeam.name}
                   </div>
                   <div className="tx-lineup-list">

@@ -22,6 +22,7 @@ interface FixtureData {
   elapsed: number | null;
   venueName: string;
   venueCity: string;
+  referee?: string;
   homeTeam: {
     externalId: number;
     name: string;

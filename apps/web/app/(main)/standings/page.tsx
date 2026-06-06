@@ -1,4 +1,4 @@
-import { ZapScoreApi } from '../../lib/api-client';
+import { ZapScoreApi } from '../../../lib/api-client';
 
 export default async function StandingsPage() {
   let standings: any[] = [];

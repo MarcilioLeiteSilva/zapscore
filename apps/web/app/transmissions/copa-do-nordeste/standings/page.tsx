@@ -7,7 +7,7 @@ import StandingsOverlay from '../../components/StandingsOverlay';
 function StandingsContent() {
   const searchParams = useSearchParams();
   const speed = searchParams.get('speed') || 'normal';
-  return <StandingsOverlay leagueId={612} competitionName="Copa do Nordeste" speed={speed} />;
+  return <StandingsOverlay leagueId={612} season={2024} competitionName="Copa do Nordeste" speed={speed} />;
 }
 
 export default function CopaNordesteStandings() {

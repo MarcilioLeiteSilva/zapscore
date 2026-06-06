@@ -76,6 +76,11 @@ export default function StatsOverlay({
   speed?: string;
 }) {
   const { fixture, loading } = useFixturePolling(leagueId, fixtureId);
+
+  const getLogoUrl = (url: string | undefined | null) => {
+    if (!url) return '';
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  };
   const scrollDuration = SPEED_MAP[speed] || SPEED_MAP.normal;
 
   if (loading) {
@@ -138,13 +143,13 @@ export default function StatsOverlay({
         {/* Fixed Header */}
         <div className="tx-stats-header">
           <div className="tx-stats-team-info">
-            <img src={fixture.homeTeam.logo} alt="" className="tx-stats-team-logo" />
+            <img src={getLogoUrl(fixture.homeTeam.logo)} alt="" className="tx-stats-team-logo" />
             <span className="tx-stats-team-name">{fixture.homeTeam.name}</span>
           </div>
           <div className="tx-stats-title">ESTATÍSTICAS</div>
           <div className="tx-stats-team-info">
             <span className="tx-stats-team-name">{fixture.awayTeam.name}</span>
-            <img src={fixture.awayTeam.logo} alt="" className="tx-stats-team-logo" />
+            <img src={getLogoUrl(fixture.awayTeam.logo)} alt="" className="tx-stats-team-logo" />
           </div>
         </div>
 

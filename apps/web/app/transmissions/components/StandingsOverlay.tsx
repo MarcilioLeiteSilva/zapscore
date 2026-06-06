@@ -10,15 +10,22 @@ const SPEED_MAP: Record<string, string> = {
 
 export default function StandingsOverlay({
   leagueId,
+  season,
   competitionName,
   speed = 'normal',
 }: {
   leagueId: number;
+  season: number;
   competitionName: string;
   speed?: string;
 }) {
-  const { standings, loading } = useStandingsPolling(leagueId);
+  const { standings, loading } = useStandingsPolling(leagueId, season);
   const scrollDuration = SPEED_MAP[speed] || SPEED_MAP.normal;
+
+  const getLogoUrl = (url: string | undefined | null) => {
+    if (!url) return '';
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  };
 
   if (loading) {
     return (
@@ -52,7 +59,7 @@ export default function StandingsOverlay({
             {item.rank}
           </div>
           <div className="tx-standings-team-cell">
-            <img src={item.team.logo} alt="" className="tx-standings-team-logo" />
+            <img src={getLogoUrl(item.team.logo)} alt="" className="tx-standings-team-logo" />
             <span className="tx-standings-team-name">{item.team.name}</span>
           </div>
           <div className="tx-standings-pts">{item.points}</div>

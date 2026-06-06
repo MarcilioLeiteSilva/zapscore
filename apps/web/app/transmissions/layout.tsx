@@ -1,8 +1,8 @@
 import './transmissions.css';
 
 export const metadata = {
-  title: 'ZapScore Transmissões | OBS Overlay',
-  description: 'Overlays de transmissão para OBS Studio',
+  title: 'ZapScore Transmissão',
+  description: 'Overlays para transmissão.',
 };
 
 export default function TransmissionsLayout({
@@ -11,8 +11,13 @@ export default function TransmissionsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      {children}
-    </>
+    <html lang="pt-BR">
+      <head>
+        {/* Adicione as fontes do Google se necessário, embora já estejam importadas no transmissions.css via @import */}
+      </head>
+      <body>
+        {children}
+      </body>
+    </html>
   );
 }

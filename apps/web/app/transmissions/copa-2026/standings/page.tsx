@@ -7,7 +7,7 @@ import StandingsOverlay from '../../components/StandingsOverlay';
 function StandingsContent() {
   const searchParams = useSearchParams();
   const speed = searchParams.get('speed') || 'normal';
-  return <StandingsOverlay leagueId={1} competitionName="Copa do Mundo FIFA 2026" speed={speed} />;
+  return <StandingsOverlay leagueId={1} season={2026} competitionName="Copa do Mundo FIFA 2026" speed={speed} />;
 }
 
 export default function Copa2026Standings() {

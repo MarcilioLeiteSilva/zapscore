@@ -1,4 +1,4 @@
-import { ZapScoreApi } from '../../lib/api-client';
+import { ZapScoreApi } from '../../../lib/api-client';
 import Link from 'next/link';
 
 export default async function FixturesPage() {
