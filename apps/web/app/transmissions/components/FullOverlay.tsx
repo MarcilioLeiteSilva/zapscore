@@ -9,7 +9,7 @@ interface FullOverlayProps {
 
 export default function FullOverlay({ leagueId }: FullOverlayProps) {
   const { fixture, loading, error } = useFixturePolling(leagueId, undefined, 15000);
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(2); // Fixado em EVENTOS
   const [now, setNow] = useState(new Date());
 
   const getLogoUrl = (url: string | undefined | null) => {
@@ -22,12 +22,13 @@ export default function FullOverlay({ leagueId }: FullOverlayProps) {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const tabTimer = setInterval(() => {
-      setActiveTab((prev) => (prev + 1) % 4);
-    }, 10000); // 10s
-    return () => clearInterval(tabTimer);
-  }, []);
+  // Carousel desativado temporariamente a pedido do usuário
+  // useEffect(() => {
+  //   const tabTimer = setInterval(() => {
+  //     setActiveTab((prev) => (prev + 1) % 4);
+  //   }, 10000); // 10s
+  //   return () => clearInterval(tabTimer);
+  // }, []);
 
   const timeStr = now.toLocaleTimeString('pt-BR', { hour12: false });
   const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
