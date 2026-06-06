@@ -66,7 +66,7 @@ class _WatchPageState extends State<WatchPage> {
     return Scaffold(
       drawer: AppDrawer(),
       appBar: AppBar(
-        title: const Text("Watch"),
+        title: Text("watch".tr(context)),
         centerTitle: false,
         actions: [
           IconButton(
@@ -107,9 +107,9 @@ class _WatchPageState extends State<WatchPage> {
                   children: [
                     _buildCompetitionFilters(),
                     if (state.videos.isEmpty)
-                      const SizedBox(
+                      SizedBox(
                         height: 300,
-                        child: Center(child: Text('Nenhum vídeo encontrado para esta competição')),
+                        child: Center(child: Text('no_videos_found'.tr(context))),
                       )
                     else ...[
                       const Gap(10),
@@ -134,7 +134,7 @@ class _WatchPageState extends State<WatchPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         child: Text(
-                          'Highlights',
+                          'highlights'.tr(context),
                           style: context.textTheme.bodyMedium,
                         ),
                       ),

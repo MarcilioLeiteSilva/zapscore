@@ -32,7 +32,7 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
           title: Row(
             children: [
               if (widget.team.logo != null) ...[
-                Image.network(widget.team.logo!, width: 30, height: 30),
+                CachedNetworkImage(imageUrl: proxyImage(widget.team.logo!), width: 30, height: 30),
                 const Gap(10),
               ],
               Expanded(child: Text(widget.team.name, overflow: TextOverflow.ellipsis)),
@@ -64,7 +64,7 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
               child: Column(
                 children: [
                   if (widget.team.logo != null)
-                    Image.network(widget.team.logo!, height: 80)
+                    CachedNetworkImage(imageUrl: proxyImage(widget.team.logo!), height: 80)
                   else
                     const CardNoImage(radius: 40),
                   const Gap(10),

@@ -127,9 +127,9 @@ class PlayerSubstitutionItem extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(event.playerPhoto!,
+                child: CachedNetworkImage(imageUrl: proxyImage(event.playerPhoto!),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
+                    errorWidget: (_, __, ___) =>
                         const Icon(Icons.person, size: 16)),
               ),
             ),
@@ -220,10 +220,9 @@ class PlayerSubstitutionPlayerItem extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: player.playerPhoto != null
-                      ? Image.network(
-                          player.playerPhoto!,
+                      ? CachedNetworkImage(imageUrl: proxyImage(player.playerPhoto!),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.white54, size: 18),
+                          errorWidget: (_, __, ___) => const Icon(Icons.person, color: Colors.white54, size: 18),
                         )
                       : const Icon(Icons.person, color: Colors.white54, size: 18),
                 ),
@@ -420,10 +419,9 @@ class PlayerLineupItem extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: player.playerPhoto != null
-                      ? Image.network(
-                          player.playerPhoto!,
+                      ? CachedNetworkImage(imageUrl: proxyImage(player.playerPhoto!),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholder(context),
+                          errorWidget: (_, __, ___) => _buildPlaceholder(context),
                         )
                       : _buildPlaceholder(context),
                 ),

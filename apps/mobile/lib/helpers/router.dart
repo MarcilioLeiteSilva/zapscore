@@ -32,7 +32,7 @@ abstract class RouterApp {
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => const SplashScreen(),
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: '/$screenWelcome',

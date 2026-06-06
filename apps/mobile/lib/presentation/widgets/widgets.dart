@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import 'package:pattern_formatter/date_formatter.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:zapscore/helpers/helpers.dart';
-import 'package:zapscore/repository/api/api_client.dart';
 
 import '../../logic/cubits/home/home_cubit.dart';
 

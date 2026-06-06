@@ -125,9 +125,8 @@ class CardFollowItem extends StatelessWidget {
               width: 55,
               height: 55,
               child: logo != null
-                  ? Image.network(
-                      logo,
-                      errorBuilder: (_, __, ___) =>
+                  ? CachedNetworkImage(imageUrl: proxyImage(logo),
+                      errorWidget: (_, __, ___) =>
                           const CardNoImage(radius: 5),
                     )
                   : const CardNoImage(radius: 5),
@@ -243,9 +242,8 @@ class CardTeamNotifSettings extends StatelessWidget {
             width: 45,
             height: 45,
             child: team.logo != null
-                ? Image.network(
-                    team.logo!,
-                    errorBuilder: (_, __, ___) => const CardNoImage(radius: 5),
+                ? CachedNetworkImage(imageUrl: proxyImage(team.logo!),
+                    errorWidget: (_, __, ___) => const CardNoImage(radius: 5),
                   )
                 : const CardNoImage(radius: 5),
           ),

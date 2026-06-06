@@ -16,8 +16,9 @@ export class VideoCrawlerService {
     this.logger.log('Starting refined video crawl for 2026 season...');
     
     try {
-      // 0. Limpeza: Remover vídeos que não sejam da temporada 2026
+      // 0. Limpeza: Remover vídeos que não sejam da temporada 2026 ou sem imagem
       await this.purgeNon2026Videos();
+      await this.purgeVideosWithoutThumbnails();
       
       const leagues = await this.prisma.league.findMany();
       this.logger.log(`Found ${leagues.length} leagues to crawl videos for.`);
@@ -86,6 +87,19 @@ export class VideoCrawlerService {
 
         if (!hasSeasonYear || isOld || !isRelevant) {
           this.logger.debug(`Skipping irrelevant/old/unrelated video: ${item.title} (${item.publishedAt})`);
+          continue;
+        }
+
+        // NOVIDADE: Inteligência contra duplicidade de assunto
+        const isDuplicate = await this.checkDuplicateSubject(item.title, ids.leagueId, ids.teamId);
+        if (isDuplicate) {
+          this.logger.debug(`Skipping duplicate subject video: ${item.title}`);
+          continue;
+        }
+
+        // NOVIDADE: Validação de imagem (Trava "No Image, No Video")
+        if (!item.thumbnailUrl || item.thumbnailUrl.trim() === '') {
+          this.logger.warn(`Skipping video without thumbnail: ${item.title}`);
           continue;
         }
 
@@ -174,6 +188,56 @@ export class VideoCrawlerService {
     return items;
   }
 
+  private async checkDuplicateSubject(title: string, leagueId?: string, teamId?: string): Promise<boolean> {
+    try {
+      // Busca vídeos recentes do mesmo contexto (últimas 48h para evitar duplicar jogos recentes)
+      const recentThreshold = new Date();
+      recentThreshold.setHours(recentThreshold.getHours() - 48);
+
+      const existingVideos = await this.prisma.video.findMany({
+        where: {
+          leagueId: leagueId || undefined,
+          teamId: teamId || undefined,
+          createdAt: { gte: recentThreshold }
+        },
+        select: { title: true }
+      });
+
+      if (existingVideos.length === 0) return false;
+
+      const newNormalized = this.normalizeTitle(title);
+      
+      for (const existing of existingVideos) {
+        const existingNormalized = this.normalizeTitle(existing.title);
+        
+        // Calcula intersecção de palavras significativas
+        const setA = new Set(newNormalized.split(' '));
+        const setB = new Set(existingNormalized.split(' '));
+        
+        const intersection = new Set([...setA].filter(x => setB.has(x)));
+        const similarity = (2.0 * intersection.size) / (setA.size + setB.size);
+
+        if (similarity > 0.75) { // 75% de similaridade nos termos chave
+          return true;
+        }
+      }
+    } catch (e) {
+      this.logger.error(`Error checking duplicate subject: ${e.message}`);
+    }
+    return false;
+  }
+
+  private normalizeTitle(title: string): string {
+    return title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^\w\s]/gi, ' ') // Remove pontuação
+      .replace(/\s+/g, ' ') // Remove espaços extras
+      .replace(/\b(gols|melhores|momentos|assista|jogo|partida|completo|hd|4k|2026|ao|vivo|highlights|goals|resumo)\b/g, '') // Remove ruídos
+      .trim();
+  }
+
   private async purgeNon2026Videos() {
     try {
       const result = await this.prisma.video.deleteMany({
@@ -191,6 +255,24 @@ export class VideoCrawlerService {
       }
     } catch (error) {
       this.logger.error(`Error purging old videos: ${error.message}`);
+    }
+  }
+
+  private async purgeVideosWithoutThumbnails() {
+    try {
+      const result = await this.prisma.video.deleteMany({
+        where: {
+          OR: [
+            { thumbnailUrl: null },
+            { thumbnailUrl: '' },
+          ],
+        },
+      });
+      if (result.count > 0) {
+        this.logger.log(`Purged ${result.count} videos without thumbnails from database.`);
+      }
+    } catch (error) {
+      this.logger.error(`Error purging videos without thumbnails: ${error.message}`);
     }
   }
 }

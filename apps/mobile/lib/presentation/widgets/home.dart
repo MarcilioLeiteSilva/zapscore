@@ -140,7 +140,7 @@ class AppDrawer extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset(Assets.appIcon, width: 60),
+                  Image.asset(Assets.transparentIcon, width: 80),
                   const Gap(10),
                   Text(
                     AppText.appName,

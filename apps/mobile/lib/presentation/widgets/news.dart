@@ -18,7 +18,7 @@ class CardStoryItem extends StatelessWidget {
             news?.imageUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: Image.network(news!.imageUrl!,
+                    child: CachedNetworkImage(imageUrl: proxyImage(news!.imageUrl!),
                         fit: BoxFit.cover, width: double.infinity, height: double.infinity),
                   )
                 : const CardNoImage(radius: 10),
@@ -37,9 +37,9 @@ class CardStoryItem extends StatelessWidget {
                       horizontal: 8,
                       vertical: 2,
                     ),
-                    child: const Text(
-                      'NEWS',
-                      style: TextStyle(
+                    child: Text(
+                      'news_label'.tr(context).toUpperCase(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                       ),
@@ -69,7 +69,7 @@ class CardNewsItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
+    final title = isVideo ? (video?.title ?? 'video_title'.tr(context)) : (news?.title ?? 'news_title'.tr(context));
     final image = isVideo 
         ? (video?.thumbnailUrl ?? video?.leagueLogo ?? video?.teamLogo) 
         : (news?.imageUrl ?? news?.leagueLogo ?? news?.teamLogo);
@@ -104,13 +104,9 @@ class CardNewsItem extends StatelessWidget {
                             padding: (image.contains('logo') || image.contains('badge')) 
                                 ? const EdgeInsets.all(20.0) // Ícone pequeno se for logo
                                 : EdgeInsets.zero,
-                            child: Image.network(
-                              image, 
+                            child: CachedNetworkImage(imageUrl: proxyImage(image), 
                               fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                              },
+                              progressIndicatorBuilder: (context, url, downloadProgress) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                             ),
                           ),
                         )
@@ -166,7 +162,7 @@ class CardNewsItem extends StatelessWidget {
                       Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
                       const Gap(4),
                       Text(
-                        date != null ? DateFormat('dd/MM HH:mm').format(date) : 'Recently',
+                        date != null ? DateFormat('dd/MM HH:mm', context.read<SettingCubit>().state.language).format(date) : 'recently'.tr(context),
                         style: context.textTheme.labelSmall,
                       ),
                     ],
@@ -190,7 +186,7 @@ class CardNewsCarouselItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = isVideo ? (video?.title ?? 'Video Title') : (news?.title ?? 'News Title');
+    final title = isVideo ? (video?.title ?? 'video_title'.tr(context)) : (news?.title ?? 'news_title'.tr(context));
     final image = isVideo 
         ? (video?.thumbnailUrl ?? video?.leagueLogo ?? video?.teamLogo) 
         : (news?.imageUrl ?? news?.leagueLogo ?? news?.teamLogo);
@@ -222,8 +218,7 @@ class CardNewsCarouselItem extends StatelessWidget {
                             padding: (image.contains('logo') || image.contains('badge'))
                                 ? const EdgeInsets.all(40.0) // Ícone bem pequeno e centralizado no banner
                                 : EdgeInsets.zero,
-                            child: Image.network(
-                              image,
+                            child: CachedNetworkImage(imageUrl: proxyImage(image),
                               fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
                               width: double.infinity,
                               height: double.infinity,
@@ -275,7 +270,7 @@ class CardNewsCarouselItem extends StatelessWidget {
                 Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
                 const Gap(4),
                 Text(
-                  date != null ? DateFormat('dd/MM HH:mm').format(date) : 'Recently',
+                  date != null ? DateFormat('dd/MM HH:mm', context.read<SettingCubit>().state.language).format(date) : 'recently'.tr(context),
                   style: context.textTheme.labelSmall,
                 ),
               ],

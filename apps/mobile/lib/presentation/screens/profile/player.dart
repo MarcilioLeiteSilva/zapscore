@@ -84,7 +84,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           CircleAvatar(
             radius: 50,
             backgroundColor: context.appColors.info,
-            backgroundImage: player!.photo != null ? NetworkImage(player!.photo!) : null,
+            backgroundImage: player!.photo != null ? NetworkImage(proxyImage(player!.photo!)) : null,
             child: player!.photo == null ? const Icon(Icons.person, size: 50, color: Colors.white54) : null,
           ),
           const Gap(15),
@@ -181,7 +181,7 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
             children: [
               Text("Current Season Stats", style: context.textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold)),
               if (team != null && team['logo'] != null)
-                Image.network(team['logo'], width: 24, height: 24),
+                CachedNetworkImage(imageUrl: proxyImage(team['logo']), width: 24, height: 24),
             ],
           ),
           Divider(height: 30, color: context.appColors.info),

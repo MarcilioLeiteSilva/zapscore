@@ -13,7 +13,7 @@ class PlayerEventPhoto extends StatelessWidget {
       child: photo != null
           ? ClipRRect(
               borderRadius: BorderRadius.circular(size / 2),
-              child: Image.network(photo!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder(context)),
+              child: CachedNetworkImage(imageUrl: proxyImage(photo!), fit: BoxFit.cover, errorWidget: (_, __, ___) => _buildPlaceholder(context)),
             )
           : _buildPlaceholder(context),
     );

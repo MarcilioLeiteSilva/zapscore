@@ -70,11 +70,11 @@ class _WatchContentScreenState extends State<WatchContentScreen> {
                 Row(
                   children: [
                     if (widget.video.leagueLogo != null) ...[
-                      Image.network(widget.video.leagueLogo!, height: 20),
+                      CachedNetworkImage(imageUrl: proxyImage(widget.video.leagueLogo!), height: 20),
                       const Gap(10),
                     ],
                     Text(
-                      'Highlights - 2026 Season',
+                      'highlights_season'.tr(context),
                       style: context.textTheme.labelSmall!.copyWith(fontSize: 13),
                     ),
                   ],
@@ -88,7 +88,7 @@ class _WatchContentScreenState extends State<WatchContentScreen> {
                 ],
                 const Divider(height: 35),
                 Text(
-                  'More Videos',
+                  'more_videos'.tr(context),
                   style: context.textTheme.bodyMedium,
                 ),
                 const Gap(10),

@@ -47,7 +47,7 @@ class CheepLeagueItem extends StatelessWidget {
               width: 24,
               height: 24,
               child: league.logo != null
-                  ? Image.network(league.logo!, fit: BoxFit.contain)
+                  ? CachedNetworkImage(imageUrl: proxyImage(league.logo!), fit: BoxFit.contain)
                   : const CardNoImage(radius: 5),
             ),
             const Gap(10),
@@ -83,11 +83,11 @@ class CardCalendarHome extends StatelessWidget {
           width: context.width,
           height: 60,
           child: Padding(
-            padding: const EdgeInsets.only(left: 10),
+            padding: const EdgeInsets.only(left: 5),
             child: Row(
               children: [
                 const CardLiveButton(),
-                const Gap(8),
+                const Gap(4),
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -130,6 +130,8 @@ class CardCalendarHome extends StatelessWidget {
                     ),
                   ),*/
                 IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     context.read<SettingCubit>().visibleCalendar();
                   },
@@ -174,7 +176,7 @@ class CardLiveButton extends StatelessWidget {
                   color: isSelected ? Colors.red : (isLive ? Colors.red.withOpacity(0.15) : Theme.of(context).cardColor.withOpacity(0.3)),
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
+                  horizontal: 8,
                   vertical: 7,
                 ),
                 child: Row(
@@ -231,22 +233,24 @@ class CardCalendarItem extends StatelessWidget {
           color: select ? Theme.of(context).primaryColor : null,
         ),
         padding: const EdgeInsets.symmetric(
-          horizontal: 8,
+          horizontal: 5,
           vertical: 6,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              getMonthName(date),
+              getMonthName(date, context.read<SettingCubit>().state.language),
               style: context.textTheme.bodySmall!.copyWith(
-                fontSize: 11,
+                fontSize: 10.5,
+                color: select ? context.appColors.darkGreen : null,
               ),
             ),
             Text(
               '${date.day}',
               style: context.textTheme.bodyLarge!.copyWith(
                 fontSize: 15,
+                color: select ? context.appColors.darkGreen : null,
               ),
             ),
           ],
@@ -292,7 +296,7 @@ class CardGroupFixtureItem extends StatelessWidget {
                 width: 40,
                 height: 40,
                 child: comp.league.logo != null
-                    ? Image.network(comp.league.logo!, fit: BoxFit.contain)
+                    ? CachedNetworkImage(imageUrl: proxyImage(comp.league.logo!), fit: BoxFit.contain)
                     : const CardNoImage(radius: 10),
               ),
               const Gap(10),
@@ -418,7 +422,7 @@ class CardFixtureItem extends StatelessWidget {
                             width: 40,
                             height: 40,
                             child: fix.homeTeam?.logo != null
-                                ? Image.network(fix.homeTeam!.logo!,
+                                ? CachedNetworkImage(imageUrl: proxyImage(fix.homeTeam!.logo!),
                                     fit: BoxFit.contain)
                                 : const CardNoImage(radius: 10),
                           ),
@@ -449,7 +453,7 @@ class CardFixtureItem extends StatelessWidget {
                             width: 40,
                             height: 40,
                             child: fix.awayTeam?.logo != null
-                                ? Image.network(fix.awayTeam!.logo!,
+                                ? CachedNetworkImage(imageUrl: proxyImage(fix.awayTeam!.logo!),
                                     fit: BoxFit.contain)
                                 : const CardNoImage(radius: 10),
                           ),
@@ -615,7 +619,7 @@ class CardBasicInfo extends StatelessWidget {
         children: [
           CardInfoTileItem(
             icon: Assets.calendarLine,
-            label: DateFormat('dd MMM yyyy, HH:mm').format(fixture!.date),
+            label: DateFormat('dd MMM yyyy, HH:mm', context.read<SettingCubit>().state.language).format(fixture!.date),
           ),
           if (fixture!.venueName != null) ...[
             const Gap(15),
@@ -733,7 +737,7 @@ class CardFixtureDetail extends StatelessWidget {
                         width: 70,
                         height: 70,
                         child: fix.homeTeam?.logo != null
-                            ? Image.network(fix.homeTeam!.logo!,
+                            ? CachedNetworkImage(imageUrl: proxyImage(fix.homeTeam!.logo!),
                                 fit: BoxFit.contain)
                             : const CardNoImage(radius: 5),
                       ),
@@ -802,7 +806,7 @@ class CardFixtureDetail extends StatelessWidget {
                         width: 70,
                         height: 70,
                         child: fix.awayTeam?.logo != null
-                            ? Image.network(fix.awayTeam!.logo!,
+                            ? CachedNetworkImage(imageUrl: proxyImage(fix.awayTeam!.logo!),
                                 fit: BoxFit.contain)
                             : const CardNoImage(radius: 5),
                       ),
@@ -964,7 +968,7 @@ class CardFormMatch extends StatelessWidget {
               width: 22,
               height: 22,
               child: fixture.homeTeam?.logo != null
-                  ? Image.network(fixture.homeTeam!.logo!, fit: BoxFit.contain)
+                  ? CachedNetworkImage(imageUrl: proxyImage(fixture.homeTeam!.logo!), fit: BoxFit.contain)
                   : const CardNoImage(radius: 5),
             ),
             Padding(
@@ -981,7 +985,7 @@ class CardFormMatch extends StatelessWidget {
               width: 22,
               height: 22,
               child: fixture.awayTeam?.logo != null
-                  ? Image.network(fixture.awayTeam!.logo!, fit: BoxFit.contain)
+                  ? CachedNetworkImage(imageUrl: proxyImage(fixture.awayTeam!.logo!), fit: BoxFit.contain)
                   : const CardNoImage(radius: 5),
             ),
           ],

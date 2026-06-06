@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'helpers/helpers.dart';
 import 'repository/api/api_client.dart';
 import 'logic/cubits/setting/setting_cubit.dart';
@@ -14,8 +16,11 @@ import 'repository/locale/favorite_repository.dart';
 
 import 'repository/locale/user_repository.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('pt', null);
+  await initializeDateFormatting('en', null);
+  await initializeDateFormatting('es', null);
   runApp(MyApp());
 }
 
@@ -63,6 +68,17 @@ class MyApp extends StatelessWidget {
             routerConfig: RouterApp.router,
             title: AppText.appName,
             theme: AppTheme.getTheme(context, state.theme),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('pt'),
+              Locale('en'),
+              Locale('es'),
+            ],
+            locale: Locale(state.language),
             builder: EasyLoading.init(),
           );
         },

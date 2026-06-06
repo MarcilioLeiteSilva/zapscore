@@ -1,5 +1,5 @@
 part of 'helpers.dart';
 
-String getMonthName(DateTime date) {
-  return DateFormat('EEE').format(date);
+String getMonthName(DateTime date, String locale) {
+  return DateFormat('EEE', locale).format(date).replaceAll('.', '');
 }

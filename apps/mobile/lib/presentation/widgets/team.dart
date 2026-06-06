@@ -337,7 +337,7 @@ class TeamTablePage extends StatelessWidget {
                                   width: 25,
                                   height: 25,
                                   child: standing.teamLogo != null
-                                      ? Image.network(standing.teamLogo!,
+                                      ? CachedNetworkImage(imageUrl: proxyImage(standing.teamLogo!),
                                           fit: BoxFit.contain)
                                       : const CardNoImage(radius: 5),
                                 ),

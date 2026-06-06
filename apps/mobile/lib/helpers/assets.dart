@@ -54,4 +54,5 @@ abstract class Assets {
   ///Images
   static const String intro = 'assets/images/intro.png';
   static const String appIcon = 'assets/images/app_icon.png';
+  static const String transparentIcon = 'assets/icons/icone_transparente.png';
 }

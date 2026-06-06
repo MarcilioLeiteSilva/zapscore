@@ -36,7 +36,7 @@ class CardMatchLeague extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          DateFormat('EEEE, d MMMM').format(DateTime.now()),
+          DateFormat('EEEE, d MMMM', context.read<SettingCubit>().state.language).format(DateTime.now()),
           style: context.textTheme.bodySmall,
         ),
         const Gap(15),
@@ -202,7 +202,7 @@ class CardTopScores extends StatelessWidget {
             child: item.playerPhoto != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.network(item.playerPhoto!, fit: BoxFit.cover),
+                    child: CachedNetworkImage(imageUrl: proxyImage(item.playerPhoto!), fit: BoxFit.cover),
                   )
                 : CircleAvatar(
                     backgroundColor: context.appColors.info,
@@ -224,7 +224,7 @@ class CardTopScores extends StatelessWidget {
                 Row(
                   children: [
                     if (item.teamLogo != null) ...[
-                      Image.network(item.teamLogo!, width: 14, height: 14),
+                      CachedNetworkImage(imageUrl: proxyImage(item.teamLogo!), width: 14, height: 14),
                       const Gap(5),
                     ],
                     Expanded(
@@ -360,7 +360,7 @@ class TableLeaguePage extends StatelessWidget {
                                   width: 25,
                                   height: 25,
                                   child: standing.teamLogo != null
-                                      ? Image.network(standing.teamLogo!,
+                                      ? CachedNetworkImage(imageUrl: proxyImage(standing.teamLogo!),
                                           fit: BoxFit.contain)
                                       : const CardNoImage(radius: 5),
                                 ),
@@ -544,7 +544,7 @@ class CardFixtureLeagueItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(fixture.date);
+    final dateStr = DateFormat('dd/MM/yyyy HH:mm', context.read<SettingCubit>().state.language).format(fixture.date);
     return Ink(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor.withOpacity(0.8),

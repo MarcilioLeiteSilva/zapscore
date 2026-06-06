@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -40,7 +41,6 @@ import '../../logic/models/news.dart';
 import '../../logic/models/standing.dart';
 import '../widgets/widgets.dart';
 
-part 'splash.dart';
 part 'user/welcome.dart';
 part 'user/login.dart';
 part 'user/register.dart';

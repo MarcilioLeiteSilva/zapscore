@@ -1,10 +1,16 @@
 Diretrizes de Desenvolvimento (ZapScore)
 Para garantir a estabilidade do projeto e a melhor experiência para os usuários, as seguintes diretrizes de controle devem ser seguidas rigorosamente em todas as sessões de desenvolvimento:
 
-Preservação de Código e Layout: Mantenha a integridade do código existente e do design visual. Não realize refatorações amplas ou mudanças estéticas que não tenham sido explicitamente solicitadas.
-Alterações Cirúrgicas: Seja extremamente preciso nas mudanças. Altere apenas o necessário para resolver o problema proposto ou implementar a funcionalidade solicitada, evitando "drift" de código.
-Foco no Pedido do Usuário: Não adivinhe ou adicione funcionalidades extras por conta própria. Implemente exatamente o que foi pedido.
-Segurança de Dados e Banco de Dados: Não realize alterações em esquemas de banco de dados, migrações ou lógica de persistência que possam gerar efeitos colaterais indesejados ou perda de dados para os usuários finais.
-Consistência de Comportamento: Antes de alterar uma lógica central (como o fluxo da Home), verifique o impacto em todas as partes dependentes para garantir que funcionalidades estabelecidas não sejam quebradas.
-Este documento serve como guia de controle para todas as interações de programação e manutenção do sistema ZapScore.
-
+1: Preservação de Código e Layout: Mantenha a integridade do código existente e do design visual. Não realize refatorações amplas ou mudanças estéticas que não tenham sido explicitamente solicitadas.
+2: Alterações Cirúrgicas: Seja extremamente preciso nas mudanças. Altere apenas o necessário para resolver o problema proposto ou implementar a funcionalidade solicitada, evitando "drift" de código.
+3: Foco no Pedido do Usuário: Não adivinhe ou adicione funcionalidades extras por conta própria. Implemente exatamente o que foi pedido.
+4: Segurança de Dados e Banco de Dados: Não realize alterações em esquemas de banco de dados, migrações ou lógica de persistência que possam gerar efeitos colaterais indesejados ou perda de dados para os usuários finais.
+5: Foco nas Competições Monitoradas: O desenvolvimento deve priorizar exclusivamente as competições monitoradas:
+   - Brasileirão Série A (ID: 71)
+   - Brasileirão Série B (ID: 72)
+   - Copa do Brasil (ID: 73)
+   - Copa do Nordeste (ID: 612)
+   - Copa Libertadores (ID: 13)
+   - Copa do Mundo FIFA (ID: 1)
+6: Consistência e Autorização: Manterei o foco no escopo atual das Competições Monitoradas e garantirei que as funcionalidades centrais não sejam quebradas. QUALQUER alteração deve ter autorização explícita do usuário.
+7: Este documento serve como guia de controle para todas as interações de programação e manutenção do sistema ZapScore.

@@ -146,7 +146,7 @@ class PagePopularSearch extends StatelessWidget {
                         leading: SizedBox(
                           width: 40,
                           height: 40,
-                          child: Image.network(item.logo ?? '', errorBuilder: (_, __, ___) => const CardNoImage(radius: 5)),
+                          child: CachedNetworkImage(imageUrl: proxyImage(item.logo ?? ''), errorWidget: (_, __, ___) => const CardNoImage(radius: 5)),
                         ),
                         title: Text(item.name),
                         subtitle: const Text('Competition'),
@@ -209,9 +209,8 @@ class PageSearchCompetition extends StatelessWidget {
                 leading: SizedBox(
                   width: 50,
                   height: 50,
-                  child: Image.network(
-                    league.logo ?? '',
-                    errorBuilder: (_, __, ___) => const CardNoImage(radius: 5),
+                  child: CachedNetworkImage(imageUrl: proxyImage(league.logo ?? ''),
+                    errorWidget: (_, __, ___) => const CardNoImage(radius: 5),
                   ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),

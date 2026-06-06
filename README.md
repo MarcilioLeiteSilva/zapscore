@@ -2,7 +2,7 @@
 
 API backend oficial da plataforma de inteligência esportiva ZapScore (Foco inicial: Futebol).
 
-Nesta **Fase 2 (Atualizada)**, o app evoluiu para seu escopo absoluto orientando as rotinas e integrações exclusivamente para os recursos vitais e dados autênticos voltados para: **League: 71 (Brasileirão), Season: 2026**.
+Nesta **Fase 2 (Atualizada)**, o app evoluiu para seu escopo absoluto orientando as rotinas e integrações exclusivamente para os recursos vitais e dados autênticos voltados para as **Competições Monitoradas**.
 
 ## 🛠 Stack Tecnológica
 - **Linguagem**: TypeScript

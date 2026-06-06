@@ -124,10 +124,9 @@ class _FavoritePageState extends State<FavoritePage> {
                                         color: AppColor.info, width: 1),
                                   ),
                                   child: ListTile(
-                                    leading: Image.network(
-                                      league.logo ?? '',
+                                    leading: CachedNetworkImage(imageUrl: proxyImage(league.logo ?? ''),
                                       width: 40,
-                                      errorBuilder: (_, __, ___) =>
+                                      errorWidget: (_, __, ___) =>
                                           const Icon(Icons.emoji_events),
                                     ),
                                     title: Text(league.name),
@@ -163,10 +162,9 @@ class _FavoritePageState extends State<FavoritePage> {
                                         color: AppColor.info, width: 1),
                                   ),
                                   child: ListTile(
-                                    leading: Image.network(
-                                      team.logo ?? '',
+                                    leading: CachedNetworkImage(imageUrl: proxyImage(team.logo ?? ''),
                                       width: 40,
-                                      errorBuilder: (_, __, ___) =>
+                                      errorWidget: (_, __, ___) =>
                                           const Icon(Icons.shield),
                                     ),
                                     title: Text(team.name),

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copa do Nordeste – Transmissão da Final</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Bebas+Neue&family=Inter:wght@300;400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Estilos isolados para a página da final da Copa do Nordeste */
+    body.nordeste-final-body {
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body.nordeste-final-body .page-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 32px 4px;
+      overflow: hidden;
+    }
+
+    .page-title {
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .page-title h1 {
+      font-family: var(--font-disp);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin: 0;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .page-title p {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      color: var(--subtext);
+    }
+
+    /* Top stats cards */
+    .top-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      max-width: 1000px;
+      margin: 4px auto 12px;
+      width: 100%;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 215, 0, 0.15);
+      border-radius: 12px;
+      padding: 8px 16px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat-card__val {
+      font-family: var(--font-head);
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-card__lbl {
+      font-size: 0.6rem;
+      color: var(--subtext);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Final match cards */
+    .final-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      align-items: center;
+    }
+
+    .final-match-card {
+      background: linear-gradient(135deg, rgba(2, 8, 18, 0.8), rgba(6, 15, 30, 0.8));
+      border: 2px solid rgba(255, 215, 0, 0.2);
+      border-radius: 24px;
+      padding: 20px 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      max-height: 380px;
+      backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+    }
+
+    .final-match-card:hover {
+      border-color: var(--gold);
+      box-shadow: 0 15px 40px rgba(255, 215, 0, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .final-match-card.is-live {
+      border-color: var(--red);
+      box-shadow: 0 0 30px rgba(200, 16, 46, 0.3);
+    }
+
+    .final-match-card__header {
+      font-family: var(--font-head);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .final-match-card.is-live .final-match-card__header {
+      color: var(--red);
+    }
+
+    .final-match-teams {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 8px 0;
+    }
+
+    .final-team {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 35%;
+      text-align: center;
+    }
+
+    .final-logo {
+      width: clamp(70px, 9vw, 100px);
+      height: clamp(70px, 9vw, 100px);
+      object-fit: contain;
+      filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1));
+      transition: transform 0.3s ease;
+    }
+
+    .final-match-card:hover .final-logo {
+      transform: scale(1.08);
+    }
+
+    .final-team-name {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 8px;
+    }
+
+    .final-score-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 30%;
+    }
+
+    .final-score {
+      font-family: var(--font-head);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    }
+
+    .final-score-vs {
+      font-family: var(--font-disp);
+      font-size: 1.5rem;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+    }
+
+    .final-match-details {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--subtext);
+      margin-top: 6px;
+    }
+
+    .final-match-details div {
+      margin-bottom: 2px;
+    }
+
+    .watch-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: linear-gradient(90deg, #009b3a, #ffdf00);
+      border: none;
+      border-radius: 50px;
+      color: #000;
+      font-family: var(--font-head);
+      font-size: 0.8rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      padding: 10px;
+      margin-top: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 155, 58, 0.4);
+    }
+
+    .watch-btn:hover {
+      background: linear-gradient(90deg, #ffdf00, #009b3a);
+      box-shadow: 0 6px 20px rgba(255, 223, 0, 0.6);
+      transform: translateY(-1px);
+    }
+
+    /* Bottom news banner */
+    .news-banner {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      border-top: 1px solid rgba(255, 215, 0, 0.15);
+      border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .news-banner__title {
+      font-family: var(--font-head);
+      font-size: 0.7rem;
+      font-weight: 900;
+      color: #000;
+      background: var(--gold);
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+
+    .news-banner__list {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .news-banner__ticker {
+      display: flex;
+      gap: 60px;
+      animation: newsTicker 35s linear infinite;
+      white-space: nowrap;
+    }
+
+    .news-banner__ticker span {
+      font-size: 0.78rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    @keyframes newsTicker {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (max-width: 900px) {
+      body.nordeste-final-body {
+        height: auto;
+        overflow: auto;
+      }
+
+      body.nordeste-final-body .page-wrap {
+        height: auto;
+        overflow: auto;
+        gap: 24px;
+        padding: 16px;
+      }
+
+      .top-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .final-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .final-match-card {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+
+<body class="nordeste-final-body">
+  <canvas id="particleCanvas"></canvas>
+  <div class="scanlines"></div>
+
+  <!-- ===== TOP BAR ===== -->
+  <header class="top-bar">
+    <div class="top-bar__left">
+      <a href="index.html" class="back-btn">⬅ VOLTAR</a>
+      <div class="fifa-badge" style="border-color: #009b3a;">
+        <span class="fifa-badge__top" style="color: #ffdf00;">C. DO NORDESTE</span>
+        <span class="fifa-badge__mid">⚽</span>
+        <span class="fifa-badge__bot" style="color: #fff;">LIVE</span>
+      </div>
+    </div>
+    <div class="clocks-panel">
+      <div class="clock-card"><span class="clock-card__flag">🌎</span>
+        <div class="clock-card__info">
+          <span class="clock-card__label">SEU HORÁRIO</span>
+          <span class="clock-card__time" id="time-usa">--:--:--</span>
+          <span class="clock-card__date" id="date-usa">-- --- ----</span>
+        </div>
+      </div>
+      <div class="clock-divider"></div>
+      <div class="clock-card"><span class="clock-card__flag">🇧🇷</span>
+        <div class="clock-card__info">
+          <span class="clock-card__label">BRASÍLIA / BRT</span>
+          <span class="clock-card__time" id="time-bra">--:--:--</span>
+          <span class="clock-card__date" id="date-bra">-- --- ----</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+    <div class="page-title">
+      <h1>🏆 COPA DO NORDESTE</h1>
+      <p>A GRANDE DECISÃO DO FUTEBOL NORDESTINO EM TEMPO REAL</p>
+    </div>
+
+    <!-- ===== TOP DADOS STRIP ===== -->
+    <div class="top-stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__val" style="color: var(--gold);">R$ 2,1 Milhões</div>
+        <div class="stat-card__lbl">Prêmio do Campeão</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__val">Rei Pelé & Castelão</div>
+        <div class="stat-card__lbl">Estádios das Finais</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__val" style="color: #00C851;">60.000+</div>
+        <div class="stat-card__lbl">Público Estimado</div>
+      </div>
+
+    </div>
+
+    <!-- ===== FINAL DECISION GRID ===== -->
+    <div class="final-grid">
+
+      <!-- JOGO DE IDA (Final Match 1) -->
+      <div class="final-match-card">
+        <div class="final-match-card__header">🏆 JOGO DE IDA – ENCERRADO</div>
+
+        <div class="final-match-teams">
+          <div class="final-team">
+            <!-- Fortaleza Logo -->
+            <img class="final-logo" src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Fortaleza_Esporte_Clube_logo.png" alt="Fortaleza">
+            <span class="final-team-name">Fortaleza</span>
+          </div>
+          <div class="final-score-area">
+            <span class="final-score">1</span>
+            <span class="final-score-vs">VS</span>
+            <span class="final-score">2</span>
+          </div>
+          <div class="final-team">
+            <!-- Vitória Logo -->
+            <img class="final-logo" src="https://upload.wikimedia.org/wikipedia/commons/1/15/Esporte_Clube_Vit%C3%B3ria_%282024%29.svg" alt="Vitória">
+            <span class="final-team-name">E C Vitória</span>
+          </div>
+        </div>
+
+        <div class="final-match-details">
+          <div style="font-weight:600; color: #fff;">⚽ Gols: Vitinho (55') | Renato Kayzer (84' P), D. Tarzia (90')</div>
+          <div>📍 Arena Castelão, Fortaleza – CE</div>
+          <div>📅 Jogo Realizado: 03 Junho 2026</div>
+        </div>
+
+        <div
+          style="font-size:0.6rem; color:var(--subtext); text-align:center; padding: 4px 0; border-top:1px solid rgba(255,255,255,0.05); margin-top:8px;">
+          Vitória jogou com vantagem em casa e abriu 2x0 no agregado.
+        </div>
+      </div>
+
+      <!-- JOGO DE VOLTA (Final Match 2) -->
+      <div class="final-match-card is-live" id="voltaCard">
+        <div class="final-match-card__header" id="voltaHeader">🔴 AO VIVO – TRANSMISSÃO</div>
+
+        <div class="final-match-teams">
+          <div class="final-team">
+            <!-- Vitória Logo -->
+            <img class="final-logo" src="https://upload.wikimedia.org/wikipedia/commons/1/15/Esporte_Clube_Vit%C3%B3ria_%282024%29.svg" alt="Vitória">
+            <span class="final-team-name">E C Vitória</span>
+          </div>
+          <div class="final-score-area">
+            <span class="final-score" id="scoreHome">0</span>
+            <span class="final-score-vs">VS</span>
+            <span class="final-score" id="scoreAway">0</span>
+          </div>
+          <div class="final-team">
+            <!-- Fortaleza Logo -->
+            <img class="final-logo" src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Fortaleza_Esporte_Clube_logo.png" alt="Fortaleza">
+            <span class="final-team-name">Fortaleza</span>
+          </div>
+        </div>
+
+        <div class="final-match-details">
+          <div style="font-weight:600; color: #ffdf00;" id="gameTime">⏱️ Aguardando Início (16:00)</div>
+          <div>📍 Arena Castelão, Fortaleza – CE</div>
+          <div>📅 Data da Partida: 06 Junho 2026</div>
+        </div>
+
+        <a href="copa-do-nordeste-final.html" class="watch-btn">📺 TRANSMISSÃO AO VIVO</a>
+      </div>
+
+    </div>
+
+    <!-- ===== NEWS BANNER (BOTTOM) ===== -->
+    <div class="news-banner">
+      <div class="news-banner__title">🔥 NOTÍCIAS DA FINAL</div>
+      <div class="news-banner__list">
+        <div class="news-banner__ticker" id="newsTicker">
+          <span>Loading news...</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <span>© 2026 Futebol 24h</span>
+    <span class="footer-live"><span class="live-dot"></span> AO VIVO</span>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script>
+    // ── LEAGUE CONFIG ─────────────────────────────────────────
+    const LEAGUE_ID = 612;
+
+    // ── clocks ──────────────────────────────────────────────
+    const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function zoneDate(off) { const n = new Date(); return new Date(n.getTime() + n.getTimezoneOffset() * 6e4 + off * 36e5); }
+    function updateClocks() {
+      const local = new Date(), b = zoneDate(-3);
+      const lTime = document.getElementById('time-usa');
+      const lDate = document.getElementById('date-usa');
+      if (lTime) lTime.textContent = `${pad(local.getHours())}:${pad(local.getMinutes())}:${pad(local.getSeconds())}`;
+      if (lDate) lDate.textContent = `${DAYS[local.getDay()]}, ${pad(local.getDate())} ${MONTHS[local.getMonth()]} ${local.getFullYear()}`;
+      document.getElementById('time-bra').textContent = `${pad(b.getHours())}:${pad(b.getMinutes())}:${pad(b.getSeconds())}`;
+      document.getElementById('date-bra').textContent = `${DAYS[b.getDay()]}, ${pad(b.getDate())} ${MONTHS[b.getMonth()]} ${b.getFullYear()}`;
+    }
+    updateClocks(); setInterval(updateClocks, 1000);
+
+    // ── news setup ───────────────────────────────────────────
+    async function loadNews() {
+      const ticker = document.getElementById('newsTicker');
+      if (!ticker) return;
+
+      const fallbackNews = [
+        "Castelão lotado: Mais de 55 mil ingressos vendidos para a grande final do Nordeste.",
+        "Fortaleza busca reverter vantagem de 2 gols do Vitória em noite decisiva no Ceará.",
+        "Duelo decisivo projeta noite emocionante na Lampions League: 'Temos que manter os pés no chão'.",
+        "Vojvoda estuda formação com três atacantes para pressionar o adversário desde o início.",
+        "Premiação recorde: Campeão da Lampions League embolsará R$ 2,1 milhões.",
+        "Arbitragem definida: Equipe FIFA apitará a decisão na Arena Castelão."
+      ];
+
+      try {
+        const rows = await CONTENT.getNoticias();
+        if (rows && rows.length) {
+          const contentStr = rows.map(r => `<span>• ${r.texto || r.text || r.titulo || ''}</span>`).join(' ');
+          ticker.innerHTML = contentStr + " " + contentStr; // duplicate for infinite loops
+          return;
+        }
+      } catch (e) {
+        console.warn("Could not load dynamic news, using fallbacks:", e);
+      }
+
+      // Fallback
+      const contentStr = fallbackNews.map(n => `<span>• ${n}</span>`).join(' ');
+      ticker.innerHTML = contentStr + " " + contentStr;
+    }
+
+    // ── dynamic API match updater ────────────────────────────
+    async function updateMatchData() {
+      try {
+        const fixtures = await API.getFixtures();
+        // Look for matches involving Fortaleza and Vitória in Copa do Nordeste (LEAGUE_ID)
+        const matches = fixtures.filter(f =>
+          ((f.homeTeam && f.homeTeam.name.toLowerCase().includes("fortaleza") && f.awayTeam && (f.awayTeam.name.toLowerCase().includes("vitória") || f.awayTeam.name.toLowerCase().includes("vitoria"))) ||
+            (f.homeTeam && (f.homeTeam.name.toLowerCase().includes("vitória") || f.homeTeam.name.toLowerCase().includes("vitoria")) && f.awayTeam && f.awayTeam.name.toLowerCase().includes("fortaleza")))
+        );
+
+        if (matches && matches.length) {
+          // Sort by date ascending: game1 is matches[0], game2 is matches[1]
+          matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+          const game2 = matches.length > 1 ? matches[1] : matches[0];
+          
+          if (game2) {
+            const isLive = API.isLive(game2.statusShort);
+            const isFinished = API.isFinished(game2.statusShort);
+
+            // Update scores based on team positions
+            const isVitoriaHome = game2.homeTeam && (game2.homeTeam.name.toLowerCase().includes("vitória") || game2.homeTeam.name.toLowerCase().includes("vitoria"));
+
+            if (isVitoriaHome) {
+              if (game2.homeGoals !== null) document.getElementById('scoreHome').textContent = game2.homeGoals;
+              if (game2.awayGoals !== null) document.getElementById('scoreAway').textContent = game2.awayGoals;
+            } else {
+              if (game2.awayGoals !== null) document.getElementById('scoreHome').textContent = game2.awayGoals;
+              if (game2.homeGoals !== null) document.getElementById('scoreAway').textContent = game2.homeGoals;
+            }
+
+            // Update status headers
+            const card = document.getElementById('voltaCard');
+            const header = document.getElementById('voltaHeader');
+            const timeLabel = document.getElementById('gameTime');
+
+            if (isLive) {
+              card.classList.add('is-live');
+              header.textContent = `🔴 AO VIVO – EM ANDAMENTO`;
+              timeLabel.textContent = `⏱️ Tempo: ${API.statusLabel(game2.statusShort, game2.elapsed)}`;
+              timeLabel.style.color = '#ff4d4d';
+            } else if (isFinished) {
+              card.classList.remove('is-live');
+              header.textContent = `🏆 JOGO CONCLUÍDO`;
+              const score1 = isVitoriaHome ? game2.homeGoals : game2.awayGoals;
+              const score2 = isVitoriaHome ? game2.awayGoals : game2.homeGoals;
+              timeLabel.textContent = `🏁 Fim de Jogo: ${score1} - ${score2}`;
+              timeLabel.style.color = '#00C851';
+            } else {
+              card.classList.remove('is-live');
+              header.textContent = `📅 PRÓXIMO JOGO`;
+              timeLabel.textContent = `⏱️ Horário: 🇧🇷 ${API.toBrazilTime(game2.date)}`;
+              timeLabel.style.color = 'var(--gold)';
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic match data:", err);
+      }
+    }
+
+    // Initialize
+    loadNews();
+    updateMatchData();
+    setInterval(updateMatchData, CONFIG.REFRESH_INTERVAL);
+
+    // particles
+    const cv = document.getElementById('particleCanvas'), ctx2 = cv.getContext('2d');
+    let W2, H2, pts = [];
+    function resize() { W2 = cv.width = window.innerWidth; H2 = cv.height = window.innerHeight; }
+    function mkPt() { return { x: Math.random() * W2, y: H2 + 10, vx: (Math.random() - .5) * .4, vy: -(Math.random() * .5 + .2), a: Math.random() * .35 + .08, s: Math.random() * 9 + 5, r: 0, rs: (Math.random() - .5) * .02 }; }
+    function animPts() {
+      ctx2.clearRect(0, 0, W2, H2);
+      if (pts.length < 25) pts.push(mkPt());
+      pts.forEach((p, i) => {
+        p.x += p.vx; p.y += p.vy; p.r += p.rs; p.a -= .0004;
+        ctx2.save(); ctx2.globalAlpha = Math.max(0, p.a); ctx2.translate(p.x, p.y); ctx2.rotate(p.r);
+        ctx2.font = `${p.s}px serif`; ctx2.fillStyle = 'rgba(255,215,0,.5)'; ctx2.fillText('⚽', 0, 0);
+        ctx2.restore(); if (p.y < -20 || p.a <= 0) pts.splice(i, 1);
+      }); requestAnimationFrame(animPts);
+    }
+    window.addEventListener('resize', resize); resize(); animPts();
+  </script>
+</body>
+
+</html>

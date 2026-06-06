@@ -132,7 +132,7 @@ class TableFixPage extends StatelessWidget {
                                     width: 25,
                                     height: 25,
                                     child: item.teamLogo != null
-                                        ? Image.network(item.teamLogo!, fit: BoxFit.contain)
+                                        ? CachedNetworkImage(imageUrl: proxyImage(item.teamLogo!), fit: BoxFit.contain)
                                         : const CardNoImage(radius: 5),
                                   ),
                                   const Gap(10),

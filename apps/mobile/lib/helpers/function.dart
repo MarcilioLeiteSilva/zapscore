@@ -105,3 +105,12 @@ String getStatTranslation(String type, BuildContext context) {
 
   return type; // Retorna o original se não encontrar tradução
 }
+
+String proxyImage(String? url) {
+  if (url == null || url.isEmpty) return '';
+  if (url.contains('media.api-sports.io')) {
+    final path = url.split('media.api-sports.io/').last;
+    return 'https://wsrv.nl/?url=media.api-sports.io/$path';
+  }
+  return url;
+}
