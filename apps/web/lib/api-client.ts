@@ -8,8 +8,17 @@ if (API_BASE_URL && !API_BASE_URL.startsWith('http')) {
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   try {
+    const headers = new Headers(options.headers || {});
+    
+    // Adiciona a chave de API nos cabeçalhos se estiver rodando no servidor (Server Components / Actions)
+    const apiKey = process.env.ADMIN_API_KEY;
+    if (apiKey) {
+      headers.set('x-api-key', apiKey);
+    }
+
     const response = await fetch(url, {
       ...options,
+      headers,
       next: { revalidate: 60 }, // Cache on Next.js side too
     });
     if (!response.ok) {

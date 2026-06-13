@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { HealthModule } from './health/health.module';
 import { VersionModule } from './version/version.module';
@@ -25,6 +25,10 @@ import { PlayersModule } from './players/players.module';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minuto em milissegundos (v6+)
+      limit: 100, // limite de 100 requisições por IP por minuto
+    }]),
     PrismaModule,
     RedisModule,
     ApiFootballModule,
@@ -41,6 +45,11 @@ import { PlayersModule } from './players/players.module';
     PlayersModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

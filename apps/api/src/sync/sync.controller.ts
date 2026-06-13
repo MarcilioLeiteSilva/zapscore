@@ -1,9 +1,11 @@
-import { Controller, Post, Body, Logger, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, Logger, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { SyncService } from './sync.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
+import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
 @Controller('sync')
+@UseGuards(ApiKeyGuard)
 export class SyncController {
   private readonly logger = new Logger(SyncController.name);
 
