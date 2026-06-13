@@ -16,8 +16,8 @@ export class SyncJobsService {
     private readonly videoCrawler: VideoCrawlerService,
   ) {}
 
-  // A cada 5 minutos: Sincroniza jogos ao vivo
-  @Cron('*/5 * * * *')
+  // A cada minuto: Sincroniza jogos ao vivo
+  @Cron('* * * * *')
   async handleLiveUpdate() {
     this.logger.log('Starting scheduled live matches sync...');
     try {

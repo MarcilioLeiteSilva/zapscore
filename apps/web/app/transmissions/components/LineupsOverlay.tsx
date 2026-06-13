@@ -11,6 +11,11 @@ export default function LineupsOverlay({
 }) {
   const { fixture, loading } = useFixturePolling(leagueId, fixtureId);
 
+  const getLogoUrl = (url: string | undefined | null) => {
+    if (!url) return '';
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`;
+  };
+
   if (loading) {
     return (
       <div className="tx-loading">
@@ -47,7 +52,7 @@ export default function LineupsOverlay({
         <div className="tx-lineup-team tx-card">
           <div className="tx-lineup-header">
             <img
-              src={fixture.homeTeam.logo}
+              src={getLogoUrl(fixture.homeTeam.logo)}
               alt=""
               className="tx-lineup-team-logo"
             />
@@ -74,7 +79,7 @@ export default function LineupsOverlay({
         <div className="tx-lineup-team tx-card">
           <div className="tx-lineup-header">
             <img
-              src={fixture.awayTeam.logo}
+              src={getLogoUrl(fixture.awayTeam.logo)}
               alt=""
               className="tx-lineup-team-logo"
             />
