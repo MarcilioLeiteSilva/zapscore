@@ -37,8 +37,12 @@ export class FixturesService {
     if (season) where.season = season;
     if (teamId) where.OR = [{ homeTeam: { externalId: teamId } }, { awayTeam: { externalId: teamId } }];
     if (date) {
-      const start = new Date(date); start.setHours(0, 0, 0, 0);
-      const end = new Date(date); end.setHours(23, 59, 59, 999);
+      // Ajusta para o fuso horário de Brasília (UTC-3)
+      // 00:00 local = 03:00 UTC
+      // 23:59:59.999 local = 02:59:59.999 UTC do dia seguinte
+      const start = new Date(`${date}T03:00:00.000Z`);
+      const end = new Date(`${date}T02:59:59.999Z`);
+      end.setDate(end.getDate() + 1);
       where.date = { gte: start, lte: end };
     }
     if (status) {
@@ -110,7 +114,8 @@ export class FixturesService {
   }
 
   async findToday(leagueId?: number) {
-    const date = new Date().toISOString().split('T')[0];
+    // Obtém a data de hoje no fuso horário de Brasília (America/Sao_Paulo) no formato YYYY-MM-DD
+    const date = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
     return this.findMany({ date, leagueId });
   }
 }

@@ -55,11 +55,18 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.analytics_outlined, size: 60, color: Colors.white24),
+            const Icon(
+              Icons.analytics_outlined,
+              size: 60,
+              color: Colors.white24,
+            ),
             const Gap(15),
             Text(
               'no_stats'.tr(context),
-              style: context.textTheme.bodySmall!.copyWith(color: Colors.white54, fontSize: 16),
+              style: context.textTheme.bodySmall!.copyWith(
+                color: Colors.white54,
+                fontSize: 16,
+              ),
             ),
             const Gap(15),
             ElevatedButton(
@@ -94,46 +101,62 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
             color: Theme.of(context).cardColor,
-            border: Border.all(color: context.appColors.info ?? Colors.transparent, width: 1),
+            border: Border.all(
+              color: context.appColors.info ?? Colors.transparent,
+              width: 1,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Probabilidades de Vitória',
-                    style: context.textTheme.bodySmall!.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (lineupsFactored)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green, width: 1),
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    Text(
+                      'Probabilidades de Vitória',
+                      style: context.textTheme.bodySmall!.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle_outline, color: Colors.green, size: 12),
-                          const Gap(4),
-                          Text(
-                            'Escalações confirmadas',
-                            style: context.textTheme.labelSmall!.copyWith(
+                    ),
+                    if (lineupsFactored)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green, width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline,
                               color: Colors.green,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                              size: 12,
                             ),
-                          ),
-                        ],
+                            const Gap(4),
+                            Text(
+                              'Escalações confirmadas',
+                              style: context.textTheme.labelSmall!.copyWith(
+                                color: Colors.green,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
               const Gap(15),
               // Barra segmentada horizontal tripla
@@ -185,7 +208,11 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                             child: Text(
                               '$probAway%',
                               style: TextStyle(
-                                color: Theme.of(context).primaryColor == Colors.white ? Colors.black : Colors.black,
+                                color:
+                                    Theme.of(context).primaryColor ==
+                                        Colors.white
+                                    ? Colors.black
+                                    : Colors.black,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -205,14 +232,24 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(width: 10, height: 10, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                         const Gap(6),
                         Flexible(
                           child: Text(
                             widget.fixture.homeTeam?.name ?? 'Mandante',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.labelSmall!.copyWith(color: Colors.white70, fontSize: 14),
+                            style: context.textTheme.labelSmall!.copyWith(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -221,9 +258,22 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(width: 10, height: 10, decoration: BoxDecoration(color: context.appColors.info ?? Colors.grey[700], shape: BoxShape.circle)),
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: context.appColors.info ?? Colors.grey[700],
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                       const Gap(6),
-                      Text('Empate', style: context.textTheme.labelSmall!.copyWith(color: Colors.white70, fontSize: 14)),
+                      Text(
+                        'Empate',
+                        style: context.textTheme.labelSmall!.copyWith(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
                   ),
                   Expanded(
@@ -231,14 +281,24 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(width: 10, height: 10, decoration: BoxDecoration(color: Theme.of(context).primaryColor, shape: BoxShape.circle)),
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                         const Gap(6),
                         Flexible(
                           child: Text(
                             widget.fixture.awayTeam?.name ?? 'Visitante',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: context.textTheme.labelSmall!.copyWith(color: Colors.white70, fontSize: 14),
+                            style: context.textTheme.labelSmall!.copyWith(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -250,7 +310,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           ),
         ),
         const Gap(20),
-        
+
         // Card de Resumo / Frase curta
         if (summary.isNotEmpty) ...[
           Container(
@@ -258,11 +318,18 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: context.appColors.info ?? Colors.transparent, width: 1),
+              border: Border.all(
+                color: context.appColors.info ?? Colors.transparent,
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.tips_and_updates_outlined, color: Theme.of(context).primaryColor, size: 28),
+                Icon(
+                  Icons.tips_and_updates_outlined,
+                  color: Theme.of(context).primaryColor,
+                  size: 28,
+                ),
                 const Gap(15),
                 Expanded(
                   child: Text(
@@ -301,11 +368,19 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
               runSpacing: 10,
               children: tips.map((tip) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: context.appColors.info?.withOpacity(0.5) ?? Colors.white10,
+                    color:
+                        context.appColors.info?.withOpacity(0.5) ??
+                        Colors.white10,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3), width: 1),
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor.withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     tip.toString(),
@@ -340,7 +415,10 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: context.appColors.info ?? Colors.transparent, width: 1),
+              border: Border.all(
+                color: context.appColors.info ?? Colors.transparent,
+                width: 1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,9 +437,16 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                   children: [
                     Text(
                       'Análise gerada por IA',
-                      style: context.textTheme.labelSmall!.copyWith(color: Colors.white38, fontSize: 12),
+                      style: context.textTheme.labelSmall!.copyWith(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
                     ),
-                    const Icon(Icons.auto_awesome, color: Colors.white38, size: 14),
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white38,
+                      size: 14,
+                    ),
                   ],
                 ),
               ],

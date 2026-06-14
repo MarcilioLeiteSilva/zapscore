@@ -76,7 +76,7 @@ class Fixture {
       externalId: toInt(json['externalId']),
       leagueId: json['leagueId']?.toString() ?? '',
       season: toInt(json['season']),
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      date: json['date'] != null ? DateTime.parse(json['date']).toLocal() : DateTime.now(),
       round: json['round'],
       statusLong: json['statusLong'],
       statusShort: json['statusShort'],

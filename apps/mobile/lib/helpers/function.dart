@@ -50,7 +50,7 @@ bool isLive(String? status) {
 }
 
 String getShortStatus(
-    String? statusShort, String? statusLong, BuildContext context) {
+    String? statusShort, String? statusLong, BuildContext context, {DateTime? date}) {
   if (statusShort == null) return 'TBD';
 
   // Status Vivo (Live)
@@ -69,6 +69,9 @@ String getShortStatus(
     case 'PST':
       return 'status_postponed'.tr(context);
     case 'NS':
+      if (date != null) {
+        return DateFormat('HH:mm').format(date.toLocal());
+      }
       // Se for NS e tiver hora, exibe a hora. Se não, exibe 'Fut'
       return statusLong?.contains(':') == true
           ? statusLong!

@@ -28,7 +28,7 @@ class Video {
       description: json['description'],
       thumbnailUrl: json['thumbnailUrl'],
       videoUrl: json['videoUrl'] ?? '',
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      date: json['date'] != null ? DateTime.parse(json['date']).toLocal() : DateTime.now(),
       duration: json['duration'],
       leagueLogo: json['league']?['logo'],
       teamLogo: json['team']?['logo'],

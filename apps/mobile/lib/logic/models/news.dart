@@ -31,7 +31,7 @@ class News {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       imageUrl: json['imageUrl'],
-      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      date: json['date'] != null ? DateTime.parse(json['date']).toLocal() : DateTime.now(),
       author: json['author'],
       source: json['source'],
       content: json['content'],
