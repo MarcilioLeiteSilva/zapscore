@@ -307,65 +307,62 @@ export class SyncService {
 
   async syncLive(leagueId?: number) {
     const targetLeagues = leagueId ? [leagueId] : SUPPORTED_COMPETITIONS.map(c => c.externalId);
-    this.logger.log(`Starting live sync for leagues: ${targetLeagues.join(', ')}`);
+    this.logger.log(`Starting optimized live sync for leagues: ${targetLeagues.join(', ')}`);
     
     let totalSynced = 0;
     try {
-      for (const leagueId of targetLeagues) {
-        const liveFixtures = await this.apiFootball.getFixtures({ 
-           live: 'all',
-           league: leagueId
-        });
+      // 1. Fetch all live matches globally in a single call
+      const liveFixtures = (await this.apiFootball.getFixtures({ 
+         live: 'all'
+      })) || [];
 
-        if (!liveFixtures || liveFixtures.length === 0) continue;
+      // 2. Filter in-memory by target leagues
+      const monitoredLive = liveFixtures.filter((f: any) => targetLeagues.includes(f.league.id));
+      this.logger.log(`Found ${monitoredLive.length} live matches (out of ${liveFixtures.length} globally) for our monitored leagues.`);
 
-        for (const data of liveFixtures) {
-          try {
-            const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
-            if (!league) continue;
+      for (const data of monitoredLive) {
+        try {
+          const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
+          if (!league) continue;
 
-            const [homeTeam, awayTeam] = await Promise.all([
-              this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
-              this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
-            ]);
-            if (!homeTeam || !awayTeam) continue;
+          const [homeTeam, awayTeam] = await Promise.all([
+            this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+            this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+          ]);
+          if (!homeTeam || !awayTeam) continue;
 
-            const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
-            await this.prisma.fixture.upsert({
-              where: { externalId: fixtureMapped.externalId },
-              update: fixtureMapped,
-              create: fixtureMapped as any,
-            });
-
-            await this.syncFixtureDetail(data.fixture.id);
-            totalSynced++;
-          } catch (err) {
-            this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
-          }
-        }
-
-        // --- NOVIDADE: Verificar jogos que estavam LIVE no banco mas não estão mais na lista de LIVE da API ---
-        const league = await this.prisma.league.findUnique({ where: { externalId: leagueId } });
-        if (league) {
-          const liveInDb = await this.prisma.fixture.findMany({
-            where: {
-              leagueId: league.id,
-              statusShort: { in: ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'] }
-            }
+          const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
+          await this.prisma.fixture.upsert({
+            where: { externalId: fixtureMapped.externalId },
+            update: fixtureMapped,
+            create: fixtureMapped as any,
           });
 
-          const apiLiveIds = liveFixtures.map((f: any) => f.fixture.id);
-          const finishedFixtures = liveInDb.filter(f => !apiLiveIds.includes(f.externalId));
-
-          for (const f of finishedFixtures) {
-            this.logger.log(`Detectado fim de jogo provável para fixture ${f.externalId}. Sincronizando status final...`);
-            await this.syncByExternalId(f.externalId).catch(err => 
-              this.logger.error(`Erro ao sincronizar status final da fixture ${f.externalId}: ${err.message}`)
-            );
-          }
+          await this.syncFixtureDetail(data.fixture.id);
+          totalSynced++;
+        } catch (err) {
+          this.logger.error(`Error processing live fixture ${data.fixture.id}: ${err.message}`);
         }
-        // ---------------------------------------------------------------------------------------------------
       }
+
+      // 3. Detect games that were marked LIVE in our DB but are no longer live in the API
+      const liveInDb = await this.prisma.fixture.findMany({
+        where: {
+          league: { externalId: { in: targetLeagues } },
+          statusShort: { in: ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'] }
+        }
+      });
+
+      const apiLiveIds = monitoredLive.map((f: any) => f.fixture.id);
+      const finishedFixtures = liveInDb.filter(f => !apiLiveIds.includes(f.externalId));
+
+      for (const f of finishedFixtures) {
+        this.logger.log(`Detectado fim de jogo provável para fixture ${f.externalId}. Sincronizando status final...`);
+        await this.syncByExternalId(f.externalId).catch(err => 
+          this.logger.error(`Erro ao sincronizar status final da fixture ${f.externalId}: ${err.message}`)
+        );
+      }
+
       return { count: totalSynced };
     } catch (err) {
       this.logger.error(`Failed live sync: ${err.message}`);

@@ -74,8 +74,8 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
         ),
         title: const Text(
           'Desempenho da IA',
@@ -85,50 +85,70 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
-      body: Column(
+      body: Stack(
+        alignment: Alignment.bottomCenter,
         children: [
-          // Bloco de Filtros
-          _buildFiltersSection(theme, infoColor),
-          
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? _buildErrorWidget()
-                    : _stats == null || _stats!.totalGames == 0
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            onRefresh: _loadData,
-                            child: ListView(
-                              padding: const EdgeInsets.only(bottom: 40),
-                              children: [
-                                const Gap(15),
-                                // Resumo do Gráfico e Números
-                                _buildSummaryCard(theme, accentColor, infoColor),
-                                const Gap(20),
-                                // Título do Histórico
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Row(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 90),
+            child: Column(
+              children: [
+                // Bloco de Filtros
+                _buildFiltersSection(theme, infoColor),
+                
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                          ? _buildErrorWidget()
+                          : _stats == null || _stats!.totalGames == 0
+                              ? _buildEmptyState()
+                              : RefreshIndicator(
+                                  onRefresh: _loadData,
+                                  child: ListView(
+                                    padding: const EdgeInsets.only(bottom: 40),
                                     children: [
-                                      Icon(Icons.history, color: accentColor, size: 20),
-                                      const Gap(8),
-                                      Text(
-                                        'Jogos Auditados Recentemente',
-                                        style: context.textTheme.bodySmall!.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
+                                      const Gap(15),
+                                      // Resumo do Gráfico e Números
+                                      _buildSummaryCard(theme, accentColor, infoColor),
+                                      const Gap(20),
+                                      // Título do Histórico
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.history, color: accentColor, size: 20),
+                                            const Gap(8),
+                                            Text(
+                                              'Jogos Auditados Recentemente',
+                                              style: context.textTheme.bodySmall!.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
+                                      const Gap(10),
+                                      // Lista de jogos auditados
+                                      ..._stats!.recentAudits.map((audit) => RecentAuditItem(audit: audit)),
                                     ],
                                   ),
                                 ),
-                                const Gap(10),
-                                // Lista de jogos auditados
-                                ..._stats!.recentAudits.map((audit) => RecentAuditItem(audit: audit)),
-                              ],
-                            ),
-                          ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 20,
+            left: 10,
+            right: 10,
+            child: SafeArea(
+              child: BlocBuilder<SettingCubit, SettingState>(
+                builder: (context, state) {
+                  return HomeNavBottom(index: state.homeIndex);
+                },
+              ),
+            ),
           ),
         ],
       ),

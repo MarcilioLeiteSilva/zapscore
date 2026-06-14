@@ -49,8 +49,45 @@ export class SyncJobsService implements OnApplicationBootstrap {
   // A cada minuto: Sincroniza jogos ao vivo
   @Cron('* * * * *')
   async handleLiveUpdate() {
-    this.logger.log('Starting scheduled live matches sync...');
+    this.logger.log('Checking database for active or upcoming live matches...');
     try {
+      const now = new Date();
+      const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+
+      // Verify if there are any active games, games starting in the next 15 minutes,
+      // or games that should have started in the last 3 hours but are still marked as 'NS'
+      const activeOrUpcomingCount = await this.prisma.fixture.count({
+        where: {
+          OR: [
+            {
+              statusShort: {
+                in: ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE']
+              }
+            },
+            {
+              date: {
+                gte: now,
+                lte: fifteenMinutesFromNow
+              }
+            },
+            {
+              statusShort: 'NS',
+              date: {
+                gte: threeHoursAgo,
+                lte: now
+              }
+            }
+          ]
+        }
+      });
+
+      if (activeOrUpcomingCount === 0) {
+        this.logger.log('No active or upcoming matches found. Skipping live sync API call to save requests.');
+        return;
+      }
+
+      this.logger.log(`Found ${activeOrUpcomingCount} active or upcoming matches. Initiating live matches sync...`);
       await this.syncService.syncLive();
       this.logger.log('Live sync completed successfully.');
     } catch (err) {

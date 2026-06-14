@@ -23,6 +23,9 @@ class HomeNavBottom extends StatelessWidget {
                 child: HomeTabBottomNavItem(
                   onTap: () {
                     context.read<SettingCubit>().updateHomeIndex(0);
+                    if (GoRouter.of(context).canPop()) {
+                      context.pop();
+                    }
                   },
                   selected: index == 0,
                   label: 'home'.tr(context),
@@ -34,6 +37,9 @@ class HomeNavBottom extends StatelessWidget {
                 child: HomeTabBottomNavItem(
                   onTap: () {
                     context.read<SettingCubit>().updateHomeIndex(1);
+                    if (GoRouter.of(context).canPop()) {
+                      context.pop();
+                    }
                   },
                   selected: index == 1,
                   label: 'favourite'.tr(context),
@@ -45,6 +51,9 @@ class HomeNavBottom extends StatelessWidget {
                 child: HomeTabBottomNavItem(
                   onTap: () {
                     context.read<SettingCubit>().updateHomeIndex(2);
+                    if (GoRouter.of(context).canPop()) {
+                      context.pop();
+                    }
                   },
                   selected: index == 2,
                   label: 'news'.tr(context),
@@ -56,6 +65,9 @@ class HomeNavBottom extends StatelessWidget {
                 child: HomeTabBottomNavItem(
                   onTap: () {
                     context.read<SettingCubit>().updateHomeIndex(3);
+                    if (GoRouter.of(context).canPop()) {
+                      context.pop();
+                    }
                   },
                   selected: index == 3,
                   label: 'watch'.tr(context),
@@ -67,6 +79,9 @@ class HomeNavBottom extends StatelessWidget {
                 child: HomeTabBottomNavItem(
                   onTap: () {
                     context.read<SettingCubit>().updateHomeIndex(4);
+                    if (GoRouter.of(context).canPop()) {
+                      context.pop();
+                    }
                   },
                   selected: index == 4,
                   label: 'account'.tr(context),

@@ -121,21 +121,25 @@ export class FixturesService {
 
   async getAiPerformanceStats(params: { leagueId?: number; days?: number }) {
     const { leagueId, days } = params;
-
-    const where: any = {
-      isHit: { not: null },
-    };
-
-    if (leagueId) {
-      where.fixture = where.fixture || {};
-      where.fixture.league = { externalId: leagueId };
-    }
+    const startDate = new Date('2026-06-13T00:00:00.000Z');
+    let dateFilter: any = { gte: startDate };
 
     if (days) {
       const cutOffDate = new Date();
       cutOffDate.setDate(cutOffDate.getDate() - days);
-      where.fixture = where.fixture || {};
-      where.fixture.date = { gte: cutOffDate };
+      const finalCutOff = cutOffDate > startDate ? cutOffDate : startDate;
+      dateFilter = { gte: finalCutOff };
+    }
+
+    const where: any = {
+      isHit: { not: null },
+      fixture: {
+        date: dateFilter,
+      },
+    };
+
+    if (leagueId) {
+      where.fixture.league = { externalId: leagueId };
     }
 
     // Busca contagens totais, acertos e erros
