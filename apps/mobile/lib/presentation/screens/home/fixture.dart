@@ -73,6 +73,9 @@ class FixturePage extends StatelessWidget {
                     );
                   },
                 ),
+                const SliverToBoxAdapter(
+                  child: HomeAiPerformanceBanner(),
+                ),
               ];
             },
             body: RefreshIndicator(
