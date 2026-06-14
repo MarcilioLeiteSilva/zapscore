@@ -118,4 +118,82 @@ export class FixturesService {
     const date = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
     return this.findMany({ date, leagueId });
   }
+
+  async getAiPerformanceStats(params: { leagueId?: number; days?: number }) {
+    const { leagueId, days } = params;
+
+    const where: any = {
+      isHit: { not: null },
+    };
+
+    if (leagueId) {
+      where.fixture = where.fixture || {};
+      where.fixture.league = { externalId: leagueId };
+    }
+
+    if (days) {
+      const cutOffDate = new Date();
+      cutOffDate.setDate(cutOffDate.getDate() - days);
+      where.fixture = where.fixture || {};
+      where.fixture.date = { gte: cutOffDate };
+    }
+
+    // Busca contagens totais, acertos e erros
+    const [totalGames, hits] = await Promise.all([
+      this.prisma.fixtureAiAnalysis.count({ where }),
+      this.prisma.fixtureAiAnalysis.count({
+        where: {
+          ...where,
+          isHit: true,
+        },
+      }),
+    ]);
+
+    const misses = totalGames - hits;
+    const accuracyPercentage = totalGames > 0 ? parseFloat(((hits / totalGames) * 100).toFixed(1)) : 0;
+
+    // Busca os últimos 50 jogos auditados
+    const recentResolved = await this.prisma.fixtureAiAnalysis.findMany({
+      where,
+      include: {
+        fixture: {
+          include: {
+            homeTeam: true,
+            awayTeam: true,
+            league: true,
+          },
+        },
+      },
+      orderBy: {
+        fixture: {
+          date: 'desc',
+        },
+      },
+      take: 50,
+    });
+
+    const recentAudits = recentResolved.map(analysis => {
+      const fix = analysis.fixture;
+      return {
+        fixtureId: fix.id,
+        homeTeam: fix.homeTeam.name,
+        homeTeamLogo: fix.homeTeam.logo,
+        awayTeam: fix.awayTeam.name,
+        awayTeamLogo: fix.awayTeam.logo,
+        score: `${fix.homeGoals ?? 0}-${fix.awayGoals ?? 0}`,
+        predicted: analysis.predictedResult,
+        isHit: analysis.isHit,
+        date: fix.date,
+        leagueName: fix.league.name,
+      };
+    });
+
+    return {
+      totalGames,
+      hits,
+      misses,
+      accuracyPercentage,
+      recentAudits,
+    };
+  }
 }

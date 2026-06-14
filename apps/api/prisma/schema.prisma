@@ -295,6 +295,11 @@ model FixtureAiAnalysis {
   // Controle de otimização (evitar reprocessamento de IA redundante)
   lineupsFactored     Boolean  @default(false)
 
+  // Auditoria de previsões
+  predictedResult     String?
+  isHit               Boolean?
+  tipsStatus          Json?
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

@@ -89,10 +89,65 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
     final List<dynamic> tips = _analysis!['tips'] ?? [];
     final String commentary = _analysis!['commentary'] ?? '';
     final bool lineupsFactored = _analysis!['lineupsFactored'] ?? false;
+    final bool? isHit = _analysis!['isHit'] as bool?;
+    final List<dynamic> tipsStatus = _analysis!['tipsStatus'] is List
+        ? _analysis!['tipsStatus'] as List
+        : [];
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       children: [
+        if (widget.fixture.isFinished && isHit != null) ...[
+          const Gap(15),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isHit
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isHit ? Colors.green : Colors.red,
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isHit ? Icons.check_circle_outline : Icons.cancel_outlined,
+                  color: isHit ? Colors.green : Colors.red,
+                  size: 24,
+                ),
+                const Gap(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isHit ? 'Previsão Correta' : 'Previsão Incorreta',
+                        style: context.textTheme.bodySmall!.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isHit ? Colors.green : Colors.red,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const Gap(2),
+                      Text(
+                        isHit
+                            ? 'A IA acertou a previsão do resultado final para esta partida.'
+                            : 'O resultado final da partida foi diferente do previsto pela IA.',
+                        style: context.textTheme.labelSmall!.copyWith(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const Gap(20),
         // Card de Probabilidades
         Container(
@@ -367,28 +422,65 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
               spacing: 10,
               runSpacing: 10,
               children: tips.map((tip) {
+                final tipStr = tip.toString();
+                bool? isTipHit;
+                if (widget.fixture.isFinished) {
+                  for (final item in tipsStatus) {
+                    if (item is Map && item['tip'] == tipStr) {
+                      isTipHit = item['hit'] as bool?;
+                      break;
+                    }
+                  }
+                }
+
+                Color chipBgColor = context.appColors.info?.withOpacity(0.5) ?? Colors.white10;
+                Color chipTextColor = Theme.of(context).primaryColor;
+                Color chipBorderColor = Theme.of(context).primaryColor.withOpacity(0.3);
+                IconData? chipIcon;
+
+                if (isTipHit != null) {
+                  if (isTipHit) {
+                    chipBgColor = Colors.green.withOpacity(0.15);
+                    chipTextColor = Colors.green;
+                    chipBorderColor = Colors.green;
+                    chipIcon = Icons.check_circle_outline;
+                  } else {
+                    chipBgColor = Colors.red.withOpacity(0.15);
+                    chipTextColor = Colors.red;
+                    chipBorderColor = Colors.red;
+                    chipIcon = Icons.cancel_outlined;
+                  }
+                }
+
                 return Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        context.appColors.info?.withOpacity(0.5) ??
-                        Colors.white10,
+                    color: chipBgColor,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Theme.of(context).primaryColor.withOpacity(0.3),
+                      color: chipBorderColor,
                       width: 1,
                     ),
                   ),
-                  child: Text(
-                    tip.toString(),
-                    style: context.textTheme.labelSmall!.copyWith(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (chipIcon != null) ...[
+                        Icon(chipIcon, color: chipTextColor, size: 16),
+                        const Gap(6),
+                      ],
+                      Text(
+                        tipStr,
+                        style: context.textTheme.labelSmall!.copyWith(
+                          color: chipTextColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }).toList(),

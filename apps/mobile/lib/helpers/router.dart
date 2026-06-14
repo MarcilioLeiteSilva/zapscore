@@ -19,6 +19,7 @@ const String screenNewsContent = 'news-content';
 const String screenWatchContent = 'watch-content';
 
 const String screenAbout = "about-sett";
+const String screenAiPerformance = "ai-performance";
 const String screenEditInfo = "editinfo-sett";
 const String screenGeneral = "general-sett";
 const String screenHelpCenter = "help-center-sett";
@@ -149,6 +150,11 @@ abstract class RouterApp {
         path: '/$screenTheme',
         name: screenTheme,
         builder: (context, state) => const ThemeScreen(),
+      ),
+      GoRoute(
+        path: '/$screenAiPerformance',
+        name: screenAiPerformance,
+        builder: (context, state) => const AiPerformanceDashboardPage(),
       ),
       GoRoute(
         path: '/$screenPlayer',

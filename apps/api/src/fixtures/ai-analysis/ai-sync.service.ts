@@ -203,6 +203,14 @@ export class AiSyncService {
     // 7. Chamar o serviço da IA para gerar a análise
     const analysis = await this.aiService.generateMatchAnalysis(matchData, shouldFactorLineups);
 
+    // Calcular predictedResult baseado na maior probabilidade
+    let predictedResult: string = 'DRAW';
+    if (analysis.probHome > analysis.probAway && analysis.probHome > analysis.probDraw) {
+      predictedResult = 'HOME';
+    } else if (analysis.probAway > analysis.probHome && analysis.probAway > analysis.probDraw) {
+      predictedResult = 'AWAY';
+    }
+
     // 8. Salvar ou atualizar no banco de dados
     const result = await this.prisma.fixtureAiAnalysis.upsert({
       where: { fixtureId: fixture.id },
@@ -214,6 +222,7 @@ export class AiSyncService {
         tips: analysis.tips,
         commentary: analysis.commentary,
         lineupsFactored: shouldFactorLineups,
+        predictedResult,
       },
       create: {
         fixtureId: fixture.id,
@@ -224,10 +233,138 @@ export class AiSyncService {
         tips: analysis.tips,
         commentary: analysis.commentary,
         lineupsFactored: shouldFactorLineups,
+        predictedResult,
       },
     });
 
     this.logger.log(`AI prediction successfully generated and saved for fixture ${fixtureId}. Lineups factored: ${shouldFactorLineups}`);
     return result;
+  }
+
+  async resolveFixtureAnalysis(fixtureId: string): Promise<any> {
+    this.logger.log(`Resolving AI prediction for fixture ${fixtureId}`);
+    
+    // 1. Carrega a análise e os dados da partida (placar)
+    const analysis = await this.prisma.fixtureAiAnalysis.findUnique({
+      where: { fixtureId },
+      include: { fixture: true },
+    });
+
+    if (!analysis) {
+      this.logger.log(`No AI analysis found for fixture ${fixtureId}. Skipping resolution.`);
+      return null;
+    }
+
+    const fixture = analysis.fixture;
+    
+    // Só resolve se o jogo estiver finalizado (FT, AET, PEN)
+    const FINISHED_STATUSES = ['FT', 'AET', 'PEN'];
+    if (!FINISHED_STATUSES.includes(fixture.statusShort || '')) {
+      this.logger.log(`Fixture ${fixtureId} is not finished (status: ${fixture.statusShort}). Cannot resolve.`);
+      return analysis;
+    }
+
+    const homeGoals = fixture.homeGoals ?? 0;
+    const awayGoals = fixture.awayGoals ?? 0;
+
+    // 2. Determinar o resultado real da partida
+    let actualResult: 'HOME' | 'AWAY' | 'DRAW' = 'DRAW';
+    if (homeGoals > awayGoals) {
+      actualResult = 'HOME';
+    } else if (awayGoals > homeGoals) {
+      actualResult = 'AWAY';
+    }
+
+    // 3. Determinar o resultado previsto originalmente (se não estiver salvo ainda)
+    let predictedResult = analysis.predictedResult;
+    if (!predictedResult) {
+      if (analysis.probHome > analysis.probAway && analysis.probHome > analysis.probDraw) {
+        predictedResult = 'HOME';
+      } else if (analysis.probAway > analysis.probHome && analysis.probAway > analysis.probDraw) {
+        predictedResult = 'AWAY';
+      } else {
+        predictedResult = 'DRAW';
+      }
+    }
+
+    const isHit = predictedResult === actualResult;
+
+    // 4. Avaliar cada dica (tips) textualmente contra o resultado real
+    const tipsStatus = Array.isArray(analysis.tips) 
+      ? analysis.tips.map((tip: string) => {
+          const hit = this.evaluateTip(tip, homeGoals, awayGoals);
+          return { tip, hit };
+        })
+      : [];
+
+    // 5. Atualizar no banco de dados
+    const updated = await this.prisma.fixtureAiAnalysis.update({
+      where: { fixtureId },
+      data: {
+        predictedResult,
+        isHit,
+        tipsStatus,
+      },
+    });
+
+    this.logger.log(`AI prediction for fixture ${fixtureId} resolved: isHit = ${isHit}`);
+    return updated;
+  }
+
+  private evaluateTip(tipText: string, homeGoals: number, awayGoals: number): boolean {
+    const normalized = tipText.toLowerCase().trim();
+    const totalGoals = homeGoals + awayGoals;
+
+    // Regras de gols
+    if (normalized.includes('mais de 2.5') || normalized.includes('over 2.5') || normalized.includes('+2.5')) {
+      return totalGoals > 2;
+    }
+    if (normalized.includes('mais de 1.5') || normalized.includes('over 1.5') || normalized.includes('+1.5')) {
+      return totalGoals > 1;
+    }
+    if (normalized.includes('mais de 3.5') || normalized.includes('over 3.5') || normalized.includes('+3.5')) {
+      return totalGoals > 3;
+    }
+    if (normalized.includes('menos de 2.5') || normalized.includes('under 2.5') || normalized.includes('-2.5')) {
+      return totalGoals < 3;
+    }
+    if (normalized.includes('menos de 3.5') || normalized.includes('under 3.5') || normalized.includes('-3.5')) {
+      return totalGoals < 4;
+    }
+
+    // Regras de Ambas Marcam
+    if (normalized.includes('ambas marcam') || normalized.includes('ambas marcarem') || normalized.includes('btts')) {
+      if (normalized.includes('não') || normalized.includes('nao')) {
+        return homeGoals === 0 || awayGoals === 0;
+      }
+      return homeGoals > 0 && awayGoals > 0;
+    }
+
+    // Regras de vencedor
+    if (normalized.includes('vence') || normalized.includes('vitória') || normalized.includes('vitoria') || normalized.includes('vencedor')) {
+      if (normalized.includes('casa') || normalized.includes('mandante')) {
+        return homeGoals > awayGoals;
+      }
+      if (normalized.includes('fora') || normalized.includes('visitante')) {
+        return awayGoals > homeGoals;
+      }
+    }
+
+    if (normalized.includes('empate')) {
+      return homeGoals === awayGoals;
+    }
+
+    // Gols individuais de time
+    if (normalized.includes('marcam') || normalized.includes('marca') || normalized.includes('gol')) {
+      if (normalized.includes('casa') || normalized.includes('mandante')) {
+        return homeGoals > 0;
+      }
+      if (normalized.includes('fora') || normalized.includes('visitante')) {
+        return awayGoals > 0;
+      }
+    }
+
+    // Fallback padrão se não for mapeado por regras acima
+    return true; 
   }
 }

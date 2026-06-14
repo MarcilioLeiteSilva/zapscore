@@ -39,6 +39,7 @@ import '../../logic/models/player.dart';
 import '../../logic/models/video.dart';
 import '../../logic/models/news.dart';
 import '../../logic/models/standing.dart';
+import '../../logic/models/ai_performance_stats.dart';
 import '../widgets/widgets.dart';
 
 part 'user/welcome.dart';
@@ -70,6 +71,7 @@ part 'fixture/lienups.dart';
 part 'fixture/table.dart';
 part 'fixture/h2h.dart';
 part 'fixture/ai_analysis.dart';
+part 'fixture/ai_performance.dart';
 
 part 'profile/league.dart';
 part 'profile/team.dart';

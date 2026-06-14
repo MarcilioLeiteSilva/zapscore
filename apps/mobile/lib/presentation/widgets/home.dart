@@ -171,6 +171,14 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.auto_awesome, color: Colors.white),
+            title: const Text('Desempenho da IA', style: TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/$screenAiPerformance');
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.settings_outlined, color: Colors.white),
             title: Text('account'.tr(context),
                 style: const TextStyle(color: Colors.white)),

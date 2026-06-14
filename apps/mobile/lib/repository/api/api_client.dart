@@ -8,6 +8,8 @@ import '../../logic/models/team.dart';
 import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
 import '../../logic/models/player.dart';
+import '../../logic/models/ai_performance_stats.dart';
+
 
 class ApiClient {
   final String baseUrl = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';
@@ -293,4 +295,24 @@ class ApiClient {
       print('Sync failed: $e');
     }
   }
+
+  Future<AiPerformanceStats> getAiPerformanceStats({int? leagueId, int? days}) async {
+    String url = '$baseUrl/fixtures/ai-analysis/performance';
+    List<String> params = [];
+    if (leagueId != null) params.add('leagueId=$leagueId');
+    if (days != null) params.add('days=$days');
+    if (params.isNotEmpty) {
+      url += '?${params.join('&')}';
+    }
+    
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = _decodeResponse(response);
+      if (data is Map<String, dynamic>) {
+        return AiPerformanceStats.fromJson(data);
+      }
+    }
+    throw Exception('Failed to load AI performance stats');
+  }
 }
+

@@ -289,10 +289,17 @@ export class SyncService {
         }
       }
 
-      // 4. Sincronizar Previsão da IA (assíncrono para evitar gargalos)
-      this.aiSyncService.syncFixtureAnalysis(fixture.id).catch(err => {
-        this.logger.error(`Error triggering AI prediction for fixture ${fixture.id}: ${err.message}`);
-      });
+      // 4. Sincronizar ou Resolver Previsão da IA (assíncrono para evitar gargalos)
+      const FINISHED_STATUSES = ['FT', 'AET', 'PEN'];
+      if (FINISHED_STATUSES.includes(fixture.statusShort || '')) {
+        this.aiSyncService.resolveFixtureAnalysis(fixture.id).catch(err => {
+          this.logger.error(`Error resolving AI prediction for fixture ${fixture.id}: ${err.message}`);
+        });
+      } else {
+        this.aiSyncService.syncFixtureAnalysis(fixture.id).catch(err => {
+          this.logger.error(`Error triggering AI prediction for fixture ${fixture.id}: ${err.message}`);
+        });
+      }
     } catch (err) {
       this.logger.error(`Error syncing fixture detail ${externalFixtureId}: ${err.message}`);
     }

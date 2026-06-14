@@ -34,6 +34,11 @@ class Fixture {
   final List<FixtureStat> stats;
   final List<FixtureLineup> lineups;
 
+  // AI analysis audit fields
+  final String? aiPredictedResult;
+  final bool? aiIsHit;
+  final Map<String, dynamic>? aiTipsStatus;
+
   Fixture({
     required this.id,
     required this.externalId,
@@ -56,7 +61,12 @@ class Fixture {
     this.events = const [],
     this.stats = const [],
     this.lineups = const [],
+    this.aiPredictedResult,
+    this.aiIsHit,
+    this.aiTipsStatus,
   });
+
+  bool get isFinished => statusShort == 'FT' || statusShort == 'AET' || statusShort == 'PEN';
 
   factory Fixture.dummy() {
     return Fixture(
@@ -99,6 +109,11 @@ class Fixture {
       lineups: json['lineups'] != null
           ? (json['lineups'] as List).map((e) => FixtureLineup.fromJson(e)).toList()
           : [],
+      aiPredictedResult: json['aiAnalysis']?['predictedResult']?.toString(),
+      aiIsHit: json['aiAnalysis']?['isHit'] as bool?,
+      aiTipsStatus: json['aiAnalysis']?['tipsStatus'] is Map<String, dynamic>
+          ? json['aiAnalysis']?['tipsStatus'] as Map<String, dynamic>
+          : null,
     );
   }
 }
