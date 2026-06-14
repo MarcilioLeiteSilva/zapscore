@@ -78,6 +78,7 @@ model Fixture {
   events      FixtureEvent[]
   stats       FixtureStat[]
   lineups     FixtureLineup[]
+  aiAnalysis  FixtureAiAnalysis?
 
   @@index([externalId])
   @@index([date])
@@ -274,4 +275,28 @@ model NewsSource {
   lastSync  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model FixtureAiAnalysis {
+  id                  String   @id @default(uuid())
+  fixtureId           String   @unique
+  fixture             Fixture  @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+  
+  // Probabilidades de resultado
+  probHome            Int      // ex: 45
+  probAway            Int      // ex: 35
+  probDraw            Int      // ex: 20
+  
+  // Conteúdos gerados pela IA
+  predictionSummary   String   // Resumo rápido da previsão
+  tips                String[] // Array de palpites rápidos
+  commentary          String   @db.Text // Texto completo de análise
+  
+  // Controle de otimização (evitar reprocessamento de IA redundante)
+  lineupsFactored     Boolean  @default(false)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("fixture_ai_analysis")
 }

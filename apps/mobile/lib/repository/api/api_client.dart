@@ -274,6 +274,18 @@ class ApiClient {
     return null;
   }
 
+  Future<Map<String, dynamic>?> getFixtureAiAnalysis(String fixtureId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/fixtures/$fixtureId/ai-analysis'));
+      if (response.statusCode == 200) {
+        return _decodeResponse(response);
+      }
+    } catch (e) {
+      print('Error loading AI analysis: $e');
+    }
+    return null;
+  }
+
   Future<void> syncFixture(int externalId) async {
     try {
       await http.post(Uri.parse('$baseUrl/sync/fixture/$externalId'));

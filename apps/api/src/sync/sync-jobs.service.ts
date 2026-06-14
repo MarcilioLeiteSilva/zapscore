@@ -4,6 +4,8 @@ import { SyncService } from './sync.service';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
 
 @Injectable()
 export class SyncJobsService {
@@ -14,6 +16,8 @@ export class SyncJobsService {
     private readonly competitionsService: CompetitionsService,
     private readonly newsCrawler: NewsCrawlerService,
     private readonly videoCrawler: VideoCrawlerService,
+    private readonly prisma: PrismaService,
+    private readonly aiSyncService: AiSyncService,
   ) {}
 
   // A cada minuto: Sincroniza jogos ao vivo
@@ -79,6 +83,39 @@ export class SyncJobsService {
       this.logger.log('Video sync completed successfully.');
     } catch (err) {
       this.logger.error(`Video sync job failed: ${err.message}`);
+    }
+  }
+
+  // A cada 12 horas: Sincroniza previsões de IA para os próximos jogos das próximas 24 horas
+  @Cron('0 */12 * * *')
+  async handleAiPredictionSync() {
+    this.logger.log('Starting scheduled AI predictions sync...');
+    try {
+      const now = new Date();
+      const next24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      
+      const fixtures = await this.prisma.fixture.findMany({
+        where: {
+          date: {
+            gte: now,
+            lte: next24h
+          },
+          statusShort: 'NS'
+        }
+      });
+      
+      this.logger.log(`Found ${fixtures.length} upcoming matches in next 24h to analyze.`);
+      
+      for (const f of fixtures) {
+        try {
+          await this.aiSyncService.syncFixtureAnalysis(f.id);
+        } catch (err) {
+          this.logger.error(`Failed scheduled AI sync for fixture ${f.id}: ${err.message}`);
+        }
+      }
+      this.logger.log('Scheduled AI predictions sync completed.');
+    } catch (err) {
+      this.logger.error(`AI predictions sync job failed: ${err.message}`);
     }
   }
 }

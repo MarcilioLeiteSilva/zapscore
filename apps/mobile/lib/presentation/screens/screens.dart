@@ -69,6 +69,7 @@ part 'fixture/report.dart';
 part 'fixture/lienups.dart';
 part 'fixture/table.dart';
 part 'fixture/h2h.dart';
+part 'fixture/ai_analysis.dart';
 
 part 'profile/league.dart';
 part 'profile/team.dart';

@@ -4,6 +4,7 @@ import { ApiFootballService } from '../integrations/api-football/api-football.se
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiFootballMapper } from '../integrations/api-football/mappers/api-football.mapper';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
+import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
 
 @Injectable()
 export class SyncService {
@@ -13,6 +14,7 @@ export class SyncService {
     private readonly apiFootball: ApiFootballService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly aiSyncService: AiSyncService,
   ) {}
 
   private get defaultLeagueId(): number {
@@ -286,6 +288,11 @@ export class SyncService {
           }
         }
       }
+
+      // 4. Sincronizar Previsão da IA (assíncrono para evitar gargalos)
+      this.aiSyncService.syncFixtureAnalysis(fixture.id).catch(err => {
+        this.logger.error(`Error triggering AI prediction for fixture ${fixture.id}: ${err.message}`);
+      });
     } catch (err) {
       this.logger.error(`Error syncing fixture detail ${externalFixtureId}: ${err.message}`);
     }
