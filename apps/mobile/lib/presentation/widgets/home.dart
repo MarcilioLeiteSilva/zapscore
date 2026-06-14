@@ -262,7 +262,7 @@ class _HomeAiPerformanceBannerState extends State<HomeAiPerformanceBanner> {
       print('Error loading home AI banner stats: $e');
       if (mounted) {
         setState(() {
-          _accuracy = 78.5; // Fallback mock value if database is empty so the user can test and view it visually
+          _accuracy = null;
           _loading = false;
         });
       }

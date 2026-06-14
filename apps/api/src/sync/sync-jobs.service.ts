@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SyncService } from './sync.service';
 import { CompetitionsService } from '../competitions/competitions.service';
@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
 
 @Injectable()
-export class SyncJobsService {
+export class SyncJobsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SyncJobsService.name);
 
   constructor(
@@ -19,6 +19,32 @@ export class SyncJobsService {
     private readonly prisma: PrismaService,
     private readonly aiSyncService: AiSyncService,
   ) {}
+
+  async onApplicationBootstrap() {
+    this.logger.log('Startup: checking and resolving finished predictions in database...');
+    try {
+      const unresolved = await this.prisma.fixtureAiAnalysis.findMany({
+        where: {
+          isHit: null,
+          fixture: {
+            statusShort: { in: ['FT', 'AET', 'PEN'] }
+          }
+        }
+      });
+
+      this.logger.log(`Found ${unresolved.length} unresolved finished matches. Resolving prediction audits...`);
+      for (const analysis of unresolved) {
+        try {
+          await this.aiSyncService.resolveFixtureAnalysis(analysis.fixtureId);
+          this.logger.log(`Prediction for fixture ${analysis.fixtureId} resolved.`);
+        } catch (err) {
+          this.logger.error(`Error resolving prediction for fixture ${analysis.fixtureId}: ${err.message}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Failed startup resolution: ${err.message}`);
+    }
+  }
 
   // A cada minuto: Sincroniza jogos ao vivo
   @Cron('* * * * *')
