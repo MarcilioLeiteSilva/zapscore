@@ -109,10 +109,10 @@ class Fixture {
       lineups: json['lineups'] != null
           ? (json['lineups'] as List).map((e) => FixtureLineup.fromJson(e)).toList()
           : [],
-      aiPredictedResult: json['aiAnalysis']?['predictedResult']?.toString(),
-      aiIsHit: json['aiAnalysis']?['isHit'] as bool?,
-      aiTipsStatus: json['aiAnalysis']?['tipsStatus'] is Map<String, dynamic>
-          ? json['aiAnalysis']?['tipsStatus'] as Map<String, dynamic>
+      aiPredictedResult: json['aiAnalysis'] != null ? json['aiAnalysis']['predictedResult']?.toString() : null,
+      aiIsHit: json['aiAnalysis'] != null ? json['aiAnalysis']['isHit'] as bool? : null,
+      aiTipsStatus: json['aiAnalysis'] != null && json['aiAnalysis']['tipsStatus'] is Map<String, dynamic>
+          ? json['aiAnalysis']['tipsStatus'] as Map<String, dynamic>
           : null,
     );
   }
