@@ -31,6 +31,8 @@ import '../../logic/models/fixture_event.dart';
 import '../../logic/models/scorer.dart';
 import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
+import '../../repository/api/api_client.dart';
+import '../../logic/models/ai_performance_stats.dart';
 
 part 'user.dart';
 part 'home.dart';
