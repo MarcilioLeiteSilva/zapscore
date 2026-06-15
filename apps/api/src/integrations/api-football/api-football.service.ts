@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 export class ApiFootballService {
   private readonly logger = new Logger(ApiFootballService.name);
   private readonly baseUrl: string;
-  private readonly apiKey: string;
+  public readonly apiKey: string;
 
   constructor(
     private readonly httpService: HttpService,

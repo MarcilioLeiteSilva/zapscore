@@ -580,23 +580,31 @@ export class SyncService {
   }
 
   async testApiFootballConnection() {
-    const key = this.configService.get<string>('API_FOOTBALL_KEY') || '';
-    const maskedKey = key ? (key.substring(0, 4) + '...' + key.substring(key.length - 4)) : 'NOT_DEFINED';
-    this.logger.log(`Testing API-Football connection with key: ${maskedKey}`);
+    const rawKey = this.configService.get<string>('API_FOOTBALL_KEY') || '';
+    const maskedRawKey = rawKey ? (rawKey.substring(0, 4) + '...' + rawKey.substring(rawKey.length - 4)) : 'NOT_DEFINED';
+    
+    const actualKey = this.apiFootball.apiKey || '';
+    const maskedActualKey = actualKey ? (actualKey.substring(0, 4) + '...' + actualKey.substring(actualKey.length - 4)) : 'NOT_DEFINED';
+    
+    this.logger.log(`Testing API-Football connection. Raw key: ${maskedRawKey} | Sanitized key: ${maskedActualKey}`);
     try {
       const data = await this.apiFootball.getFixtures({ id: 1520726 });
       return { 
         success: true, 
-        maskedKey, 
+        maskedRawKey,
+        maskedActualKey,
         message: 'Successfully connected to API-Football', 
         fixturesCount: data ? data.length : 0 
       };
     } catch (err: any) {
-      this.logger.error(`API-Football connection test failed: ${err.message}`, err.stack);
+      const responseData = err.response?.data || null;
+      this.logger.error(`API-Football connection test failed: ${err.message}. Response data: ${JSON.stringify(responseData)}`, err.stack);
       return { 
         success: false, 
-        maskedKey, 
+        maskedRawKey,
+        maskedActualKey,
         error: err.message, 
+        responseData,
         stack: err.stack 
       };
     }
