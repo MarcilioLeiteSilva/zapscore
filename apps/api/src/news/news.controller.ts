@@ -27,7 +27,7 @@ export class NewsController {
         }
       }));
 
-      const contentType = response.headers['content-type'];
+      const contentType = response.headers['content-type'] as string;
       res.setHeader('Content-Type', contentType || 'image/jpeg');
       res.setHeader('Cache-Control', 'public, max-age=86400'); // 24h cache
       return res.send(Buffer.from(response.data));
