@@ -105,4 +105,11 @@ export class SyncController {
     const result = await this.newsCrawler.repairNewsData();
     return { success: true, ...result };
   }
+
+  @Post('test-connection')
+  async testConnection() {
+    this.logger.log('Test connection triggered');
+    return this.syncService.testApiFootballConnection();
+  }
 }
+

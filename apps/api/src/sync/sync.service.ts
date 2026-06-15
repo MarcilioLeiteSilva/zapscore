@@ -578,4 +578,28 @@ export class SyncService {
       eventsFixed 
     };
   }
+
+  async testApiFootballConnection() {
+    const key = this.configService.get<string>('API_FOOTBALL_KEY') || '';
+    const maskedKey = key ? (key.substring(0, 4) + '...' + key.substring(key.length - 4)) : 'NOT_DEFINED';
+    this.logger.log(`Testing API-Football connection with key: ${maskedKey}`);
+    try {
+      const data = await this.apiFootball.getFixtures({ id: 1520726 });
+      return { 
+        success: true, 
+        maskedKey, 
+        message: 'Successfully connected to API-Football', 
+        fixturesCount: data ? data.length : 0 
+      };
+    } catch (err: any) {
+      this.logger.error(`API-Football connection test failed: ${err.message}`, err.stack);
+      return { 
+        success: false, 
+        maskedKey, 
+        error: err.message, 
+        stack: err.stack 
+      };
+    }
+  }
 }
+
