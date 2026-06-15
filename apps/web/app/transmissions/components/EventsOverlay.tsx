@@ -71,7 +71,11 @@ export default function EventsOverlay({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5vw' }}>
             {isLive && <span className="tx-live-dot" />}
             <span className="tx-events-title" style={{ fontSize: '1.6vh' }}>
-              {isLive ? `AO VIVO • ${fixture.elapsed}'` : fixture.statusLong}
+              {fixture.statusShort === 'HT'
+                ? 'INTERVALO'
+                : isLive
+                  ? `AO VIVO • ${fixture.elapsed}'`
+                  : fixture.statusLong}
             </span>
           </div>
         </div>

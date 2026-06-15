@@ -52,6 +52,12 @@ export class ApiFootballService {
     return this.get('/players', params);
   }
 
+  async getHeadToHead(homeTeamId: number, awayTeamId: number) {
+    return this.get('/fixtures/headtohead', {
+      h2h: `${homeTeamId}-${awayTeamId}`,
+    });
+  }
+
   async get(endpoint: string, params: any) {
     if (!this.apiKey) {
       this.logger.error('API_FOOTBALL_KEY is not defined');

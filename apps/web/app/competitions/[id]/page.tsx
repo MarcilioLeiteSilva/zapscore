@@ -320,7 +320,7 @@ function FixtureCard({ f }: { f: any }) {
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span>{roundName?.toUpperCase() || ''}</span>
-                    <span className={isLive ? 'badge badge-live' : 'badge badge-ft'}>{f.statusLong}</span>
+                    <span className={isLive ? 'badge badge-live' : 'badge badge-ft'}>{f.statusShort === 'HT' ? 'Intervalo' : f.statusLong}</span>
                 </div>
             </div>
             

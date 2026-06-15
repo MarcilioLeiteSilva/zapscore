@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from './ai.service';
+import { ApiFootballService } from '../../integrations/api-football/api-football.service';
 
 @Injectable()
 export class AiSyncService {
@@ -9,6 +10,7 @@ export class AiSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiService: AiService,
+    private readonly apiFootball: ApiFootballService,
   ) {}
 
   async syncFixtureAnalysis(fixtureId: string, forceUpdate: boolean = false): Promise<any> {
@@ -91,7 +93,7 @@ export class AiSyncService {
     ]);
 
     // 5. Carregar últimos confrontos de cada time (Forma recente)
-    const [lastHomeMatches, lastAwayMatches, h2hMatches] = await Promise.all([
+    const [lastHomeMatches, lastAwayMatches] = await Promise.all([
       this.prisma.fixture.findMany({
         where: {
           OR: [
@@ -116,7 +118,27 @@ export class AiSyncService {
         take: 5,
         include: { homeTeam: true, awayTeam: true },
       }),
-      this.prisma.fixture.findMany({
+    ]);
+
+    // Buscar confrontos diretos reais da API-Football (com fallback resiliente ao banco local)
+    let h2hMatches: any[] = [];
+    try {
+      if (fixture.homeTeam?.externalId && fixture.awayTeam?.externalId) {
+        const rawH2H = await this.apiFootball.getHeadToHead(
+          fixture.homeTeam.externalId,
+          fixture.awayTeam.externalId,
+        );
+        h2hMatches = (rawH2H || [])
+          .filter((m: any) => m.fixture.status.short === 'FT')
+          .slice(0, 5);
+      }
+    } catch (err) {
+      this.logger.error(`Error fetching real H2H for AI Sync: ${err.message}`);
+    }
+
+    // Fallback local se a API externa falhar ou retornar vazia
+    if (h2hMatches.length === 0) {
+      h2hMatches = await this.prisma.fixture.findMany({
         where: {
           OR: [
             { homeTeamId: fixture.homeTeamId, awayTeamId: fixture.awayTeamId },
@@ -127,8 +149,28 @@ export class AiSyncService {
         orderBy: { date: 'desc' },
         take: 5,
         include: { homeTeam: true, awayTeam: true },
-      }),
-    ]);
+      });
+    }
+
+    // Padronizar o mapeamento dos confrontos diretos
+    const formattedH2H = h2hMatches.map((m) => {
+      // Se vier do banco local (Prisma)
+      if (m.homeTeam) {
+        return {
+          date: m.date,
+          homeTeam: m.homeTeam.name,
+          awayTeam: m.awayTeam.name,
+          score: `${m.homeGoals ?? 0}-${m.awayGoals ?? 0}`,
+        };
+      }
+      // Se vier da API-Football
+      return {
+        date: new Date(m.fixture.date),
+        homeTeam: m.teams.home.name,
+        awayTeam: m.teams.away.name,
+        score: `${m.goals.home ?? 0}-${m.goals.away ?? 0}`,
+      };
+    });
 
     // 6. Formatar o pacote de dados para o prompt da IA
     const matchData = {
@@ -184,12 +226,7 @@ export class AiSyncService {
           } : null,
         },
       },
-      headToHead: h2hMatches.map(m => ({
-        date: m.date,
-        homeTeam: m.homeTeam.name,
-        awayTeam: m.awayTeam.name,
-        score: `${m.homeGoals ?? 0}-${m.awayGoals ?? 0}`,
-      })),
+      headToHead: formattedH2H,
       lineups: shouldFactorLineups ? {
         homeStartingXI: fixture.lineups
           .filter(l => l.teamId === fixture.homeTeam.externalId && l.isStart)

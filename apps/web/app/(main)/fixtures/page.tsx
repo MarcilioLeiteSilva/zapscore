@@ -43,8 +43,8 @@ export default async function FixturesPage() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', fontSize: '0.8rem' }}>
                 <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>{fixture.league.name.toUpperCase()}</span>
-                <span className={`badge ${fixture.statusShort === 'LIVE' ? 'badge-live' : 'badge-ft'}`}>
-                    {fixture.statusLong}
+                <span className={`badge ${['LIVE', '1H', '2H', 'HT'].includes(fixture.statusShort) ? 'badge-live' : 'badge-ft'}`}>
+                    {fixture.statusShort === 'HT' ? 'Intervalo' : fixture.statusLong}
                 </span>
               </div>
               
@@ -64,7 +64,11 @@ export default async function FixturesPage() {
                         <span style={{ color: 'var(--border)' }}>:</span>
                         <span>{fixture.awayGoals ?? '0'}</span>
                     </div>
-                    {fixture.elapsed && (
+                    {fixture.statusShort === 'HT' ? (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '800', marginTop: '0.25rem' }}>
+                            INTERVALO
+                        </div>
+                    ) : fixture.elapsed && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '800', marginTop: '0.25rem' }}>
                             {fixture.elapsed}' <span className="badge-live" style={{ padding: '2px 4px', fontSize: '0.6rem' }}></span>
                         </div>

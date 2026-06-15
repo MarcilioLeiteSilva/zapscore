@@ -52,4 +52,9 @@ export class FixturesController {
   getLineups(@Param('id') id: string) {
     return this.fixturesService.findLineups(id);
   }
+
+  @Get(':id/h2h')
+  getHeadToHead(@Param('id') id: string) {
+    return this.fixturesService.getHeadToHead(id);
+  }
 }

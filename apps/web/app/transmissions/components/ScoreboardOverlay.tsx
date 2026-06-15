@@ -52,9 +52,11 @@ export default function ScoreboardOverlay({
       ? 'tx-status-finished'
       : 'tx-status-scheduled';
 
-  const statusText = isLive
-    ? `${fixture.elapsed}'`
-    : fixture.statusLong || 'AGENDADO';
+  const statusText = fixture.statusShort === 'HT'
+    ? 'INTERVALO'
+    : isLive
+      ? `${fixture.elapsed}'`
+      : fixture.statusLong || 'AGENDADO';
 
   return (
     <div className="tx-viewport tx-fade-in">

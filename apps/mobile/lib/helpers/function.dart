@@ -53,6 +53,10 @@ String getShortStatus(
     String? statusShort, String? statusLong, BuildContext context, {DateTime? date}) {
   if (statusShort == null) return 'TBD';
 
+  if (statusShort.toUpperCase().trim() == 'HT') {
+    return 'status_halftime'.tr(context);
+  }
+
   // Status Vivo (Live)
   if (isLive(statusShort)) return 'status_live'.tr(context);
 

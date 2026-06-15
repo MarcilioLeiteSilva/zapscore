@@ -45,6 +45,7 @@ export default function HomeOverlay({ leagueId }: HomeOverlayProps) {
   const isFinished = ['FT', 'AET', 'PEN'].includes(fixture.statusShort);
 
   const formatElapsed = () => {
+    if (fixture.statusShort === 'HT') return 'INTERVALO';
     if (isScheduled) return fixture.statusLong;
     if (isFinished) return 'FIM DE JOGO';
     return fixture.elapsed ? `${fixture.elapsed}'` : fixture.statusShort;

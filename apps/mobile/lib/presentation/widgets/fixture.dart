@@ -386,10 +386,12 @@ class CardFixtureItem extends StatelessWidget {
                       const PulsingLiveIndicator(),
                     const Gap(5),
                     Text(
-                      isLive(fix.statusShort)
-                          ? '${fix.elapsed}\''
-                          : getShortStatus(
-                              fix.statusShort, fix.statusLong, context, date: fix.date),
+                      fix.statusShort == 'HT'
+                          ? getShortStatus(fix.statusShort, fix.statusLong, context)
+                          : (isLive(fix.statusShort)
+                              ? '${fix.elapsed}\''
+                              : getShortStatus(
+                                  fix.statusShort, fix.statusLong, context, date: fix.date)),
                       style: context.textTheme.bodySmall!.copyWith(
                         color: isLive(fix.statusShort)
                             ? Colors.red
@@ -773,10 +775,12 @@ class CardFixtureDetail extends StatelessWidget {
                           const Gap(8),
                         ],
                         Text(
-                          isLive(fix.statusShort)
-                              ? '${fix.elapsed}\''
-                              : getShortStatus(
-                                  fix.statusShort, fix.statusLong, context, date: fix.date),
+                          fix.statusShort == 'HT'
+                              ? getShortStatus(fix.statusShort, fix.statusLong, context)
+                              : (isLive(fix.statusShort)
+                                  ? '${fix.elapsed}\''
+                                  : getShortStatus(
+                                      fix.statusShort, fix.statusLong, context, date: fix.date)),
                           style: context.textTheme.bodySmall!.copyWith(
                             fontSize: 16,
                             fontWeight:

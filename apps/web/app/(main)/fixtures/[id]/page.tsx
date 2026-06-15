@@ -28,7 +28,9 @@ export default async function FixtureDetailPage({ params }: { params: Promise<{ 
         
         {isLive && (
             <div style={{ position: 'absolute', top: '1.5rem', left: '50%', transform: 'translateX(-50%)' }}>
-                <div className="badge badge-live" style={{ padding: '0.5rem 1rem' }}>AO VIVO — {fixture.elapsed}'</div>
+                <div className="badge badge-live" style={{ padding: '0.5rem 1rem' }}>
+                    {fixture.statusShort === 'HT' ? 'INTERVALO' : `AO VIVO — ${fixture.elapsed}'`}
+                </div>
             </div>
         )}
 
@@ -51,7 +53,7 @@ export default async function FixtureDetailPage({ params }: { params: Promise<{ 
                 <span style={{ textShadow: '0 0 30px rgba(255,255,255,0.1)' }}>{fixture.awayGoals ?? 0}</span>
             </div>
             <div className="badge" style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.05)', padding: '0.6rem 1.2rem' }}>
-                {fixture.statusLong}
+                {fixture.statusShort === 'HT' ? 'Intervalo' : fixture.statusLong}
             </div>
             <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600' }}>
                {new Date(fixture.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' })} às {new Date(fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })}
