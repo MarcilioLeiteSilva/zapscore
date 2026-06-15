@@ -642,7 +642,7 @@ export class NewsCrawlerService {
    * Parser simples de RSS via Regex
    */
   private parseRss(xml: string) {
-    const items = [];
+    const items: any[] = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
 

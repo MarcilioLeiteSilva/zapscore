@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { io } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
@@ -106,7 +107,7 @@ export function useFixturePolling(
   const [fixtures, setFixtures] = useState<FixtureData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const prevScoreRef = useRef<string>('');
+  const socketConnectedRef = useRef(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -141,9 +142,98 @@ export function useFixturePolling(
     }
   }, [leagueId, fixtureId]);
 
+  // Efeito para conectar e gerenciar WebSocket
+  useEffect(() => {
+    let base = API_BASE_URL;
+    if (base && !base.startsWith('http')) {
+      base = `https://${base}`;
+    }
+    const socketUrl = base.endsWith('/') ? base.slice(0, -1) : base;
+
+    console.log(`Connecting to WebSocket gateway at namespace: ${socketUrl}/fixtures`);
+    const socket = io(`${socketUrl}/fixtures`, {
+      transports: ['websocket'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 3000,
+    });
+
+    const onConnect = () => {
+      console.log('WebSocket connected. Registering room subscription...');
+      socketConnectedRef.current = true;
+      if (fixtureId) {
+        socket.emit('joinFixture', { fixtureId });
+      } else {
+        socket.emit('joinLeague', { leagueId });
+      }
+    };
+
+    const onDisconnect = (reason: string) => {
+      console.warn('WebSocket disconnected. Reason:', reason);
+      socketConnectedRef.current = false;
+      // Dispara um fetch imediato para garantir dados atualizados durante a queda do socket
+      fetchData();
+    };
+
+    const onFixtureUpdate = (updatedFixture: FixtureData) => {
+      console.log('Received WebSocket fixtureUpdate:', updatedFixture.id);
+      setFixture(updatedFixture);
+      setFixtures((prev) =>
+        prev.map((f) => (f.id === updatedFixture.id ? updatedFixture : f))
+      );
+    };
+
+    const onLeagueUpdate = (updatedFixture: FixtureData) => {
+      console.log('Received WebSocket leagueUpdate for fixture:', updatedFixture.id);
+      setFixtures((prev) => {
+        const exists = prev.some((f) => f.id === updatedFixture.id);
+        if (exists) {
+          return prev.map((f) => (f.id === updatedFixture.id ? updatedFixture : f));
+        } else {
+          return [...prev, updatedFixture];
+        }
+      });
+
+      setFixture((prev) => {
+        if (prev && prev.id === updatedFixture.id) {
+          return updatedFixture;
+        }
+        if (!prev) {
+          return updatedFixture;
+        }
+        return prev;
+      });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('fixtureUpdate', onFixtureUpdate);
+    socket.on('leagueUpdate', onLeagueUpdate);
+
+    socket.connect();
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('fixtureUpdate', onFixtureUpdate);
+      socket.off('leagueUpdate', onLeagueUpdate);
+      socket.disconnect();
+      socketConnectedRef.current = false;
+    };
+  }, [leagueId, fixtureId, fetchData]);
+
+  // Efeito para HTTP Polling de Fallback/Segurança
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, intervalMs);
+    const interval = setInterval(() => {
+      // Só faz a requisição HTTP se o WebSocket não estiver conectado
+      if (!socketConnectedRef.current) {
+        console.log('WebSocket offline. Executing HTTP polling fallback...');
+        fetchData();
+      } else {
+        console.log('WebSocket online. Skipping HTTP polling request.');
+      }
+    }, intervalMs);
+
     return () => clearInterval(interval);
   }, [fetchData, intervalMs]);
 

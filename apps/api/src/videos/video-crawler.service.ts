@@ -151,7 +151,7 @@ export class VideoCrawlerService {
   }
 
   private parseYouTubeHtml(html: string) {
-    const items = [];
+    const items: any[] = [];
     try {
       // Extrai o JSON de dados iniciais do YouTube
       const jsonMatch = /var ytInitialData = ({[\s\S]*?});<\/script>/.exec(html);

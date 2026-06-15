@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ApiFootballMapper } from '../integrations/api-football/mappers/api-football.mapper';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
+import { FixturesGateway } from '../fixtures/fixtures.gateway';
 
 @Injectable()
 export class SyncService {
@@ -15,6 +16,7 @@ export class SyncService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly aiSyncService: AiSyncService,
+    private readonly fixturesGateway: FixturesGateway,
   ) {}
 
   private get defaultLeagueId(): number {
@@ -299,6 +301,25 @@ export class SyncService {
         this.aiSyncService.syncFixtureAnalysis(fixture.id).catch(err => {
           this.logger.error(`Error triggering AI prediction for fixture ${fixture.id}: ${err.message}`);
         });
+      }
+
+      // 5. Emitir atualização via WebSocket
+      const fullFixture = await this.prisma.fixture.findUnique({
+        where: { id: fixture.id },
+        include: {
+          homeTeam: true,
+          awayTeam: true,
+          league: true,
+          events: true,
+          stats: true,
+          lineups: true,
+        },
+      });
+
+      if (fullFixture) {
+        this.fixturesGateway.emitFixtureUpdate(fullFixture.id, fullFixture);
+        this.fixturesGateway.emitLeagueUpdate(fullFixture.league.externalId, fullFixture);
+        this.logger.log(`WebSocket update emitted for fixture ${fullFixture.id} (${fullFixture.homeTeam.name} x ${fullFixture.awayTeam.name})`);
       }
     } catch (err) {
       this.logger.error(`Error syncing fixture detail ${externalFixtureId}: ${err.message}`);
