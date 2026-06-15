@@ -22,6 +22,8 @@ class FixtureCubit extends Cubit<FixtureState> {
       Standing? homeStanding;
       Standing? awayStanding;
       List<Standing> standings = [];
+      Map<String, dynamic>? h2hData;
+      
       try {
         standings = await apiClient.getStandings(fixture.league?.externalId ?? 0, season: fixture.season);
         homeStanding = standings.where((s) => s.teamId == fixture.homeTeam?.externalId).firstOrNull;
@@ -30,7 +32,19 @@ class FixtureCubit extends Cubit<FixtureState> {
         print('Error fetching standings for form: $e');
       }
 
-      emit(FixtureLoaded(fixture, standings: standings, homeStanding: homeStanding, awayStanding: awayStanding));
+      try {
+        h2hData = await apiClient.getFixtureH2H(id);
+      } catch (e) {
+        print('Error fetching H2H: $e');
+      }
+
+      emit(FixtureLoaded(
+        fixture,
+        standings: standings,
+        homeStanding: homeStanding,
+        awayStanding: awayStanding,
+        h2hData: h2hData,
+      ));
       
       // Se o jogo estiver ao vivo ou NS (perto do início) e não tiver escalações, tenta forçar um sync no backend
       if ((isLive(fixture.statusShort) || fixture.statusShort == 'NS') && fixture.lineups.isEmpty) {
@@ -38,7 +52,14 @@ class FixtureCubit extends Cubit<FixtureState> {
             // Recarrega os detalhes após o sync (silenciosamente)
             apiClient.getFixtureDetails(id).then((updated) {
                if (state is FixtureLoaded) {
-                 emit(FixtureLoaded(updated));
+                 final current = state as FixtureLoaded;
+                 emit(FixtureLoaded(
+                   updated,
+                   standings: current.standings,
+                   homeStanding: current.homeStanding,
+                   awayStanding: current.awayStanding,
+                   h2hData: current.h2hData,
+                 ));
                }
             });
          });

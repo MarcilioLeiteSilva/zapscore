@@ -288,6 +288,18 @@ class ApiClient {
     return null;
   }
 
+  Future<Map<String, dynamic>?> getFixtureH2H(String fixtureId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/fixtures/$fixtureId/h2h'));
+      if (response.statusCode == 200) {
+        return _decodeResponse(response);
+      }
+    } catch (e) {
+      print('Error loading H2H: $e');
+    }
+    return null;
+  }
+
   Future<void> syncFixture(int externalId) async {
     try {
       await http.post(Uri.parse('$baseUrl/sync/fixture/$externalId'));

@@ -29,26 +29,52 @@ class PlayerEventPhoto extends StatelessWidget {
 }
 
 class CardIndicatorThreeH2H extends StatelessWidget {
-  const CardIndicatorThreeH2H({super.key, this.hideMid = false});
+  const CardIndicatorThreeH2H({
+    super.key,
+    this.hideMid = false,
+    this.homeWins = 0,
+    this.draws = 0,
+    this.awayWins = 0,
+  });
   final bool hideMid;
+  final int homeWins;
+  final int draws;
+  final int awayWins;
 
   @override
   Widget build(BuildContext context) {
+    final total = homeWins + (hideMid ? 0 : draws) + awayWins;
+    if (total == 0) {
+      return Container(
+        height: 15,
+        decoration: BoxDecoration(
+          color: (context.appColors.info ?? Colors.grey).withOpacity(0.3),
+          borderRadius: BorderRadius.circular(15),
+        ),
+      );
+    }
+
+    final homeFlex = ((homeWins / total) * 100).round();
+    final drawFlex = hideMid ? 0 : ((draws / total) * 100).round();
+    final awayFlex = ((awayWins / total) * 100).round();
+
     return Row(
       children: [
-        Expanded(
-          flex: 3,
-          child: Container(
-            height: 15,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
+        if (homeWins > 0)
+          Expanded(
+            flex: homeFlex > 0 ? homeFlex : 1,
+            child: Container(
+              height: 15,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+              ),
             ),
           ),
-        ),
-        if (!hideMid) ...[
-          const Gap(10),
+        if (!hideMid && draws > 0) ...[
+          if (homeWins > 0) const Gap(10),
           Expanded(
+            flex: drawFlex > 0 ? drawFlex : 1,
             child: Container(
               height: 15,
               decoration: BoxDecoration(
@@ -58,21 +84,24 @@ class CardIndicatorThreeH2H extends StatelessWidget {
             ),
           ),
         ],
-        const Gap(10),
-        Expanded(
-          flex: 2,
-          child: Container(
-            height: 15,
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor,
-              borderRadius: BorderRadius.circular(15),
+        if (awayWins > 0) ...[
+          if (homeWins > 0 || (!hideMid && draws > 0)) const Gap(10),
+          Expanded(
+            flex: awayFlex > 0 ? awayFlex : 1,
+            child: Container(
+              height: 15,
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: BorderRadius.circular(15),
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
 }
+
 
 class CardIndicatorEvent extends StatelessWidget {
   const CardIndicatorEvent({super.key, required this.homeValue, required this.awayValue});

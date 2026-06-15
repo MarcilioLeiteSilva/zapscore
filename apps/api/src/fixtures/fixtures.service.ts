@@ -231,18 +231,25 @@ export class FixturesService {
     // 3. Mapear os resultados passados de forma limpa e desacoplada
     const matches = (rawH2H || []).map((m: any) => ({
       id: m.fixture.id,
+      externalId: m.fixture.id,
+      season: m.league.season,
       date: m.fixture.date,
-      venue: m.fixture.venue?.name,
+      venueName: m.fixture.venue?.name,
+      venueCity: m.fixture.venue?.city,
       round: m.league.round,
+      elapsed: m.fixture.status.elapsed,
       league: {
+        externalId: m.league.id,
         name: m.league.name,
         logo: m.league.logo,
       },
       homeTeam: {
+        externalId: m.teams.home.id,
         name: m.teams.home.name,
         logo: m.teams.home.logo,
       },
       awayTeam: {
+        externalId: m.teams.away.id,
         name: m.teams.away.name,
         logo: m.teams.away.logo,
       },
