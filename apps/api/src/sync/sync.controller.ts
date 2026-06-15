@@ -38,7 +38,12 @@ export class SyncController {
 
   @Post('fixture/:id')
   async syncFixture(@Param('id', ParseIntPipe) id: number) {
-    return this.syncService.syncByExternalId(id);
+    try {
+      return await this.syncService.syncByExternalId(id);
+    } catch (err: any) {
+      this.logger.error(`Error in syncFixture ${id}: ${err.message}`, err.stack);
+      return { success: false, error: err.message, stack: err.stack };
+    }
   }
 
   @Post('standings')
@@ -49,7 +54,12 @@ export class SyncController {
   @Post('live')
   async syncLive(@Body() body: { leagueId?: number }) {
     this.logger.log(`Live sync triggered for ${JSON.stringify(body)}`);
-    return this.syncService.syncLive(body.leagueId);
+    try {
+      return await this.syncService.syncLive(body.leagueId);
+    } catch (err: any) {
+      this.logger.error(`Error in syncLive: ${err.message}`, err.stack);
+      return { success: false, error: err.message, stack: err.stack };
+    }
   }
 
   @Post('scorers')
@@ -61,7 +71,12 @@ export class SyncController {
   @Post('today')
   async syncToday() {
     this.logger.log('Today sync triggered');
-    return this.syncService.syncToday();
+    try {
+      return await this.syncService.syncToday();
+    } catch (err: any) {
+      this.logger.error(`Error in syncToday: ${err.message}`, err.stack);
+      return { success: false, error: err.message, stack: err.stack };
+    }
   }
 
   @Post('repair-photos')
