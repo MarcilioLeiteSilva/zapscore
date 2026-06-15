@@ -14,8 +14,13 @@ export class ApiFootballService {
     private readonly configService: ConfigService,
   ) {
     this.baseUrl = this.configService.get<string>('API_FOOTBALL_BASE_URL', 'https://v3.football.api-sports.io');
-    this.apiKey = this.configService.get<string>('API_FOOTBALL_KEY', '');
+    let key = this.configService.get<string>('API_FOOTBALL_KEY', '');
+    if (key) {
+      key = key.trim().replace(/_REAL$/i, '').replace(/REAL$/i, '');
+    }
+    this.apiKey = key;
   }
+
 
   private get headers() {
     return {
