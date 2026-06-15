@@ -58,7 +58,10 @@ INSTRUÇÕES DE RESPOSTA:
 1. Responda ESTRITAMENTE em formato JSON.
 2. A resposta deve ser apenas o JSON válido, sem comentários adicionais fora do JSON.
 3. Se lineupsFactored for verdadeiro, significa que as escalações de hoje estão confirmadas na análise. Leve isso em consideração no seu comentário técnico.
-4. Idioma da análise: Português (pt-BR).
+4. Analise as cotações ("marketOdds") como referencial de probabilidade implícita do mercado. Uma odd muito baixa indica amplo favoritismo. Verifique se as ausências ou os splits de desempenho justificam ir contra ou a favor dessa expectativa.
+5. Pondere a lista de ausências confirmadas ("absences"). Desfalques de jogadores-chave (como goleiro ou artilheiro) devem atenuar o favoritismo estatístico da equipe.
+6. Compare o aproveitamento de mandante do time da casa (usando "playedHome", "winsHome", etc.) com o aproveitamento de visitante do time de fora (usando "playedAway", "winsAway", etc.) para calibrar o peso real do fator campo.
+7. Idioma da análise: Português (pt-BR).
 
 FORMATO JSON ESPERADO:
 {

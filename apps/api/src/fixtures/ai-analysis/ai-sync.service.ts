@@ -70,26 +70,22 @@ export class AiSyncService {
       }),
     ]);
 
-    // 4. Carregar estatísticas acumuladas dos times (TeamStatistics)
+    // 4. Carregar/Sincronizar estatísticas acumuladas dos times (TeamStatistics) com a API-Football
     const [homeStats, awayStats] = await Promise.all([
-      this.prisma.teamStatistic.findUnique({
-        where: {
-          teamId_leagueId_season: {
-            teamId: fixture.homeTeamId,
-            leagueId: fixture.leagueId,
-            season: fixture.season,
-          },
-        },
-      }),
-      this.prisma.teamStatistic.findUnique({
-        where: {
-          teamId_leagueId_season: {
-            leagueId: fixture.leagueId,
-            teamId: fixture.awayTeamId,
-            season: fixture.season,
-          },
-        },
-      }),
+      this.getOrSyncTeamStats(
+        fixture.homeTeamId,
+        fixture.homeTeam.externalId,
+        fixture.leagueId,
+        fixture.league.externalId,
+        fixture.season,
+      ),
+      this.getOrSyncTeamStats(
+        fixture.awayTeamId,
+        fixture.awayTeam.externalId,
+        fixture.leagueId,
+        fixture.league.externalId,
+        fixture.season,
+      ),
     ]);
 
     // 5. Carregar últimos confrontos de cada time (Forma recente)
@@ -172,7 +168,79 @@ export class AiSyncService {
       };
     });
 
-    // 6. Formatar o pacote de dados para o prompt da IA
+    // 6. Buscar Odds de mercado da API-Football
+    let odds: any = null;
+    try {
+      if (fixture.externalId) {
+        const rawOdds = await this.apiFootball.getOdds(fixture.externalId);
+        if (rawOdds && rawOdds.length > 0) {
+          const bookmakers = rawOdds[0].bookmakers;
+          const bookmaker = bookmakers?.find((b: any) => b.id === 1) || bookmakers?.[0];
+          const bet = bookmaker?.bets?.find((b: any) => b.id === 1); // 1 = Match Winner (1X2)
+          if (bet && bet.values) {
+            const hOdd = bet.values.find((v: any) => v.value === 'Home')?.odd;
+            const dOdd = bet.values.find((v: any) => v.value === 'Draw')?.odd;
+            const aOdd = bet.values.find((v: any) => v.value === 'Away')?.odd;
+            if (hOdd && dOdd && aOdd) {
+              odds = {
+                home: parseFloat(hOdd),
+                draw: parseFloat(dOdd),
+                away: parseFloat(aOdd),
+              };
+              
+              // Salvar no banco local
+              await this.prisma.fixture.update({
+                where: { id: fixture.id },
+                data: {
+                  oddsHome: odds.home,
+                  oddsDraw: odds.draw,
+                  oddsAway: odds.away,
+                },
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Error fetching real odds for AI Sync: ${err.message}`);
+    }
+
+    if (!odds && fixture.oddsHome !== null && fixture.oddsDraw !== null && fixture.oddsAway !== null) {
+      odds = {
+        home: fixture.oddsHome,
+        draw: fixture.oddsDraw,
+        away: fixture.oddsAway,
+      };
+    }
+
+    // 7. Buscar lesões/suspensões confirmadas da API-Football
+    let absences: any[] = [];
+    try {
+      if (fixture.externalId) {
+        const rawInjuries = await this.apiFootball.getInjuries(fixture.externalId);
+        if (rawInjuries && rawInjuries.length > 0) {
+          absences = rawInjuries.map((inj: any) => ({
+            teamId: inj.team.id,
+            teamName: inj.team.name,
+            player: inj.player.name,
+            type: inj.player.type || 'Missing',
+            reason: inj.player.reason || 'N/A',
+          }));
+        }
+      }
+    } catch (err) {
+      this.logger.error(`Error fetching real injuries for AI Sync: ${err.message}`);
+    }
+
+    const homeAbsences = absences
+      .filter((a) => a.teamId === fixture.homeTeam.externalId)
+      .map((a) => `${a.player} (${a.type}: ${a.reason})`);
+
+    const awayAbsences = absences
+      .filter((a) => a.teamId === fixture.awayTeam.externalId)
+      .map((a) => `${a.player} (${a.type}: ${a.reason})`);
+
+    // 8. Formatar o pacote de dados para o prompt da IA
     const matchData = {
       competition: fixture.league.name,
       round: fixture.round,
@@ -192,10 +260,10 @@ export class AiSyncService {
             return `${result} (${myGoals}-${oppGoals} vs ${oppName})`;
           }),
           stats: homeStats ? {
-            played: homeStats.playedTotal,
-            wins: homeStats.winsTotal,
-            draws: homeStats.drawsTotal,
-            losses: homeStats.losesTotal,
+            playedTotal: homeStats.playedTotal,
+            winsTotal: homeStats.winsTotal,
+            drawsTotal: homeStats.drawsTotal,
+            lossesTotal: homeStats.losesTotal,
             goalsScoredAvg: homeStats.goalsForAverage,
             goalsConcededAvg: homeStats.goalsAgainstAvg,
             cleanSheets: homeStats.cleanSheets,
@@ -203,6 +271,13 @@ export class AiSyncService {
             avgPossession: homeStats.avgPossession,
             avgShots: homeStats.avgShots,
             avgShotsOnTarget: homeStats.avgShotsOnTarget,
+            // Splits de mandante
+            playedHome: homeStats.playedHome,
+            winsHome: homeStats.winsHome,
+            drawsHome: homeStats.drawsHome,
+            lossesHome: homeStats.lossesHome,
+            goalsScoredHome: homeStats.goalsForHome,
+            goalsConcededHome: homeStats.goalsAgainstHome,
           } : null,
         },
         away: {
@@ -218,10 +293,10 @@ export class AiSyncService {
             return `${result} (${myGoals}-${oppGoals} vs ${oppName})`;
           }),
           stats: awayStats ? {
-            played: awayStats.playedTotal,
-            wins: awayStats.winsTotal,
-            draws: awayStats.drawsTotal,
-            losses: awayStats.losesTotal,
+            playedTotal: awayStats.playedTotal,
+            winsTotal: awayStats.winsTotal,
+            drawsTotal: awayStats.drawsTotal,
+            lossesTotal: awayStats.losesTotal,
             goalsScoredAvg: awayStats.goalsForAverage,
             goalsConcededAvg: awayStats.goalsAgainstAvg,
             cleanSheets: awayStats.cleanSheets,
@@ -229,10 +304,22 @@ export class AiSyncService {
             avgPossession: awayStats.avgPossession,
             avgShots: awayStats.avgShots,
             avgShotsOnTarget: awayStats.avgShotsOnTarget,
+            // Splits de visitante
+            playedAway: awayStats.playedAway,
+            winsAway: awayStats.winsAway,
+            drawsAway: awayStats.drawsAway,
+            lossesAway: awayStats.lossesAway,
+            goalsScoredAway: awayStats.goalsForAway,
+            goalsConcededAway: awayStats.goalsAgainstAway,
           } : null,
         },
       },
       headToHead: formattedH2H,
+      marketOdds: odds,
+      absences: {
+        home: homeAbsences,
+        away: awayAbsences,
+      },
       lineups: shouldFactorLineups ? {
         homeStartingXI: fixture.lineups
           .filter(l => l.teamId === fixture.homeTeam.externalId && l.isStart)
@@ -409,5 +496,115 @@ export class AiSyncService {
 
     // Fallback padrão se não for mapeado por regras acima
     return true; 
+  }
+
+  private async getOrSyncTeamStats(
+    teamId: string,
+    teamExternalId: number,
+    leagueId: string,
+    leagueExternalId: number,
+    season: number,
+  ) {
+    let stats = await this.prisma.teamStatistic.findUnique({
+      where: {
+        teamId_leagueId_season: {
+          teamId,
+          leagueId,
+          season,
+        },
+      },
+    });
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    if (!stats || stats.updatedAt < oneDayAgo) {
+      try {
+        const rawStats = await this.apiFootball.get('/teams/statistics', {
+          team: teamExternalId,
+          league: leagueExternalId,
+          season,
+        });
+
+        if (rawStats) {
+          stats = await this.prisma.teamStatistic.upsert({
+            where: {
+              teamId_leagueId_season: {
+                teamId,
+                leagueId,
+                season,
+              },
+            },
+            update: {
+              playedTotal: rawStats.fixtures.played.total ?? 0,
+              winsTotal: rawStats.fixtures.wins.total ?? 0,
+              drawsTotal: rawStats.fixtures.draws.total ?? 0,
+              losesTotal: rawStats.fixtures.loses.total ?? 0,
+
+              playedHome: rawStats.fixtures.played.home ?? 0,
+              winsHome: rawStats.fixtures.wins.home ?? 0,
+              drawsHome: rawStats.fixtures.draws.home ?? 0,
+              lossesHome: rawStats.fixtures.loses.home ?? 0,
+
+              playedAway: rawStats.fixtures.played.away ?? 0,
+              winsAway: rawStats.fixtures.wins.away ?? 0,
+              drawsAway: rawStats.fixtures.draws.away ?? 0,
+              lossesAway: rawStats.fixtures.loses.away ?? 0,
+
+              goalsForTotal: rawStats.goals.for.total.total ?? 0,
+              goalsAgainstTotal: rawStats.goals.against.total.total ?? 0,
+              goalsForAverage: parseFloat(rawStats.goals.for.average.total) || 0,
+              goalsAgainstAvg: parseFloat(rawStats.goals.against.average.total) || 0,
+
+              goalsForHome: rawStats.goals.for.total.home ?? 0,
+              goalsAgainstHome: rawStats.goals.against.total.home ?? 0,
+              goalsForAway: rawStats.goals.for.total.away ?? 0,
+              goalsAgainstAway: rawStats.goals.against.total.away ?? 0,
+
+              cleanSheets: rawStats.clean_sheet.total ?? 0,
+              failedToScore: rawStats.failed_to_score.total ?? 0,
+              avgPossession: rawStats.avgPossession ? parseFloat(rawStats.avgPossession) : null,
+              avgShots: rawStats.avgShots ? parseFloat(rawStats.avgShots) : null,
+            },
+            create: {
+              teamId,
+              leagueId,
+              season,
+              playedTotal: rawStats.fixtures.played.total ?? 0,
+              winsTotal: rawStats.fixtures.wins.total ?? 0,
+              drawsTotal: rawStats.fixtures.draws.total ?? 0,
+              losesTotal: rawStats.fixtures.loses.total ?? 0,
+
+              playedHome: rawStats.fixtures.played.home ?? 0,
+              winsHome: rawStats.fixtures.wins.home ?? 0,
+              drawsHome: rawStats.fixtures.draws.home ?? 0,
+              lossesHome: rawStats.fixtures.loses.home ?? 0,
+
+              playedAway: rawStats.fixtures.played.away ?? 0,
+              winsAway: rawStats.fixtures.wins.away ?? 0,
+              drawsAway: rawStats.fixtures.draws.away ?? 0,
+              lossesAway: rawStats.fixtures.loses.away ?? 0,
+
+              goalsForTotal: rawStats.goals.for.total.total ?? 0,
+              goalsAgainstTotal: rawStats.goals.against.total.total ?? 0,
+              goalsForAverage: parseFloat(rawStats.goals.for.average.total) || 0,
+              goalsAgainstAvg: parseFloat(rawStats.goals.against.average.total) || 0,
+
+              goalsForHome: rawStats.goals.for.total.home ?? 0,
+              goalsAgainstHome: rawStats.goals.against.total.home ?? 0,
+              goalsForAway: rawStats.goals.for.total.away ?? 0,
+              goalsAgainstAway: rawStats.goals.against.total.away ?? 0,
+
+              cleanSheets: rawStats.clean_sheet.total ?? 0,
+              failedToScore: rawStats.failed_to_score.total ?? 0,
+              avgPossession: rawStats.avgPossession ? parseFloat(rawStats.avgPossession) : null,
+              avgShots: rawStats.avgShots ? parseFloat(rawStats.avgShots) : null,
+            },
+          });
+        }
+      } catch (err) {
+        this.logger.error(`Error syncing team statistics from API-Football: ${err.message}`);
+      }
+    }
+
+    return stats;
   }
 }

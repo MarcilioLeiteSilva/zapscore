@@ -58,6 +58,18 @@ export class ApiFootballService {
     });
   }
 
+  async getOdds(fixtureExternalId: number) {
+    return this.get('/odds', {
+      fixture: fixtureExternalId,
+    });
+  }
+
+  async getInjuries(fixtureExternalId: number) {
+    return this.get('/injuries', {
+      fixture: fixtureExternalId,
+    });
+  }
+
   async get(endpoint: string, params: any) {
     if (!this.apiKey) {
       this.logger.error('API_FOOTBALL_KEY is not defined');

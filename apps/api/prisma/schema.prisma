@@ -67,6 +67,9 @@ model Fixture {
   awayTeamId  String
   homeGoals   Int?
   awayGoals   Int?
+  oddsHome    Float?
+  oddsDraw    Float?
+  oddsAway    Float?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -163,12 +166,27 @@ model TeamStatistic {
   winsTotal        Int      @default(0)
   drawsTotal       Int      @default(0)
   losesTotal       Int      @default(0)
+
+  playedHome       Int      @default(0)
+  winsHome         Int      @default(0)
+  drawsHome        Int      @default(0)
+  lossesHome       Int      @default(0)
+
+  playedAway       Int      @default(0)
+  winsAway         Int      @default(0)
+  drawsAway        Int      @default(0)
+  lossesAway       Int      @default(0)
   
   // Goals
   goalsForTotal    Int      @default(0)
   goalsAgainstTotal Int     @default(0)
   goalsForAverage  Float    @default(0)
   goalsAgainstAvg  Float    @default(0)
+
+  goalsForHome     Int      @default(0)
+  goalsAgainstHome Int      @default(0)
+  goalsForAway     Int      @default(0)
+  goalsAgainstAway Int      @default(0)
   
   // Discipline & Others
   cleanSheets      Int      @default(0)
