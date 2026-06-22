@@ -64,6 +64,22 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     type: 'cup',
     activeSeasons: [2026],
   },
+  {
+    code: 'BR_MINEIRO_1',
+    externalId: 629,
+    name: 'Campeonato Mineiro Módulo 1',
+    country: 'Brazil',
+    type: 'league',
+    activeSeasons: [2026],
+  },
+  {
+    code: 'BR_MINEIRO_2',
+    externalId: 619,
+    name: 'Campeonato Mineiro Módulo 2',
+    country: 'Brazil',
+    type: 'league',
+    activeSeasons: [2026],
+  },
 ];
 
 export const DEFAULT_COMPETITION = {
