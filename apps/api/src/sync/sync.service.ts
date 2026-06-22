@@ -249,43 +249,50 @@ export class SyncService {
         }
       }
 
-      // 3. Sincronizar Escalações
-      const lineups = await this.apiFootball.get('/fixtures/lineups', { fixture: externalFixtureId });
-      if (lineups && lineups.length > 0) {
-        await this.prisma.fixtureLineup.deleteMany({ where: { fixtureId: fixture.id } });
-        for (const l of lineups) {
-          const teamId = l.team.id;
-          if (l.startXI && l.startXI.length > 0) {
-            for (const p of l.startXI) {
-              await this.prisma.fixtureLineup.create({
-                data: {
-                  fixtureId: fixture.id,
-                  teamId,
-                  player: p.player.name,
-                  number: p.player.number,
-                  pos: p.player.pos,
-                  grid: p.player.grid,
-                  isStart: true,
-                  playerPhoto: p.player.photo || (p.player.id ? `https://media.api-sports.io/football/players/${p.player.id}.png` : null),
-                  externalPlayerId: p.player.id
-                }
-              });
+      // 3. Sincronizar Escalações (Otimizado: apenas busca se não tivermos ou se o jogo ainda não começou)
+      const isMatchStarted = !['NS', 'TBD'].includes(fixture.statusShort || '');
+      const hasLineups = await this.prisma.fixtureLineup.count({
+        where: { fixtureId: fixture.id }
+      }) > 0;
+
+      if (!hasLineups || !isMatchStarted) {
+        const lineups = await this.apiFootball.get('/fixtures/lineups', { fixture: externalFixtureId });
+        if (lineups && lineups.length > 0) {
+          await this.prisma.fixtureLineup.deleteMany({ where: { fixtureId: fixture.id } });
+          for (const l of lineups) {
+            const teamId = l.team.id;
+            if (l.startXI && l.startXI.length > 0) {
+              for (const p of l.startXI) {
+                await this.prisma.fixtureLineup.create({
+                  data: {
+                    fixtureId: fixture.id,
+                    teamId,
+                    player: p.player.name,
+                    number: p.player.number,
+                    pos: p.player.pos,
+                    grid: p.player.grid,
+                    isStart: true,
+                    playerPhoto: p.player.photo || (p.player.id ? `https://media.api-sports.io/football/players/${p.player.id}.png` : null),
+                    externalPlayerId: p.player.id
+                  }
+                });
+              }
             }
-          }
-          if (l.substitutes && l.substitutes.length > 0) {
-            for (const p of l.substitutes) {
-              await this.prisma.fixtureLineup.create({
-                data: {
-                  fixtureId: fixture.id,
-                  teamId,
-                  player: p.player.name,
-                  number: p.player.number,
-                  pos: p.player.pos,
-                  isStart: false,
-                  playerPhoto: p.player.photo || (p.player.id ? `https://media.api-sports.io/football/players/${p.player.id}.png` : null),
-                  externalPlayerId: p.player.id
-                }
-              });
+            if (l.substitutes && l.substitutes.length > 0) {
+              for (const p of l.substitutes) {
+                await this.prisma.fixtureLineup.create({
+                  data: {
+                    fixtureId: fixture.id,
+                    teamId,
+                    player: p.player.name,
+                    number: p.player.number,
+                    pos: p.player.pos,
+                    isStart: false,
+                    playerPhoto: p.player.photo || (p.player.id ? `https://media.api-sports.io/football/players/${p.player.id}.png` : null),
+                    externalPlayerId: p.player.id
+                  }
+                });
+              }
             }
           }
         }
