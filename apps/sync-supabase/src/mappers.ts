@@ -135,10 +135,12 @@ export function mapLineupsToSupabase(
   for (const p of lineups) {
     if (!byTeam[p.teamId]) byTeam[p.teamId] = { startXI: [], substitutes: [] };
     const entry = {
-      name:   p.player,
-      number: p.number ?? null,
-      pos:    p.pos    ?? null,
-      grid:   p.grid   ?? null,
+      name:      p.player,
+      number:    p.number ?? null,
+      pos:       p.pos    ?? null,
+      grid:      p.grid   ?? null,
+      photo:     p.playerPhoto ?? null,
+      player_id: p.externalPlayerId ?? null,
     };
     if (p.isStart) {
       byTeam[p.teamId].startXI.push(entry);
