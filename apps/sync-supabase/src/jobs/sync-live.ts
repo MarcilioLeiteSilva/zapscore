@@ -7,6 +7,7 @@ import {
   mapLineupsToSupabase,
   mapSyncControl,
 } from '../mappers';
+import { sendMatchNotification } from '../services/fcmService';
 
 const LEAGUE_ID = parseInt(process.env.BRASILEIRAO_LEAGUE_ID ?? '71', 10);
 const LIVE_STATUSES = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'];
@@ -40,6 +41,13 @@ export async function syncLive() {
 
   for (const fixture of liveFixtures) {
     try {
+      // Obter o estado de sincronização anterior para identificar mudanças de status (início/fim de jogo)
+      const { data: existingSync } = await supabase
+        .from('fixture_sync_control')
+        .select('status_short, is_live')
+        .eq('fixture_id', fixture.externalId)
+        .maybeSingle();
+
       // 1. Upsert do match principal (placar, minuto, status)
       const matchRow = mapFixtureToMatch(fixture);
       const { error: matchErr } = await supabase
@@ -47,14 +55,100 @@ export async function syncLive() {
         .upsert(matchRow, { onConflict: 'id' });
       if (matchErr) console.error(`[sync-live] Erro upsert match ${fixture.id}: ${matchErr.message}`);
 
+      // Verificar mudança de status para disparo de notificações (início/fim de jogo)
+      const wasLive = existingSync?.is_live ?? false;
+      const isNowLive = ['1H','2H','HT','ET','P','BT','LIVE'].includes(fixture.statusShort ?? '');
+
+      // Notificação de Início de Partida (MATCH_START)
+      const justStarted = !wasLive && isNowLive && (!existingSync || existingSync.status_short === 'NS' || fixture.statusShort === '1H');
+      if (justStarted) {
+        console.log(`🟢 [sync-live] Partida iniciada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
+        sendMatchNotification(supabase, {
+          type: 'MATCH_START',
+          matchUuid: matchRow.id,
+          homeTeamUuid: matchRow.home_team_id,
+          awayTeamUuid: matchRow.away_team_id,
+          homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
+          awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
+          homeScore: fixture.homeGoals ?? 0,
+          awayScore: fixture.awayGoals ?? 0,
+        }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação MATCH_START:", err));
+      }
+
+      // Notificação de Fim de Partida (MATCH_END)
+      const isNowFinished = ['FT','AET','PEN'].includes(fixture.statusShort ?? '');
+      const justFinished = wasLive && isNowFinished;
+      if (justFinished) {
+        console.log(`🔴 [sync-live] Partida finalizada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
+        sendMatchNotification(supabase, {
+          type: 'MATCH_END',
+          matchUuid: matchRow.id,
+          homeTeamUuid: matchRow.home_team_id,
+          awayTeamUuid: matchRow.away_team_id,
+          homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
+          awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
+          homeScore: fixture.homeGoals ?? 0,
+          awayScore: fixture.awayGoals ?? 0,
+        }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação MATCH_END:", err));
+      }
+
       // 2. Eventos (gols, cartões, substituições)
       const events = await ZapScoreClient.getFixtureEvents(fixture.id);
       if (events.length > 0) {
+        // Buscar gols existentes no banco antes da deleção para saber quais são novos
+        let existingGoals: any[] = [];
+        try {
+          const { data, error } = await supabase
+            .from('fixture_events')
+            .select('minute, player_name')
+            .eq('fixture_id', fixture.externalId)
+            .eq('type', 'Goal');
+          if (!error && data) {
+            existingGoals = data;
+          }
+        } catch (evtSearchErr: any) {
+          console.error(`[sync-live] Erro ao buscar gols antigos para fixture ${fixture.id}:`, evtSearchErr.message);
+        }
+
         // Limpa eventos anteriores e reinsere (padrão do Supabase self-hosted)
         await supabase.from('fixture_events').delete().eq('fixture_id', fixture.externalId);
         const eventRows = events.map(e => mapEventToSupabase(e, fixture.externalId));
         const { error: evtErr } = await supabase.from('fixture_events').insert(eventRows);
-        if (evtErr) console.error(`[sync-live] Erro inserir eventos ${fixture.id}: ${evtErr.message}`);
+        if (evtErr) {
+          console.error(`[sync-live] Erro inserir eventos ${fixture.id}: ${evtErr.message}`);
+        } else {
+          // Identificar e notificar novos gols
+          const apiGoals = events.filter(e => e.type === 'Goal');
+          for (const apiGoal of apiGoals) {
+            const minute = apiGoal.time;
+            const playerName = apiGoal.player;
+
+            const alreadyExists = existingGoals.some(
+              eg => eg.minute === minute && eg.player_name === playerName
+            );
+
+            if (!alreadyExists) {
+              const goalTeamName = (apiGoal.teamId === fixture.homeTeamId || apiGoal.teamId === fixture.homeTeam?.id)
+                ? (fixture.homeTeam?.name ?? 'Time da Casa')
+                : (fixture.awayTeam?.name ?? 'Time Visitante');
+
+              console.log(`⚽ [sync-live] Novo gol detectado: ${playerName} (${minute}') - Disparando notificação...`);
+              sendMatchNotification(supabase, {
+                type: 'GOAL',
+                matchUuid: matchRow.id,
+                homeTeamUuid: matchRow.home_team_id,
+                awayTeamUuid: matchRow.away_team_id,
+                homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
+                awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
+                homeScore: fixture.homeGoals ?? 0,
+                awayScore: fixture.awayGoals ?? 0,
+                playerName: playerName ?? 'Jogador Desconhecido',
+                minute: minute,
+                goalTeamName: goalTeamName
+              }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação GOAL:", err));
+            }
+          }
+        }
       }
 
       // 3. Estatísticas (JSONB por time)
