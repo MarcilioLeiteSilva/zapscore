@@ -2,18 +2,23 @@ import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
 import { SupabaseClient } from '@supabase/supabase-js';
 
-// Inicialização do SDK Admin de forma segura e modular
+// Inicialização do SDK Admin usando variáveis de ambiente individuais
 let isFirebaseInitialized = false;
 
 if (getApps().length === 0) {
-  const jsonStr = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!jsonStr) {
-    console.warn('⚠️ [FCM] FIREBASE_SERVICE_ACCOUNT_JSON não configurada nas variáveis de ambiente.');
+  const projectId   = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  // O EasyPanel armazena \n como literal; convertemos para quebra de linha real
+  const privateKey  = process.env.FIREBASE_PRIVATE_KEY
+    ?.replace(/^"|"$/g, '') // remove aspas extras se houver
+    ?.replace(/\\n/g, '\n');
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.warn('⚠️ [FCM] Variáveis FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL ou FIREBASE_PRIVATE_KEY não configuradas. Notificações desabilitadas.');
   } else {
     try {
-      const serviceAccount = JSON.parse(jsonStr);
       initializeApp({
-        credential: cert(serviceAccount)
+        credential: cert({ projectId, clientEmail, privateKey })
       });
       isFirebaseInitialized = true;
       console.log('📡 [FCM] Firebase Admin SDK inicializado com sucesso.');
