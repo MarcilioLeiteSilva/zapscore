@@ -18,6 +18,7 @@ export function mapFixtureToMatch(f: any) {
   return {
     id:                      supabaseMatchId ?? f.id,       // Mantém o ID do Supabase ou usa o do ZapScore se for novo
     api_football_fixture_id: f.externalId,                  // id externo da API-Football (int64)
+    external_id:             String(f.externalId),
     api_football_league_id:  f.league?.externalId ?? 71,
     league_internal_id:      supabaseLeagueId ?? f.leagueId ?? f.league?.id,
     home_team_id:            supabaseHomeTeamId ?? f.homeTeamId ?? f.homeTeam?.id,
@@ -25,6 +26,7 @@ export function mapFixtureToMatch(f: any) {
     starts_at:               f.date,
     season:                  f.season,
     round:                   f.round ?? null,
+    phase:                   f.round ?? 'Regular Season',
     status:                  f.statusLong ?? null,
     status_short:            f.statusShort ?? null,
     status_long:             f.statusLong ?? null,
