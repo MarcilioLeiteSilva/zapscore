@@ -300,7 +300,12 @@ def sincronizar_videos():
             }
 
             try:
-                supabase.table('videos').upsert(payload, on_conflict="external_id").execute()
+                existing = supabase.table('videos').select('id').eq('external_id', video_id).execute()
+                if existing.data:
+                    row_id = existing.data[0]['id']
+                    supabase.table('videos').update(payload).eq('id', row_id).execute()
+                else:
+                    supabase.table('videos').insert(payload).execute()
                 synced_count += 1
             except Exception as e:
                 print(f"⚠️ [Vídeos] Erro ao salvar vídeo [{title}]: {e}", flush=True)
@@ -320,21 +325,40 @@ def main():
         
         # 🟢 1. RASPAGEM DE PARTIDAS (A cada ciclo - 60s)
         try:
-            res = supabase.table("matches").select("id, scraper_url").not_.is_("scraper_url", "null").execute()
-            matches_ativos = res.data or []
-            print(f"Partidas encontradas com scraper_url: {len(matches_ativos)}", flush=True)
+            matches_ativos = []
+            try:
+                res = supabase.table("matches").select("id, scraper_url, external_id").execute()
+                matches_ativos = res.data or []
+            except Exception as e_col:
+                try:
+                    res = supabase.table("matches").select("id, external_id").execute()
+                    matches_ativos = res.data or []
+                except Exception as e_ext:
+                    print(f"Erro ao buscar partidas no banco: {e_ext}", flush=True)
 
+            matches_com_url = 0
             for item in matches_ativos:
                 match_id = str(item["id"])
                 scraper_url = item.get("scraper_url")
+                ext_id = item.get("external_id")
+
+                if not scraper_url and ext_id:
+                    if str(ext_id).isdigit():
+                        scraper_url = f"https://api.sofascore.com/api/v1/event/{ext_id}"
+                    elif str(ext_id).startswith("http"):
+                        scraper_url = str(ext_id)
+
                 if not scraper_url:
                     continue
 
+                matches_com_url += 1
                 stats, match_info, match_events, match_lineups = coletar_fonte_a(match_id, scraper_url)
                 if match_info:
                     salvar_estatisticas(stats, match_info, match_events, match_lineups, match_id)
                 else:
                     print(f"Aviso: Coleta SofaScore falhou para Match: {match_id}.", flush=True)
+
+            print(f"Partidas processadas nesta rodada: {matches_com_url}", flush=True)
 
         except Exception as e:
             print(f"Erro no ciclo de raspagem de partidas: {e}", flush=True)
@@ -350,4 +374,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
