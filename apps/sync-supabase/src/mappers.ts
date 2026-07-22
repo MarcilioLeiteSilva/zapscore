@@ -1,5 +1,11 @@
 import { IdMapper } from './id-mapper';
 
+function mapStatus(short: string): string {
+  if (['FT','AET','PEN'].includes(short)) return 'FT';
+  if (['1H','2H','HT','ET','P','BT','LIVE'].includes(short)) return 'LIVE';
+  return 'FUTURE';
+}
+
 /**
  * Mappers: ZapScore API schema → Supabase Brasileirão schema
  *
@@ -27,7 +33,7 @@ export function mapFixtureToMatch(f: any) {
     season:                  f.season,
     round:                   f.round ?? null,
     phase:                   f.round ?? 'Regular Season',
-    status:                  f.statusLong ?? null,
+    status:                  mapStatus(f.statusShort ?? ''),
     status_short:            f.statusShort ?? null,
     status_long:             f.statusLong ?? null,
     minute:                  f.elapsed != null ? String(f.elapsed) : null,
