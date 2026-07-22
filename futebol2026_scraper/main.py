@@ -32,12 +32,35 @@ def limpar_html(texto):
     except Exception:
         return str(texto).strip()
 
+TEAM_NICKNAMES = {
+    "flamengo": ["flamengo", "mengão", "mengo", "fla"],
+    "palmeiras": ["palmeiras", "verdão", "verdao"],
+    "corinthians": ["corinthians", "timão", "timao"],
+    "são paulo": ["são paulo", "sao paulo", "tricolor paulista", "spfc"],
+    "santos": ["santos", "peixe"],
+    "botafogo": ["botafogo", "fogão", "fogao", "bota"],
+    "fluminense": ["fluminense", "flu", "tricolor das laranjeiras"],
+    "vasco": ["vasco", "gigante da colina", "vascão", "vascao"],
+    "grêmio": ["grêmio", "gremio", "tricolor gaúcho", "tricolor gaucho"],
+    "internacional": ["internacional", "inter", "colorado"],
+    "atlético": ["atlético-mg", "atletico-mg", "atlético mg", "atletico mg", "galo"],
+    "cruzeiro": ["cruzeiro", "cabuloso", "raposa"],
+    "bahia": ["bahia", "tricolor de aço", "esquadrão"],
+    "fortaleza": ["fortaleza", "leão do pici", "leao do pici"],
+    "athletico": ["athletico", "furacão", "furacao", "athletico-pr", "atletico-pr"],
+    "red bull bragantino": ["bragantino", "red bull", "massa bruta"],
+    "juventude": ["juventude", "jove"],
+    "cuiabá": ["cuiabá", "cuiaba", "dourado"],
+    "vitória": ["vitória", "vitoria", "leão da barra"],
+    "criciúma": ["criciúma", "criciuma", "tigre"]
+}
+
 def sincronizar_noticias():
     print("📰 [Notícias] Iniciando sincronização do Google RSS Feed...", flush=True)
     try:
         teams = []
         try:
-            res_teams = supabase.table("teams").select("name, crest_url").execute()
+            res_teams = supabase.table("teams").select("name, flag_url, crest_url").execute()
             teams = res_teams.data or []
         except Exception as e:
             print(f"⚠️ [Notícias] Não foi possível carregar times para imagem: {e}", flush=True)
@@ -70,19 +93,32 @@ def sincronizar_noticias():
             if not clean_description or clean_description == clean_title:
                 clean_description = f"Notícia completa sobre {clean_title}."
 
-            # 📸 Atribuição do Escudo do Time Relacionado
+            # 📸 Atribuição do Escudo do Time Relacionado (flag_url / crest_url)
             image_url = None
             text_to_check = f"{clean_title} {clean_description}".lower()
 
             if teams:
                 for team in teams:
                     team_name = team.get("name", "")
-                    crest = team.get("crest_url")
-                    if team_name and crest:
-                        norm_name = team_name.lower().replace("-mg", "").replace("-sc", "").replace("-pr", "").strip()
-                        if len(norm_name) >= 3 and norm_name in text_to_check:
-                            image_url = crest
-                            break
+                    crest = team.get("flag_url") or team.get("crest_url")
+                    if not team_name or not crest:
+                        continue
+
+                    norm_name = team_name.lower().replace("cr ", "").replace("se ", "").replace("ec ", "").replace("sc ", "").replace("-mg", "").replace("-sc", "").replace("-pr", "").strip()
+
+                    matched = False
+                    if len(norm_name) >= 3 and norm_name in text_to_check:
+                        matched = True
+                    else:
+                        for key, nicknames in TEAM_NICKNAMES.items():
+                            if key in norm_name or norm_name in key:
+                                if any(nick in text_to_check for nick in nicknames):
+                                    matched = True
+                                    break
+
+                    if matched:
+                        image_url = crest
+                        break
 
             if not image_url:
                 image_url = DEFAULT_NEWS_IMAGE
