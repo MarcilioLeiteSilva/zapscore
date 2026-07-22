@@ -16,8 +16,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 NEWS_FEED_URL = "https://news.google.com/rss/search?q=Brasileirao+2026&hl=pt-BR&gl=BR&ceid=BR:pt-419"
 DEFAULT_NEWS_IMAGE = "https://upload.wikimedia.org/wikipedia/pt/f/f4/Campeonato_Brasileiro_S%C3%A9rie_A_logo.png"
 
-YOUTUBE_CHANNEL_ID = "UCXdss612A2FpMDAalMniSMg"
-YOUTUBE_FEED_URL = f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
+YOUTUBE_CHANNELS = [
+    {"id": "UCgCKagVhzGnZcuP9bSMgMCg", "name": "GE"},
+    {"id": "UC3KHYFWeB0WimMBfm3NEahQ", "name": "UOL Esporte"},
+    {"id": "UCs-6sCz2LJm1PrWQN4ErsPw", "name": "TNT Sports"},
+    {"id": "UC6RD83p2Hlum9aURp3pASeQ", "name": "Prime Video Sport Brasil"}
+]
 
 def limpar_html(texto):
     if not texto:
@@ -133,70 +137,97 @@ def sincronizar_noticias():
         print(f"❌ [Notícias] Erro ao sincronizar: {e}", flush=True)
 
 def sincronizar_videos():
-    print("🎥 [Vídeos] Iniciando sincronização do YouTube RSS Feed...", flush=True)
-    try:
-        feed = feedparser.parse(YOUTUBE_FEED_URL)
-        if not feed.entries:
-            print("⚠️ [Vídeos] Nenhum vídeo retornado do feed.", flush=True)
-            return
+    print("🎥 [Vídeos] Iniciando sincronização dos canais do YouTube...", flush=True)
+    total_synced = 0
 
-        synced_count = 0
+    for channel in YOUTUBE_CHANNELS:
+        channel_id = channel["id"]
+        channel_name = channel["name"]
+        feed_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
-        for entry in feed.entries:
-            video_id = getattr(entry, "yt_videoid", None)
-            if not video_id:
-                entry_id = getattr(entry, "id", "")
-                if "yt:video:" in entry_id:
-                    video_id = entry_id.replace("yt:video:", "")
-                elif "watch?v=" in getattr(entry, "link", ""):
-                    video_id = entry.link.split("watch?v=")[-1].split("&")[0]
-
-            if not video_id:
+        try:
+            feed = feedparser.parse(feed_url)
+            if not feed.entries:
+                print(f"⚠️ [Vídeos] Nenhum vídeo retornado para o canal {channel_name} ({channel_id}).", flush=True)
                 continue
 
-            title = getattr(entry, "title", "Vídeo do Brasileirão")
-            description = getattr(entry, "summary", "Melhores Momentos - Futebol Max TV")
+            synced_count = 0
 
-            published_at = datetime.utcnow().isoformat() + "Z"
-            if hasattr(entry, "published_parsed") and entry.published_parsed:
-                try:
-                    dt = datetime(*entry.published_parsed[:6])
-                    published_at = dt.isoformat() + "Z"
-                except Exception:
-                    pass
+            for entry in feed.entries:
+                video_id = getattr(entry, "yt_videoid", None)
+                if not video_id:
+                    entry_id = getattr(entry, "id", "")
+                    if "yt:video:" in entry_id:
+                        video_id = entry_id.replace("yt:video:", "")
+                    elif "watch?v=" in getattr(entry, "link", ""):
+                        video_id = entry.link.split("watch?v=")[-1].split("&")[0]
 
-            thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-            video_url = f"https://www.youtube.com/watch?v={video_id}"
+                if not video_id:
+                    continue
 
-            category = "GOLS" if ("gol" in title.lower() or "gols" in title.lower()) else "MELHORES MOMENTOS"
+                title = getattr(entry, "title", "Vídeo de Futebol")
+                description = getattr(entry, "summary", f"Conteúdo em vídeo - {channel_name}")
 
-            payload = {
-                "external_id": video_id,
-                "title": title,
-                "description": description[:300] if description else title,
-                "thumbnail_url": thumbnail_url,
-                "video_url": video_url,
-                "provider": "YOUTUBE",
-                "category": category,
-                "published_at": published_at,
-                "is_featured": True
-            }
+                # 🔍 Filtros de Relevância: Brasileirão + 2026 + (Gols ou Melhores Momentos)
+                text_check = f"{title} {description}".lower()
 
-            try:
-                existing = supabase.table("videos").select("id").eq("external_id", video_id).execute()
-                if existing.data:
-                    row_id = existing.data[0]["id"]
-                    supabase.table("videos").update(payload).eq("id", row_id).execute()
+                has_brasileirao = any(term in text_check for term in ["brasileirão", "brasileirao", "campeonato brasileiro"])
+                has_2026 = "2026" in text_check
+
+                if not (has_brasileirao and has_2026):
+                    continue
+
+                is_gol = any(term in text_check for term in ["gol", "gols", "golaço", "golaços"])
+                is_melhores_momentos = any(term in text_check for term in ["melhores momentos", "lances", "resumo"])
+
+                if is_gol:
+                    category = "GOLS"
+                elif is_melhores_momentos:
+                    category = "MELHORES MOMENTOS"
                 else:
-                    supabase.table("videos").insert(payload).execute()
-                synced_count += 1
-            except Exception as e:
-                print(f"⚠️ [Vídeos] Erro ao salvar vídeo [{title}]: {e}", flush=True)
+                    continue
 
-        print(f"✅ [Vídeos] Concluído! {synced_count} vídeos sincronizados.", flush=True)
+                published_at = datetime.utcnow().isoformat() + "Z"
+                if hasattr(entry, "published_parsed") and entry.published_parsed:
+                    try:
+                        dt = datetime(*entry.published_parsed[:6])
+                        published_at = dt.isoformat() + "Z"
+                    except Exception:
+                        pass
 
-    except Exception as e:
-        print(f"❌ [Vídeos] Erro ao sincronizar: {e}", flush=True)
+                thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+                payload = {
+                    "external_id": video_id,
+                    "title": title,
+                    "description": description[:300] if description else title,
+                    "thumbnail_url": thumbnail_url,
+                    "video_url": video_url,
+                    "provider": "YOUTUBE",
+                    "category": category,
+                    "published_at": published_at,
+                    "is_featured": True
+                }
+
+                try:
+                    existing = supabase.table("videos").select("id").eq("external_id", video_id).execute()
+                    if existing.data:
+                        row_id = existing.data[0]["id"]
+                        supabase.table("videos").update(payload).eq("id", row_id).execute()
+                    else:
+                        supabase.table("videos").insert(payload).execute()
+                    synced_count += 1
+                except Exception as e:
+                    print(f"⚠️ [Vídeos] Erro ao salvar vídeo [{title}]: {e}", flush=True)
+
+            total_synced += synced_count
+            print(f"  └─ {channel_name}: {synced_count} vídeos sincronizados.", flush=True)
+
+        except Exception as e:
+            print(f"❌ [Vídeos] Erro ao sincronizar canal {channel_name}: {e}", flush=True)
+
+    print(f"✅ [Vídeos] Concluído! Total de {total_synced} vídeos sincronizados entre todos os canais.", flush=True)
 
 def main():
     cycle_count = 0

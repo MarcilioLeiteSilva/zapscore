@@ -1,0 +1,45 @@
+# Plano de Implementação - Ajuste no futebol2026_scraper (Notícias, Vídeos e Escudos dos Times)
+
+Este documento descreve as alterações no serviço `futebol2026_scraper` para focar exclusivamente na sincronização de **Notícias** e **Vídeos** (removendo qualquer lógica de partidas) e corrigir a atribuição do **escudo do time** correspondente em cada notícia.
+
+---
+
+## User Review Required
+
+> [!NOTE]
+> O scraper continuará rodando em ciclo contínuo (intervalo de 1 hora) buscando novidades no Google News RSS e YouTube RSS. 
+
+> [!IMPORTANT]
+> Notícias antigas que atualmente possuem a imagem padrão (`DEFAULT_NEWS_IMAGE`) ou valor nulo serão reavaliadas e atualizadas com o escudo do time correto assim que a nova lógica de pareamento for executada.
+
+---
+
+## Proposed Changes
+
+### [Scraper Service - futebol2026_scraper]
+
+#### [MODIFY] [main.py](file:///d:/zapscore/futebol2026_scraper/main.py)
+
+1. **Escopo Estrito (Notícias & Vídeos)**:
+   - Garantir que apenas as funções `sincronizar_noticias()` e `sincronizar_videos()` sejam chamadas no loop principal do serviço.
+
+2. **Correção do Carregamento dos Escudos dos Times**:
+   - Ajustar a consulta à tabela `teams` para selecionar tanto `crest_url` quanto `flag_url` (`select("id, name, crest_url, flag_url")`).
+   - Utilizar o fallback `team.get("crest_url") or team.get("flag_url")` para garantir que o URL do escudo seja obtido independente de qual coluna esteja populada no banco de dados.
+
+3. **Normalização de Texto e Mapeamento de Apelidos/Nomes dos Times**:
+   - Implementar normalização de texto (conversão para minúsculas e remoção de acentos/diacríticos).
+   - Criar um dicionário de equivalência com siglas e apelidos dos times do Brasileirão (ex: `Flamengo` -> `["flamengo", "mengão", "mengo", "fla"]`, `Palmeiras` -> `["palmeiras", "verdão"]`, `Atlético-MG` -> `["atlético-mg", "atletico mg", "galo"]`, etc.).
+
+4. **Atualização de Registros Existentes no Banco**:
+   - Garantir que notícias já salvas que ainda estejam usando a imagem genérica da Série A sejam atualizadas no Supabase assim que o escudo do time correto for identificado.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Criar e executar um script de diagnóstico rápido em Python para testar a captura dos times da tabela `teams` e validar o algoritmo de pareamento contra um lote de notícias reais do RSS.
+
+### Manual Verification
+- Verificar no painel/banco de dados Supabase se os registros da tabela `news` passaram a ter `image_url` preenchido com a URL do escudo do time identificado na matéria (em vez de `DEFAULT_NEWS_IMAGE`).
