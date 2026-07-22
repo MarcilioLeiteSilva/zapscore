@@ -15,7 +15,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 NEWS_FEED_URL = "https://news.google.com/rss/search?q=Brasileirao+2026&hl=pt-BR&gl=BR&ceid=BR:pt-419"
-DEFAULT_NEWS_IMAGE = "https://upload.wikimedia.org/wikipedia/pt/f/f4/Campeonato_Brasileiro_S%C3%A9rie_A_logo.png"
+DEFAULT_NEWS_IMAGE = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800"
 
 YOUTUBE_CHANNELS = [
     {"id": "UCgCKagVhzGnZcuP9bSMgMCg", "name": "GE"},
