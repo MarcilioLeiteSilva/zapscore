@@ -148,7 +148,7 @@ export function mapLineupsToSupabase(
       pos:       p.pos    ?? null,
       grid:      p.grid   ?? null,
       photo:     p.playerPhoto ?? null,
-      player_id: p.externalPlayerId ?? null,
+      id:        p.externalPlayerId ?? null,
     };
     if (p.isStart) {
       byTeam[p.teamId].startXI.push(entry);
