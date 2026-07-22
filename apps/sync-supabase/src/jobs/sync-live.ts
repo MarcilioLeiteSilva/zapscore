@@ -28,8 +28,25 @@ export async function syncLive() {
     return;
   }
 
+  // Busca partidas marcadas como LIVE no banco de dados para capturar a transição para encerrado (FT)
+  let dbLiveIds = new Set<string>();
+  try {
+    const { data: dbLiveMatches } = await supabase
+      .from('matches')
+      .select('external_id')
+      .eq('status', 'LIVE');
+    if (dbLiveMatches) {
+      dbLiveMatches.forEach(m => {
+        if (m.external_id) dbLiveIds.add(String(m.external_id));
+      });
+    }
+  } catch (dbErr: any) {
+    console.error(`[sync-live] Erro ao buscar partidas LIVE no banco: ${dbErr.message}`);
+  }
+
+  // Filtra partidas que estão ao vivo na API OU que eram ao vivo no banco (para atualizar o encerramento)
   const liveFixtures = fixtures.filter(f =>
-    LIVE_STATUSES.includes(f.statusShort ?? '')
+    LIVE_STATUSES.includes(f.statusShort ?? '') || dbLiveIds.has(String(f.externalId))
   );
 
   if (liveFixtures.length === 0) {
@@ -37,7 +54,7 @@ export async function syncLive() {
     return;
   }
 
-  console.log(`[sync-live] ${liveFixtures.length} partida(s) ao vivo detectada(s).`);
+  console.log(`[sync-live] ${liveFixtures.length} partida(s) em processamento (live/transição).`);
 
   for (const fixture of liveFixtures) {
     try {
