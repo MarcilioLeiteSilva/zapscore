@@ -1,5 +1,6 @@
 import os
 import time
+import requests
 import feedparser
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -31,6 +32,31 @@ def limpar_html(texto):
         return soup.get_text().strip()
     except Exception:
         return str(texto).strip()
+
+def extrair_imagem_og(url_materia):
+    if not url_materia:
+        return None
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        res = requests.get(url_materia, headers=headers, timeout=5, allow_redirects=True)
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text, "html.parser")
+            og_image = soup.find("meta", property="og:image") or soup.find("meta", attrs={"name": "og:image"})
+            if og_image and og_image.get("content"):
+                img_src = og_image["content"].strip()
+                if img_src.startswith("http"):
+                    return img_src
+
+            tw_image = soup.find("meta", property="twitter:image") or soup.find("meta", attrs={"name": "twitter:image"})
+            if tw_image and tw_image.get("content"):
+                img_src = tw_image["content"].strip()
+                if img_src.startswith("http"):
+                    return img_src
+    except Exception:
+        pass
+    return None
 
 TEAM_NICKNAMES = {
     "flamengo": ["flamengo", "mengão", "mengo", "fla"],
@@ -93,11 +119,12 @@ def sincronizar_noticias():
             if not clean_description or clean_description == clean_title:
                 clean_description = f"Notícia completa sobre {clean_title}."
 
-            # 📸 Atribuição do Escudo do Time Relacionado (flag_url / crest_url)
-            image_url = None
-            text_to_check = f"{clean_title} {clean_description}".lower()
+            # 📸 1ª Opção: Capturar a Foto Real da Matéria na URL original
+            image_url = extrair_imagem_og(link)
 
-            if teams:
+            # 📸 2ª Opção (Fallback): Escudo do Time Relacionado (flag_url / crest_url)
+            if not image_url and teams:
+                text_to_check = f"{clean_title} {clean_description}".lower()
                 for team in teams:
                     team_name = team.get("name", "")
                     crest = team.get("flag_url") or team.get("crest_url")
@@ -120,6 +147,7 @@ def sincronizar_noticias():
                         image_url = crest
                         break
 
+            # 📸 3ª Opção (Fallback final): Imagem Padrão da Série A
             if not image_url:
                 image_url = DEFAULT_NEWS_IMAGE
 
