@@ -155,7 +155,12 @@ export async function syncLive() {
             );
 
             if (!alreadyExists) {
-              const goalTeamName = (apiGoal.teamId === fixture.homeTeamId || apiGoal.teamId === fixture.homeTeam?.id)
+              const isHomeGoal = (
+                apiGoal.teamId === fixture.homeTeam?.externalId ||
+                apiGoal.teamId === fixture.homeTeamId ||
+                apiGoal.teamId === fixture.homeTeam?.id
+              );
+              const goalTeamName = isHomeGoal
                 ? (fixture.homeTeam?.name ?? 'Time da Casa')
                 : (fixture.awayTeam?.name ?? 'Time Visitante');
 
