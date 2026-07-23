@@ -71,7 +71,7 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
     // 1. Buscar perfis ativos (com notificações habilitadas e FCM token preenchido)
     const { data: profiles, error: pErr } = await supabase
       .from('user_profiles')
-      .select('id, fcm_token')
+      .select('id, fcm_token, favorite_team_id')
       .eq('notifications_enabled', true)
       .not('fcm_token', 'is', null);
 
@@ -88,13 +88,28 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
 
     let usersWhoFavoritedTeams = new Set<string>();
     let usersWhoFavoritedMatch = new Set<string>();
+    let teamIdsToSearch: string[] = [homeTeamUuid, awayTeamUuid];
 
     if (!isGlobalNotification) {
+      // Obter também os external_id numéricos dos times em campo
+      const { data: teamsData } = await supabase
+        .from('teams')
+        .select('id, external_id')
+        .in('id', [homeTeamUuid, awayTeamUuid]);
+
+      if (teamsData) {
+        teamsData.forEach(t => {
+          if (t.external_id && !teamIdsToSearch.includes(t.external_id)) {
+            teamIdsToSearch.push(t.external_id);
+          }
+        });
+      }
+
       // 2. Buscar favoritos de times em campo (apenas para eventos que não são globais)
       const { data: favTeams, error: tErr } = await supabase
         .from('user_favorite_teams')
         .select('user_id, team_id')
-        .in('team_id', [homeTeamUuid, awayTeamUuid]);
+        .in('team_id', teamIdsToSearch);
 
       if (tErr) {
         console.error('❌ [FCM] Erro ao buscar times favoritos no Supabase:', tErr.message);
@@ -135,10 +150,11 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
     }
 
     for (const profile of profiles) {
+      const isProfileFav = profile.favorite_team_id != null && teamIdsToSearch.includes(profile.favorite_team_id);
       const hasTeamFav = usersWhoFavoritedTeams.has(profile.id);
       const hasMatchFav = usersWhoFavoritedMatch.has(profile.id);
 
-      if (isGlobalNotification || hasTeamFav || hasMatchFav) {
+      if (isGlobalNotification || isProfileFav || hasTeamFav || hasMatchFav) {
         targetTokens.push(profile.fcm_token);
         logsToInsert.push({
           user_id: profile.id,
