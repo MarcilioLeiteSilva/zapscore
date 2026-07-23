@@ -77,13 +77,19 @@ export async function syncLive() {
         .upsert(matchRow, { onConflict: 'id' });
       if (matchErr) console.error(`[sync-live] Erro upsert match ${fixture.id}: ${matchErr.message}`);
 
+      // IDs candidatos para verificação de logs
+      const candidateMatchIds = [matchRow.id];
+      if (dbMatch?.id && !candidateMatchIds.includes(dbMatch.id)) {
+        candidateMatchIds.push(dbMatch.id);
+      }
+
       // Notificação de Início de Partida (MATCH_START)
       const isNowLive = ['1H','2H','HT','ET','P','BT','LIVE'].includes(fixture.statusShort ?? '');
       if (isNowLive) {
         const { data: existingStartLog } = await supabase
           .from('notification_logs')
           .select('id')
-          .eq('match_id', matchRow.id)
+          .in('match_id', candidateMatchIds)
           .eq('type', 'MATCH_START')
           .maybeSingle();
 
@@ -108,7 +114,7 @@ export async function syncLive() {
         const { data: existingEndLog } = await supabase
           .from('notification_logs')
           .select('id')
-          .eq('match_id', matchRow.id)
+          .in('match_id', candidateMatchIds)
           .eq('type', 'MATCH_END')
           .maybeSingle();
 
