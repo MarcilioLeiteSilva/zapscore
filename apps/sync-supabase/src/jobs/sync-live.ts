@@ -60,8 +60,18 @@ export async function syncLive() {
 
   for (const fixture of liveFixtures) {
     try {
-      // 1. Upsert do match principal (placar, minuto, status)
+      // 1. Resolve o UUID real da partida existente no Supabase por external_id
+      const { data: dbMatch } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('external_id', String(fixture.externalId))
+        .maybeSingle();
+
       const matchRow = mapFixtureToMatch(fixture);
+      if (dbMatch?.id) {
+        matchRow.id = dbMatch.id;
+      }
+
       const { error: matchErr } = await supabase
         .from('matches')
         .upsert(matchRow, { onConflict: 'id' });
