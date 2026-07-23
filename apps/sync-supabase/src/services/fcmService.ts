@@ -182,17 +182,33 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
     // Remover tokens duplicados
     const uniqueTokens = Array.from(new Set(targetTokens));
 
-    // 4. Enviar notificação via Firebase
+    // 4. Enviar notificação via Firebase com alta prioridade e canal Android
     const message = {
       notification: {
         title: title,
         body: body,
       },
+      android: {
+        priority: 'high' as const,
+        notification: {
+          channelId: 'futebol_gols_channel',
+          sound: 'default',
+          priority: 'high' as const,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            contentAvailable: true,
+          },
+        },
+      },
       data: {
         match_id: matchUuid,
-        type: type
+        type: type,
       },
-      tokens: uniqueTokens
+      tokens: uniqueTokens,
     };
 
     console.log(`📡 [FCM] Enviando push multicast de ${type} para ${uniqueTokens.length} dispositivo(s)...`);
