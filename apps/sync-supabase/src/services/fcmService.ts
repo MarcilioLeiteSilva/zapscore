@@ -84,31 +84,37 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
       return;
     }
 
-    // 2. Buscar favoritos de times em campo (apenas os times envolvidos)
-    const { data: favTeams, error: tErr } = await supabase
-      .from('user_favorite_teams')
-      .select('user_id, team_id')
-      .in('team_id', [homeTeamUuid, awayTeamUuid]);
+    const isGlobalNotification = type === 'MATCH_START' || type === 'MATCH_END';
 
-    if (tErr) {
-      console.error('❌ [FCM] Erro ao buscar times favoritos no Supabase:', tErr.message);
-      return;
+    let usersWhoFavoritedTeams = new Set<string>();
+    let usersWhoFavoritedMatch = new Set<string>();
+
+    if (!isGlobalNotification) {
+      // 2. Buscar favoritos de times em campo (apenas para eventos que não são globais)
+      const { data: favTeams, error: tErr } = await supabase
+        .from('user_favorite_teams')
+        .select('user_id, team_id')
+        .in('team_id', [homeTeamUuid, awayTeamUuid]);
+
+      if (tErr) {
+        console.error('❌ [FCM] Erro ao buscar times favoritos no Supabase:', tErr.message);
+        return;
+      }
+
+      // 3. Buscar favoritos desta partida específica
+      const { data: favMatches, error: mErr } = await supabase
+        .from('user_favorite_matches')
+        .select('user_id')
+        .eq('match_id', matchUuid);
+
+      if (mErr) {
+        console.error('❌ [FCM] Erro ao buscar partidas favoritas no Supabase:', mErr.message);
+        return;
+      }
+
+      usersWhoFavoritedTeams = new Set(favTeams?.map(ft => ft.user_id) || []);
+      usersWhoFavoritedMatch = new Set(favMatches?.map(fm => fm.user_id) || []);
     }
-
-    // 3. Buscar favoritos desta partida específica
-    const { data: favMatches, error: mErr } = await supabase
-      .from('user_favorite_matches')
-      .select('user_id')
-      .eq('match_id', matchUuid);
-
-    if (mErr) {
-      console.error('❌ [FCM] Erro ao buscar partidas favoritas no Supabase:', mErr.message);
-      return;
-    }
-
-    // Criar conjuntos para busca O(1) em memória
-    const usersWhoFavoritedTeams = new Set(favTeams?.map(ft => ft.user_id) || []);
-    const usersWhoFavoritedMatch = new Set(favMatches?.map(fm => fm.user_id) || []);
 
     const targetTokens: string[] = [];
     const logsToInsert: any[] = [];
@@ -132,7 +138,7 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
       const hasTeamFav = usersWhoFavoritedTeams.has(profile.id);
       const hasMatchFav = usersWhoFavoritedMatch.has(profile.id);
 
-      if (hasTeamFav || hasMatchFav) {
+      if (isGlobalNotification || hasTeamFav || hasMatchFav) {
         targetTokens.push(profile.fcm_token);
         logsToInsert.push({
           user_id: profile.id,
@@ -146,7 +152,7 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
     }
 
     if (targetTokens.length === 0) {
-      console.log(`📡 [FCM] Ninguém favoritou a partida ou os times em campo. Nenhuma notificação enviada para o evento ${type}.`);
+      console.log(`📡 [FCM] Nenhum destinatário elegível encontrado para o evento ${type}. Notificação não enviada.`);
       return;
     }
 
