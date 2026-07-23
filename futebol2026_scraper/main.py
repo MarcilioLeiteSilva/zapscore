@@ -122,6 +122,7 @@ def sincronizar_noticias():
 
         inserted_count = 0
         updated_count = 0
+        seen_titles = set()
 
         for entry in feed.entries:
             title_raw = getattr(entry, "title", "")
@@ -138,6 +139,23 @@ def sincronizar_noticias():
                 parts = title_raw.rsplit(" - ", 1)
                 clean_title = parts[0].strip()
                 source_name = parts[1].strip()
+
+            norm_title = clean_title.lower().strip()
+
+            # 🔍 Filtro 1: Evitar títulos duplicados no mesmo lote de notícias
+            if norm_title in seen_titles:
+                print(f"⏩ [Notícias] Ignorando notícia com título duplicado no lote: '{clean_title}'", flush=True)
+                continue
+            seen_titles.add(norm_title)
+
+            # 🔍 Filtro 2: Verificar se já existe notícia no banco de dados com o mesmo TÍTULO
+            try:
+                existing_title = supabase.table("news").select("id").eq("title", clean_title).execute()
+                if existing_title.data:
+                    print(f"⏩ [Notícias] Ignorando notícia com título já existente no banco: '{clean_title}'", flush=True)
+                    continue
+            except Exception:
+                pass
 
             clean_description = limpar_html(summary_raw)
             if not clean_description or clean_description == clean_title:
@@ -316,17 +334,17 @@ def sincronizar_videos():
 
 def main():
     cycle_count = 0
-    print("🚀 Serviço de Notícias e Vídeos iniciado com sucesso! (Intervalo: 1 hora)", flush=True)
+    print("🚀 Serviço de Notícias e Vídeos iniciado com sucesso! (Intervalo: 6 horas)", flush=True)
     
     while True:
         cycle_count += 1
-        print(f"\n--- Ciclo #{cycle_count} de Sincronização (1h) ---", flush=True)
+        print(f"\n--- Ciclo #{cycle_count} de Sincronização (6h) ---", flush=True)
         
         sincronizar_noticias()
         sincronizar_videos()
 
-        print("--- Aguardando 1 hora (3600 segundos) para a próxima sincronização ---", flush=True)
-        time.sleep(3600)
+        print("--- Aguardando 6 horas (21600 segundos) para a próxima sincronização ---", flush=True)
+        time.sleep(21600)
 
 if __name__ == "__main__":
     main()
