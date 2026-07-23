@@ -44,10 +44,10 @@ export async function syncLive() {
     console.error(`[sync-live] Erro ao buscar partidas LIVE no banco: ${dbErr.message}`);
   }
 
-  // Filtra partidas que estão ao vivo, finalizadas ou que eram ao vivo no banco
+  // Filtra partidas ao vivo OU que eram LIVE no banco (captura transição FT)
+  // Partidas FT que nunca passaram por LIVE no banco são ignoradas (evita loop)
   const liveFixtures = fixtures.filter(f =>
     LIVE_STATUSES.includes(f.statusShort ?? '') ||
-    ['FT','AET','PEN'].includes(f.statusShort ?? '') ||
     dbLiveIds.has(String(f.externalId))
   );
 
@@ -60,16 +60,17 @@ export async function syncLive() {
 
   for (const fixture of liveFixtures) {
     try {
-      // 1. Resolve o UUID real da partida existente no Supabase por external_id
-      const { data: dbMatch } = await supabase
-        .from('matches')
-        .select('id')
-        .eq('external_id', String(fixture.externalId))
+      // 1. Busca o registro de sync control para usar como flag de notificação
+      const { data: syncCtrlData } = await supabase
+        .from('fixture_sync_control')
+        .select('match_id, match_end_notified')
+        .eq('fixture_id', fixture.externalId)
         .maybeSingle();
 
       const matchRow = mapFixtureToMatch(fixture);
-      if (dbMatch?.id) {
-        matchRow.id = dbMatch.id;
+      // Usa o UUID real do banco se disponível
+      if (syncCtrlData?.match_id) {
+        matchRow.id = syncCtrlData.match_id;
       }
 
       const { error: matchErr } = await supabase
@@ -77,19 +78,13 @@ export async function syncLive() {
         .upsert(matchRow, { onConflict: 'id' });
       if (matchErr) console.error(`[sync-live] Erro upsert match ${fixture.id}: ${matchErr.message}`);
 
-      // IDs candidatos para verificação de logs
-      const candidateMatchIds = [matchRow.id];
-      if (dbMatch?.id && !candidateMatchIds.includes(dbMatch.id)) {
-        candidateMatchIds.push(dbMatch.id);
-      }
-
       // Notificação de Início de Partida (MATCH_START)
       const isNowLive = ['1H','2H','HT','ET','P','BT','LIVE'].includes(fixture.statusShort ?? '');
       if (isNowLive) {
         const { data: existingStartLog } = await supabase
           .from('notification_logs')
           .select('id')
-          .in('match_id', candidateMatchIds)
+          .eq('match_id', syncCtrlData?.match_id ?? matchRow.id)
           .eq('type', 'MATCH_START')
           .maybeSingle();
 
@@ -108,13 +103,14 @@ export async function syncLive() {
         }
       }
 
-      // Notificação de Fim de Partida (MATCH_END)
+      // Notificação de Fim de Partida (MATCH_END) — usando match_id real do syncCtrl
       const isNowFinished = ['FT','AET','PEN'].includes(fixture.statusShort ?? '');
       if (isNowFinished) {
+        const realMatchId = syncCtrlData?.match_id ?? matchRow.id;
         const { data: existingEndLog } = await supabase
           .from('notification_logs')
           .select('id')
-          .in('match_id', candidateMatchIds)
+          .eq('match_id', realMatchId)
           .eq('type', 'MATCH_END')
           .maybeSingle();
 
@@ -122,7 +118,7 @@ export async function syncLive() {
           console.log(`🔴 [sync-live] Partida finalizada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
           sendMatchNotification(supabase, {
             type: 'MATCH_END',
-            matchUuid: matchRow.id,
+            matchUuid: realMatchId,
             homeTeamUuid: matchRow.home_team_id,
             awayTeamUuid: matchRow.away_team_id,
             homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
