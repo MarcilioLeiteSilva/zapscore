@@ -44,27 +44,22 @@ export async function syncLive() {
     console.error(`[sync-live] Erro ao buscar partidas LIVE no banco: ${dbErr.message}`);
   }
 
-  // Filtra partidas que estão ao vivo na API OU que eram ao vivo no banco (para atualizar o encerramento)
+  // Filtra partidas que estão ao vivo, finalizadas ou que eram ao vivo no banco
   const liveFixtures = fixtures.filter(f =>
-    LIVE_STATUSES.includes(f.statusShort ?? '') || dbLiveIds.has(String(f.externalId))
+    LIVE_STATUSES.includes(f.statusShort ?? '') ||
+    ['FT','AET','PEN'].includes(f.statusShort ?? '') ||
+    dbLiveIds.has(String(f.externalId))
   );
 
   if (liveFixtures.length === 0) {
-    console.log(`[sync-live] Nenhuma partida ao vivo no momento.`);
+    console.log(`[sync-live] Nenhuma partida ao vivo ou recém-finalizada no momento.`);
     return;
   }
 
-  console.log(`[sync-live] ${liveFixtures.length} partida(s) em processamento (live/transição).`);
+  console.log(`[sync-live] ${liveFixtures.length} partida(s) em processamento (live/transição/fim).`);
 
   for (const fixture of liveFixtures) {
     try {
-      // Obter o estado de sincronização anterior para identificar mudanças de status (início/fim de jogo)
-      const { data: existingSync } = await supabase
-        .from('fixture_sync_control')
-        .select('status_short, is_live')
-        .eq('fixture_id', fixture.externalId)
-        .maybeSingle();
-
       // 1. Upsert do match principal (placar, minuto, status)
       const matchRow = mapFixtureToMatch(fixture);
       const { error: matchErr } = await supabase
@@ -72,41 +67,54 @@ export async function syncLive() {
         .upsert(matchRow, { onConflict: 'id' });
       if (matchErr) console.error(`[sync-live] Erro upsert match ${fixture.id}: ${matchErr.message}`);
 
-      // Verificar mudança de status para disparo de notificações (início/fim de jogo)
-      const wasLive = existingSync?.is_live ?? false;
-      const isNowLive = ['1H','2H','HT','ET','P','BT','LIVE'].includes(fixture.statusShort ?? '');
-
       // Notificação de Início de Partida (MATCH_START)
-      const justStarted = !wasLive && isNowLive && (!existingSync || existingSync.status_short === 'NS' || fixture.statusShort === '1H');
-      if (justStarted) {
-        console.log(`🟢 [sync-live] Partida iniciada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
-        sendMatchNotification(supabase, {
-          type: 'MATCH_START',
-          matchUuid: matchRow.id,
-          homeTeamUuid: matchRow.home_team_id,
-          awayTeamUuid: matchRow.away_team_id,
-          homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
-          awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
-          homeScore: fixture.homeGoals ?? 0,
-          awayScore: fixture.awayGoals ?? 0,
-        }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação MATCH_START:", err));
+      const isNowLive = ['1H','2H','HT','ET','P','BT','LIVE'].includes(fixture.statusShort ?? '');
+      if (isNowLive) {
+        const { data: existingStartLog } = await supabase
+          .from('notification_logs')
+          .select('id')
+          .eq('match_id', matchRow.id)
+          .eq('type', 'MATCH_START')
+          .maybeSingle();
+
+        if (!existingStartLog) {
+          console.log(`🟢 [sync-live] Partida iniciada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
+          sendMatchNotification(supabase, {
+            type: 'MATCH_START',
+            matchUuid: matchRow.id,
+            homeTeamUuid: matchRow.home_team_id,
+            awayTeamUuid: matchRow.away_team_id,
+            homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
+            awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
+            homeScore: fixture.homeGoals ?? 0,
+            awayScore: fixture.awayGoals ?? 0,
+          }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação MATCH_START:", err));
+        }
       }
 
       // Notificação de Fim de Partida (MATCH_END)
       const isNowFinished = ['FT','AET','PEN'].includes(fixture.statusShort ?? '');
-      const justFinished = wasLive && isNowFinished;
-      if (justFinished) {
-        console.log(`🔴 [sync-live] Partida finalizada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
-        sendMatchNotification(supabase, {
-          type: 'MATCH_END',
-          matchUuid: matchRow.id,
-          homeTeamUuid: matchRow.home_team_id,
-          awayTeamUuid: matchRow.away_team_id,
-          homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
-          awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
-          homeScore: fixture.homeGoals ?? 0,
-          awayScore: fixture.awayGoals ?? 0,
-        }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação MATCH_END:", err));
+      if (isNowFinished) {
+        const { data: existingEndLog } = await supabase
+          .from('notification_logs')
+          .select('id')
+          .eq('match_id', matchRow.id)
+          .eq('type', 'MATCH_END')
+          .maybeSingle();
+
+        if (!existingEndLog) {
+          console.log(`🔴 [sync-live] Partida finalizada: ${fixture.homeTeam?.name ?? 'Time A'} x ${fixture.awayTeam?.name ?? 'Time B'} - Disparando notificação...`);
+          sendMatchNotification(supabase, {
+            type: 'MATCH_END',
+            matchUuid: matchRow.id,
+            homeTeamUuid: matchRow.home_team_id,
+            awayTeamUuid: matchRow.away_team_id,
+            homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
+            awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
+            homeScore: fixture.homeGoals ?? 0,
+            awayScore: fixture.awayGoals ?? 0,
+          }).catch(err => console.error("❌ [FCM] Erro ao disparar notificação MATCH_END:", err));
+        }
       }
 
       // 2. Eventos (gols, cartões, substituições)
