@@ -91,7 +91,7 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
     let teamIdsToSearch: string[] = [homeTeamUuid, awayTeamUuid];
 
     if (!isGlobalNotification) {
-      // Obter também os external_id numéricos dos times em campo
+      // Obter também os external_id numéricos dos times em campo para checagem em memória
       const { data: teamsData } = await supabase
         .from('teams')
         .select('id, external_id')
@@ -105,30 +105,37 @@ export async function sendMatchNotification(supabase: SupabaseClient, payload: N
         });
       }
 
-      // 2. Buscar favoritos de times em campo (apenas para eventos que não são globais)
-      const { data: favTeams, error: tErr } = await supabase
-        .from('user_favorite_teams')
-        .select('user_id, team_id')
-        .in('team_id', teamIdsToSearch);
+      // Filtrar apenas UUIDs válidos para consulta no Postgres na tabela user_favorite_teams
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validUuidTeamIds = teamIdsToSearch.filter(id => typeof id === 'string' && uuidRegex.test(id));
 
-      if (tErr) {
-        console.error('❌ [FCM] Erro ao buscar times favoritos no Supabase:', tErr.message);
-        return;
+      // 2. Buscar favoritos de times em campo (apenas com UUIDs válidos)
+      if (validUuidTeamIds.length > 0) {
+        const { data: favTeams, error: tErr } = await supabase
+          .from('user_favorite_teams')
+          .select('user_id, team_id')
+          .in('team_id', validUuidTeamIds);
+
+        if (tErr) {
+          console.error('❌ [FCM] Erro ao buscar times favoritos no Supabase:', tErr.message);
+        } else if (favTeams) {
+          usersWhoFavoritedTeams = new Set(favTeams.map(ft => ft.user_id));
+        }
       }
 
       // 3. Buscar favoritos desta partida específica
-      const { data: favMatches, error: mErr } = await supabase
-        .from('user_favorite_matches')
-        .select('user_id')
-        .eq('match_id', matchUuid);
+      if (uuidRegex.test(matchUuid)) {
+        const { data: favMatches, error: mErr } = await supabase
+          .from('user_favorite_matches')
+          .select('user_id')
+          .eq('match_id', matchUuid);
 
-      if (mErr) {
-        console.error('❌ [FCM] Erro ao buscar partidas favoritas no Supabase:', mErr.message);
-        return;
+        if (mErr) {
+          console.error('❌ [FCM] Erro ao buscar partidas favoritas no Supabase:', mErr.message);
+        } else if (favMatches) {
+          usersWhoFavoritedMatch = new Set(favMatches.map(fm => fm.user_id));
+        }
       }
-
-      usersWhoFavoritedTeams = new Set(favTeams?.map(ft => ft.user_id) || []);
-      usersWhoFavoritedMatch = new Set(favMatches?.map(fm => fm.user_id) || []);
     }
 
     const targetTokens: string[] = [];
