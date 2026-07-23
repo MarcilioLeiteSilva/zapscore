@@ -81,8 +81,32 @@ TEAM_NICKNAMES = {
     "criciúma": ["criciúma", "criciuma", "tigre"]
 }
 
+INVALID_IMAGE_TERMS = [
+    "googleusercontent.com",
+    "unsplash.com",
+    "news.google.com"
+]
+
+def eh_imagem_valida(url):
+    if not url or not isinstance(url, str):
+        return False
+    url_lower = url.lower()
+    return not any(term in url_lower for term in INVALID_IMAGE_TERMS)
+
+def limpar_noticias_invalidas():
+    """Deleta notícias da tabela news sem imagem válida ou com imagem do Google/Unsplash"""
+    try:
+        print("🧹 [Notícias] Deletando notícias sem imagem real do banco de dados...", flush=True)
+        supabase.table("news").delete().ilike("image_url", "%googleusercontent.com%").execute()
+        supabase.table("news").delete().ilike("image_url", "%unsplash.com%").execute()
+        supabase.table("news").delete().is_("image_url", "null").execute()
+    except Exception as e:
+        print(f"⚠️ [Notícias] Erro ao limpar notícias inválidas: {e}", flush=True)
+
 def sincronizar_noticias():
     print("📰 [Notícias] Iniciando sincronização do Google RSS Feed...", flush=True)
+    limpar_noticias_invalidas()
+
     try:
         teams = []
         try:
@@ -123,7 +147,7 @@ def sincronizar_noticias():
             image_url = extrair_imagem_og(link)
 
             # 📸 2ª Opção (Fallback): Escudo do Time Relacionado (flag_url / crest_url)
-            if not image_url and teams:
+            if not eh_imagem_valida(image_url) and teams:
                 text_to_check = f"{clean_title} {clean_description}".lower()
                 for team in teams:
                     team_name = team.get("name", "")
@@ -147,24 +171,21 @@ def sincronizar_noticias():
                         image_url = crest
                         break
 
-            # 📸 3ª Opção (Fallback final): Imagem Padrão da Série A
-            if not image_url:
-                image_url = DEFAULT_NEWS_IMAGE
+            # 🛑 Se a notícia não tem uma imagem válida (ou se for do Google/Unsplash), desconsidera
+            if not eh_imagem_valida(image_url):
+                print(f"⏩ [Notícias] Ignorando notícia sem imagem real: '{clean_title}'", flush=True)
+                continue
 
             try:
                 existing = supabase.table("news").select("id, image_url, summary").eq("article_url", link).execute()
                 if existing.data:
                     row = existing.data[0]
-                    updates = {}
-                    if not row.get("image_url") or row.get("image_url") == "null" or row.get("image_url") == DEFAULT_NEWS_IMAGE:
-                        if image_url != DEFAULT_NEWS_IMAGE:
-                            updates["image_url"] = image_url
-                    if not row.get("summary") or row.get("summary") == clean_title:
-                        updates["summary"] = clean_description[:300]
-                        updates["content"] = clean_description
-                    if updates:
-                        supabase.table("news").update(updates).eq("id", row["id"]).execute()
-                        updated_count += 1
+                    if not eh_imagem_valida(row.get("image_url")):
+                        if eh_imagem_valida(image_url):
+                            supabase.table("news").update({"image_url": image_url}).eq("id", row["id"]).execute()
+                            updated_count += 1
+                        else:
+                            supabase.table("news").delete().eq("id", row["id"]).execute()
                     continue
             except Exception:
                 pass
