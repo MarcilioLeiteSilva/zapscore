@@ -1,10 +1,27 @@
 import os
+import re
 import time
 import requests
 import feedparser
 from datetime import datetime
 from bs4 import BeautifulSoup
 from supabase import create_client, Client
+
+def extrair_confronto(titulo):
+    """
+    Identifica se o título contém um confronto entre dois times (ex: 'Flamengo x Palmeiras', 'Corinthians 3 x 0 Remo').
+    Retorna uma tupla ordenada alfabeticamente dos dois times em minúsculo, ou None se não houver confronto.
+    """
+    if not titulo:
+        return None
+    match = re.search(r'([A-Za-zÀ-ÿ]{3,}(?:\s+[A-Za-zÀ-ÿ]{3,})?)\s*(?:\d+)?\s*[xX×]\s*(?:\d+)?\s*([A-Za-zÀ-ÿ]{3,}(?:\s+[A-Za-zÀ-ÿ]{3,})?)', titulo)
+    if match:
+        t1 = match.group(1).strip().lower()
+        t2 = match.group(2).strip().lower()
+        palavras_invalidas = {"ao", "em", "de", "do", "da", "no", "na", "versus", "vs", "com", "por", "para"}
+        if t1 not in palavras_invalidas and t2 not in palavras_invalidas and len(t1) >= 3 and len(t2) >= 3:
+            return tuple(sorted([t1, t2]))
+    return None
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
@@ -123,6 +140,17 @@ def sincronizar_noticias():
         inserted_count = 0
         updated_count = 0
         seen_titles = set()
+        seen_confronts = set()
+
+        try:
+            res_recent = supabase.table("news").select("title").execute()
+            if res_recent.data:
+                for r in res_recent.data:
+                    c = extrair_confronto(r.get("title"))
+                    if c:
+                        seen_confronts.add(c)
+        except Exception as e:
+            print(f"⚠️ [Notícias] Erro ao carregar confrontos prévios: {e}", flush=True)
 
         for entry in feed.entries:
             title_raw = getattr(entry, "title", "")
@@ -148,7 +176,13 @@ def sincronizar_noticias():
                 continue
             seen_titles.add(norm_title)
 
-            # 🔍 Filtro 2: Verificar se já existe notícia no banco de dados com o mesmo TÍTULO
+            # 🔍 Filtro 2: Evitar notícias de confronto 'Time1 x Time2' já existente
+            confronto = extrair_confronto(clean_title)
+            if confronto and confronto in seen_confronts:
+                print(f"⏩ [Notícias] Ignorando notícia com confronto '{confronto[0]} x {confronto[1]}' já existente: '{clean_title}'", flush=True)
+                continue
+
+            # 🔍 Filtro 3: Verificar se já existe notícia no banco de dados com o mesmo TÍTULO
             try:
                 existing_title = supabase.table("news").select("id").eq("title", clean_title).execute()
                 if existing_title.data:
@@ -231,6 +265,8 @@ def sincronizar_noticias():
 
                 supabase.table("news").insert(payload).execute()
                 inserted_count += 1
+                if confronto:
+                    seen_confronts.add(confronto)
             except Exception as e:
                 print(f"⚠️ [Notícias] Erro ao inserir item '{clean_title}': {e}", flush=True)
 
@@ -242,6 +278,17 @@ def sincronizar_noticias():
 def sincronizar_videos():
     print("🎥 [Vídeos] Iniciando sincronização dos canais do YouTube...", flush=True)
     total_synced = 0
+
+    seen_video_confronts = set()
+    try:
+        res_v_recent = supabase.table("videos").select("title").execute()
+        if res_v_recent.data:
+            for r in res_v_recent.data:
+                c = extrair_confronto(r.get("title"))
+                if c:
+                    seen_video_confronts.add(c)
+    except Exception as e:
+        print(f"⚠️ [Vídeos] Erro ao carregar confrontos prévios: {e}", flush=True)
 
     for channel in YOUTUBE_CHANNELS:
         channel_id = channel["id"]
@@ -270,6 +317,12 @@ def sincronizar_videos():
 
                 title = getattr(entry, "title", "Vídeo de Futebol")
                 description = getattr(entry, "summary", f"Conteúdo em vídeo - {channel_name}")
+
+                # 🔍 Filtro de Confronto: Evitar vídeos com mesmo confronto 'Time1 x Time2' já cadastrado
+                v_confronto = extrair_confronto(title)
+                if v_confronto and v_confronto in seen_video_confronts:
+                    print(f"⏩ [Vídeos] Ignorando vídeo com confronto '{v_confronto[0]} x {v_confronto[1]}' já existente: '{title}'", flush=True)
+                    continue
 
                 # 🔍 Filtros de Relevância: Brasileirão + 2026 + (Gols ou Melhores Momentos)
                 text_check = f"{title} {description}".lower()
@@ -321,6 +374,8 @@ def sincronizar_videos():
                     else:
                         supabase.table("videos").insert(payload).execute()
                     synced_count += 1
+                    if v_confronto:
+                        seen_video_confronts.add(v_confronto)
                 except Exception as e:
                     print(f"⚠️ [Vídeos] Erro ao salvar vídeo [{title}]: {e}", flush=True)
 
