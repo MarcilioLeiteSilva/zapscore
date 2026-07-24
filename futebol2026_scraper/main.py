@@ -63,7 +63,8 @@ YOUTUBE_CHANNELS = [
     {"id": "UCgCKagVhzGnZcuP9bSMgMCg", "name": "GE"},
     {"id": "UC3KHYFWeB0WimMBfm3NEahQ", "name": "UOL Esporte"},
     {"id": "UCs-6sCz2LJm1PrWQN4ErsPw", "name": "TNT Sports"},
-    {"id": "UC6RD83p2Hlum9aURp3pASeQ", "name": "Prime Video Sport Brasil"}
+    {"id": "UC6RD83p2Hlum9aURp3pASeQ", "name": "Prime Video Sport Brasil"},
+    {"id": "UC55KRIZKOVmjqdcMLWRoXPA", "name": "Fut Prime Gols"}
 ]
 
 def limpar_html(texto):
