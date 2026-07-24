@@ -9,18 +9,43 @@ from supabase import create_client, Client
 
 def extrair_confronto(titulo):
     """
-    Identifica se o título contém um confronto entre dois times (ex: 'Flamengo x Palmeiras', 'Corinthians 3 x 0 Remo').
-    Retorna uma tupla ordenada alfabeticamente dos dois times em minúsculo, ou None se não houver confronto.
+    Identifica se o título menciona 2 times distintos conhecidos do futebol brasileiro.
+    Retorna uma tupla ordenada alfabeticamente dos dois times em minúsculo, ou None.
+    Ex: 'Transmissão ao vivo de Corinthians x Remo' -> ('corinthians', 'remo')
+        'Corinthians x Remo: ao vivo' -> ('corinthians', 'remo')
     """
     if not titulo:
         return None
+    texto_lower = titulo.lower()
+    times_encontrados = set()
+
+    for team_key, nicknames in TEAM_NICKNAMES.items():
+        candidates = [team_key] + nicknames
+        for candidate in candidates:
+            pattern = r'\b' + re.escape(candidate) + r'\b'
+            if re.search(pattern, texto_lower):
+                times_encontrados.add(team_key)
+                break
+
+    if len(times_encontrados) == 2:
+        return tuple(sorted(list(times_encontrados)))
+
     match = re.search(r'([A-Za-zÀ-ÿ]{3,}(?:\s+[A-Za-zÀ-ÿ]{3,})?)\s*(?:\d+)?\s*[xX×]\s*(?:\d+)?\s*([A-Za-zÀ-ÿ]{3,}(?:\s+[A-Za-zÀ-ÿ]{3,})?)', titulo)
     if match:
-        t1 = match.group(1).strip().lower()
-        t2 = match.group(2).strip().lower()
-        palavras_invalidas = {"ao", "em", "de", "do", "da", "no", "na", "versus", "vs", "com", "por", "para"}
-        if t1 not in palavras_invalidas and t2 not in palavras_invalidas and len(t1) >= 3 and len(t2) >= 3:
-            return tuple(sorted([t1, t2]))
+        raw_t1 = match.group(1).strip().lower()
+        raw_t2 = match.group(2).strip().lower()
+
+        t1_found = None
+        t2_found = None
+        for k, nicks in TEAM_NICKNAMES.items():
+            for nick in [k] + nicks:
+                if nick in raw_t1:
+                    t1_found = k
+                if nick in raw_t2:
+                    t2_found = k
+        if t1_found and t2_found and t1_found != t2_found:
+            return tuple(sorted([t1_found, t2_found]))
+
     return None
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -95,7 +120,19 @@ TEAM_NICKNAMES = {
     "juventude": ["juventude", "jove"],
     "cuiabá": ["cuiabá", "cuiaba", "dourado"],
     "vitória": ["vitória", "vitoria", "leão da barra"],
-    "criciúma": ["criciúma", "criciuma", "tigre"]
+    "criciúma": ["criciúma", "criciuma", "tigre"],
+    "remo": ["remo", "leão azul"],
+    "coritiba": ["coritiba", "coxa"],
+    "goiás": ["goiás", "goias", "esmeraldino"],
+    "ceará": ["ceará", "ceara", "vovô", "vovo"],
+    "sport": ["sport", "leão da ilha"],
+    "avaí": ["avaí", "avai"],
+    "chapecoense": ["chapecoense", "chape"],
+    "mirassol": ["mirassol"],
+    "novorizontino": ["novorizontino", "tigre do vale"],
+    "operário": ["operário", "operario", "fantasma"],
+    "crb": ["crb", "galo da pajuçara"],
+    "vila nova": ["vila nova", "tigrão"]
 }
 
 INVALID_IMAGE_TERMS = [
