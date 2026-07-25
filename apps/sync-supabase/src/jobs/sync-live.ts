@@ -121,7 +121,37 @@ export async function syncLive() {
 
       // 2. Eventos (gols, cartões, substituições)
       const events = await ZapScoreClient.getFixtureEvents(fixture.id);
+      let realHomeScore = fixture.homeGoals ?? 0;
+      let realAwayScore = fixture.awayGoals ?? 0;
+
       if (events.length > 0) {
+        // Calcular o placar real a partir dos eventos de gol
+        const goalEvents = events.filter(e => e.type === 'Goal');
+        const homeGoalsCount = goalEvents.filter(e =>
+          e.teamId === fixture.homeTeam?.externalId ||
+          e.teamId === fixture.homeTeamId ||
+          e.teamId === fixture.homeTeam?.id
+        ).length;
+        const awayGoalsCount = goalEvents.length - homeGoalsCount;
+
+        realHomeScore = Math.max(fixture.homeGoals ?? 0, homeGoalsCount);
+        realAwayScore = Math.max(fixture.awayGoals ?? 0, awayGoalsCount);
+
+        // Se o placar derivado dos eventos for mais atual do que o registrado na tabela matches, atualiza no Supabase em tempo real
+        if (realHomeScore !== matchRow.home_score || realAwayScore !== matchRow.away_score) {
+          matchRow.home_score = realHomeScore;
+          matchRow.away_score = realAwayScore;
+
+          await supabase
+            .from('matches')
+            .update({
+              home_score: realHomeScore,
+              away_score: realAwayScore,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', matchRow.id);
+        }
+
         // Buscar gols existentes no banco antes da deleção para saber quais são novos
         let existingGoals: any[] = [];
         try {
@@ -172,8 +202,8 @@ export async function syncLive() {
                 awayTeamUuid: matchRow.away_team_id,
                 homeTeamName: fixture.homeTeam?.name ?? 'Time da Casa',
                 awayTeamName: fixture.awayTeam?.name ?? 'Time Visitante',
-                homeScore: fixture.homeGoals ?? 0,
-                awayScore: fixture.awayGoals ?? 0,
+                homeScore: realHomeScore,
+                awayScore: realAwayScore,
                 playerName: playerName ?? 'Jogador Desconhecido',
                 minute: minute,
                 goalTeamName: goalTeamName
@@ -216,7 +246,7 @@ export async function syncLive() {
       await supabase.from('fixture_sync_control')
         .upsert(syncCtrl, { onConflict: 'fixture_id' });
 
-      console.log(`[sync-live] ✅ ${fixture.homeTeam?.name ?? fixture.homeTeamId} x ${fixture.awayTeam?.name ?? fixture.awayTeamId} — ${fixture.homeGoals ?? 0}-${fixture.awayGoals ?? 0} (${fixture.statusShort})`);
+      console.log(`[sync-live] ✅ ${fixture.homeTeam?.name ?? fixture.homeTeamId} x ${fixture.awayTeam?.name ?? fixture.awayTeamId} — ${realHomeScore}-${realAwayScore} (${fixture.statusShort})`);
     } catch (err: any) {
       console.error(`[sync-live] Erro processando fixture ${fixture.id}: ${err.message}`);
     }
