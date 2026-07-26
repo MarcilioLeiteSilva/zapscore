@@ -1,11 +1,46 @@
 part of 'widgets.dart';
 
-class CardSlideLeagueHome extends StatelessWidget {
+class CardSlideLeagueHome extends StatefulWidget {
   const CardSlideLeagueHome({super.key, this.leagues = const []});
   final List<League> leagues;
 
   @override
+  State<CardSlideLeagueHome> createState() => _CardSlideLeagueHomeState();
+}
+
+class _CardSlideLeagueHomeState extends State<CardSlideLeagueHome> {
+  String _selectedCategory = 'Todas';
+  final List<String> _categories = ['Todas', 'Brasil', 'Europa', 'Copas'];
+
+  static const _brazilianCountries = {'Brazil', 'Brasil'};
+  static const _europeanCountries = {
+    'England', 'Spain', 'Germany', 'France', 'Italy', 'Portugal',
+    'Netherlands', 'Belgium', 'Scotland', 'Turkey', 'Russia', 'Greece',
+    'Ukraine', 'Switzerland', 'Austria', 'Denmark', 'Norway', 'Sweden',
+    'Croatia', 'Serbia', 'Poland', 'Czech Republic', 'Europe',
+  };
+
+  List<League> get _filteredLeagues {
+    if (_selectedCategory == 'Todas') return widget.leagues;
+    if (_selectedCategory == 'Brasil') {
+      return widget.leagues.where((l) => _brazilianCountries.contains(l.country)).toList();
+    }
+    if (_selectedCategory == 'Europa') {
+      return widget.leagues.where((l) => _europeanCountries.contains(l.country)).toList();
+    }
+    if (_selectedCategory == 'Copas') {
+      return widget.leagues.where((l) =>
+        l.type?.toLowerCase() == 'cup' ||
+        (l.name.toLowerCase().contains('copa') || l.name.toLowerCase().contains('cup'))
+      ).toList();
+    }
+    return widget.leagues;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filtered = _filteredLeagues;
+
     return Container(
       width: context.width,
       height: 42,
@@ -16,10 +51,32 @@ class CardSlideLeagueHome extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           itemBuilder: (_, i) {
-            return CheepLeagueItem(league: leagues[i]);
+            if (i < _categories.length) {
+              final cat = _categories[i];
+              final isSelected = _selectedCategory == cat;
+              return ChoiceChip(
+                label: Text(cat),
+                selected: isSelected,
+                selectedColor: Theme.of(context).primaryColor,
+                backgroundColor: Theme.of(context).cardColor.withOpacity(0.4),
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 13,
+                ),
+                onSelected: (bool selected) {
+                  if (selected) setState(() => _selectedCategory = cat);
+                },
+              );
+            }
+            final leagueIndex = i - _categories.length;
+            if (leagueIndex < filtered.length) {
+              return CheepLeagueItem(league: filtered[leagueIndex]);
+            }
+            return const SizedBox.shrink();
           },
-          separatorBuilder: (_, i) => const Gap(10),
-          itemCount: leagues.length,
+          separatorBuilder: (_, i) => const Gap(8),
+          itemCount: _categories.length + filtered.length,
         ),
       ),
     );
@@ -260,16 +317,23 @@ class CardCalendarItem extends StatelessWidget {
   }
 }
 
-class CardGroupFixtureItem extends StatelessWidget {
+class CardGroupFixtureItem extends StatefulWidget {
   const CardGroupFixtureItem({super.key, this.competition});
   final HomeCompetition? competition;
 
   @override
+  State<CardGroupFixtureItem> createState() => _CardGroupFixtureItemState();
+}
+
+class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
+  bool _isExpanded = true;
+
+  @override
   Widget build(BuildContext context) {
-    if (competition == null) {
+    if (widget.competition == null) {
       return const SizedBox();
     }
-    final comp = competition!;
+    final comp = widget.competition!;
     return Ink(
       width: context.width,
       decoration: BoxDecoration(
@@ -290,63 +354,91 @@ class CardGroupFixtureItem extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: comp.league.logo != null
-                    ? CachedNetworkImage(imageUrl: proxyImage(comp.league.logo!), fit: BoxFit.contain)
-                    : const CardNoImage(radius: 10),
-              ),
-              const Gap(10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8, bottom: 5),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: comp.league.logo != null
+                        ? CachedNetworkImage(imageUrl: proxyImage(comp.league.logo!), fit: BoxFit.contain)
+                        : const CardNoImage(radius: 10),
+                  ),
+                  const Gap(10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            comp.league.name.toUpperCase(),
-                            maxLines: 1,
-                            style: context.textTheme.bodySmall!.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              color: Colors.white.withOpacity(0.9),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                comp.league.name.toUpperCase(),
+                                maxLines: 1,
+                                style: context.textTheme.bodySmall!.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
+                        if (comp.league.country != null)
+                          Text(
+                            comp.league.country!,
+                            style: context.textTheme.labelSmall,
+                          ),
                       ],
                     ),
-                    if (comp.league.country != null)
-                      Text(
-                        comp.league.country!,
-                        style: context.textTheme.labelSmall,
-                      ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      context.pushNamed(screenLeague, extra: comp.league);
+                    },
+                    icon: const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                    ),
+                    tooltip: 'Ver liga',
+                  ),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.0 : 0.5,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 24,
+                    ),
+                  ),
+                  const Gap(8),
+                ],
               ),
-              IconButton(
-                onPressed: () {
-                  context.pushNamed(screenLeague, extra: comp.league);
-                },
-                icon: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 18,
-                ),
-              ),
-            ],
-          ),
-          if (comp.matches.isNotEmpty)
-            ...comp.matches
-                .map((match) => CardFixtureItem(fixture: match))
-                .toList()
-          else
-            const Padding(
-              padding: EdgeInsets.only(top: 20, bottom: 20, right: 15),
-              child: Text('Nenhum jogo disponível para esta data'),
             ),
+          ),
+          AnimatedCrossFade(
+            firstChild: Column(
+              children: [
+                if (comp.matches.isNotEmpty)
+                  ...comp.matches.map((match) => CardFixtureItem(fixture: match))
+                else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 20, bottom: 20, right: 15),
+                    child: Text('Nenhum jogo disponível para esta data'),
+                  ),
+              ],
+            ),
+            secondChild: const SizedBox.shrink(),
+            crossFadeState: _isExpanded ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            duration: const Duration(milliseconds: 250),
+          ),
         ],
       ),
     );
