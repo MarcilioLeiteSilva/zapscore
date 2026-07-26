@@ -431,7 +431,7 @@ export class SyncService {
               create: fixtureMapped as any,
             });
 
-            if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN', 'NS', 'BT', 'SUSP', 'INT'].includes(data.fixture.status.short)) {
+            if (['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(data.fixture.status.short)) {
                await this.syncFixtureDetail(data.fixture.id);
             }
             totalSynced++;

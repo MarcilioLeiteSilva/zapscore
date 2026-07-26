@@ -46,17 +46,15 @@ export class SyncJobsService implements OnApplicationBootstrap {
     }
   }
 
-  // A cada minuto: Sincroniza jogos ao vivo
-  @Cron('* * * * *')
+  // A cada 3 minutos: Sincroniza jogos ao vivo
+  @Cron('*/3 * * * *')
   async handleLiveUpdate() {
     this.logger.log('Checking database for active or upcoming live matches...');
     try {
       const now = new Date();
       const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
 
-      // Verify if there are any active games, games starting in the next 15 minutes,
-      // or games that should have started in the last 3 hours but are still marked as 'NS'
+      // Verify if there are any active games or games starting in the next 15 minutes
       const activeOrUpcomingCount = await this.prisma.fixture.count({
         where: {
           OR: [
@@ -69,13 +67,6 @@ export class SyncJobsService implements OnApplicationBootstrap {
               date: {
                 gte: now,
                 lte: fifteenMinutesFromNow
-              }
-            },
-            {
-              statusShort: 'NS',
-              date: {
-                gte: threeHoursAgo,
-                lte: now
               }
             }
           ]
@@ -95,8 +86,8 @@ export class SyncJobsService implements OnApplicationBootstrap {
     }
   }
 
-  // A cada 30 minutos: Sincroniza todos os jogos do dia (Limpeza/Finalização)
-  @Cron('*/30 * * * *')
+  // A cada 2 horas: Sincroniza jogos do dia (Limpeza/Finalização)
+  @Cron('0 */2 * * *')
   async handleTodayUpdate() {
     this.logger.log('Starting scheduled cleanup sync (All Today matches)...');
     try {
