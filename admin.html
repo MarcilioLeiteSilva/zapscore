@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZapScore Admin | Produção</title>
+    <title>ZapScore Admin | Produção & Sentinela</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
@@ -17,11 +17,15 @@
         <!-- Sidebar -->
         <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col hidden md:flex">
             <div class="p-8">
-                <h1 class="text-2xl font-extrabold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent italic tracking-tighter">ZAPSCORE</h1>
-                <p class="text-[10px] text-slate-500 font-bold tracking-widest mt-1 uppercase">Painel Produção</p>
+                <h1 class="text-2xl font-extrabold bg-gradient-to-r from-orange-500 via-amber-400 to-red-600 bg-clip-text text-transparent italic tracking-tighter">ZAPSCORE</h1>
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest mt-1 uppercase">Painel Produção & Sentinela</p>
             </div>
-            <nav class="flex-1 px-6 space-y-4">
-                <button onclick="showTab('news')" id="btn-news" class="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group bg-slate-800">
+            <nav class="flex-1 px-6 space-y-3">
+                <button onclick="showTab('sentinel')" id="btn-sentinel" class="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group bg-slate-800 border border-emerald-500/30">
+                    <i data-lucide="shield-check" class="text-emerald-400"></i>
+                    <span>Monitor Sentinela</span>
+                </button>
+                <button onclick="showTab('news')" id="btn-news" class="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-slate-400 hover:text-white font-bold group">
                     <i data-lucide="newspaper" class="text-orange-500"></i>
                     <span>Notícias</span>
                 </button>
@@ -32,16 +36,145 @@
             </nav>
             <div class="p-6 border-t border-slate-800 text-center">
                 <div class="flex items-center justify-center space-x-2">
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">API Online</span>
+                    <div id="status-dot" class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span id="status-text" class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Sentinela Ativo</span>
                 </div>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto p-6 md:p-12">
+            
+            <!-- Sentinel Monitor Section -->
+            <div id="tab-sentinel" class="tab-content space-y-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center space-x-3">
+                            <h2 class="text-4xl font-black text-white tracking-tight uppercase">Monitor Sentinela</h2>
+                            <span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-full border border-emerald-500/30 tracking-widest uppercase">AUDITORIA AO VIVO</span>
+                        </div>
+                        <p class="text-slate-400 mt-2 font-medium">Supervisão autônoma da API ZapScore e verificação de consistência com a API-Football.</p>
+                    </div>
+
+                    <!-- Config / Chave API Admin -->
+                    <div class="flex items-center space-x-3 bg-slate-900 p-3 rounded-2xl border border-slate-800">
+                        <i data-lucide="key" class="text-amber-400 text-sm"></i>
+                        <input id="admin-key-input" type="password" placeholder="Chave API Admin..." value="dev-api-key-123" class="bg-slate-800 text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 w-44 font-mono">
+                        <button onclick="refreshSentinelData()" class="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-all shadow-lg shadow-emerald-900/30">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl relative overflow-hidden">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Status do Sistema</span>
+                            <i data-lucide="activity" class="text-emerald-400"></i>
+                        </div>
+                        <div id="card-system-status" class="text-2xl font-black text-emerald-400 mt-4 uppercase">HEALTHY</div>
+                        <p id="card-system-sub" class="text-xs text-slate-500 mt-1 font-medium">Auditoria operando normalmente</p>
+                    </div>
+
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Jogos do Dia (Brasília)</span>
+                            <i data-lucide="calendar" class="text-amber-400"></i>
+                        </div>
+                        <div id="card-today-count" class="text-2xl font-black text-white mt-4">---</div>
+                        <p id="card-today-date" class="text-xs text-slate-500 mt-1 font-medium">Fuso: America/Sao_Paulo</p>
+                    </div>
+
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Partidas Ao Vivo</span>
+                            <i data-lucide="flame" class="text-orange-500"></i>
+                        </div>
+                        <div id="card-live-count" class="text-2xl font-black text-orange-500 mt-4">---</div>
+                        <p id="card-live-sub" class="text-xs text-slate-500 mt-1 font-medium">Sincronizando a cada minuto</p>
+                    </div>
+
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Autocorreções Ativas</span>
+                            <i data-lucide="wrench" class="text-blue-400"></i>
+                        </div>
+                        <div id="card-heal-count" class="text-2xl font-black text-blue-400 mt-4">0</div>
+                        <p class="text-xs text-slate-500 mt-1 font-medium">Recuperações automáticas</p>
+                    </div>
+                </div>
+
+                <!-- Emergency Controls -->
+                <div class="bg-slate-900/80 p-6 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="shield-alert" class="text-amber-500"></i>
+                        <h3 class="text-lg font-black text-white uppercase italic">Ações de Emergência e Manutenção</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <button onclick="triggerAction('/sentinel/audit')" class="p-4 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="play-circle" class="w-4 h-4"></i>
+                            <span>Executar Auditoria Sentinela</span>
+                        </button>
+                        <button onclick="triggerAction('/sync/live')" class="p-4 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Forçar Sync Ao Vivo</span>
+                        </button>
+                        <button onclick="triggerAction('/sync/today')" class="p-4 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                            <span>Forçar Sync de Hoje</span>
+                        </button>
+                        <button onclick="triggerAction('/sync/test-connection')" class="p-4 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="wifi" class="w-4 h-4"></i>
+                            <span>Testar API-Football</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Today's Fixtures Table -->
+                <div class="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl space-y-0">
+                    <div class="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="list" class="text-orange-500"></i>
+                            <span class="text-xs font-black text-white uppercase tracking-widest">Partidas Cadastradas para Hoje no ZapScore</span>
+                        </div>
+                        <span id="sentinel-fixtures-badge" class="text-xs font-bold text-slate-400">Carregando partidas...</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-800/30 text-slate-300 text-[11px] font-black uppercase tracking-widest">
+                                    <th class="p-6">Confronto</th>
+                                    <th class="p-6">Competição</th>
+                                    <th class="p-6">Status ZapScore</th>
+                                    <th class="p-6">Placar</th>
+                                    <th class="p-6 text-right">Horário (UTC / Local)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sentinel-fixtures-body" class="divide-y divide-slate-800">
+                                <tr>
+                                    <td colspan="5" class="p-8 text-center text-slate-500 font-bold">Carregando dados...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Console Logs Output -->
+                <div class="bg-slate-950 rounded-3xl border border-slate-800 p-6 shadow-2xl font-mono text-xs text-slate-300 space-y-3">
+                    <div class="flex items-center justify-between text-slate-400 font-bold">
+                        <span class="flex items-center space-x-2"><i data-lucide="terminal" class="w-4 h-4 text-emerald-400"></i><span>Console de Eventos do Sentinela</span></span>
+                        <button onclick="clearConsole()" class="text-[10px] uppercase tracking-wider text-slate-500 hover:text-white">Limpar</button>
+                    </div>
+                    <div id="sentinel-console-log" class="bg-slate-900 p-4 rounded-xl max-h-48 overflow-y-auto space-y-1 text-[11px] font-mono text-emerald-400 border border-slate-800">
+                        <div>> Sentinela pronto. Aguardando auditoria...</div>
+                    </div>
+                </div>
+
+            </div>
+
             <!-- News Section -->
-            <div id="tab-news" class="tab-content space-y-8">
+            <div id="tab-news" class="tab-content hidden space-y-8">
                 <div class="flex justify-between items-end">
                     <div>
                         <h2 class="text-4xl font-black text-white tracking-tight uppercase">Notícias</h2>
@@ -124,29 +257,129 @@
     <script>
         const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
         let currentEditingId = null;
-        let currentType = 'news';
+        let currentType = 'sentinel';
 
-        // Função de fetch com tratamento de erro melhorado
+        function logConsole(msg, isError = false) {
+            const container = document.getElementById('sentinel-console-log');
+            if (!container) return;
+            const time = new Date().toLocaleTimeString();
+            const el = document.createElement('div');
+            el.className = isError ? 'text-red-400' : 'text-emerald-400';
+            el.innerText = `[${time}] ${msg}`;
+            container.appendChild(el);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('sentinel-console-log').innerHTML = '';
+        }
+
+        function getAdminApiKey() {
+            return document.getElementById('admin-key-input')?.value || 'dev-api-key-123';
+        }
+
         async function apiFetch(endpoint, options = {}) {
             try {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'x-api-key': getAdminApiKey(),
+                    ...options.headers
+                };
                 const response = await fetch(`${API_URL}${endpoint}`, {
                     ...options,
-                    mode: 'cors', // Forçar modo CORS
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    }
+                    headers
                 });
-                if (!response.ok) throw new Error(`Status: ${response.status}`);
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${text}`);
+                }
                 return await response.json();
             } catch (err) {
-                console.error("Erro na API:", err);
+                console.error("Erro API:", err);
                 throw err;
             }
         }
 
+        async function refreshSentinelData() {
+            logConsole("Atualizando status do Sentinela e partidas...");
+            
+            // 1. Health check público
+            try {
+                const health = await apiFetch('/sentinel/health-check');
+                document.getElementById('card-system-status').innerText = health.status || 'HEALTHY';
+                document.getElementById('card-system-status').className = health.status === 'HEALTHY' ? 'text-2xl font-black text-emerald-400 mt-4 uppercase' : 'text-2xl font-black text-red-500 mt-4 uppercase';
+                
+                if (health.timezoneAudit) {
+                    document.getElementById('card-today-date').innerText = `Data SP: ${health.timezoneAudit.todayDate}`;
+                }
+                logConsole(`Status de integridade: ${health.status}`);
+            } catch (e) {
+                document.getElementById('card-system-status').innerText = 'OFFLINE';
+                document.getElementById('card-system-status').className = 'text-2xl font-black text-red-500 mt-4 uppercase';
+                logConsole(`Erro de conexão com Sentinela: ${e.message}`, true);
+            }
+
+            // 2. Fixtures de Hoje
+            try {
+                const fixtures = await apiFetch('/fixtures/today?leagueId=71');
+                const list = Array.isArray(fixtures) ? fixtures : [];
+                document.getElementById('card-today-count').innerText = `${list.length} jogos`;
+                
+                const liveCount = list.filter(f => ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(f.statusShort)).length;
+                document.getElementById('card-live-count').innerText = `${liveCount} ao vivo`;
+
+                document.getElementById('sentinel-fixtures-badge').innerText = `${list.length} partidas encontradas`;
+
+                if (list.length === 0) {
+                    document.getElementById('sentinel-fixtures-body').innerHTML = `
+                        <tr><td colspan="5" class="p-8 text-center text-slate-500 font-bold">Nenhuma partida cadastrada para hoje.</td></tr>
+                    `;
+                } else {
+                    document.getElementById('sentinel-fixtures-body').innerHTML = list.map(f => {
+                        const home = f.homeTeam?.name || f.homeTeamId || 'Time A';
+                        const away = f.awayTeam?.name || f.awayTeamId || 'Time B';
+                        const leagueName = f.league?.name || 'Série A';
+                        const isLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(f.statusShort);
+                        const statusBadge = isLive 
+                            ? `<span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full font-black text-[10px] animate-pulse">${f.statusShort} (AO VIVO)</span>`
+                            : `<span class="px-3 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full font-bold text-[10px]">${f.statusShort}</span>`;
+
+                        return `
+                            <tr class="hover:bg-slate-800/40 transition-all border-b border-slate-800/50">
+                                <td class="p-6 font-bold text-white">${home} vs ${away}</td>
+                                <td class="p-6 text-slate-400 font-medium text-xs">${leagueName}</td>
+                                <td class="p-6">${statusBadge}</td>
+                                <td class="p-6 font-black text-amber-400 text-lg">${f.homeGoals ?? 0} x ${f.awayGoals ?? 0}</td>
+                                <td class="p-6 text-right text-xs font-mono text-slate-400">${f.date || '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                logConsole(`Erro ao buscar jogos do dia: ${e.message}`, true);
+            }
+        }
+
+        async function triggerAction(endpoint) {
+            logConsole(`Disparando ação: POST ${endpoint}...`);
+            try {
+                const res = await apiFetch(endpoint, { method: 'POST' });
+                logConsole(`Resultado de ${endpoint}: ${JSON.stringify(res)}`);
+                alert(`Ação concluída com sucesso:\n${JSON.stringify(res, null, 2)}`);
+                refreshSentinelData();
+            } catch (e) {
+                logConsole(`Falha na ação ${endpoint}: ${e.message}`, true);
+                alert(`Erro ao executar ação: ${e.message}`);
+            }
+        }
+
         async function fetchData() {
+            if (currentType === 'sentinel') {
+                refreshSentinelData();
+                return;
+            }
+
             const endpoint = currentType === 'news' ? '/news' : '/videos';
             const countId = currentType === 'news' ? 'news-count' : 'video-count';
             const bodyId = currentType === 'news' ? 'news-list-body' : 'video-list-body';
@@ -177,8 +410,7 @@
             } catch (e) {
                 document.getElementById(countId).innerHTML = `
                     <div class="text-red-500 flex flex-col space-y-1">
-                        <span>FALHA DE CONEXÃO: O navegador bloqueou o acesso local à API.</span>
-                        <span class="text-[9px] text-slate-500 lowercase">Dica: Tente abrir o HTML usando a extensão "Live Server" do VS Code.</span>
+                        <span>FALHA DE CONEXÃO: Não foi possível conectar à API de Produção.</span>
                     </div>
                 `;
             }
@@ -213,7 +445,7 @@
                 closeForm();
                 fetchData();
             } catch (e) {
-                alert("ERRO NA GRAVAÇÃO: " + e.message + "\n\nO servidor de produção não respondeu ou bloqueou a conexão.");
+                alert("ERRO NA GRAVAÇÃO: " + e.message);
             } finally {
                 btn.disabled = false; btn.innerText = "SALVAR NA PRODUÇÃO";
             }
@@ -223,9 +455,20 @@
             currentType = tab;
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
-            document.getElementById('btn-news').classList.remove('text-white', 'bg-slate-800');
-            document.getElementById('btn-videos').classList.remove('text-white', 'bg-slate-800');
-            document.getElementById(`btn-${tab}`).classList.add('text-white', 'bg-slate-800');
+            
+            ['sentinel', 'news', 'videos'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (btn) {
+                    btn.classList.remove('text-white', 'bg-slate-800', 'border', 'border-emerald-500/30');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            const activeBtn = document.getElementById(`btn-${tab}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-white', 'bg-slate-800');
+            }
             fetchData();
         }
 
@@ -247,11 +490,18 @@
         function editItem(type, data) { openForm(type, data); }
         async function deleteItem(type, id) {
             if(!confirm("DELETAR DA PRODUÇÃO?")) return;
-            await fetch(`${API_URL}/${type}/${id}`, { method: 'DELETE' });
+            await fetch(`${API_URL}/${type}/${id}`, { method: 'DELETE', headers: { 'x-api-key': getAdminApiKey() } });
             fetchData();
         }
 
-        window.onload = () => { fetchData(); lucide.createIcons(); };
+        window.onload = () => { 
+            fetchData(); 
+            lucide.createIcons(); 
+            // Auto refresh a cada 30 segundos
+            setInterval(() => {
+                if (currentType === 'sentinel') refreshSentinelData();
+            }, 30000);
+        };
     </script>
 </body>
 </html>
