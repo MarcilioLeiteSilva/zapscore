@@ -18,6 +18,7 @@ import { CompetitionsModule } from './competitions/competitions.module';
 import { NewsModule } from './news/news.module';
 import { VideosModule } from './videos/videos.module';
 import { PlayersModule } from './players/players.module';
+import { SentinelModule } from './sentinel/sentinel.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PlayersModule } from './players/players.module';
     NewsModule,
     VideosModule,
     PlayersModule,
+    SentinelModule,
   ],
   controllers: [AppController],
   providers: [
