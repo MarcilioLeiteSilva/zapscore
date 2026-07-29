@@ -399,8 +399,8 @@ export class SyncService {
   }
 
   async syncToday() {
-    const today = new Date().toISOString().split('T')[0];
-    this.logger.log(`Starting full day sync for ${today}...`);
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+    this.logger.log(`Starting full day sync for ${today} (America/Sao_Paulo)...`);
     
     let totalSynced = 0;
     try {
@@ -408,7 +408,8 @@ export class SyncService {
         const fixturesData = await this.apiFootball.getFixtures({ 
            date: today,
            league: competition.externalId,
-           season: 2026
+           season: 2026,
+           timezone: 'America/Sao_Paulo',
         });
 
         if (!fixturesData || fixturesData.length === 0) continue;

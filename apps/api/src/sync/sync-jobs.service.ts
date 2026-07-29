@@ -53,8 +53,10 @@ export class SyncJobsService implements OnApplicationBootstrap {
     try {
       const now = new Date();
       const fifteenMinutesFromNow = new Date(now.getTime() + 15 * 60 * 1000);
+      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
 
-      // Verify if there are any active games or games starting in the next 15 minutes
+      // Verify if there are any active games, games starting in the next 15 minutes,
+      // or games scheduled in the last 3 hours that are not yet completed
       const activeOrUpcomingCount = await this.prisma.fixture.count({
         where: {
           OR: [
@@ -65,8 +67,11 @@ export class SyncJobsService implements OnApplicationBootstrap {
             },
             {
               date: {
-                gte: now,
+                gte: threeHoursAgo,
                 lte: fifteenMinutesFromNow
+              },
+              statusShort: {
+                notIn: ['FT', 'AET', 'PEN', 'PST', 'CANC', 'ABD']
               }
             }
           ]
