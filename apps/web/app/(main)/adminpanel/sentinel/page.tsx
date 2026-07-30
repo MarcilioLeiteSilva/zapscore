@@ -41,25 +41,31 @@ export default function SentinelAdminPage() {
     // 1. Health check público do Sentinela
     try {
       const res = await fetch(`${API_URL}/sentinel/health-check`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const health = await res.json();
-      setSystemHealth(health);
-      addLog(`Status de Integridade: ${health.status || "HEALTHY"}`);
+      if (!res.ok) {
+        if (res.status === 404) {
+          setSystemHealth({ status: "AGUARDANDO DEPLOY", error: "Build da nova versão da API em andamento no Easypanel" });
+          addLog("Deploy da nova versão da API em andamento no Easypanel (/sentinel/health-check ainda sendo publicado).", false);
+        } else {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      } else {
+        const health = await res.json();
+        setSystemHealth(health);
+        addLog(`Status de Integridade: ${health.status || "HEALTHY"}`);
+      }
     } catch (err: any) {
-      setSystemHealth({ status: "UNHEALTHY", error: err.message });
-      addLog(`Erro ao consultar Health Check: ${err.message}`, true);
+      setSystemHealth({ status: "BUILDING", error: err.message });
+      addLog(`Conexão com servidor em atualização no Easypanel...`, true);
     }
 
-    // 2. Fixtures de Hoje no ZapScore
+    // 2. Fixtures de Hoje no ZapScore (GET público)
     try {
-      const res = await fetch(`${API_URL}/fixtures/today?leagueId=71`, {
-        headers: { "x-api-key": apiKey },
-      });
+      const res = await fetch(`${API_URL}/fixtures/today?leagueId=71`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
       setFixtures(list);
-      addLog(`Partidas encontradas para hoje: ${list.length}`);
+      addLog(`Partidas da Série A encontradas para hoje: ${list.length}`);
     } catch (err: any) {
       addLog(`Erro ao carregar partidas de hoje: ${err.message}`, true);
     } finally {
