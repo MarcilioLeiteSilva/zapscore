@@ -23,14 +23,14 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // Habilitar CORS dinâmico e suporte a cabeçalhos customizados (x-api-key)
-  const corsAllowedOrigins = configService.get<string>('CORS_ALLOWED_ORIGINS') || '*';
-  const origin = corsAllowedOrigins === '*' ? true : corsAllowedOrigins.split(',').map(o => o.trim());
-
+  // Habilitar CORS dinâmico e suporte a todos os domínios (frontend, admin e mobile)
   app.enableCors({
-    origin,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type,Accept,Authorization,x-api-key',
+    origin: (requestOrigin, callback) => {
+      // Reflete dinamicamente a origem da requisição para autorizar navegadores (CORS Preflight)
+      callback(null, requestOrigin || '*');
+    },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-api-key'],
     credentials: true,
   });
 
