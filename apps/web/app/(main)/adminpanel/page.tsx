@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Newspaper, Video, Trophy, Users, Activity, ExternalLink } from "lucide-react";
+import { Newspaper, Video, Trophy, Users, Activity, ExternalLink, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
@@ -32,10 +32,10 @@ export default function AdminDashboard() {
   }, []);
 
   const cards = [
+    { title: "Monitor Sentinela", value: "Ativo", icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-500/10", link: "/adminpanel/sentinel" },
     { title: "Notícias Ativas", value: stats.news, icon: Newspaper, color: "text-orange-500", bg: "bg-orange-500/10", link: "/adminpanel/news" },
     { title: "Vídeos na Watch", value: stats.videos, icon: Video, color: "text-red-500", bg: "bg-red-500/10", link: "/adminpanel/videos" },
     { title: "Ligas Monitoradas", value: stats.leagues, icon: Trophy, color: "text-yellow-500", bg: "bg-yellow-500/10", link: "#" },
-    { title: "Times no Banco", value: stats.teams, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10", link: "#" },
   ];
 
   return (

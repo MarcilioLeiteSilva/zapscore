@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Newspaper, Video, LayoutDashboard, ChevronLeft } from "lucide-react";
+import { Newspaper, Video, LayoutDashboard, ChevronLeft, ShieldCheck } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-xs font-bold uppercase tracking-widest">Voltar ao Site</span>
           </Link>
-          <h1 className="text-3xl font-black bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent italic tracking-tighter">ZAPSCORE</h1>
+          <h1 className="text-3xl font-black bg-gradient-to-r from-orange-500 via-amber-400 to-red-600 bg-clip-text text-transparent italic tracking-tighter">ZAPSCORE</h1>
           <p className="text-[10px] text-slate-500 font-bold tracking-widest mt-1 uppercase">Painel Administrativo</p>
         </div>
 
@@ -25,6 +25,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span>Dashboard</span>
           </Link>
           
+          <Link 
+            href="/adminpanel/sentinel" 
+            className="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group border border-emerald-500/20 bg-emerald-500/5"
+          >
+            <ShieldCheck size={20} className="text-emerald-400 group-hover:text-emerald-300" />
+            <span>Monitor Sentinela</span>
+          </Link>
+
           <Link 
             href="/adminpanel/news" 
             className="flex items-center space-x-3 w-full p-4 rounded-2xl hover:bg-slate-800 transition-all text-white font-bold group"
