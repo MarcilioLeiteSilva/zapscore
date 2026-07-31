@@ -21,7 +21,11 @@ export class CompetitionsService {
   }
 
   async getStoredLeagues() {
+    const supportedExternalIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
     return this.prisma.league.findMany({
+      where: {
+        externalId: { in: supportedExternalIds },
+      },
       orderBy: { name: 'asc' },
     });
   }
