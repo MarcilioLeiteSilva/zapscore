@@ -90,7 +90,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
   },
   {
     code: 'BR_CARIOCA_2',
-    externalId: 625,
+    externalId: 851,
     name: 'Campeonato Carioca Série A2',
     country: 'Brazil',
     type: 'league',
@@ -98,7 +98,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
   },
   {
     code: 'BR_PAULISTA_1',
-    externalId: 611,
+    externalId: 475,
     name: 'Campeonato Paulista A1',
     country: 'Brazil',
     type: 'league',
@@ -106,7 +106,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
   },
   {
     code: 'BR_PAULISTA_2',
-    externalId: 610,
+    externalId: 476,
     name: 'Campeonato Paulista A2',
     country: 'Brazil',
     type: 'league',
