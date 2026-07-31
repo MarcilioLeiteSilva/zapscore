@@ -6,6 +6,7 @@ import { ApiFootballMapper } from '../integrations/api-football/mappers/api-foot
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
 import { FixturesGateway } from '../fixtures/fixtures.gateway';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class SyncService {
@@ -17,6 +18,7 @@ export class SyncService {
     private readonly configService: ConfigService,
     private readonly aiSyncService: AiSyncService,
     private readonly fixturesGateway: FixturesGateway,
+    private readonly redis: RedisService,
   ) {}
 
   private get defaultLeagueId(): number {
@@ -199,6 +201,7 @@ export class SyncService {
       }
 
       this.logger.log(`Synced ${fixturesData.length} fixtures for league ${targetLeague}.`);
+      await this.redis.delPattern('fixtures:*');
       return { count: fixturesData.length };
     } catch (err) {
       this.logger.error(`Failed to sync fixtures: ${err.message}`);
