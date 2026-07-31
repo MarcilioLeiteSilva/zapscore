@@ -176,12 +176,33 @@ export class SyncService {
 
           if (!league) continue;
 
-          const [homeTeam, awayTeam] = await Promise.all([
-            this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
-            this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
-          ]);
+          let homeTeam = await this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } });
+          if (!homeTeam) {
+            homeTeam = await this.prisma.team.upsert({
+              where: { externalId: data.teams.home.id },
+              update: { name: data.teams.home.name, logo: data.teams.home.logo },
+              create: {
+                externalId: data.teams.home.id,
+                name: data.teams.home.name,
+                logo: data.teams.home.logo,
+                country: data.teams.home.country || 'Brazil',
+              },
+            });
+          }
 
-          if (!homeTeam || !awayTeam) continue;
+          let awayTeam = await this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } });
+          if (!awayTeam) {
+            awayTeam = await this.prisma.team.upsert({
+              where: { externalId: data.teams.away.id },
+              update: { name: data.teams.away.name, logo: data.teams.away.logo },
+              create: {
+                externalId: data.teams.away.id,
+                name: data.teams.away.name,
+                logo: data.teams.away.logo,
+                country: data.teams.away.country || 'Brazil',
+              },
+            });
+          }
 
           const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
           
