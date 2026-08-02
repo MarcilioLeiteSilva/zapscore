@@ -46,154 +46,144 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-10" style={{ fontFamily: 'var(--font-outfit)' }}>
-      {/* Hero Section - Idêntico à Foto 1 */}
-      <div className="text-center py-6">
-        <span className="badge badge-live mb-4">
-          • FASE 2: GESTÃO & COMANDO ATIVO
-        </span>
-        <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-4">
-          Comando Central <span style={{ color: 'var(--primary)' }}>ZapScore</span>
-        </h1>
-        <p className="text-[var(--text-muted)] text-base max-w-xl mx-auto">
-          Painel de controle unificado para monitorar estatísticas, conectores de dados, mídias e ecossistemas em tempo real.
-        </p>
+      {/* Top Banner & Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b border-[var(--border)]">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="badge badge-live">
+              • FASE 2: GESTÃO & COMANDO ATIVO
+            </span>
+          </div>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+            Comando Central <span style={{ color: 'var(--primary)' }}>ZapScore</span>
+          </h1>
+          <p className="text-[var(--text-muted)] text-sm md:text-base mt-2 max-w-2xl leading-relaxed">
+            Painel de controle unificado para monitorar estatísticas, conectores de dados, mídias e ecossistemas em tempo real.
+          </p>
+        </div>
 
-        <div className="flex items-center justify-center gap-4 mt-6">
-          <Link
-            href="/adminpanel/europa"
-            style={{ background: 'var(--primary)', boxShadow: '0 0 20px var(--primary-glow)' }}
-            className="px-6 py-3 rounded-full text-white font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2"
-          >
-            <span>Módulo Europa</span>
-            <ArrowRight size={16} />
-          </Link>
-
-          <Link
-            href="/adminpanel/sentinel"
-            className="card py-3 px-6 rounded-full text-white font-bold text-sm hover:border-[var(--primary)] transition-all flex items-center gap-2"
-          >
-            <ShieldCheck size={16} className="text-emerald-400" />
-            <span>Monitor Sentinela</span>
-          </Link>
+        <div className="card glass px-5 py-3 rounded-2xl flex items-center gap-3 border border-[var(--glass-border)] shrink-0">
+          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">API Produção Online</span>
         </div>
       </div>
 
-      {/* Grid de 2 Colunas - Idêntico à Foto 1 */}
+      {/* Grid de 2 Colunas - Idêntico ao Layout Premium do ZapScore */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Coluna da Esquerda (2 Terços): Lista de Módulos & Ligas Monitoradas */}
-        <div className="lg:col-span-2 card space-y-4">
+        {/* Coluna Principal (2 Terços) */}
+        <div className="lg:col-span-2 card p-6 space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Trophy size={20} className="text-amber-400" />
+            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+              <Trophy size={22} className="text-amber-400" />
               <span>Módulos & Competições Ativas</span>
             </h2>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
               {ECOSYSTEM_MODULES.length} ECOSSISTEMAS
             </span>
           </div>
 
-          <div className="space-y-3">
-            {/* Item 1: Módulo Europa */}
+          <div className="space-y-4">
+            {/* Módulo Europa */}
             <Link
               href="/adminpanel/europa"
               style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-              className="p-4 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group"
+              className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold">
                   🇪🇺
                 </div>
                 <div>
-                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-sm">
+                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-base">
                     Módulo Europa (PocketBase)
                   </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Bundesliga, La Liga, Premier League, Ligue 1, Serie A
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Bundesliga, La Liga, Premier League, Ligue 1, Serie A Itália
                   </p>
                 </div>
               </div>
-              <span className="badge badge-ft">• ONLINE</span>
+              <span className="badge badge-ft text-xs px-3 py-1.5">• ONLINE</span>
             </Link>
 
-            {/* Item 2: Sentinela */}
+            {/* Sentinela */}
             <Link
               href="/adminpanel/sentinel"
               style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-              className="p-4 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all group"
+              className="p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all group shadow-md"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <ShieldCheck size={20} />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <ShieldCheck size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors text-sm">
+                  <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors text-base">
                     Monitor Sentinela (Autocorreção)
                   </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Auditoria de fusos, placares ao vivo e consistência
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    Auditoria contínua de fusos, placares ao vivo e consistência
                   </p>
                 </div>
               </div>
-              <span className="badge badge-live">• AUDITORIA ATIVA</span>
+              <span className="badge badge-live text-xs px-3 py-1.5">• AUDITORIA ATIVA</span>
             </Link>
 
-            {/* Item 3: Gestão de Notícias */}
+            {/* Gestão de Notícias */}
             <Link
               href="/adminpanel/news"
               style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-              className="p-4 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group"
+              className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-                  <Newspaper size={20} />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
+                  <Newspaper size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-sm">
-                    Central de Notícias & RSS
+                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-base">
+                    Central de Notícias & Fontes RSS
                   </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    {stats.news} Matérias jornalísticas sincronizadas
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    {stats.news} Matérias jornalísticas publicadas na plataforma
                   </p>
                 </div>
               </div>
-              <span className="badge badge-ft">• ONLINE</span>
+              <span className="badge badge-ft text-xs px-3 py-1.5">• ONLINE</span>
             </Link>
 
-            {/* Item 4: Gestão de Vídeos */}
+            {/* Gestão de Vídeos */}
             <Link
               href="/adminpanel/videos"
               style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-              className="p-4 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group"
+              className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
-                  <Video size={20} />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                  <Video size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-sm">
+                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-base">
                     Vídeos na Watch (Gols & Melhores Momentos)
                   </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    {stats.videos} Vídeos ativos na plataforma
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    {stats.videos} Vídeos ativos em streaming
                   </p>
                 </div>
               </div>
-              <span className="badge badge-ft">• ONLINE</span>
+              <span className="badge badge-ft text-xs px-3 py-1.5">• ONLINE</span>
             </Link>
           </div>
         </div>
 
-        {/* Coluna da Direita (1 Terço): Engine Status - Idêntico ao Card da Direita da Foto 1 */}
-        <div className="card space-y-6">
+        {/* Coluna da Direita (1 Terço): Engine Status */}
+        <div className="card p-6 space-y-6">
           <div className="flex items-center gap-2 pb-4 border-b border-[var(--border)]">
-            <Zap size={20} style={{ color: 'var(--primary)' }} />
-            <h2 className="text-lg font-bold text-white">Engine Status</h2>
+            <Zap size={22} style={{ color: 'var(--primary)' }} />
+            <h2 className="text-xl font-bold text-white">Engine Status</h2>
           </div>
 
           {/* Health Check Block */}
           <div 
             style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-            className="p-4 rounded-2xl space-y-2"
+            className="p-5 rounded-2xl space-y-2"
           >
             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
               Health Check
@@ -230,12 +220,12 @@ export default function AdminDashboard() {
           {/* Recorde Temporal Ativo */}
           <div 
             style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-            className="p-4 rounded-2xl space-y-1"
+            className="p-5 rounded-2xl space-y-1"
           >
             <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
               Recorde Temporal Ativo
             </p>
-            <p className="text-3xl font-black text-[var(--primary)] font-mono">2026</p>
+            <p className="text-4xl font-black text-[var(--primary)] font-mono">2026</p>
           </div>
         </div>
       </div>
