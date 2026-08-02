@@ -124,14 +124,14 @@ export default function SentinelAdminPage() {
         </div>
 
         {/* Chave API & Refresh */}
-        <div className="flex items-center space-x-3 bg-slate-900 p-3 rounded-2xl border border-slate-800 shadow-xl">
+        <div className="glass p-3 rounded-2xl border border-[var(--border)] shadow-xl flex items-center space-x-3">
           <Key size={16} className="text-amber-400" />
           <input
             type="password"
             placeholder="Chave API Admin..."
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            className="bg-slate-800 text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 w-44 font-mono"
+            className="bg-[var(--surface-hover)] text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 w-44 font-mono border border-[var(--border)]"
           />
           <button
             onClick={fetchSentinelData}
@@ -147,9 +147,9 @@ export default function SentinelAdminPage() {
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* System Health */}
-        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl">
+        <div className="card glass">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Status do Sistema
             </span>
             <Activity className={systemHealth?.status === "HEALTHY" ? "text-emerald-400" : "text-red-500"} size={22} />
@@ -164,37 +164,37 @@ export default function SentinelAdminPage() {
               {systemHealth?.status || "CARREGANDO"}
             </h3>
           </div>
-          <p className="text-xs text-slate-500 mt-2 font-medium">
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">
             {systemHealth?.timezoneAudit?.todayDate ? `Fuso: ${systemHealth.timezoneAudit.todayDate}` : "Auditoria operando"}
           </p>
         </div>
 
         {/* Today's Fixtures */}
-        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl">
+        <div className="card glass">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Jogos de Hoje
             </span>
             <Calendar className="text-amber-400" size={22} />
           </div>
           <h3 className="text-3xl font-black text-white mt-4">{fixtures.length} Partidas</h3>
-          <p className="text-xs text-slate-500 mt-2 font-medium">Fuso: America/Sao_Paulo</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Fuso: America/Sao_Paulo</p>
         </div>
 
         {/* Live Matches */}
-        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl">
+        <div className="card glass">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Partidas Ao Vivo
             </span>
-            <Flame className="text-orange-500" size={22} />
+            <Flame className="text-[var(--primary)]" size={22} />
           </div>
-          <h3 className="text-3xl font-black text-orange-500 mt-4">{liveMatchesCount} Ao Vivo</h3>
-          <p className="text-xs text-slate-500 mt-2 font-medium">Sincronia contínua</p>
+          <h3 className="text-3xl font-black text-[var(--primary)] mt-4">{liveMatchesCount} Ao Vivo</h3>
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Sincronia contínua</p>
         </div>
 
         {/* Auto Heals */}
-        <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl">
+        <div className="card glass">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Autocorreções

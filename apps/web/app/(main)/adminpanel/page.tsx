@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Newspaper, Video, Trophy, Users, Activity, ExternalLink, ShieldCheck } from "lucide-react";
+import { Newspaper, Video, Trophy, ShieldCheck, Activity, ArrowRight, Zap } from "lucide-react";
 import Link from "next/link";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
@@ -32,68 +32,98 @@ export default function AdminDashboard() {
   }, []);
 
   const cards = [
-    { title: "Monitor Sentinela", value: "Ativo", icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-500/10", link: "/adminpanel/sentinel" },
-    { title: "Notícias Ativas", value: stats.news, icon: Newspaper, color: "text-orange-500", bg: "bg-orange-500/10", link: "/adminpanel/news" },
-    { title: "Vídeos na Watch", value: stats.videos, icon: Video, color: "text-red-500", bg: "bg-red-500/10", link: "/adminpanel/videos" },
-    { title: "Ligas Monitoradas", value: stats.leagues, icon: Trophy, color: "text-yellow-500", bg: "bg-yellow-500/10", link: "#" },
+    { title: "Monitor Sentinela", value: "Ativo", icon: ShieldCheck, badge: "badge-live", link: "/adminpanel/sentinel" },
+    { title: "Notícias Ativas", value: stats.news, icon: Newspaper, badge: "badge-ft", link: "/adminpanel/news" },
+    { title: "Vídeos na Watch", value: stats.videos, icon: Video, badge: "badge-ft", link: "/adminpanel/videos" },
+    { title: "Ligas Monitoradas", value: stats.leagues, icon: Trophy, badge: "badge-ft", link: "/adminpanel/europa" },
   ];
 
   return (
-    <div className="p-10 space-y-10">
-      <div className="flex justify-between items-center text-white">
+    <div className="space-y-8">
+      {/* Header do Comando Central */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter italic">Comando Central</h1>
-          <p className="text-slate-400 font-medium">Gestão integrada da plataforma ZapScore.</p>
+          <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <span>Comando Central</span>
+            <span className="badge badge-live">Live Hub</span>
+          </h1>
+          <p className="text-[var(--text-muted)] text-sm mt-1">
+            Gestão integrada e tempo real da plataforma ZapScore.
+          </p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center space-x-4 shadow-xl">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
-            <span className="text-sm font-bold uppercase tracking-widest text-slate-300">API Produção Online</span>
+
+        <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-3 border border-[var(--glass-border)]">
+          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">API Produção Online</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {cards.map((card, i) => (
-          <Link href={card.link} key={i} className="bg-slate-900 p-8 rounded-3xl border border-slate-800 hover:border-orange-500/50 transition-all shadow-xl group">
-            <div className={`w-14 h-14 ${card.bg} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-              <card.icon className={`${card.color}`} size={28} />
-            </div>
-            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">{card.title}</p>
-            <div className="flex items-end justify-between">
-                <h3 className="text-4xl font-black text-white">{card.value}</h3>
-                <ExternalLink size={16} className="text-slate-700 group-hover:text-white transition-colors" />
-            </div>
-          </Link>
-        ))}
+      {/* Grid de Cards com Estilo ZapScore Nativo (.card / .glass) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {cards.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <Link href={card.link} key={i} className="card group flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] flex items-center justify-center text-[var(--primary)] group-hover:scale-110 transition-transform">
+                    <Icon size={24} />
+                  </div>
+                  <span className={`badge ${card.badge}`}>{card.value}</span>
+                </div>
+                <p className="text-[var(--text-muted)] font-bold text-xs uppercase tracking-wider mb-1">{card.title}</p>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
+                <span className="text-xs font-bold text-white group-hover:text-[var(--primary)] transition-colors">Acessar</span>
+                <ArrowRight size={16} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-1 transition-all" />
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-slate-900 p-10 rounded-3xl border border-slate-800 shadow-xl space-y-6">
-            <div className="flex items-center space-x-3 mb-4">
-                <Activity className="text-orange-500" />
-                <h4 className="text-2xl font-black text-white uppercase tracking-tight italic">Status da Automação</h4>
+      {/* Seção Status de Automação & Card Destaque */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 card glass space-y-6">
+          <div className="flex items-center gap-3">
+            <Activity className="text-[var(--primary)]" size={24} />
+            <h4 className="text-xl font-bold text-white uppercase tracking-tight">Status da Automação ZapScore</h4>
+          </div>
+          <p className="text-[var(--text-muted)] text-sm leading-relaxed">
+            A plataforma ZapScore está configurada para sincronizar dados, placares ao vivo e mídias de todas as ligas monitoradas automaticamente via microsserviços.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="p-4 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] flex justify-between items-center">
+              <span className="text-white font-bold uppercase text-xs tracking-wider">Último Sync</span>
+              <span className="text-emerald-400 text-sm font-black font-mono">OK / 100%</span>
             </div>
-            <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                O ZapScore está configurado para buscar novas notícias e vídeos automaticamente a cada 6 horas através do serviço de sincronização do backend.
+            <div className="p-4 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] flex justify-between items-center">
+              <span className="text-white font-bold uppercase text-xs tracking-wider">Base de Dados</span>
+              <span className="text-emerald-400 text-sm font-black font-mono uppercase">Ativa</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="card bg-gradient-to-br from-[#ff1f1f] to-red-800 text-white p-8 flex flex-col justify-between border-0 shadow-2xl relative overflow-hidden group">
+          <div className="relative z-10 space-y-4">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <Zap size={20} className="text-white" />
+            </div>
+            <h4 className="text-2xl font-black uppercase italic leading-tight">Módulo Europa Ativo</h4>
+            <p className="text-white/80 text-xs font-medium">
+              Gerencie todas as 5 competições da Suíte Europa e envie notificações push com 1 clique.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                <div className="p-5 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex justify-between items-center">
-                    <span className="text-white font-bold uppercase text-xs tracking-widest">Último Sync</span>
-                    <span className="text-orange-500 text-sm font-black font-mono">OK</span>
-                </div>
-                <div className="p-5 bg-slate-800/40 rounded-2xl border border-slate-700/50 flex justify-between items-center">
-                    <span className="text-white font-bold uppercase text-xs tracking-widest">Base de Dados</span>
-                    <span className="text-green-500 text-sm font-black font-mono uppercase">Ativa</span>
-                </div>
-            </div>
-        </div>
+          </div>
 
-        <div className="bg-gradient-to-br from-orange-600 to-red-700 p-10 rounded-3xl shadow-2xl flex flex-col justify-center text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-150 transition-transform duration-700">
-                <Newspaper size={120} />
-            </div>
-            <h4 className="text-3xl font-black uppercase italic leading-tight mb-4">Pronto para o Próximo Nível?</h4>
-            <p className="text-orange-100 font-medium mb-6">Sua plataforma está 100% dinâmica. Gerencie notícias e vídeos em segundos.</p>
-            <button className="bg-white text-orange-600 font-black px-6 py-3 rounded-xl shadow-lg hover:bg-orange-50 transition-colors uppercase tracking-widest text-xs">Acessar News</button>
+          <Link
+            href="/adminpanel/europa"
+            className="mt-6 inline-flex items-center justify-center gap-2 bg-white text-[var(--primary)] font-black px-5 py-3 rounded-xl shadow-lg hover:bg-slate-100 transition-colors uppercase tracking-wider text-xs relative z-10"
+          >
+            <span>Acessar Módulo Europa</span>
+            <ArrowRight size={14} />
+          </Link>
         </div>
       </div>
     </div>
