@@ -1,8 +1,21 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Newspaper, Video, Trophy, ShieldCheck, Activity, ArrowRight, Zap } from "lucide-react";
+import { 
+  Newspaper, 
+  Video, 
+  Trophy, 
+  ShieldCheck, 
+  Activity, 
+  ArrowRight, 
+  Zap,
+  Globe,
+  Radio,
+  CheckCircle2,
+  ExternalLink
+} from "lucide-react";
 import Link from "next/link";
+import { ECOSYSTEM_MODULES } from "./registry";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
@@ -19,10 +32,10 @@ export default function AdminDashboard() {
           fetch(`${API_URL}/teams`).then(r => r.json()),
         ]);
         setStats({
-          news: news.length,
-          videos: vids.length,
-          leagues: leagues.length,
-          teams: teams.length
+          news: Array.isArray(news) ? news.length : 0,
+          videos: Array.isArray(vids) ? vids.length : 0,
+          leagues: Array.isArray(leagues) ? leagues.length : 0,
+          teams: Array.isArray(teams) ? teams.length : 0
         });
       } catch (e) {
         console.error("Erro ao carregar estatísticas");
@@ -31,99 +44,199 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
-  const cards = [
-    { title: "Monitor Sentinela", value: "Ativo", icon: ShieldCheck, badge: "badge-live", link: "/adminpanel/sentinel" },
-    { title: "Notícias Ativas", value: stats.news, icon: Newspaper, badge: "badge-ft", link: "/adminpanel/news" },
-    { title: "Vídeos na Watch", value: stats.videos, icon: Video, badge: "badge-ft", link: "/adminpanel/videos" },
-    { title: "Ligas Monitoradas", value: stats.leagues, icon: Trophy, badge: "badge-ft", link: "/adminpanel/europa" },
-  ];
-
   return (
-    <div className="space-y-8">
-      {/* Header do Comando Central */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <span>Comando Central</span>
-            <span className="badge badge-live">Live Hub</span>
-          </h1>
-          <p className="text-[var(--text-muted)] text-sm mt-1">
-            Gestão integrada e tempo real da plataforma ZapScore.
-          </p>
-        </div>
+    <div className="space-y-10" style={{ fontFamily: 'var(--font-outfit)' }}>
+      {/* Hero Section - Idêntico à Foto 1 */}
+      <div className="text-center py-6">
+        <span className="badge badge-live mb-4">
+          • FASE 2: GESTÃO & COMANDO ATIVO
+        </span>
+        <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-4">
+          Comando Central <span style={{ color: 'var(--primary)' }}>ZapScore</span>
+        </h1>
+        <p className="text-[var(--text-muted)] text-base max-w-xl mx-auto">
+          Painel de controle unificado para monitorar estatísticas, conectores de dados, mídias e ecossistemas em tempo real.
+        </p>
 
-        <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-3 border border-[var(--glass-border)]">
-          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">API Produção Online</span>
-        </div>
-      </div>
-
-      {/* Grid de Cards com Estilo ZapScore Nativo (.card / .glass) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((card, i) => {
-          const Icon = card.icon;
-          return (
-            <Link href={card.link} key={i} className="card group flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[var(--surface-hover)] border border-[var(--border)] flex items-center justify-center text-[var(--primary)] group-hover:scale-110 transition-transform">
-                    <Icon size={24} />
-                  </div>
-                  <span className={`badge ${card.badge}`}>{card.value}</span>
-                </div>
-                <p className="text-[var(--text-muted)] font-bold text-xs uppercase tracking-wider mb-1">{card.title}</p>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-[var(--border)]">
-                <span className="text-xs font-bold text-white group-hover:text-[var(--primary)] transition-colors">Acessar</span>
-                <ArrowRight size={16} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-1 transition-all" />
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Seção Status de Automação & Card Destaque */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 card glass space-y-6">
-          <div className="flex items-center gap-3">
-            <Activity className="text-[var(--primary)]" size={24} />
-            <h4 className="text-xl font-bold text-white uppercase tracking-tight">Status da Automação ZapScore</h4>
-          </div>
-          <p className="text-[var(--text-muted)] text-sm leading-relaxed">
-            A plataforma ZapScore está configurada para sincronizar dados, placares ao vivo e mídias de todas as ligas monitoradas automaticamente via microsserviços.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] flex justify-between items-center">
-              <span className="text-white font-bold uppercase text-xs tracking-wider">Último Sync</span>
-              <span className="text-emerald-400 text-sm font-black font-mono">OK / 100%</span>
-            </div>
-            <div className="p-4 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] flex justify-between items-center">
-              <span className="text-white font-bold uppercase text-xs tracking-wider">Base de Dados</span>
-              <span className="text-emerald-400 text-sm font-black font-mono uppercase">Ativa</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card bg-gradient-to-br from-[#ff1f1f] to-red-800 text-white p-8 flex flex-col justify-between border-0 shadow-2xl relative overflow-hidden group">
-          <div className="relative z-10 space-y-4">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Zap size={20} className="text-white" />
-            </div>
-            <h4 className="text-2xl font-black uppercase italic leading-tight">Módulo Europa Ativo</h4>
-            <p className="text-white/80 text-xs font-medium">
-              Gerencie todas as 5 competições da Suíte Europa e envie notificações push com 1 clique.
-            </p>
-          </div>
-
+        <div className="flex items-center justify-center gap-4 mt-6">
           <Link
             href="/adminpanel/europa"
-            className="mt-6 inline-flex items-center justify-center gap-2 bg-white text-[var(--primary)] font-black px-5 py-3 rounded-xl shadow-lg hover:bg-slate-100 transition-colors uppercase tracking-wider text-xs relative z-10"
+            style={{ background: 'var(--primary)', boxShadow: '0 0 20px var(--primary-glow)' }}
+            className="px-6 py-3 rounded-full text-white font-bold text-sm hover:opacity-90 transition-all flex items-center gap-2"
           >
-            <span>Acessar Módulo Europa</span>
-            <ArrowRight size={14} />
+            <span>Módulo Europa</span>
+            <ArrowRight size={16} />
           </Link>
+
+          <Link
+            href="/adminpanel/sentinel"
+            className="card py-3 px-6 rounded-full text-white font-bold text-sm hover:border-[var(--primary)] transition-all flex items-center gap-2"
+          >
+            <ShieldCheck size={16} className="text-emerald-400" />
+            <span>Monitor Sentinela</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Grid de 2 Colunas - Idêntico à Foto 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Coluna da Esquerda (2 Terços): Lista de Módulos & Ligas Monitoradas */}
+        <div className="lg:col-span-2 card space-y-4">
+          <div className="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Trophy size={20} className="text-amber-400" />
+              <span>Módulos & Competições Ativas</span>
+            </h2>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
+              {ECOSYSTEM_MODULES.length} ECOSSISTEMAS
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {/* Item 1: Módulo Europa */}
+            <Link
+              href="/adminpanel/europa"
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              className="p-4 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+                  🇪🇺
+                </div>
+                <div>
+                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-sm">
+                    Módulo Europa (PocketBase)
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Bundesliga, La Liga, Premier League, Ligue 1, Serie A
+                  </p>
+                </div>
+              </div>
+              <span className="badge badge-ft">• ONLINE</span>
+            </Link>
+
+            {/* Item 2: Sentinela */}
+            <Link
+              href="/adminpanel/sentinel"
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              className="p-4 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors text-sm">
+                    Monitor Sentinela (Autocorreção)
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Auditoria de fusos, placares ao vivo e consistência
+                  </p>
+                </div>
+              </div>
+              <span className="badge badge-live">• AUDITORIA ATIVA</span>
+            </Link>
+
+            {/* Item 3: Gestão de Notícias */}
+            <Link
+              href="/adminpanel/news"
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              className="p-4 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
+                  <Newspaper size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-sm">
+                    Central de Notícias & RSS
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {stats.news} Matérias jornalísticas sincronizadas
+                  </p>
+                </div>
+              </div>
+              <span className="badge badge-ft">• ONLINE</span>
+            </Link>
+
+            {/* Item 4: Gestão de Vídeos */}
+            <Link
+              href="/adminpanel/videos"
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              className="p-4 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                  <Video size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-sm">
+                    Vídeos na Watch (Gols & Melhores Momentos)
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {stats.videos} Vídeos ativos na plataforma
+                  </p>
+                </div>
+              </div>
+              <span className="badge badge-ft">• ONLINE</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Coluna da Direita (1 Terço): Engine Status - Idêntico ao Card da Direita da Foto 1 */}
+        <div className="card space-y-6">
+          <div className="flex items-center gap-2 pb-4 border-b border-[var(--border)]">
+            <Zap size={20} style={{ color: 'var(--primary)' }} />
+            <h2 className="text-lg font-bold text-white">Engine Status</h2>
+          </div>
+
+          {/* Health Check Block */}
+          <div 
+            style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+            className="p-4 rounded-2xl space-y-2"
+          >
+            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+              Health Check
+            </p>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-white">Sistema Operacional</h3>
+              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Versão e Ambiente */}
+          <div className="grid grid-cols-2 gap-4">
+            <div 
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              className="p-4 rounded-2xl"
+            >
+              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                Versão
+              </p>
+              <p className="text-base font-black text-white font-mono">2.4.0</p>
+            </div>
+
+            <div 
+              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+              className="p-4 rounded-2xl"
+            >
+              <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
+                Ambiente
+              </p>
+              <p className="text-base font-black text-emerald-400 font-mono">production</p>
+            </div>
+          </div>
+
+          {/* Recorde Temporal Ativo */}
+          <div 
+            style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+            className="p-4 rounded-2xl space-y-1"
+          >
+            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+              Recorde Temporal Ativo
+            </p>
+            <p className="text-3xl font-black text-[var(--primary)] font-mono">2026</p>
+          </div>
         </div>
       </div>
     </div>
