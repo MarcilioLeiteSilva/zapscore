@@ -1,25 +1,45 @@
+'use client';
+
 import React from "react";
-import AdminSidebar from "./components/AdminSidebar";
-import AdminHeader from "./components/AdminHeader";
+import { SidebarProvider, useSidebar } from "./context/SidebarContext";
+import AppSidebar from "./components/AppSidebar";
+import AppHeader from "./components/AppHeader";
+import Backdrop from "./components/Backdrop";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
+  const { isExpanded, isHovered } = useSidebar();
+  const sidebarVisible = isExpanded || isHovered;
+
   return (
-    <div className="flex h-screen w-screen bg-[#020205] text-slate-100 overflow-hidden font-sans antialiased">
-      {/* Sidebar Modular Categorizado */}
-      <AdminSidebar />
+    <div className="min-h-screen bg-[#020205] text-slate-100 font-sans antialiased flex flex-col">
+      {/* Sidebar & Backdrop Mobile */}
+      <AppSidebar />
+      <Backdrop />
 
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+      {/* Main Area Margins dynamically adjust based on Sidebar state */}
+      <div
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+          sidebarVisible ? "lg:ml-64" : "lg:ml-20"
+        }`}
+      >
         {/* Header */}
-        <AdminHeader />
+        <AppHeader />
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#020205] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900/40 via-slate-950 to-black">
+        {/* Dynamic Page Content */}
+        <main className="flex-1 p-4 md:p-8 bg-[#020205] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-black overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </SidebarProvider>
   );
 }
