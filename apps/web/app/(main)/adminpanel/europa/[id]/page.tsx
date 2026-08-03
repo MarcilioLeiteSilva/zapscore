@@ -18,6 +18,7 @@ import {
   Search,
   Globe
 } from "lucide-react";
+import { useParams } from "next/navigation";
 import { ECOSYSTEM_MODULES, LeagueConfig } from "../../registry";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
@@ -57,9 +58,9 @@ interface ScorerItem {
   penalties?: number;
 }
 
-export default function EuropaLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const leagueIdStr = resolvedParams.id;
+export default function EuropaLeagueDetailPage() {
+  const params = useParams();
+  const leagueIdStr = (params?.id as string) || "";
   const leagueIdNum = parseInt(leagueIdStr, 10);
 
   // Informações da Liga

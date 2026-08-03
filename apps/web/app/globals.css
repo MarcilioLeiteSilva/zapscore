@@ -93,6 +93,7 @@ h1, h2, h3, h4 {
   background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.03), transparent);
   transform: translateX(-100%);
   transition: 0.6s;
+  pointer-events: none;
 }
 
 .card:hover::before {

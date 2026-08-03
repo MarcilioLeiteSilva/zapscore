@@ -1,10 +1,13 @@
+"use client";
+
 import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Globe, Database, Zap, ChevronRight, Server, ShieldCheck, Trophy } from 'lucide-react';
 import { ECOSYSTEM_MODULES } from '../registry';
 
-import Link from 'next/link';
-
 export default function EuropaModulePage() {
+  const router = useRouter();
   const europaModule = ECOSYSTEM_MODULES.find((m) => m.id === 'europa');
 
   return (
@@ -54,7 +57,8 @@ export default function EuropaModulePage() {
             <Link
               key={league.id}
               href={`/adminpanel/europa/${league.id}`}
-              className="card group hover:border-[var(--primary)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+              onClick={() => router.push(`/adminpanel/europa/${league.id}`)}
+              className="card group hover:border-[var(--primary)] transition-all duration-300 flex flex-col justify-between cursor-pointer block relative z-10"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
