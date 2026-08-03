@@ -34,7 +34,6 @@ class _NewsPageState extends State<NewsPage> {
 
     final Set<String> candidates = {};
 
-    // Coleta nomes de times do HomeState se disponíveis
     if (homeState is HomeLoaded) {
       for (var comp in homeState.competitions) {
         for (var m in comp.matches) {
@@ -44,14 +43,12 @@ class _NewsPageState extends State<NewsPage> {
       }
     }
 
-    // Coleta fontes únicas das notícias
     for (var n in allNews) {
       if (n.source != null && n.source!.isNotEmpty) {
         candidates.add(n.source!);
       }
     }
 
-    // Adiciona apenas categorias/times que possuem ao menos 1 notícia relacionada
     final Set<String> addedNames = {'Bundesliga'};
     for (var cand in candidates) {
       if (addedNames.contains(cand)) continue;
@@ -200,5 +197,4 @@ class _NewsPageState extends State<NewsPage> {
       ),
     );
   }
-}
 }

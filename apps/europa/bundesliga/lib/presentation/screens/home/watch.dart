@@ -197,4 +197,3 @@ class _WatchPageState extends State<WatchPage> {
     );
   }
 }
-}
