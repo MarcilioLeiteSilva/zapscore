@@ -11,11 +11,40 @@ class NewsContentScreen extends StatefulWidget {
 class _NewsContentScreenState extends State<NewsContentScreen> {
   double _progress = 0;
 
+  final String _cleanupScript = """
+    (function() {
+      const hideElements = () => {
+        const selectors = [
+          'header', 'footer', 'nav', '.header', '.footer', '.nav', '.navbar',
+          '.site-header', '.site-footer', '.header-container', '.footer-container',
+          '#header', '#footer', '#site-header', '#site-footer', '.top-bar', '.topbar',
+          '.menu', '.sidebar', 'aside', '.cookie-banner', '#cookie-consent',
+          '.privacy-popup', '.consent-banner', '.newsletter-box', '.subscription-prompt',
+          '.related-posts', '.comments', '#comments', '.social-share', '.share-bar',
+          '.ad-container', '.advertisement', '.ads', '.adsbygoogle', '.banner'
+        ];
+        selectors.forEach(selector => {
+          document.querySelectorAll(selector).forEach(el => {
+            el.style.setProperty('display', 'none', 'important');
+            el.style.setProperty('height', '0px', 'important');
+            el.style.setProperty('visibility', 'hidden', 'important');
+          });
+        });
+        document.body.style.setProperty('padding-top', '0px', 'important');
+        document.body.style.setProperty('margin-top', '0px', 'important');
+      };
+      hideElements();
+      setTimeout(hideElements, 500);
+      setTimeout(hideElements, 1500);
+      setTimeout(hideElements, 3000);
+    })();
+  """;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.news.source?.toUpperCase() ?? 'NEWS', style: const TextStyle(fontSize: 16)),
+        title: Text(widget.news.source?.toUpperCase() ?? 'NOTÍCIA', style: const TextStyle(fontSize: 16)),
         actions: [
           IconButton(
             onPressed: () {},
@@ -32,46 +61,32 @@ class _NewsContentScreenState extends State<NewsContentScreen> {
               supportZoom: true,
               displayZoomControls: false,
               contentBlockers: [
-                // Bloquear domínios de anúncios conhecidos
                 ContentBlocker(
                   trigger: ContentBlockerTrigger(urlFilter: ".*googleadservices.*|.*doubleclick.*|.*googlesyndication.*|.*adservice.*|.*analytics.*|.*adsafeprotected.*|.*outbrain.*|.*taboola.*"),
                   action: ContentBlockerAction(type: ContentBlockerActionType.BLOCK),
                 ),
-                // Esconder elementos de anúncios via CSS
                 ContentBlocker(
                   trigger: ContentBlockerTrigger(urlFilter: ".*"),
                   action: ContentBlockerAction(
                     type: ContentBlockerActionType.CSS_DISPLAY_NONE,
-                    selector: ".advertisement, .ads, .adsbygoogle, .banner, .newsletter, .social-share, .comments, #ads, #banner",
+                    selector: "header, footer, nav, .header, .footer, .nav, .site-header, .site-footer, .advertisement, .ads, .adsbygoogle, .banner, .newsletter, .social-share, .comments, #ads, #banner, .cookie-banner",
                   ),
                 ),
               ],
             ),
-            onWebViewCreated: (controller) {
+            onLoadStart: (controller, url) {
+              controller.evaluateJavascript(source: _cleanupScript);
             },
             onProgressChanged: (controller, progress) {
               setState(() {
                 _progress = progress / 100;
               });
+              if (progress > 40) {
+                controller.evaluateJavascript(source: _cleanupScript);
+              }
             },
             onLoadStop: (controller, url) async {
-              // Script para suprimir cabeçalho, rodapé e menus
-              await controller.evaluateJavascript(source: """
-                (function() {
-                  const selectors = [
-                    'header', 'footer', '.header', '.footer', 'nav', '.nav', 
-                    '.menu', '#header', '#footer', '.advertisement', '.ads',
-                    '.sidebar', 'aside', '.newsletter-box', '.related-posts'
-                  ];
-                  selectors.forEach(selector => {
-                    const elements = document.querySelectorAll(selector);
-                    elements.forEach(el => el.style.display = 'none');
-                  });
-                  // Ajuste de margem para evitar buracos brancos no topo
-                  document.body.style.paddingTop = '0';
-                  document.body.style.marginTop = '0';
-                })();
-              """);
+              await controller.evaluateJavascript(source: _cleanupScript);
             },
           ),
           if (_progress < 1.0)
