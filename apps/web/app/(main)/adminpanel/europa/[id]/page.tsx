@@ -459,7 +459,7 @@ export default function EuropaLeagueDetailPage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={fetchNews}
+                onClick={() => fetchNews()}
                 className="p-3 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-xl transition-all border border-[var(--border)]"
                 title="Atualizar Notícias"
               >
@@ -576,7 +576,7 @@ export default function EuropaLeagueDetailPage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={fetchVideos}
+                onClick={() => fetchVideos()}
                 className="p-3 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-xl transition-all border border-[var(--border)]"
                 title="Atualizar Vídeos"
               >
