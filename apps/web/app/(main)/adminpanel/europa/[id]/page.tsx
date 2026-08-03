@@ -26,8 +26,10 @@ const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 interface NewsItem {
   id: string;
   title: string;
-  source: string;
-  url: string;
+  description?: string;
+  source?: string;
+  url?: string;
+  externalUrl?: string;
   imageUrl?: string;
   publishedAt?: string;
   leagueId?: string;
@@ -105,6 +107,7 @@ export default function EuropaLeagueDetailPage() {
   const [currentNewsId, setCurrentNewsId] = useState<string | null>(null);
   const [newsFormData, setNewsFormData] = useState({
     title: "",
+    description: "",
     source: "",
     url: "",
     imageUrl: "",
@@ -228,14 +231,15 @@ export default function EuropaLeagueDetailPage() {
     if (item) {
       setCurrentNewsId(item.id);
       setNewsFormData({
-        title: item.title,
+        title: item.title || "",
+        description: item.description || item.title || "",
         source: item.source || "",
-        url: item.url || "",
+        url: item.url || item.externalUrl || "",
         imageUrl: item.imageUrl || "",
       });
     } else {
       setCurrentNewsId(null);
-      setNewsFormData({ title: "", source: "", url: "", imageUrl: "" });
+      setNewsFormData({ title: "", description: "", source: "ZapScore", url: "", imageUrl: "" });
     }
     setIsNewsModalOpen(true);
   };
@@ -247,7 +251,11 @@ export default function EuropaLeagueDetailPage() {
       const url = currentNewsId ? `${API_URL}/news/${currentNewsId}` : `${API_URL}/news`;
       const method = currentNewsId ? "PUT" : "POST";
       const payload = {
-        ...newsFormData,
+        title: newsFormData.title,
+        description: newsFormData.description || newsFormData.title,
+        source: newsFormData.source || "ZapScore",
+        imageUrl: newsFormData.imageUrl || null,
+        externalUrl: newsFormData.url || null,
         leagueId: leagueIdStr,
       };
 
@@ -869,6 +877,19 @@ export default function EuropaLeagueDetailPage() {
                   className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-medium"
                   value={newsFormData.title}
                   onChange={(e) => setNewsFormData({ ...newsFormData, title: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                  Resumo / Descrição
+                </label>
+                <input
+                  type="text"
+                  placeholder="Resumo da matéria..."
+                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-medium"
+                  value={newsFormData.description}
+                  onChange={(e) => setNewsFormData({ ...newsFormData, description: e.target.value })}
                 />
               </div>
 
