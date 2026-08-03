@@ -294,7 +294,7 @@ export default function EuropaLeagueDetailPage() {
   );
 
   return (
-    <div className="space-y-8" style={{ fontFamily: "var(--font-outfit)" }}>
+    <div className="space-y-[30px]" style={{ fontFamily: "var(--font-outfit)" }}>
       {/* Topo / Voltar */}
       <div className="flex items-center gap-4">
         <Link

@@ -11,7 +11,7 @@ export default function EuropaModulePage() {
   const europaModule = ECOSYSTEM_MODULES.find((m) => m.id === 'europa');
 
   return (
-    <div className="space-y-8" style={{ fontFamily: 'var(--font-outfit)' }}>
+    <div className="space-y-[30px]" style={{ fontFamily: 'var(--font-outfit)' }}>
       {/* Header do Módulo Europa */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-[var(--border)]">
         <div>
@@ -41,7 +41,7 @@ export default function EuropaModulePage() {
       </div>
 
       {/* Grid de Ligas Cobertas - Estilo Idêntico às Figuras 1 e 2 */}
-      <div className="space-y-4">
+      <div className="space-y-[30px]">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-white flex items-center gap-3">
             <Trophy size={20} className="text-amber-400" />
@@ -52,7 +52,7 @@ export default function EuropaModulePage() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[30px]">
           {europaModule?.leagues.map((league) => (
             <Link
               key={league.id}
