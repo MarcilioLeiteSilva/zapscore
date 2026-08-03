@@ -114,18 +114,46 @@ export default function EuropaLeagueDetailPage() {
   });
   const [submittingNews, setSubmittingNews] = useState(false);
 
+  // UUID no banco Prisma (diferente de externalId)
+  const [leagueUuid, setLeagueUuid] = useState<string | null>(null);
+
   // Efeitos de carregamento
   useEffect(() => {
-    fetchNews();
-    fetchVideos();
-    fetchScorers();
+    resolveLeagueUuidAndFetch();
   }, [leagueIdStr]);
 
+  const resolveLeagueUuidAndFetch = async () => {
+    let resolvedUuid: string | null = null;
+    try {
+      const res = await fetch(`${API_URL}/competitions/stored`);
+      if (res.ok) {
+        const leagues = await res.json();
+        if (Array.isArray(leagues)) {
+          const match = leagues.find(
+            (l: any) => l.externalId === leagueIdNum || l.id === leagueIdStr
+          );
+          if (match?.id) {
+            resolvedUuid = match.id;
+            setLeagueUuid(match.id);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao buscar UUID da liga:", e);
+    }
+
+    fetchNews(resolvedUuid);
+    fetchVideos(resolvedUuid);
+    fetchScorers();
+  };
+
   // Carregar Notícias filtradas por Liga
-  const fetchNews = async () => {
+  const fetchNews = async (targetUuid?: string | null) => {
     try {
       setLoadingNews(true);
-      const res = await fetch(`${API_URL}/news?limit=100&leagueId=${leagueIdStr}`);
+      const uuidToUse = targetUuid !== undefined ? targetUuid : leagueUuid;
+      const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${leagueIdStr}`;
+      const res = await fetch(`${API_URL}/news?limit=100&${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         setNews(Array.isArray(data) ? data : []);
@@ -138,10 +166,12 @@ export default function EuropaLeagueDetailPage() {
   };
 
   // Carregar Vídeos filtrados por Liga
-  const fetchVideos = async () => {
+  const fetchVideos = async (targetUuid?: string | null) => {
     try {
       setLoadingVideos(true);
-      const res = await fetch(`${API_URL}/videos?limit=100&leagueId=${leagueIdStr}`);
+      const uuidToUse = targetUuid !== undefined ? targetUuid : leagueUuid;
+      const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${leagueIdStr}`;
+      const res = await fetch(`${API_URL}/videos?limit=100&${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         setVideos(Array.isArray(data) ? data : []);
@@ -194,7 +224,7 @@ export default function EuropaLeagueDetailPage() {
       const method = currentVideoId ? "PUT" : "POST";
       const payload = {
         ...videoFormData,
-        leagueId: leagueIdStr,
+        leagueId: leagueUuid || null,
       };
 
       const res = await fetch(url, {
@@ -256,7 +286,7 @@ export default function EuropaLeagueDetailPage() {
         source: newsFormData.source || "ZapScore",
         imageUrl: newsFormData.imageUrl || null,
         externalUrl: newsFormData.url || null,
-        leagueId: leagueIdStr,
+        leagueId: leagueUuid || null,
       };
 
       const res = await fetch(url, {
