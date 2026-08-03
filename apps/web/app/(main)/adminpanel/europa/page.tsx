@@ -2,6 +2,8 @@ import React from 'react';
 import { Globe, Database, Zap, ChevronRight, Server, ShieldCheck, Trophy } from 'lucide-react';
 import { ECOSYSTEM_MODULES } from '../registry';
 
+import Link from 'next/link';
+
 export default function EuropaModulePage() {
   const europaModule = ECOSYSTEM_MODULES.find((m) => m.id === 'europa');
 
@@ -49,9 +51,10 @@ export default function EuropaModulePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {europaModule?.leagues.map((league) => (
-            <div
+            <Link
               key={league.id}
-              className="card group hover:border-[var(--primary)] transition-all duration-300 flex flex-col justify-between"
+              href={`/adminpanel/europa/${league.id}`}
+              className="card group hover:border-[var(--primary)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -77,7 +80,7 @@ export default function EuropaModulePage() {
                 </div>
                 <ChevronRight size={16} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] group-hover:translate-x-1 transition-all" />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
