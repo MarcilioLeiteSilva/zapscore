@@ -33,13 +33,11 @@ class ApiClient {
     try {
       final leagues = await getStoredLeagues();
       final targetExtId = int.tryParse(rawLeagueId);
-      final match = leagues.firstWhere(
-        (l) => l.id == rawLeagueId || (targetExtId != null && l.externalId == targetExtId),
-        orElse: () => League(),
-      );
-      if (match.id != null && match.id!.isNotEmpty) {
-        _resolvedLeagueUuid = match.id;
-        return match.id;
+      for (final l in leagues) {
+        if (l.id == rawLeagueId || (targetExtId != null && l.externalId == targetExtId)) {
+          _resolvedLeagueUuid = l.id;
+          return l.id;
+        }
       }
     } catch (_) {}
     return null;
