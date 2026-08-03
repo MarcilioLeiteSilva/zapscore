@@ -132,7 +132,7 @@ export default function ZapScoreAdminSidebar({
         </div>
 
         {/* Ecossistemas */}
-        <div>
+        <div className="border-t border-[var(--border)] pt-4">
           {!isCollapsed && (
             <div className="flex items-center justify-between px-3 mb-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
@@ -175,7 +175,7 @@ export default function ZapScoreAdminSidebar({
         </div>
 
         {/* Gestão de Conteúdo */}
-        <div>
+        <div className="border-t border-[var(--border)] pt-4">
           {!isCollapsed && (
             <p className="px-3 text-[10px] font-bold uppercase tracking-widest mb-3 text-[var(--text-muted)]">
               Gestão Conteúdo

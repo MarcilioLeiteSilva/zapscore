@@ -105,12 +105,12 @@ export default function SentinelAdminPage() {
   ).length;
 
   return (
-    <div className="p-8 md:p-12 space-y-10">
+    <div className="space-y-8" style={{ fontFamily: 'var(--font-outfit)' }}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-[var(--border)]">
         <div>
           <div className="flex items-center space-x-3">
-            <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
+            <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">
               Monitor Sentinela
             </h1>
             <span className="px-3.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-full border border-emerald-500/30 tracking-widest uppercase flex items-center space-x-1.5">
@@ -118,20 +118,20 @@ export default function SentinelAdminPage() {
               <span>AUDITORIA ATIVA</span>
             </span>
           </div>
-          <p className="text-slate-400 font-medium mt-2">
+          <p className="text-[var(--text-muted)] text-sm font-medium mt-2">
             Supervisão autônoma em tempo real, consistência de fusos e autocorreção de partidas.
           </p>
         </div>
 
         {/* Chave API & Refresh */}
-        <div className="glass p-3 rounded-2xl border border-[var(--border)] shadow-xl flex items-center space-x-3">
+        <div className="card p-3.5 rounded-2xl border border-[var(--border)] flex items-center space-x-3 shrink-0">
           <Key size={16} className="text-amber-400" />
           <input
             type="password"
             placeholder="Chave API Admin..."
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
-            className="bg-[var(--surface-hover)] text-xs text-white px-3 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 w-44 font-mono border border-[var(--border)]"
+            className="admin-input text-xs w-44 font-mono min-h-[38px] py-1.5 px-3"
           />
           <button
             onClick={fetchSentinelData}
@@ -147,7 +147,7 @@ export default function SentinelAdminPage() {
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* System Health */}
-        <div className="card glass">
+        <div className="card p-5">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Status do Sistema
@@ -170,47 +170,47 @@ export default function SentinelAdminPage() {
         </div>
 
         {/* Today's Fixtures */}
-        <div className="card glass">
+        <div className="card p-5">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Jogos de Hoje
             </span>
             <Calendar className="text-amber-400" size={22} />
           </div>
-          <h3 className="text-3xl font-black text-white mt-4">{fixtures.length} Partidas</h3>
+          <h3 className="text-3xl font-black text-white mt-4 font-mono">{fixtures.length} Partidas</h3>
           <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Fuso: America/Sao_Paulo</p>
         </div>
 
         {/* Live Matches */}
-        <div className="card glass">
+        <div className="card p-5">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Partidas Ao Vivo
             </span>
             <Flame className="text-[var(--primary)]" size={22} />
           </div>
-          <h3 className="text-3xl font-black text-[var(--primary)] mt-4">{liveMatchesCount} Ao Vivo</h3>
+          <h3 className="text-3xl font-black text-[var(--primary)] mt-4 font-mono">{liveMatchesCount} Ao Vivo</h3>
           <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Sincronia contínua</p>
         </div>
 
         {/* Auto Heals */}
-        <div className="card glass">
+        <div className="card p-5">
           <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Autocorreções
             </span>
             <Wrench className="text-blue-400" size={22} />
           </div>
           <h3 className="text-3xl font-black text-blue-400 mt-4">Ativas</h3>
-          <p className="text-xs text-slate-500 mt-2 font-medium">Auto-healing ativado</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Auto-healing ativado</p>
         </div>
       </div>
 
       {/* Emergency Actions */}
-      <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl space-y-6">
-        <div className="flex items-center space-x-3">
+      <div className="card p-6 space-y-6">
+        <div className="flex items-center space-x-3 pb-4 border-b border-[var(--border)]">
           <ShieldCheck className="text-emerald-400" size={24} />
-          <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">
+          <h3 className="text-xl font-black text-white uppercase italic tracking-tight">
             Ações de Emergência e Manutenção
           </h3>
         </div>
