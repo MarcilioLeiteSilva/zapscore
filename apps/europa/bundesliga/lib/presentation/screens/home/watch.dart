@@ -11,6 +11,14 @@ class _WatchPageState extends State<WatchPage> {
   int indexTab = 0;
   String? selectedLeagueId = '78';
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VideoCubit>().fetchVideos(leagueId: selectedLeagueId, limit: 100);
+    });
+  }
+
   Widget _buildCompetitionFilters() {
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, homeState) {

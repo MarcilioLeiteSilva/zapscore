@@ -23,9 +23,36 @@ class ApiClient {
     }
   }
 
+  String? _resolvedLeagueUuid;
+
+  Future<String?> _resolveLeagueIdToUuid(String? rawLeagueId) async {
+    if (rawLeagueId == null || rawLeagueId.isEmpty) return null;
+    if (rawLeagueId.contains('-')) return rawLeagueId;
+    if (_resolvedLeagueUuid != null) return _resolvedLeagueUuid;
+
+    try {
+      final leagues = await getStoredLeagues();
+      final targetExtId = int.tryParse(rawLeagueId);
+      final match = leagues.firstWhere(
+        (l) => l.id == rawLeagueId || (targetExtId != null && l.externalId == targetExtId),
+        orElse: () => League(),
+      );
+      if (match.id != null && match.id!.isNotEmpty) {
+        _resolvedLeagueUuid = match.id;
+        return match.id;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<List<News>> getNews({String? leagueId, String? teamId, int limit = 100}) async {
-    final effectiveLeagueId = leagueId ?? '78';
-    String url = '$baseUrl/news?limit=$limit&leagueId=$effectiveLeagueId';
+    final resolvedUuid = await _resolveLeagueIdToUuid(leagueId ?? '78');
+    String url = '$baseUrl/news?limit=$limit';
+    if (resolvedUuid != null) {
+      url += '&leagueId=$resolvedUuid';
+    } else if (leagueId != null) {
+      url += '&leagueId=$leagueId';
+    }
     if (teamId != null) url += '&teamId=$teamId';
     
     final response = await http.get(Uri.parse(url));
@@ -39,8 +66,13 @@ class ApiClient {
   }
 
   Future<List<Video>> getVideos({String? leagueId, String? teamId, int limit = 100}) async {
-    final effectiveLeagueId = leagueId ?? '78';
-    String url = '$baseUrl/videos?limit=$limit&leagueId=$effectiveLeagueId';
+    final resolvedUuid = await _resolveLeagueIdToUuid(leagueId ?? '78');
+    String url = '$baseUrl/videos?limit=$limit';
+    if (resolvedUuid != null) {
+      url += '&leagueId=$resolvedUuid';
+    } else if (leagueId != null) {
+      url += '&leagueId=$leagueId';
+    }
     if (teamId != null) url += '&teamId=$teamId';
 
     final response = await http.get(Uri.parse(url));

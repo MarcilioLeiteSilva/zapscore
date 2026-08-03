@@ -11,6 +11,14 @@ class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
   String? selectedLeagueId = '78';
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NewsCubit>().fetchNews(leagueId: selectedLeagueId, limit: 100);
+    });
+  }
+
   Widget _buildCompetitionFilters() {
     return BlocBuilder<HomeCubit, HomeState>(
       builder: (context, homeState) {
