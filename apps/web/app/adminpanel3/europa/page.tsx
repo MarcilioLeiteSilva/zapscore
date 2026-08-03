@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Globe, Newspaper, Video, Trophy, ExternalLink } from 'lucide-react';
-import { EUROPEAN_LEAGUES } from '../../(main)/adminpanel/registry';
+import { EUROPEAN_LEAGUES } from '../registry';
 
 export default function Admin3EuropaPage() {
   return (

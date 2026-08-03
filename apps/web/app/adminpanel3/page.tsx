@@ -160,11 +160,11 @@ export default function Admin3Dashboard() {
                           {module.name}
                         </h3>
                         <span className="badge badge-ft text-[10px] px-2 py-0.5 font-bold">
-                          {module.leaguesCount} Ligas
+                          {module.leagues?.length ?? 0} Ligas
                         </span>
                       </div>
                       <p className="text-xs text-[var(--text-muted)] mt-1">
-                        {module.description}
+                        Gestão de ligas, notícias, vídeos e artilharia.
                       </p>
                     </div>
                   </div>

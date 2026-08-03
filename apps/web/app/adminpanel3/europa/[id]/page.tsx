@@ -16,7 +16,7 @@ import {
   X,
   Play
 } from 'lucide-react';
-import { EUROPEAN_LEAGUES } from '../../../(main)/adminpanel/registry';
+import { EUROPEAN_LEAGUES } from '../../registry';
 
 const API_URL = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';
 
