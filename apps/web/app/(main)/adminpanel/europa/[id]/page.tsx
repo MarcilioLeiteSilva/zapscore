@@ -770,13 +770,15 @@ export default function EuropaLeagueDetailPage() {
 
       {/* --- MODAL DE INSERIR / EDITAR VÍDEO --- */}
       {isVideoModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--surface)] w-full max-w-xl rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-[var(--border)] flex justify-between items-center text-white">
-              <div className="flex items-center gap-2">
-                <Video className="text-red-500" size={20} />
-                <h3 className="text-lg font-bold">
-                  {currentVideoId ? "Editar Vídeo" : `Novo Vídeo - ${leagueName}`}
+        <div className="modal-overlay">
+          <div className="modal-container animate-in fade-in zoom-in duration-200">
+            <div className="modal-header">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                  <Video size={18} />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  {currentVideoId ? "Editar Vídeo" : `Novo Vídeo — ${leagueName}`}
                 </h3>
               </div>
               <button
@@ -787,86 +789,78 @@ export default function EuropaLeagueDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveVideo} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  Título do Vídeo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Melhores Momentos - Bayern vs Dortmund"
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-red-500 font-medium"
-                  value={videoFormData.title}
-                  onChange={(e) => setVideoFormData({ ...videoFormData, title: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSaveVideo} className="flex flex-col flex-1 min-h-0">
+              <div className="modal-body space-y-4">
                 <div>
-                  <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Duração (Ex: 04:30)
-                  </label>
+                  <label className="admin-label">Título do Vídeo *</label>
                   <input
                     type="text"
-                    placeholder="00:00"
-                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-red-500 font-mono"
-                    value={videoFormData.duration}
-                    onChange={(e) => setVideoFormData({ ...videoFormData, duration: e.target.value })}
+                    required
+                    placeholder="Ex: Melhores Momentos - Bayern vs Dortmund"
+                    className="admin-input"
+                    value={videoFormData.title}
+                    onChange={(e) => setVideoFormData({ ...videoFormData, title: e.target.value })}
                   />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="admin-label">Duração (Ex: 04:30)</label>
+                    <input
+                      type="text"
+                      placeholder="00:00"
+                      className="admin-input font-mono"
+                      value={videoFormData.duration}
+                      onChange={(e) => setVideoFormData({ ...videoFormData, duration: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-label">Competição</label>
+                    <input
+                      type="text"
+                      disabled
+                      value={`${leagueName} (ID: ${leagueIdStr})`}
+                      className="admin-input text-[var(--text-muted)] cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Competição ID
-                  </label>
+                  <label className="admin-label">URL da Thumbnail (Imagem)</label>
                   <input
                     type="text"
-                    disabled
-                    value={`${leagueName} (ID: ${leagueIdStr})`}
-                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-[var(--text-muted)] cursor-not-allowed font-medium"
+                    placeholder="https://..."
+                    className="admin-input font-mono"
+                    value={videoFormData.thumbnailUrl}
+                    onChange={(e) => setVideoFormData({ ...videoFormData, thumbnailUrl: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="admin-label">URL do Vídeo (YouTube ou MP4) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="admin-input font-mono"
+                    value={videoFormData.videoUrl}
+                    onChange={(e) => setVideoFormData({ ...videoFormData, videoUrl: e.target.value })}
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  URL da Thumbnail (Imagem)
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-red-500 font-mono"
-                  value={videoFormData.thumbnailUrl}
-                  onChange={(e) => setVideoFormData({ ...videoFormData, thumbnailUrl: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  URL do Vídeo (YouTube ou MP4) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-red-500 font-mono"
-                  value={videoFormData.videoUrl}
-                  onChange={(e) => setVideoFormData({ ...videoFormData, videoUrl: e.target.value })}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsVideoModalOpen(false)}
-                  className="px-5 py-2.5 text-[var(--text-muted)] font-bold hover:text-white transition-colors"
+                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white transition-colors"
                 >
                   CANCELAR
                 </button>
                 <button
                   type="submit"
                   disabled={submittingVideo}
-                  className="bg-red-600 hover:bg-red-500 px-6 py-2.5 rounded-xl font-bold text-white transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
+                  className="bg-red-600 hover:bg-red-500 px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
                 >
                   {submittingVideo ? "SALVANDO..." : "SALVAR VÍDEO"}
                 </button>
@@ -878,13 +872,15 @@ export default function EuropaLeagueDetailPage() {
 
       {/* --- MODAL DE INSERIR / EDITAR NOTÍCIA --- */}
       {isNewsModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--surface)] w-full max-w-xl rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-6 border-b border-[var(--border)] flex justify-between items-center text-white">
-              <div className="flex items-center gap-2">
-                <Newspaper className="text-[var(--primary)]" size={20} />
-                <h3 className="text-lg font-bold">
-                  {currentNewsId ? "Editar Notícia" : `Nova Notícia - ${leagueName}`}
+        <div className="modal-overlay">
+          <div className="modal-container animate-in fade-in zoom-in duration-200">
+            <div className="modal-header">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center text-[var(--primary)]">
+                  <Newspaper size={18} />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  {currentNewsId ? "Editar Notícia" : `Nova Notícia — ${leagueName}`}
                 </h3>
               </div>
               <button
@@ -895,98 +891,88 @@ export default function EuropaLeagueDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveNews} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  Título da Notícia *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Bayern contrata novo reforço para a temporada"
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-medium"
-                  value={newsFormData.title}
-                  onChange={(e) => setNewsFormData({ ...newsFormData, title: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  Resumo / Descrição
-                </label>
-                <input
-                  type="text"
-                  placeholder="Resumo da matéria..."
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-medium"
-                  value={newsFormData.description}
-                  onChange={(e) => setNewsFormData({ ...newsFormData, description: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSaveNews} className="flex flex-col flex-1 min-h-0">
+              <div className="modal-body space-y-4">
                 <div>
-                  <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Fonte / Portal
-                  </label>
+                  <label className="admin-label">Título da Notícia *</label>
                   <input
                     type="text"
-                    placeholder="Ex: Bild / Kicker"
-                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-medium"
-                    value={newsFormData.source}
-                    onChange={(e) => setNewsFormData({ ...newsFormData, source: e.target.value })}
+                    required
+                    placeholder="Ex: Bayern contrata novo reforço para a temporada"
+                    className="admin-input"
+                    value={newsFormData.title}
+                    onChange={(e) => setNewsFormData({ ...newsFormData, title: e.target.value })}
                   />
                 </div>
+
                 <div>
-                  <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Competição ID
-                  </label>
+                  <label className="admin-label">Resumo / Descrição</label>
                   <input
                     type="text"
-                    disabled
-                    value={`${leagueName} (ID: ${leagueIdStr})`}
-                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-[var(--text-muted)] cursor-not-allowed font-medium"
+                    placeholder="Resumo da matéria..."
+                    className="admin-input"
+                    value={newsFormData.description}
+                    onChange={(e) => setNewsFormData({ ...newsFormData, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="admin-label">Fonte / Portal</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Bild / Kicker"
+                      className="admin-input"
+                      value={newsFormData.source}
+                      onChange={(e) => setNewsFormData({ ...newsFormData, source: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-label">Competição</label>
+                    <input
+                      type="text"
+                      disabled
+                      value={`${leagueName} (ID: ${leagueIdStr})`}
+                      className="admin-input text-[var(--text-muted)] cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="admin-label">URL da Imagem de Capa</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    className="admin-input font-mono"
+                    value={newsFormData.imageUrl}
+                    onChange={(e) => setNewsFormData({ ...newsFormData, imageUrl: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="admin-label">Link Externo da Notícia</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    className="admin-input font-mono"
+                    value={newsFormData.url}
+                    onChange={(e) => setNewsFormData({ ...newsFormData, url: e.target.value })}
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  URL da Imagem de Capa
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-mono"
-                  value={newsFormData.imageUrl}
-                  onChange={(e) => setNewsFormData({ ...newsFormData, imageUrl: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  Link Externo da Notícia
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] p-3 rounded-xl mt-1.5 text-white outline-none focus:border-[var(--primary)] font-mono"
-                  value={newsFormData.url}
-                  onChange={(e) => setNewsFormData({ ...newsFormData, url: e.target.value })}
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsNewsModalOpen(false)}
-                  className="px-5 py-2.5 text-[var(--text-muted)] font-bold hover:text-white transition-colors"
+                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white transition-colors"
                 >
                   CANCELAR
                 </button>
                 <button
                   type="submit"
                   disabled={submittingNews}
-                  className="bg-[var(--primary)] text-black px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg disabled:opacity-50"
+                  className="bg-[var(--primary)] text-black px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg disabled:opacity-50"
                 >
                   {submittingNews ? "SALVANDO..." : "SALVAR NOTÍCIA"}
                 </button>

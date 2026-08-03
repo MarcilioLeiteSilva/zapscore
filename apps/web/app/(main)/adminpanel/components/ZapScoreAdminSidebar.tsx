@@ -96,8 +96,8 @@ export default function ZapScoreAdminSidebar({
                 color: isActive('/adminpanel') ? '#ffffff' : 'var(--text-muted)',
               }}
               className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border hover:text-white hover:bg-[var(--surface-hover)] ${
-                isCollapsed ? 'justify-center px-0' : 'justify-between'
-              }`}
+                isActive('/adminpanel') ? 'border-l-4 border-l-[var(--primary)]' : ''
+              } ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}
               title={isCollapsed ? 'Dashboard' : undefined}
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -114,8 +114,8 @@ export default function ZapScoreAdminSidebar({
                 color: isActive('/adminpanel/sentinel') ? '#ffffff' : 'var(--text-muted)',
               }}
               className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border hover:text-white hover:bg-[var(--surface-hover)] ${
-                isCollapsed ? 'justify-center px-0' : 'justify-between'
-              }`}
+                isActive('/adminpanel/sentinel') ? 'border-l-4 border-l-emerald-400' : ''
+              } ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}
               title={isCollapsed ? 'Monitor Sentinela' : undefined}
             >
               <div className="flex items-center gap-3 min-w-0">

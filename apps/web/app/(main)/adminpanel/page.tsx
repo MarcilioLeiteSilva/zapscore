@@ -68,6 +68,62 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* KPI Cards de Alto Nível */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="card p-5 flex items-center justify-between group hover:border-[var(--primary)] transition-all">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Notícias Publicadas</p>
+            <p className="text-3xl font-black text-white font-mono mt-1">{stats.news}</p>
+            <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+              <span>● Feeds RSS Ativos</span>
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
+            <Newspaper size={24} />
+          </div>
+        </div>
+
+        <div className="card p-5 flex items-center justify-between group hover:border-red-500/40 transition-all">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Vídeos na Watch</p>
+            <p className="text-3xl font-black text-red-400 font-mono mt-1">{stats.videos}</p>
+            <p className="text-[11px] text-slate-400 font-semibold mt-1">
+              Highlights & Gols
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+            <Video size={24} />
+          </div>
+        </div>
+
+        <div className="card p-5 flex items-center justify-between group hover:border-amber-500/40 transition-all">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Ecossistemas</p>
+            <p className="text-3xl font-black text-amber-400 font-mono mt-1">{ECOSYSTEM_MODULES.length}</p>
+            <p className="text-[11px] text-amber-400/80 font-semibold mt-1">
+              Europa, Brasil & Copas
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+            <Trophy size={24} />
+          </div>
+        </div>
+
+        <div className="card p-5 flex items-center justify-between group hover:border-emerald-500/40 transition-all">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Status Engine</p>
+            <p className="text-3xl font-black text-emerald-400 font-mono mt-1">100%</p>
+            <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Monitor Sentinela OK</span>
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+            <ShieldCheck size={24} />
+          </div>
+        </div>
+      </div>
+
       {/* Grid de 2 Colunas - Idêntico ao Layout Premium do ZapScore */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Coluna Principal (2 Terços) */}
