@@ -87,7 +87,7 @@ export class CompetitionsService {
         assists: Number(data.assists || 0),
       },
     });
-    await this.redis.delByPattern('topscorers:*');
+    await this.redis.delPattern('topscorers:*');
     return scorer;
   }
 
@@ -103,7 +103,7 @@ export class CompetitionsService {
         ...(data.goals !== undefined && { goals: Number(data.goals) }),
       },
     });
-    await this.redis.delByPattern('topscorers:*');
+    await this.redis.delPattern('topscorers:*');
     return updated;
   }
 
@@ -111,7 +111,7 @@ export class CompetitionsService {
     const deleted = await this.prisma.scorer.delete({
       where: { id },
     });
-    await this.redis.delByPattern('topscorers:*');
+    await this.redis.delPattern('topscorers:*');
     return deleted;
   }
 }
