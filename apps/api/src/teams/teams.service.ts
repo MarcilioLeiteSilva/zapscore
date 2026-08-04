@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ApiFootballService } from '../integrations/api-football/api-football.service';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
 export class TeamsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly apiFootball: ApiFootballService,
+  ) {}
 
   async findMany(params: {
     leagueId?: number;
@@ -49,6 +53,28 @@ export class TeamsService {
     return this.prisma.team.findUnique({
       where: { id },
     });
+  }
+
+  async getSquad(teamExternalId: number): Promise<Array<{
+    id: number;
+    name: string;
+    age: number;
+    number: number | null;
+    position: string;
+    photo: string;
+  }>> {
+    const raw = await this.apiFootball.getSquads(teamExternalId);
+    if (!raw || raw.length === 0) return [];
+    const entry = raw[0]; // { team: {...}, players: [...] }
+    const players: any[] = entry?.players ?? [];
+    return players.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      age: p.age,
+      number: p.number ?? null,
+      position: p.position,
+      photo: p.photo,
+    }));
   }
 
   async getTeamStats(teamExternalId: number, leagueExternalId: number, season: number) {

@@ -52,6 +52,10 @@ export class ApiFootballService {
     return this.get('/players', params);
   }
 
+  async getSquads(teamId: number) {
+    return this.get('/players/squads', { team: teamId });
+  }
+
   async getHeadToHead(homeTeamId: number, awayTeamId: number) {
     return this.get('/fixtures/headtohead', {
       h2h: `${homeTeamId}-${awayTeamId}`,

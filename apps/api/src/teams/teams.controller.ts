@@ -36,6 +36,13 @@ export class TeamsController {
     );
   }
 
+  @Get(':id/squad')
+  async getSquad(@Param('id') id: string) {
+    const externalId = parseInt(id);
+    if (isNaN(externalId)) return [];
+    return this.teamsService.getSquad(externalId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.teamsService.findOne(id);
