@@ -45,19 +45,24 @@ interface VideoItem {
 }
 
 interface ScorerItem {
-  player: {
-    id: number;
-    name: string;
-    photo?: string;
-  };
-  team: {
-    id: number;
-    name: string;
-    logo?: string;
-  };
+  id?: string;
+  rank: number;
+  playerName?: string;
+  playerPhoto?: string;
+  teamName?: string;
+  teamLogo?: string;
   goals: number;
   assists?: number;
-  penalties?: number;
+  player?: {
+    id?: number;
+    name?: string;
+    photo?: string;
+  };
+  team?: {
+    id?: number;
+    name?: string;
+    logo?: string;
+  };
 }
 
 export default function EuropaLeagueDetailPage() {
@@ -113,6 +118,19 @@ export default function EuropaLeagueDetailPage() {
     imageUrl: "",
   });
   const [submittingNews, setSubmittingNews] = useState(false);
+
+  // Modais de Artilharia
+  const [isScorerModalOpen, setIsScorerModalOpen] = useState(false);
+  const [currentScorerId, setCurrentScorerId] = useState<string | null>(null);
+  const [scorerFormData, setScorerFormData] = useState({
+    rank: 1,
+    playerName: "",
+    playerPhoto: "",
+    teamName: "",
+    teamLogo: "",
+    goals: 0,
+  });
+  const [submittingScorer, setSubmittingScorer] = useState(false);
 
   // UUID no banco Prisma (diferente de externalId)
   const [leagueUuid, setLeagueUuid] = useState<string | null>(null);
@@ -318,6 +336,81 @@ export default function EuropaLeagueDetailPage() {
     }
   };
 
+  // --- HANDLERS DE ARTILHARIA ---
+  const openScorerModal = (item: ScorerItem | null = null) => {
+    if (item) {
+      setCurrentScorerId(item.id || null);
+      setScorerFormData({
+        rank: item.rank ?? 1,
+        playerName: item.playerName || item.player?.name || "",
+        playerPhoto: item.playerPhoto || item.player?.photo || "",
+        teamName: item.teamName || item.team?.name || "",
+        teamLogo: item.teamLogo || item.team?.logo || "",
+        goals: item.goals ?? 0,
+      });
+    } else {
+      setCurrentScorerId(null);
+      setScorerFormData({
+        rank: scorers.length + 1,
+        playerName: "",
+        playerPhoto: "",
+        teamName: "",
+        teamLogo: "",
+        goals: 0,
+      });
+    }
+    setIsScorerModalOpen(true);
+  };
+
+  const handleSaveScorer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingScorer(true);
+    try {
+      const url = currentScorerId
+        ? `${API_URL}/competitions/scorers/${currentScorerId}`
+        : `${API_URL}/competitions/scorers`;
+      const method = currentScorerId ? "PUT" : "POST";
+      const payload = {
+        rank: Number(scorerFormData.rank),
+        playerName: scorerFormData.playerName,
+        playerPhoto: scorerFormData.playerPhoto || null,
+        teamName: scorerFormData.teamName,
+        teamLogo: scorerFormData.teamLogo || null,
+        goals: Number(scorerFormData.goals),
+        leagueId: leagueUuid || leagueIdStr,
+        season: 2026,
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setIsScorerModalOpen(false);
+        fetchScorers();
+      } else {
+        alert("Erro ao salvar artilheiro na API.");
+      }
+    } catch (e) {
+      alert("Erro de conexão com a API.");
+    } finally {
+      setSubmittingScorer(false);
+    }
+  };
+
+  const handleDeleteScorer = async (id?: string) => {
+    if (!id) return;
+    if (!confirm("Tem certeza que deseja remover este artilheiro?")) return;
+    try {
+      const res = await fetch(`${API_URL}/competitions/scorers/${id}`, { method: "DELETE" });
+      if (res.ok) fetchScorers();
+    } catch (e) {
+      alert("Erro ao excluir artilheiro.");
+    }
+  };
+
   // Filtro de buscas local
   const filteredNews = news.filter((n) =>
     n.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -325,11 +418,12 @@ export default function EuropaLeagueDetailPage() {
   const filteredVideos = videos.filter((v) =>
     v.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredScorers = scorers.filter(
-    (s) =>
-      s.player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.team.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredScorers = scorers.filter((s) => {
+    const pName = s.playerName || s.player?.name || "";
+    const tName = s.teamName || s.team?.name || "";
+    const q = searchQuery.toLowerCase();
+    return pName.toLowerCase().includes(q) || tName.toLowerCase().includes(q);
+  });
 
   return (
     <div className="space-y-[30px]" style={{ fontFamily: "var(--font-outfit)" }}>
@@ -685,13 +779,22 @@ export default function EuropaLeagueDetailPage() {
                 Ranking de marcadores de gols da temporada atual
               </p>
             </div>
-            <button
-              onClick={fetchScorers}
-              className="p-3 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-xl transition-all border border-[var(--border)]"
-              title="Atualizar Artilharia"
-            >
-              <RefreshCw size={18} className={loadingScorers ? "animate-spin" : ""} />
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={fetchScorers}
+                className="p-3 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-xl transition-all border border-[var(--border)]"
+                title="Atualizar Artilharia"
+              >
+                <RefreshCw size={18} className={loadingScorers ? "animate-spin" : ""} />
+              </button>
+              <button
+                onClick={() => openScorerModal()}
+                className="bg-amber-500 hover:bg-amber-400 text-black px-5 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20"
+              >
+                <Plus size={18} />
+                <span>NOVO ARTILHEIRO</span>
+              </button>
+            </div>
           </div>
 
           <div className="card overflow-hidden">
@@ -699,71 +802,216 @@ export default function EuropaLeagueDetailPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-[var(--surface-hover)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider border-b border-[var(--border)]">
-                    <th className="p-4 w-12 text-center">#</th>
+                    <th className="p-4 w-16 text-center">POS</th>
                     <th className="p-4">Jogador</th>
                     <th className="p-4">Clube</th>
                     <th className="p-4 text-center">Gols</th>
-                    <th className="p-4 text-center">Assistências</th>
-                    <th className="p-4 text-center">Pênaltis</th>
+                    <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)] text-xs">
                   {loadingScorers ? (
                     <tr>
-                      <td colSpan={6} className="p-12 text-center text-[var(--text-muted)]">
+                      <td colSpan={5} className="p-12 text-center text-[var(--text-muted)]">
                         <Loader2 className="animate-spin mx-auto mb-2" size={24} />
                         Carregando artilharia da liga...
                       </td>
                     </tr>
                   ) : filteredScorers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-12 text-center text-[var(--text-muted)]">
+                      <td colSpan={5} className="p-12 text-center text-[var(--text-muted)]">
                         Nenhum artilheiro registrado para esta temporada.
                       </td>
                     </tr>
                   ) : (
-                    filteredScorers.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
-                        <td className="p-4 text-center font-bold font-mono text-[var(--text-muted)]">
-                          {idx + 1}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-[var(--surface-hover)] border border-[var(--border)] overflow-hidden shrink-0 flex items-center justify-center">
-                              {item.player.photo ? (
-                                <img src={item.player.photo} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="font-bold text-xs text-[var(--text-muted)]">
-                                  {item.player.name?.substring(0, 2).toUpperCase()}
-                                </span>
-                              )}
+                    filteredScorers.map((item, idx) => {
+                      const pName = item.playerName || item.player?.name || "Jogador";
+                      const pPhoto = item.playerPhoto || item.player?.photo;
+                      const tName = item.teamName || item.team?.name || "Clube";
+                      const tLogo = item.teamLogo || item.team?.logo;
+                      const posRank = item.rank ?? (idx + 1);
+
+                      return (
+                        <tr key={item.id || idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                          <td className="p-4 text-center font-bold font-mono text-[var(--text-muted)]">
+                            {posRank}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-[var(--surface-hover)] border border-[var(--border)] overflow-hidden shrink-0 flex items-center justify-center">
+                                {pPhoto ? (
+                                  <img src={pPhoto} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="font-bold text-xs text-[var(--text-muted)]">
+                                    {pName.substring(0, 2).toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="font-bold text-white text-sm">{pName}</span>
                             </div>
-                            <span className="font-bold text-white text-sm">{item.player.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            {item.team.logo && (
-                              <img src={item.team.logo} alt="" className="w-5 h-5 object-contain" />
-                            )}
-                            <span className="text-[var(--text-muted)] font-medium">{item.team.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-center font-black text-amber-400 text-sm font-mono">
-                          {item.goals}
-                        </td>
-                        <td className="p-4 text-center font-bold text-white font-mono">
-                          {item.assists ?? 0}
-                        </td>
-                        <td className="p-4 text-center text-[var(--text-muted)] font-mono">
-                          {item.penalties ?? 0}
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              {tLogo && (
+                                <img src={tLogo} alt="" className="w-5 h-5 object-contain" />
+                              )}
+                              <span className="text-[var(--text-muted)] font-medium">{tName}</span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-center font-black text-amber-400 text-sm font-mono">
+                            {item.goals}
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => openScorerModal(item)}
+                                className="p-2.5 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-lg transition-all"
+                                title="Editar Artilheiro"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteScorer(item.id)}
+                                className="p-2.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-all"
+                                title="Excluir Artilheiro"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE INSERIR / EDITAR ARTILHEIRO --- */}
+      {isScorerModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-container animate-in fade-in zoom-in duration-200">
+            <div className="modal-header">
+              <div className="flex items-center gap-2.5">
+                <Trophy size={20} className="text-amber-400" />
+                <h3 className="text-base font-bold text-white">
+                  {currentScorerId ? "Editar Artilheiro" : `Novo Artilheiro — ${leagueName}`}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsScorerModalOpen(false)}
+                className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg text-[var(--text-muted)] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveScorer} className="flex flex-col flex-1 min-h-0">
+              <div className="modal-body space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="admin-label">Posição no Ranking (rank) *</label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      className="admin-input font-mono"
+                      value={scorerFormData.rank}
+                      onChange={(e) =>
+                        setScorerFormData({ ...scorerFormData, rank: parseInt(e.target.value) || 1 })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="admin-label">Gols (goals) *</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      className="admin-input font-mono text-amber-400 font-bold"
+                      value={scorerFormData.goals}
+                      onChange={(e) =>
+                        setScorerFormData({ ...scorerFormData, goals: parseInt(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="admin-label">Nome do Jogador (playerName) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Harry Kane"
+                    className="admin-input"
+                    value={scorerFormData.playerName}
+                    onChange={(e) =>
+                      setScorerFormData({ ...scorerFormData, playerName: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="admin-label">Foto do Jogador URL (playerPhoto)</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    className="admin-input font-mono"
+                    value={scorerFormData.playerPhoto}
+                    onChange={(e) =>
+                      setScorerFormData({ ...scorerFormData, playerPhoto: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="admin-label">Nome do Clube (teamName) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Bayern München"
+                    className="admin-input"
+                    value={scorerFormData.teamName}
+                    onChange={(e) =>
+                      setScorerFormData({ ...scorerFormData, teamName: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="admin-label">Logo do Clube URL (teamLogo)</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    className="admin-input font-mono"
+                    value={scorerFormData.teamLogo}
+                    onChange={(e) =>
+                      setScorerFormData({ ...scorerFormData, teamLogo: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsScorerModalOpen(false)}
+                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white"
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingScorer}
+                  className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg disabled:opacity-50"
+                >
+                  {submittingScorer ? "SALVANDO..." : "SALVAR ARTILHEIRO"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

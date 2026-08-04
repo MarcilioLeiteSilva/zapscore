@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { CompetitionsService } from './competitions.service';
 
 @Controller('competitions')
@@ -36,9 +36,23 @@ export class CompetitionsController {
     @Param('id', ParseIntPipe) id: number,
     @Query('season') season?: string,
   ) {
-    // Busca a season ativa se não for passada
     const comp = this.competitionsService.findOneByExternalId(id);
     const targetSeason = season ? parseInt(season, 10) : (comp ? comp.activeSeasons[0] : 2026);
     return this.competitionsService.getTopScorers(id, targetSeason);
+  }
+
+  @Post('scorers')
+  createScorer(@Body() body: any) {
+    return this.competitionsService.createScorer(body);
+  }
+
+  @Put('scorers/:id')
+  updateScorer(@Param('id') id: string, @Body() body: any) {
+    return this.competitionsService.updateScorer(id, body);
+  }
+
+  @Delete('scorers/:id')
+  deleteScorer(@Param('id') id: string) {
+    return this.competitionsService.deleteScorer(id);
   }
 }
