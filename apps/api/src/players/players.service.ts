@@ -43,10 +43,34 @@ export class PlayersService {
     // 3. Otherwise, fetch from API-Football
     try {
       this.logger.log(`Fetching player ${externalId} for season ${season} from API-Football`);
-      const apiResponse = await this.apiFootball.getPlayer({ id: externalId, season });
+      let apiResponse = await this.apiFootball.getPlayer({ id: externalId, season });
       
+      // Fallback 1: Try previous season (2025) if current season (2026) has no data yet
       if (!apiResponse || apiResponse.length === 0) {
-        return cachedPlayer ? this.formatPlayerResponse(cachedPlayer) : null;
+        this.logger.log(`Fallback: Fetching player ${externalId} for season ${season - 1} from API-Football`);
+        apiResponse = await this.apiFootball.getPlayer({ id: externalId, season: season - 1 });
+      }
+
+      if (!apiResponse || apiResponse.length === 0) {
+        this.logger.log(`Player ${externalId} not found in API-Football. Registering negative cache entry in DB.`);
+        if (cachedPlayer) {
+          const updated = await this.prisma.player.update({
+            where: { id: cachedPlayer.id },
+            data: { updatedAt: new Date() },
+          });
+          return this.formatPlayerResponse(updated);
+        }
+
+        const placeholderPlayer = await this.prisma.player.upsert({
+          where: { externalId },
+          update: { updatedAt: new Date() },
+          create: {
+            externalId,
+            name: 'Jogador',
+            statisticsJson: '[]',
+          },
+        });
+        return this.formatPlayerResponse(placeholderPlayer);
       }
 
       const playerData = apiResponse[0].player;
