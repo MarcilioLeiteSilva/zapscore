@@ -63,18 +63,61 @@ export class TeamsService {
     position: string;
     photo: string;
   }>> {
-    const raw = await this.apiFootball.getSquads(teamExternalId);
-    if (!raw || raw.length === 0) return [];
-    const entry = raw[0]; // { team: {...}, players: [...] }
-    const players: any[] = entry?.players ?? [];
-    return players.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      age: p.age,
-      number: p.number ?? null,
-      position: p.position,
-      photo: p.photo,
-    }));
+    // 1. Check database cache
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const cachedSquad = await (this.prisma as any).teamSquad.findUnique({
+      where: { teamExternalId },
+    });
+
+    if (cachedSquad && cachedSquad.updatedAt > thirtyDaysAgo) {
+      try {
+        return JSON.parse(cachedSquad.squadJson);
+      } catch (_) {}
+    }
+
+    // 2. Fetch from API-Football
+    try {
+      const raw = await this.apiFootball.getSquads(teamExternalId);
+      if (!raw || raw.length === 0) {
+        if (cachedSquad) {
+          try { return JSON.parse(cachedSquad.squadJson); } catch (_) {}
+        }
+        return [];
+      }
+
+      const entry = raw[0];
+      const players: any[] = entry?.players ?? [];
+      const squad = players.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        age: p.age,
+        number: p.number ?? null,
+        position: p.position,
+        photo: p.photo,
+      }));
+
+      // 3. Upsert into database
+      await (this.prisma as any).teamSquad.upsert({
+        where: { teamExternalId },
+        update: {
+          squadJson: JSON.stringify(squad),
+        },
+        create: {
+          teamExternalId,
+          squadJson: JSON.stringify(squad),
+        },
+      });
+
+      return squad;
+    } catch (error) {
+      // Fallback: If API fails (e.g., quota exceeded), return expired cache if available
+      if (cachedSquad) {
+        try {
+          return JSON.parse(cachedSquad.squadJson);
+        } catch (_) {}
+      }
+      return [];
+    }
   }
 
   async getTeamStats(teamExternalId: number, leagueExternalId: number, season: number) {

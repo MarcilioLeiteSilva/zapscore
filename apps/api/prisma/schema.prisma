@@ -284,6 +284,16 @@ model Player {
   @@index([externalId])
 }
 
+model TeamSquad {
+  id             String   @id @default(uuid())
+  teamExternalId Int      @unique
+  squadJson      String   @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([teamExternalId])
+}
+
 model NewsSource {
   id        String   @id @default(uuid())
   name      String

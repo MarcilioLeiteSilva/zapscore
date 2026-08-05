@@ -5,6 +5,7 @@ import { ApiFootballService } from '../integrations/api-football/api-football.se
 @Injectable()
 export class PlayersService {
   private readonly logger = new Logger(PlayersService.name);
+  private readonly inFlightRequests = new Map<number, Promise<any>>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -12,14 +13,30 @@ export class PlayersService {
   ) {}
 
   async getPlayerDetails(externalId: number, season: number = 2026) {
+    // Check if there is an in-flight request for this player to prevent thundering herd
+    if (this.inFlightRequests.has(externalId)) {
+      return this.inFlightRequests.get(externalId);
+    }
+
+    const requestPromise = this._fetchPlayerDetails(externalId, season);
+    this.inFlightRequests.set(externalId, requestPromise);
+
+    try {
+      return await requestPromise;
+    } finally {
+      this.inFlightRequests.delete(externalId);
+    }
+  }
+
+  private async _fetchPlayerDetails(externalId: number, season: number = 2026) {
     // 1. Check if we have the player in our database
     const cachedPlayer = await this.prisma.player.findUnique({
       where: { externalId },
     });
 
-    // 2. If we have it and it's fresh (e.g., updated in the last 24h), return it
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    if (cachedPlayer && cachedPlayer.updatedAt > oneDayAgo) {
+    // 2. If we have it and it's fresh (updated in the last 30 days), return it
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    if (cachedPlayer && cachedPlayer.updatedAt > thirtyDaysAgo) {
       return this.formatPlayerResponse(cachedPlayer);
     }
 
@@ -43,9 +60,9 @@ export class PlayersService {
           firstname: playerData.firstname,
           lastname: playerData.lastname,
           age: playerData.age,
-          birthDate: playerData.birth.date,
-          birthPlace: playerData.birth.place,
-          birthCountry: playerData.birth.country,
+          birthDate: playerData.birth?.date ?? null,
+          birthPlace: playerData.birth?.place ?? null,
+          birthCountry: playerData.birth?.country ?? null,
           nationality: playerData.nationality,
           height: playerData.height,
           weight: playerData.weight,
@@ -59,9 +76,9 @@ export class PlayersService {
           firstname: playerData.firstname,
           lastname: playerData.lastname,
           age: playerData.age,
-          birthDate: playerData.birth.date,
-          birthPlace: playerData.birth.place,
-          birthCountry: playerData.birth.country,
+          birthDate: playerData.birth?.date ?? null,
+          birthPlace: playerData.birth?.place ?? null,
+          birthCountry: playerData.birth?.country ?? null,
           nationality: playerData.nationality,
           height: playerData.height,
           weight: playerData.weight,
