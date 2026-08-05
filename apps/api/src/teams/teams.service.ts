@@ -63,16 +63,20 @@ export class TeamsService {
     position: string;
     photo: string;
   }>> {
-    // 1. Check database cache
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const cachedSquad = await (this.prisma as any).teamSquad.findUnique({
-      where: { teamExternalId },
-    });
+    let cachedSquad: any = null;
 
-    if (cachedSquad && cachedSquad.updatedAt > thirtyDaysAgo) {
-      try {
+    // 1. Safe check for database cache
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      cachedSquad = await (this.prisma as any).teamSquad.findUnique({
+        where: { teamExternalId },
+      });
+
+      if (cachedSquad && cachedSquad.updatedAt > thirtyDaysAgo) {
         return JSON.parse(cachedSquad.squadJson);
-      } catch (_) {}
+      }
+    } catch (e) {
+      // Table might not exist yet or DB issue, log and continue to API-Football
     }
 
     // 2. Fetch from API-Football
@@ -96,17 +100,16 @@ export class TeamsService {
         photo: p.photo,
       }));
 
-      // 3. Upsert into database
-      await (this.prisma as any).teamSquad.upsert({
-        where: { teamExternalId },
-        update: {
-          squadJson: JSON.stringify(squad),
-        },
-        create: {
-          teamExternalId,
-          squadJson: JSON.stringify(squad),
-        },
-      });
+      // 3. Try to upsert into database (safe)
+      try {
+        await (this.prisma as any).teamSquad.upsert({
+          where: { teamExternalId },
+          update: { squadJson: JSON.stringify(squad) },
+          create: { teamExternalId, squadJson: JSON.stringify(squad) },
+        });
+      } catch (dbError) {
+        // Log DB save error if table doesn't exist yet, but still return squad
+      }
 
       return squad;
     } catch (error) {
