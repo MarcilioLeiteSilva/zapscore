@@ -167,7 +167,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
                                             Icon(Icons.history, color: accentColor, size: 20),
                                             const Gap(8),
                                             Text(
-                                              'Jogos Auditados Recentemente',
+                                              'recent_audited_games'.tr(context),
                                               style: context.textTheme.bodySmall!.copyWith(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 16,
@@ -224,14 +224,14 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<League?>(
                   value: _selectedLeague,
-                  hint: const Text('Todas Competições', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                  hint: Text('all_competitions'.tr(context), style: const TextStyle(color: Colors.white54, fontSize: 13)),
                   isExpanded: true,
                   dropdownColor: theme.cardColor,
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
                   items: [
-                    const DropdownMenuItem<League?>(
+                    DropdownMenuItem<League?>(
                       value: null,
-                      child: Text('Todas Competições', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('all_competitions'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
                     ),
                     ..._leagues.map((league) {
                       return DropdownMenuItem<League?>(
@@ -271,18 +271,18 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
                   isExpanded: true,
                   dropdownColor: theme.cardColor,
                   icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  items: const [
+                  items: [
                     DropdownMenuItem<int?>(
                       value: null,
-                      child: Text('Todo o período', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('all_period'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
                     ),
                     DropdownMenuItem<int?>(
                       value: 7,
-                      child: Text('Últimos 7 dias', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('last_7_days'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
                     ),
                     DropdownMenuItem<int?>(
                       value: 30,
-                      child: Text('Últimos 30 dias', style: TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('last_30_days'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
                     ),
                   ],
                   onChanged: (days) {
@@ -370,11 +370,11 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildStatDetailItem('Análises', _stats!.totalGames.toString(), Icons.analytics_outlined, Colors.white70),
+                    _buildStatDetailItem('analyses'.tr(context), _stats!.totalGames.toString(), Icons.analytics_outlined, Colors.white70),
                     const Gap(10),
-                    _buildStatDetailItem('Acertos', _stats!.hits.toString(), Icons.check_circle_outline, Colors.green),
+                    _buildStatDetailItem('hits'.tr(context), _stats!.hits.toString(), Icons.check_circle_outline, Colors.green),
                     const Gap(10),
-                    _buildStatDetailItem('Erros', _stats!.misses.toString(), Icons.cancel_outlined, Colors.red),
+                    _buildStatDetailItem('misses'.tr(context), _stats!.misses.toString(), Icons.cancel_outlined, Colors.red),
                   ],
                 ),
               ),
@@ -393,7 +393,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
                 const Gap(8),
                 Expanded(
                   child: Text(
-                    'A precisão é calculada com base nos acertos dos resultados finais (Mandante, Visitante ou Empate).',
+                    'ai_accuracy_calc_desc'.tr(context),
                     style: theme.textTheme.labelSmall!.copyWith(
                       color: Colors.white38,
                       fontSize: 10,
@@ -433,11 +433,11 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
         children: [
           const Icon(Icons.error_outline, size: 50, color: Colors.redAccent),
           const Gap(15),
-          const Text('Erro ao carregar estatísticas da IA', style: TextStyle(color: Colors.white70)),
+          Text('error_ai_stats'.tr(context), style: const TextStyle(color: Colors.white70)),
           const Gap(10),
           ElevatedButton(
             onPressed: _loadData,
-            child: const Text('Tentar novamente'),
+            child: Text('retry'.tr(context)),
           ),
         ],
       ),
@@ -451,14 +451,14 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
         children: [
           const Icon(Icons.analytics_outlined, size: 60, color: Colors.white24),
           const Gap(15),
-          const Text(
-            'Sem dados para o filtro selecionado.',
-            style: TextStyle(color: Colors.white54, fontSize: 14),
+          Text(
+            'no_data_filter'.tr(context),
+            style: const TextStyle(color: Colors.white54, fontSize: 14),
           ),
           const Gap(15),
           ElevatedButton(
             onPressed: _loadData,
-            child: const Text('Recarregar'),
+            child: Text('reload'.tr(context)),
           ),
         ],
       ),

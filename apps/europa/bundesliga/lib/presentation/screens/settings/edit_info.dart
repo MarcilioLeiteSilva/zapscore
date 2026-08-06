@@ -56,7 +56,7 @@ class _EditInfoScreenState extends State<EditInfoScreen> {
                   );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Salvo com sucesso!')),
+                  SnackBar(content: Text('saved_success'.tr(context))),
                 );
                 context.pop();
               }

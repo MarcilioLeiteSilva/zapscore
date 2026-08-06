@@ -66,6 +66,57 @@ class GeneralScreen extends StatelessWidget {
               }
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+            title: Text(
+              'delete_app_data'.tr(context),
+              style: GoogleFonts.urbanist(
+                textStyle: context.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.redAccent,
+                ),
+              ),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: Text('delete_data'.tr(dialogContext)),
+                  content: Text('confirm_delete_data'.tr(dialogContext)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: Text('cancel'.tr(dialogContext)),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+                        final repo = UserRepository();
+                        await repo.saveProfile('', '', null);
+                        await repo.saveNotifSettings(
+                          match: true,
+                          news: true,
+                          video: true,
+                          streaming: true,
+                          promotions: true,
+                          updates: true,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('delete_data_success'.tr(context)),
+                            ),
+                          );
+                        }
+                      },
+                      child: Text('delete'.tr(dialogContext), style: const TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

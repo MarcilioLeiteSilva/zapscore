@@ -12,7 +12,7 @@ class MatchLeaguePage extends StatelessWidget {
         }
         if (state is LeagueLoaded) {
           return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
             itemBuilder: (_, i) {
               final fix = state.fixtures[i];
               return CardFixtureLeagueItem(fixture: fix);
@@ -173,12 +173,18 @@ class CardTopScores extends StatelessWidget {
   Widget build(BuildContext context) {
     if (scorer == null) return const SizedBox();
     final item = scorer!;
+    final pId = (item.externalPlayerId != null && item.externalPlayerId! > 0)
+        ? item.externalPlayerId.toString()
+        : (item.playerPhoto != null && item.playerPhoto!.contains('/players/'))
+            ? RegExp(r'/players/(\d+)\.png').firstMatch(item.playerPhoto!)?.group(1) ?? '0'
+            : '0';
+
     return InkWell(
-      onTap: item.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': item.externalPlayerId.toString(),
+                  'id': pId,
                   'name': item.playerName,
                 },
               )
@@ -243,7 +249,7 @@ class CardTopScores extends StatelessWidget {
             ),
           ),
           Text(
-            '${item.goals} Gols',
+            '${item.goals} ${'goals'.tr(context)}',
             style: context.textTheme.bodySmall!.copyWith(
               color: Theme.of(context).primaryColor,
               fontWeight: FontWeight.bold,
@@ -267,7 +273,7 @@ class TableLeaguePage extends StatelessWidget {
         }
         if (state is LeagueLoaded) {
           return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             children: [
               Container(
                 width: context.width,
@@ -456,7 +462,7 @@ class NewsLeaguePage extends StatelessWidget {
         }
         if (state is NewsLoaded) {
           if (state.news.isEmpty) {
-            return const Center(child: Text('Nenhuma notícia para esta competição'));
+            return Center(child: Text('no_news_competition'.tr(context)));
           }
           return ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -503,7 +509,7 @@ class RoundLeaguePage extends StatelessWidget {
                     ),
                     Expanded(
                       child: Text(
-                        formatRound(state.selectedRound),
+                        formatRound(state.selectedRound, context),
                         textAlign: TextAlign.center,
                         style: context.textTheme.bodySmall!.copyWith(
                           fontWeight: FontWeight.bold,
@@ -520,7 +526,7 @@ class RoundLeaguePage extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
                   itemBuilder: (_, i) {
                     final fix = roundFixtures[i];
                     return CardFixtureLeagueItem(fixture: fix);
@@ -559,7 +565,7 @@ class CardFixtureLeagueItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  formatRound(fixture.round),
+                  formatRound(fixture.round, context),
                   style: context.textTheme.labelSmall!.copyWith(
                     color: Colors.white54,
                   ),
@@ -606,7 +612,7 @@ class TopScoresList extends StatelessWidget {
           return ListView.separated(
             shrinkWrap: true,
             physics: const ScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             itemBuilder: (_, i) {
               final scorer = state.scorers[i];
               return Ink(
@@ -708,10 +714,10 @@ class CardTopScoreItem extends StatelessWidget {
                   itemCount: state.scorers.length > 5 ? 5 : state.scorers.length,
                 )
               else
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text('Nenhum dado disponível'),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text('no_data_available'.tr(context)),
                   ),
                 ),
               const Divider(height: 30),

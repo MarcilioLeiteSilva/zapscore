@@ -17,6 +17,8 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
       'overview'.tr(context),
       'matches'.tr(context),
       'table'.tr(context),
+      'info'.tr(context),
+      'squad'.tr(context),
       'news'.tr(context),
       'team_stats'.tr(context),
     ];
@@ -112,6 +114,8 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
                 const TeamOverview(),
                 const MatchTeamPage(),
                 const TeamTablePage(),
+                TeamInfoPage(team: widget.team),
+                TeamSquadPage(teamExternalId: widget.team.externalId),
                 TeamNewsPage(teamId: widget.team.id, leagueId: widget.leagueId),
                 const TeamStatePage(),
               ][indexTab],

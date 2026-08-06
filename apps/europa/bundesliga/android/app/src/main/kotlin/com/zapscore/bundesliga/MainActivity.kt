@@ -1,0 +1,5 @@
+package com.zapscore.bundesliga
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity()

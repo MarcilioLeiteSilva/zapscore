@@ -18,8 +18,13 @@ class CardStoryItem extends StatelessWidget {
             news?.imageUrl != null
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: CachedNetworkImage(imageUrl: proxyImage(news!.imageUrl!),
-                        fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                    child: CachedNetworkImage(
+                      imageUrl: proxyImage(news!.imageUrl!),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorWidget: (context, url, error) => const CardNoImage(radius: 10),
+                    ),
                   )
                 : const CardNoImage(radius: 10),
             Padding(
@@ -104,9 +109,11 @@ class CardNewsItem extends StatelessWidget {
                             padding: (image.contains('logo') || image.contains('badge')) 
                                 ? const EdgeInsets.all(20.0) // Ícone pequeno se for logo
                                 : EdgeInsets.zero,
-                            child: CachedNetworkImage(imageUrl: proxyImage(image), 
+                            child: CachedNetworkImage(
+                              imageUrl: proxyImage(image), 
                               fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
                               progressIndicatorBuilder: (context, url, downloadProgress) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                              errorWidget: (context, url, error) => const CardNoImage(radius: 10),
                             ),
                           ),
                         )
@@ -184,11 +191,18 @@ class CardNewsItem extends StatelessWidget {
 }
 
 class CardNewsCarouselItem extends StatelessWidget {
-  const CardNewsCarouselItem({super.key, this.isVideo = false, this.news, this.video});
+  const CardNewsCarouselItem({
+    super.key,
+    this.isVideo = false,
+    this.onlyThumb = false,
+    this.news,
+    this.video,
+  });
+
   final bool isVideo;
+  final bool onlyThumb;
   final News? news;
   final Video? video;
-
 
   @override
   Widget build(BuildContext context) {
@@ -198,8 +212,11 @@ class CardNewsCarouselItem extends StatelessWidget {
         : (news?.imageUrl ?? news?.leagueLogo ?? news?.teamLogo);
     final date = isVideo ? video?.date : news?.date;
 
+    final double cardWidth = onlyThumb ? context.width * .65 : context.width * .95;
+    final double cardHeight = onlyThumb ? 130 : context.height * .22;
+
     return Ink(
-      width: context.width * .95,
+      width: cardWidth,
       padding: const EdgeInsets.only(right: 5),
       child: InkWell(
         onTap: () {
@@ -212,9 +229,10 @@ class CardNewsCarouselItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              height: context.height * .22, // Reduzido de 30% para 22% para evitar overflow
+              height: cardHeight,
               child: Stack(
                 children: [
                   image != null
@@ -222,12 +240,14 @@ class CardNewsCarouselItem extends StatelessWidget {
                           borderRadius: BorderRadius.circular(15),
                           child: Padding(
                             padding: (image.contains('logo') || image.contains('badge'))
-                                ? const EdgeInsets.all(40.0) // Ícone bem pequeno e centralizado no banner
+                                ? const EdgeInsets.all(30.0)
                                 : EdgeInsets.zero,
-                            child: CachedNetworkImage(imageUrl: proxyImage(image),
+                            child: CachedNetworkImage(
+                              imageUrl: proxyImage(image),
                               fit: isVideo ? BoxFit.cover : ((image.contains('logo') || image.contains('badge')) ? BoxFit.contain : BoxFit.cover),
                               width: double.infinity,
                               height: double.infinity,
+                              errorWidget: (context, url, error) => const CardNoImage(radius: 15),
                             ),
                           ),
                         )
@@ -253,34 +273,36 @@ class CardNewsCarouselItem extends StatelessWidget {
                 ],
               ),
             ),
-            const Gap(8),
-            if (news?.source != null)
-              Text(
-                news!.source!.toUpperCase(),
-                style: context.textTheme.labelSmall!.copyWith(
-                  color: Theme.of(context).primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-            const Gap(2),
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: context.textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const Gap(4),
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
-                const Gap(4),
+            if (!onlyThumb) ...[
+              const Gap(8),
+              if (news?.source != null)
                 Text(
-                  date != null ? DateFormat('dd/MM HH:mm', context.read<SettingCubit>().state.language).format(date) : 'recently'.tr(context),
-                  style: context.textTheme.labelSmall,
+                  news!.source!.toUpperCase(),
+                  style: context.textTheme.labelSmall!.copyWith(
+                    color: Theme.of(context).primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
                 ),
-              ],
-            ),
+              const Gap(2),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const Gap(4),
+              Row(
+                children: [
+                  Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
+                  const Gap(4),
+                  Text(
+                    date != null ? DateFormat('dd/MM HH:mm', context.read<SettingCubit>().state.language).format(date) : 'recently'.tr(context),
+                    style: context.textTheme.labelSmall,
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

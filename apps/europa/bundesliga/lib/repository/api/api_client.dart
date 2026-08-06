@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../helpers/helpers.dart';
 import '../../logic/models/league.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/standing.dart';
 import '../../logic/models/scorer.dart';
+import '../../logic/models/squad_player.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
@@ -12,7 +15,7 @@ import '../../logic/models/ai_performance_stats.dart';
 
 
 class ApiClient {
-  final String baseUrl = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';
+  final String baseUrl = AppConfig.apiBaseUrl;
 
   dynamic _decodeResponse(http.Response response) {
     if (response.body.isEmpty || response.body == 'null') return null;
@@ -44,7 +47,7 @@ class ApiClient {
   }
 
   Future<List<News>> getNews({String? leagueId, String? teamId, int limit = 100}) async {
-    final resolvedUuid = await _resolveLeagueIdToUuid(leagueId ?? '78');
+    final resolvedUuid = await _resolveLeagueIdToUuid(leagueId ?? AppConfig.leagueId);
     String url = '$baseUrl/news?limit=$limit';
     if (resolvedUuid != null) {
       url += '&leagueId=$resolvedUuid';
@@ -64,7 +67,7 @@ class ApiClient {
   }
 
   Future<List<Video>> getVideos({String? leagueId, String? teamId, int limit = 100}) async {
-    final resolvedUuid = await _resolveLeagueIdToUuid(leagueId ?? '78');
+    final resolvedUuid = await _resolveLeagueIdToUuid(leagueId ?? AppConfig.leagueId);
     String url = '$baseUrl/videos?limit=$limit';
     if (resolvedUuid != null) {
       url += '&leagueId=$resolvedUuid';
@@ -95,11 +98,11 @@ class ApiClient {
         }
         return [];
       } else {
-        print('Error loading leagues: ${response.statusCode} - ${response.body}');
+        debugPrint('Error loading leagues: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to load leagues: ${response.statusCode}');
       }
     } catch (e) {
-      print('Connection error: $e');
+      debugPrint('Connection error: $e');
       throw Exception('Connection error: $e');
     }
   }
@@ -178,8 +181,9 @@ class ApiClient {
     throw Exception('Failed to load scorers');
   }
 
-  Future<List<Fixture>> getLiveFixtures({int leagueId = 78}) async {
-    final response = await http.get(Uri.parse('$baseUrl/fixtures?status=LIVE&leagueId=$leagueId'));
+  Future<List<Fixture>> getLiveFixtures({int? leagueId}) async {
+    final targetLeagueId = leagueId ?? AppConfig.externalLeagueId;
+    final response = await http.get(Uri.parse('$baseUrl/fixtures?status=LIVE&leagueId=$targetLeagueId'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is List) {
@@ -301,6 +305,23 @@ class ApiClient {
     }
   }
 
+  Future<List<SquadPlayer>> getSquad(int teamExternalId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/teams/$teamExternalId/squad'))
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final data = _decodeResponse(response);
+        if (data is List) {
+          return data.map((item) => SquadPlayer.fromJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('getSquad error: $e');
+    }
+    return [];
+  }
+
   Future<PlayerProfile?> getPlayerDetails(int id, {int? season}) async {
     final response = await http.get(Uri.parse('$baseUrl/players/$id${season != null ? '?season=$season' : ''}'));
     if (response.statusCode == 200) {
@@ -312,9 +333,10 @@ class ApiClient {
     return null;
   }
 
-  Future<Map<String, dynamic>?> getFixtureAiAnalysis(String fixtureId) async {
+  Future<Map<String, dynamic>?> getFixtureAiAnalysis(String fixtureId, [String? lang]) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/fixtures/$fixtureId/ai-analysis'));
+      final queryLang = (lang != null && lang.isNotEmpty) ? '?lang=$lang' : '';
+      final response = await http.get(Uri.parse('$baseUrl/fixtures/$fixtureId/ai-analysis$queryLang'));
       if (response.statusCode == 200) {
         return _decodeResponse(response);
       }

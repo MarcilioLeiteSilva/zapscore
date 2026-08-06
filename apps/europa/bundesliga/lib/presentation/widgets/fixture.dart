@@ -122,7 +122,7 @@ class FavoriteTeamHomeCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Escolha seu Time Favorito',
+                                'choose_favorite_team'.tr(context),
                                 style: context.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
@@ -130,7 +130,7 @@ class FavoriteTeamHomeCard extends StatelessWidget {
                               ),
                               const Gap(2),
                               Text(
-                                'Toque para selecionar e acompanhar',
+                                'tap_to_select'.tr(context),
                                 style: context.textTheme.bodySmall?.copyWith(
                                   color: context.appColors.darkGreen,
                                   fontWeight: FontWeight.w600,
@@ -224,7 +224,7 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
                     ),
                     const Gap(8),
                     Text(
-                      'Artilharia',
+                      'top_scorers'.tr(context),
                       style: context.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -241,7 +241,7 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Ver Todos',
+                          'see_all_male'.tr(context),
                           style: TextStyle(
                             color: context.appColors.darkGreen,
                             fontWeight: FontWeight.w600,
@@ -267,12 +267,12 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (_topScorers == null || _topScorers!.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Center(
                   child: Text(
-                    'Nenhum artilheiro encontrado',
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                    'no_top_scorers'.tr(context),
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
                   ),
                 ),
               )
@@ -726,12 +726,12 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                 if (comp.matches.isNotEmpty)
                   ...comp.matches.map((match) => CardFixtureItem(fixture: match))
                 else
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24, horizontal: 15),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
                     child: Center(
                       child: Text(
-                        'Sem jogos hoje',
-                        style: TextStyle(
+                        'no_games_today'.tr(context),
+                        style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -1043,7 +1043,7 @@ class CardBasicInfo extends StatelessWidget {
             const Gap(15),
             CardInfoTileItem(
               icon: Assets.userLine,
-              label: formatRound(fixture!.round),
+              label: formatRound(fixture!.round, context),
             ),
           ],
         ],

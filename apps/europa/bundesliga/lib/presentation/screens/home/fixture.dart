@@ -176,10 +176,16 @@ class FixturePage extends StatelessWidget {
                               final comp = displayCompetitions[i];
                               return CardGroupFixtureItem(competition: comp);
                             }
-                            return const HomeTopScorersCard();
+                            if (i == displayCompetitions.length) {
+                              return const HomeTopScorersCard();
+                            }
+                            if (i == displayCompetitions.length + 1) {
+                              return const HomeNewsCarouselSection();
+                            }
+                            return const HomeVideoCarouselSection();
                           },
                           separatorBuilder: (_, i) => const Gap(12),
-                          itemCount: displayCompetitions.length + 1,
+                          itemCount: displayCompetitions.length + 3,
                         );
                       }
                       return const SizedBox();

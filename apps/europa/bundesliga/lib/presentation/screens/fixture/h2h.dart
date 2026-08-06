@@ -12,15 +12,15 @@ class H2hFixPage extends StatelessWidget {
         }
 
         if (state is! FixtureLoaded) {
-          return const Center(child: Text('Erro ao carregar detalhes do jogo'));
+          return Center(child: Text('error_load_match'.tr(context)));
         }
 
         final h2h = state.h2hData;
         if (h2h == null || h2h['matches'] == null) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Nenhum confronto direto disponível'),
+              padding: const EdgeInsets.all(20),
+              child: Text('no_h2h'.tr(context)),
             ),
           );
         }
@@ -46,10 +46,10 @@ class H2hFixPage extends StatelessWidget {
             ),
             const Gap(12),
             if (fixtures.isEmpty)
-              const Center(
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text('Sem histórico de confrontos recentes'),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text('no_h2h_recent'.tr(context)),
                 ),
               )
             else

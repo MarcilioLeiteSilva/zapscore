@@ -42,7 +42,7 @@ class _TopScorersScreenState extends State<TopScorersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Artilharia da Bundesliga'),
+        title: Text('top_scorers'.tr(context)),
         centerTitle: true,
       ),
       body: Builder(

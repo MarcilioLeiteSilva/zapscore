@@ -30,7 +30,7 @@ class _ReportFixPageState extends State<ReportFixPage> {
         }
         if (state is NewsLoaded) {
           if (state.news.isEmpty) {
-            return const Center(child: Text('Nenhuma notícia ou report disponível.'));
+            return Center(child: Text('no_report_available'.tr(context)));
           }
           return ListView.separated(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 6, bottom: 20),

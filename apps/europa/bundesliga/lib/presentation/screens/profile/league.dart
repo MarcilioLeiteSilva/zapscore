@@ -1,21 +1,28 @@
 part of '../screens.dart';
 
 class LeagueProfileScreen extends StatefulWidget {
-  const LeagueProfileScreen({super.key, required this.league});
+  const LeagueProfileScreen({super.key, required this.league, this.initialIndex = 0});
   final League league;
+  final int initialIndex;
 
   @override
   State<LeagueProfileScreen> createState() => _LeagueProfileScreenState();
 }
 
 class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
-  int indexTab = 0;
+  late int indexTab;
   List<String> listLeague = [
     "Classificação",
     "Rodadas",
     "Jogos",
     "Artilharia",
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    indexTab = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {

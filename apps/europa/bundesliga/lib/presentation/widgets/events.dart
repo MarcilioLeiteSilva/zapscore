@@ -194,7 +194,7 @@ class CardEventMatch extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           color: Theme.of(context).cardColor,
         ),
-        child: const Center(child: Text('Nenhum evento registrado')),
+        child: Center(child: Text('no_events'.tr(context))),
       );
     }
 
@@ -255,12 +255,20 @@ class EventSubstituteRight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerId != null && event.playerId! > 0)
+            ? event.playerId.toString()
+            : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+                ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+                : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )
@@ -335,12 +343,20 @@ class EventSubstituteLeft extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerId != null && event.playerId! > 0)
+            ? event.playerId.toString()
+            : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+                ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+                : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )
@@ -445,12 +461,20 @@ class EventGoalLeft extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerId != null && event.playerId! > 0)
+            ? event.playerId.toString()
+            : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+                ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+                : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )
@@ -511,12 +535,20 @@ class EventGoalRight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerId != null && event.playerId! > 0)
+            ? event.playerId.toString()
+            : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+                ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+                : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )
@@ -577,12 +609,20 @@ class EventCardsLeft extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRed = event.detail?.toLowerCase().contains('red') ?? false;
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerId != null && event.playerId! > 0)
+            ? event.playerId.toString()
+            : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+                ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+                : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )
@@ -634,12 +674,20 @@ class EventCardsRight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRed = event.detail?.toLowerCase().contains('red') ?? false;
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerId != null && event.playerId! > 0)
+            ? event.playerId.toString()
+            : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+                ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+                : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )

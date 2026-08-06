@@ -8,22 +8,22 @@ class ThemeScreen extends StatelessWidget {
     final themes = [
       {
         'id': 'default',
-        'name': 'Padrão (Bundesliga)',
-        'desc': 'Fundo amarelo #FCBF04, cards grafite profundo #1E1E24 e ícones #DD0000',
+        'name': 'theme_default_name'.tr(context),
+        'desc': 'theme_default_desc'.tr(context),
         'color': const Color(0xFF1E1E24),
         'icon': Icons.sports_soccer_rounded,
       },
       {
         'id': 'dark',
-        'name': 'Escuro',
-        'desc': 'Tons escuros e alta visibilidade noturna',
+        'name': 'theme_dark_name'.tr(context),
+        'desc': 'theme_dark_desc'.tr(context),
         'color': const Color(0xFF38BDF8),
         'icon': Icons.dark_mode_rounded,
       },
       {
         'id': 'white',
-        'name': 'Branco',
-        'desc': 'Visual claro, moderno e limpo',
+        'name': 'theme_white_name'.tr(context),
+        'desc': 'theme_white_desc'.tr(context),
         'color': const Color(0xFF0F172A),
         'icon': Icons.light_mode_rounded,
       },

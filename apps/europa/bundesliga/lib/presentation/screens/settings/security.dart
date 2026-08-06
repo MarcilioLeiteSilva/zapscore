@@ -7,7 +7,7 @@ class SecurityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Security'),
+        title: Text('security'.tr(context)),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 10),

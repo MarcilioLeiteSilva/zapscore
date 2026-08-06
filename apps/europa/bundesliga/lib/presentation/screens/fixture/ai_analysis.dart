@@ -27,7 +27,8 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
     });
     try {
       final apiClient = context.read<FixtureCubit>().apiClient;
-      final data = await apiClient.getFixtureAiAnalysis(widget.fixture.id);
+      final lang = context.read<SettingCubit>().state.language;
+      final data = await apiClient.getFixtureAiAnalysis(widget.fixture.id, lang);
       if (mounted) {
         setState(() {
           _analysis = data;
@@ -42,6 +43,30 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
         });
       }
     }
+  }
+
+  String _translateTip(String tip, BuildContext context) {
+    final Map<String, Map<String, String>> tipDict = {
+      'Ambas Marcam': {'pt': 'Ambas Marcam', 'en': 'Both Teams to Score', 'es': 'Ambos Anotan', 'de': 'Beide Teams treffen'},
+      'Ambas marcam': {'pt': 'Ambas Marcam', 'en': 'Both Teams to Score', 'es': 'Ambos Anotan', 'de': 'Beide Teams treffen'},
+      'Vitória Mandante': {'pt': 'Vitória Mandante', 'en': 'Home Win', 'es': 'Victoria Local', 'de': 'Heimsieg'},
+      'Vitória Casa': {'pt': 'Vitória Casa', 'en': 'Home Win', 'es': 'Victoria Local', 'de': 'Heimsieg'},
+      'Vitória Visitante': {'pt': 'Vitória Visitante', 'en': 'Away Win', 'es': 'Victoria Visitante', 'de': 'Auswärtssieg'},
+      'Empate': {'pt': 'Empate', 'en': 'Draw', 'es': 'Empate', 'de': 'Unentschieden'},
+    };
+    final currentLang = context.read<SettingCubit>().state.language;
+    if (tipDict.containsKey(tip) && tipDict[tip]!.containsKey(currentLang)) {
+      return tipDict[tip]![currentLang]!;
+    }
+    var translated = tip;
+    if (currentLang == 'en') {
+      translated = translated.replaceAll('Mais de', 'Over').replaceAll('Menos de', 'Under').replaceAll('Gols', 'Goals');
+    } else if (currentLang == 'es') {
+      translated = translated.replaceAll('Mais de', 'Más de').replaceAll('Menos de', 'Menos de').replaceAll('Gols', 'Goles').replaceAll('Over', 'Más de').replaceAll('Under', 'Menos de');
+    } else if (currentLang == 'de') {
+      translated = translated.replaceAll('Mais de', 'Über').replaceAll('Menos de', 'Unter').replaceAll('Gols', 'Tore').replaceAll('Over', 'Über').replaceAll('Under', 'Unter');
+    }
+    return translated;
   }
 
   @override
@@ -75,7 +100,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                 backgroundColor: context.appColors.info,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Recarregar'),
+              child: Text('reload'.tr(context)),
             ),
           ],
         ),
@@ -123,7 +148,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isHit ? 'Previsão Correta' : 'Previsão Incorreta',
+                        isHit ? 'correct_prediction'.tr(context) : 'incorrect_prediction'.tr(context),
                         style: context.textTheme.bodySmall!.copyWith(
                           fontWeight: FontWeight.bold,
                           color: isHit ? Colors.green : Colors.red,
@@ -133,8 +158,8 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                       const Gap(2),
                       Text(
                         isHit
-                            ? 'A IA acertou a previsão do resultado final para esta partida.'
-                            : 'O resultado final da partida foi diferente do previsto pela IA.',
+                            ? 'correct_prediction_desc'.tr(context)
+                            : 'incorrect_prediction_desc'.tr(context),
                         style: context.textTheme.labelSmall!.copyWith(
                           color: Colors.white70,
                           fontSize: 12,
@@ -172,7 +197,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                   runSpacing: 8,
                   children: [
                     Text(
-                      'Probabilidades de Vitória',
+                      'win_probabilities'.tr(context),
                       style: context.textTheme.bodySmall!.copyWith(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -199,7 +224,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                             ),
                             const Gap(4),
                             Text(
-                              'Escalações confirmadas',
+                              'lineups_factored'.tr(context),
                               style: context.textTheme.labelSmall!.copyWith(
                                 color: Colors.green,
                                 fontSize: 10,
@@ -297,7 +322,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                         const Gap(6),
                         Flexible(
                           child: Text(
-                            widget.fixture.homeTeam?.name ?? 'Mandante',
+                            widget.fixture.homeTeam?.name ?? 'home_team'.tr(context),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: context.textTheme.labelSmall!.copyWith(
@@ -322,7 +347,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                       ),
                       const Gap(6),
                       Text(
-                        'Empate',
+                        'draws'.tr(context),
                         style: context.textTheme.labelSmall!.copyWith(
                           color: Colors.white70,
                           fontSize: 14,
@@ -346,7 +371,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                         const Gap(6),
                         Flexible(
                           child: Text(
-                            widget.fixture.awayTeam?.name ?? 'Visitante',
+                            widget.fixture.awayTeam?.name ?? 'away_team'.tr(context),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: context.textTheme.labelSmall!.copyWith(
@@ -407,7 +432,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Text(
-              'Palpites Rápidos',
+              'quick_tips'.tr(context),
               style: context.textTheme.bodySmall!.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -472,7 +497,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                         const Gap(6),
                       ],
                       Text(
-                        tipStr,
+                        _translateTip(tipStr, context),
                         style: context.textTheme.labelSmall!.copyWith(
                           color: chipTextColor,
                           fontWeight: FontWeight.bold,
@@ -493,7 +518,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Text(
-              'Comentário Técnico',
+              'technical_commentary'.tr(context),
               style: context.textTheme.bodySmall!.copyWith(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -527,7 +552,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Análise gerada por IA',
+                      'ai_generated_analysis'.tr(context),
                       style: context.textTheme.labelSmall!.copyWith(
                         color: Colors.white38,
                         fontSize: 12,

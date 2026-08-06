@@ -13,7 +13,7 @@ class TableFixPage extends StatelessWidget {
 
         final allStandings = state.standings;
         if (allStandings.isEmpty) {
-          return const Center(child: Text('Tabela não disponível para esta liga'));
+          return Center(child: Text('no_table_league'.tr(context)));
         }
 
         // Agrupar por grupo
@@ -79,15 +79,15 @@ class TableFixPage extends StatelessWidget {
                             width: 1,
                           )),
                         ),
-                        children: const [
-                          TableTileItem(
+                        children: [
+                          const TableTileItem(
                             '#',
                             padding: EdgeInsets.only(bottom: 15),
                             isCrossCenter: true,
                           ),
                           TableTileItem(
-                            'TEAM',
-                            padding: EdgeInsets.only(bottom: 15),
+                            'teams'.tr(context).toUpperCase(),
+                            padding: const EdgeInsets.only(bottom: 15),
                           ),
                           TableTileItem(
                             'P',

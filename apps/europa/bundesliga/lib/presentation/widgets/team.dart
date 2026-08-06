@@ -15,7 +15,7 @@ class MatchTeamPage extends StatelessWidget {
         }
         if (state is TeamLoaded) {
           if (state.fixtures.isEmpty) {
-            return const Center(child: Text('No matches found'));
+            return Center(child: Text('no_matches_found'.tr(context)));
           }
           return ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -243,7 +243,7 @@ class TeamTablePage extends StatelessWidget {
         }
         if (state is TeamLoaded) {
           if (state.standings.isEmpty) {
-            return const Center(child: Text('Tabela não disponível para este time no momento'));
+            return Center(child: Text('no_table_available'.tr(context)));
           }
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
@@ -561,3 +561,425 @@ class TeamNewsPage extends StatelessWidget {
     );
   }
 }
+
+class TeamInfoPage extends StatelessWidget {
+  final Team team;
+  const TeamInfoPage({super.key, required this.team});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TeamCubit, TeamState>(
+      builder: (context, state) {
+        Map<String, dynamic> statsData = {};
+        if (state is TeamLoaded && state.stats != null) {
+          statsData = state.stats!;
+          if (statsData.containsKey('response') && statsData['response'] is Map) {
+            statsData = statsData['response'];
+          }
+        }
+
+        final fixturesStats = statsData['fixtures'] ?? {};
+        final playedTotal = fixturesStats['played']?['total']?.toString() ?? '-';
+        final winsTotal = fixturesStats['wins']?['total']?.toString() ?? '-';
+        final drawsTotal = fixturesStats['draws']?['total']?.toString() ?? '-';
+        final losesTotal = fixturesStats['loses']?['total']?.toString() ?? '-';
+
+        final goals = statsData['goals'] ?? {};
+        final goalsFor = goals['for']?['total']?['total']?.toString() ?? '-';
+        final goalsAgainst = goals['against']?['total']?['total']?.toString() ?? '-';
+        final cleanSheets = statsData['clean_sheet']?['total']?.toString() ?? '-';
+
+        return ListView(
+          padding: const EdgeInsets.only(left: 15, right: 15, top: 15, bottom: 60),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: context.appColors.info ?? Colors.transparent,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  if (team.logo != null)
+                    CachedNetworkImage(
+                      imageUrl: proxyImage(team.logo!),
+                      height: 70,
+                      fit: BoxFit.contain,
+                    )
+                  else
+                    const CardNoImage(radius: 35),
+                  const Gap(12),
+                  Text(
+                    team.name,
+                    style: context.textTheme.bodyLarge?.copyWith(fontSize: 22, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (team.code != null && team.code!.isNotEmpty) ...[
+                    const Gap(4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        team.code!,
+                        style: TextStyle(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Gap(15),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: context.appColors.info ?? Colors.transparent,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Informações Gerais',
+                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Divider(height: 25, color: context.appColors.info),
+                  _buildInfoRow(context, 'País', team.country ?? 'Não informado'),
+                  if (team.founded != null)
+                    _buildInfoRow(context, 'Fundação', '${team.founded}'),
+                  _buildInfoRow(context, 'Tipo de Equipe', team.national == true ? 'Seleção Nacional' : 'Clube de Futebol'),
+                  _buildInfoRow(context, 'Código ID', '${team.externalId}'),
+                ],
+              ),
+            ),
+            const Gap(15),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: context.appColors.info ?? Colors.transparent,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Resumo da Temporada',
+                    style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Divider(height: 25, color: context.appColors.info),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildMetricItem(context, 'Jogos', playedTotal),
+                      _buildMetricItem(context, 'Vitórias', winsTotal, color: Colors.greenAccent),
+                      _buildMetricItem(context, 'Empates', drawsTotal, color: Colors.amber),
+                      _buildMetricItem(context, 'Derrotas', losesTotal, color: Colors.redAccent),
+                    ],
+                  ),
+                  const Gap(15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildMetricItem(context, 'Gols Pró', goalsFor, color: Colors.lightBlueAccent),
+                      _buildMetricItem(context, 'Gols Contra', goalsAgainst),
+                      _buildMetricItem(context, 'Clean Sheets', cleanSheets, color: Colors.tealAccent),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: context.textTheme.labelSmall?.copyWith(color: Colors.white70)),
+          Text(value, style: context.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricItem(BuildContext context, String label, String value, {Color? color}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: context.textTheme.bodyMedium?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const Gap(2),
+        Text(label, style: context.textTheme.labelSmall?.copyWith(fontSize: 10, color: Colors.white70)),
+      ],
+    );
+  }
+}
+
+class TeamSquadPage extends StatelessWidget {
+  final int teamExternalId;
+  const TeamSquadPage({super.key, required this.teamExternalId});
+
+  static const _positionOrder = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
+  static const _positionLabelKey = {
+    'Goalkeeper': 'pos_goalkeepers',
+    'Defender': 'pos_defenders',
+    'Midfielder': 'pos_midfielders',
+    'Attacker': 'pos_attackers',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TeamCubit, TeamState>(
+      builder: (context, state) {
+        if (state is TeamLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (state is TeamError) {
+          return Center(child: Text(state.message));
+        }
+        if (state is TeamLoaded) {
+          // Priority 1: Use dedicated squad from API-Football
+          if (state.squad.isNotEmpty) {
+            final grouped = <String, List<SquadPlayer>>{};
+            for (final pos in _positionOrder) {
+              final players = state.squad
+                  .where((p) => p.position == pos)
+                  .toList()
+                ..sort((a, b) => (a.number ?? 99).compareTo(b.number ?? 99));
+              if (players.isNotEmpty) grouped[pos] = players;
+            }
+            // Any unrecognized position
+            final others = state.squad
+                .where((p) => !_positionOrder.contains(p.position))
+                .toList();
+            if (others.isNotEmpty) grouped['Other'] = others;
+
+            final sections = grouped.entries.toList();
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+              itemCount: sections.fold<int>(0, (acc, e) => acc + 1 + e.value.length),
+              itemBuilder: (context, index) {
+                int cursor = 0;
+                for (final section in sections) {
+                  if (index == cursor) {
+                    // Section header
+                    final labelKey = _positionLabelKey[section.key];
+                    final label = labelKey != null ? labelKey.tr(context) : section.key;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10, top: 6),
+                      child: Text(
+                        label,
+                        style: context.textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).primaryColor,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    );
+                  }
+                  cursor++;
+                  final playerIndex = index - cursor;
+                  if (playerIndex >= 0 && playerIndex < section.value.length) {
+                    final player = section.value[playerIndex];
+                    final pId = player.id.toString();
+                    final isLast = playerIndex == section.value.length - 1;
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: isLast ? 16 : 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: context.appColors.info ?? Colors.transparent,
+                            width: 1,
+                          ),
+                        ),
+                        child: ListTile(
+                          onTap: () => context.pushNamed(
+                            screenPlayer,
+                            queryParameters: {
+                              'id': pId,
+                              'name': player.name,
+                            },
+                          ),
+                          leading: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              CircleAvatar(
+                                radius: 22,
+                                backgroundColor: context.appColors.info ?? Colors.black26,
+                                backgroundImage: player.photo != null
+                                    ? NetworkImage(proxyImage(player.photo!))
+                                    : null,
+                                child: player.photo == null
+                                    ? const Icon(Icons.person, color: Colors.white54)
+                                    : null,
+                              ),
+                              if (player.number != null)
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '#${player.number}',
+                                    style: TextStyle(
+                                      color: Theme.of(context).primaryColor,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          title: Text(
+                            player.name,
+                            style: context.textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Row(
+                            children: [
+                              Text(
+                                (_positionLabelKey[player.position] ?? player.position ?? 'player').tr(context),
+                                style: context.textTheme.labelSmall
+                                    ?.copyWith(color: Colors.white70),
+                              ),
+                              if (player.age != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${player.age} ${'years'.tr(context)}',
+                                  style: context.textTheme.labelSmall
+                                      ?.copyWith(color: Colors.white38),
+                                ),
+                              ],
+                            ],
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios,
+                              size: 14, color: Colors.white54),
+                        ),
+                      ),
+                    );
+                  }
+                  cursor += section.value.length;
+                }
+                return const SizedBox();
+              },
+            );
+          }
+
+          // Priority 2: Fallback from fixture lineups (when season has matches)
+          final Map<String, FixtureLineup> squadMap = {};
+          for (final f in state.fixtures) {
+            for (final lineup in f.lineups) {
+              if (lineup.teamId == teamExternalId) {
+                final key = lineup.externalPlayerId?.toString() ?? lineup.player;
+                if (!squadMap.containsKey(key)) squadMap[key] = lineup;
+              }
+            }
+          }
+          final lineupSquad = squadMap.values.toList();
+
+          if (lineupSquad.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.group_off_rounded, size: 56, color: Colors.white24),
+                    const Gap(16),
+                    Text(
+                      'Plantel indisponível',
+                      style: context.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const Gap(8),
+                    Text(
+                      'O elenco será exibido após o início da temporada.',
+                      textAlign: TextAlign.center,
+                      style: context.textTheme.bodySmall?.copyWith(
+                        color: Colors.white38,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+            itemCount: lineupSquad.length,
+            separatorBuilder: (_, i) => const Gap(10),
+            itemBuilder: (context, index) {
+              final player = lineupSquad[index];
+              final pId = (player.externalPlayerId != null && player.externalPlayerId! > 0)
+                  ? player.externalPlayerId.toString()
+                  : (player.playerPhoto != null && player.playerPhoto!.contains('/players/'))
+                      ? RegExp(r'/players/(\d+)\.png').firstMatch(player.playerPhoto!)?.group(1) ?? '0'
+                      : '0';
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: context.appColors.info ?? Colors.transparent, width: 1),
+                ),
+                child: ListTile(
+                  onTap: pId != '0'
+                      ? () => context.pushNamed(screenPlayer, queryParameters: {'id': pId, 'name': player.player})
+                      : null,
+                  leading: CircleAvatar(
+                    radius: 22,
+                    backgroundColor: context.appColors.info ?? Colors.black26,
+                    backgroundImage: player.playerPhoto != null ? NetworkImage(proxyImage(player.playerPhoto!)) : null,
+                    child: player.playerPhoto == null ? const Icon(Icons.person, color: Colors.white54) : null,
+                  ),
+                  title: Text(player.player,
+                      style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  subtitle: Text(player.pos ?? 'Jogador',
+                      style: context.textTheme.labelSmall?.copyWith(color: Colors.white70)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white54),
+                ),
+              );
+            },
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+}
+

@@ -22,3 +22,4 @@ part 'constants.dart';
 part 'assets.dart';
 part 'date_format.dart';
 part 'translations.dart';
+part 'app_config.dart';

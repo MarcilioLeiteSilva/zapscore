@@ -29,6 +29,7 @@ import '../../logic/models/league.dart';
 import '../../logic/models/team.dart';
 import '../../logic/models/fixture_event.dart';
 import '../../logic/models/scorer.dart';
+import '../../logic/models/squad_player.dart';
 import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
 import '../../repository/api/api_client.dart';

@@ -92,8 +92,17 @@ abstract class RouterApp {
       GoRoute(
         path: '/$screenLeague',
         name: screenLeague,
-        builder: (context, state) =>
-            LeagueProfileScreen(league: state.extra as League),
+        builder: (context, state) {
+          final league = state.extra is League ? state.extra as League : League(
+            id: '78',
+            externalId: 78,
+            name: 'Bundesliga',
+            country: 'Germany',
+            logo: 'https://media.api-sports.io/football/leagues/78.png',
+          );
+          final initialIndex = int.tryParse(state.uri.queryParameters['initialIndex'] ?? '0') ?? 0;
+          return LeagueProfileScreen(league: league, initialIndex: initialIndex);
+        },
       ),
       GoRoute(
         path: '/$screenTeam',

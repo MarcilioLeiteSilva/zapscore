@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "909099771095",
+    "project_id": "appbundesliga",
+    "storage_bucket": "appbundesliga.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:909099771095:android:093d81c3457819fe4bfc92",
+        "android_client_info": {
+          "package_name": "com.zapscore.bundesliga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLHlEKfVmRcKwn_SK22hVNZkDPf_Dzkj4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -95,12 +95,18 @@ class PlayerSubstitutionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pId = (event.externalPlayerId != null && event.externalPlayerId! > 0)
+        ? event.externalPlayerId.toString()
+        : (event.playerPhoto != null && event.playerPhoto!.contains('/players/'))
+            ? RegExp(r'/players/(\d+)\.png').firstMatch(event.playerPhoto!)?.group(1) ?? '0'
+            : '0';
+
     return InkWell(
-      onTap: event.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': event.externalPlayerId.toString(),
+                  'id': pId,
                   'name': event.player ?? '',
                 },
               )
@@ -194,12 +200,18 @@ class PlayerSubstitutionPlayerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pId = (player.externalPlayerId != null && player.externalPlayerId! > 0)
+        ? player.externalPlayerId.toString()
+        : (player.playerPhoto != null && player.playerPhoto!.contains('/players/'))
+            ? RegExp(r'/players/(\d+)\.png').firstMatch(player.playerPhoto!)?.group(1) ?? '0'
+            : '0';
+
     return InkWell(
-      onTap: player.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': player.externalPlayerId.toString(),
+                  'id': pId,
                   'name': player.player,
                 },
               )
@@ -278,7 +290,7 @@ class CardLineup extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           color: const Color(0xFF454444),
         ),
-        child: const Center(child: Text('Escalações ainda não disponíveis')),
+        child: Center(child: Text('no_lineups'.tr(context))),
       );
     }
 
@@ -393,12 +405,18 @@ class PlayerLineupItem extends StatelessWidget {
     final hasRed = events.any((e) => e.type.toLowerCase() == 'card' && e.detail?.toLowerCase().contains('red') == true);
     final hasGoal = events.any((e) => e.type.toLowerCase() == 'goal');
 
+    final pId = (player.externalPlayerId != null && player.externalPlayerId! > 0)
+        ? player.externalPlayerId.toString()
+        : (player.playerPhoto != null && player.playerPhoto!.contains('/players/'))
+            ? RegExp(r'/players/(\d+)\.png').firstMatch(player.playerPhoto!)?.group(1) ?? '0'
+            : '0';
+
     return GestureDetector(
-      onTap: player.externalPlayerId != null
+      onTap: pId != '0'
           ? () => context.pushNamed(
                 screenPlayer,
                 queryParameters: {
-                  'id': player.externalPlayerId.toString(),
+                  'id': pId,
                   'name': player.player,
                 },
               )

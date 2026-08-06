@@ -323,7 +323,7 @@ class PageSearchNews extends StatelessWidget {
         if (state is NewsLoaded) {
           final newsList = state.news;
           if (newsList.isEmpty) {
-            return const Center(child: Text('Nenhuma notícia encontrada'));
+            return Center(child: Text('no_news'.tr(context)));
           }
           return ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
@@ -334,7 +334,7 @@ class PageSearchNews extends StatelessWidget {
             itemCount: newsList.length,
           );
         }
-        return const Center(child: Text('Falha ao carregar notícias'));
+        return Center(child: Text('failed_load_news'.tr(context)));
       },
     );
   }
@@ -367,7 +367,7 @@ class PageSearchWatch extends StatelessWidget {
             itemCount: videoList.length,
           );
         }
-        return const Center(child: Text('Falha ao carregar vídeos'));
+        return Center(child: Text('failed_load_videos'.tr(context)));
       },
     );
   }

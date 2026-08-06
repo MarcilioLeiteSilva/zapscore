@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repository/api/api_client.dart';
 import '../../models/fixture.dart';
+import '../../models/squad_player.dart';
 import '../../models/standing.dart';
 
 part 'team_state.dart';
@@ -39,11 +40,17 @@ class TeamCubit extends Cubit<TeamState> {
         stats = await apiClient.getTeamStats(teamExternalId.toString(), leagueId);
       }
 
+      List<SquadPlayer> squad = [];
+      try {
+        squad = await apiClient.getSquad(teamExternalId);
+      } catch (_) {}
+
       emit(TeamLoaded(
         fixtures: fixtures,
         standings: standings,
         stats: stats,
         leagueName: leagueName,
+        squad: squad,
       ));
     } catch (e) {
       emit(TeamError(e.toString()));

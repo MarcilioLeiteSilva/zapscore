@@ -9,11 +9,11 @@ class HelpCenterScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Security'),
+          title: Text('help'.tr(context)),
           bottom: TabBar(
-            tabs: const [
-              Tab(text: 'FAQ'),
-              Tab(text: 'Contact us'),
+            tabs: [
+              const Tab(text: 'FAQ'),
+              Tab(text: 'contact_us'.tr(context)),
             ],
             labelStyle:
                 context.textTheme.bodySmall!.copyWith(color: AppColor.primary),

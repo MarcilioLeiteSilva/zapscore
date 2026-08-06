@@ -192,7 +192,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.sports_soccer_outlined, color: Color(0xFFDD0000)),
             title: Text(
-              'Rodadas',
+              'rounds'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -200,14 +200,23 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             onTap: () {
-              context.read<SettingCubit>().updateHomeIndex(0);
               Navigator.pop(context);
+              context.push(
+                '/$screenLeague?initialIndex=1',
+                extra: League(
+                  id: '78',
+                  externalId: 78,
+                  name: 'Bundesliga',
+                  country: 'Germany',
+                  logo: 'https://media.api-sports.io/football/leagues/78.png',
+                ),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.emoji_events_outlined, color: Color(0xFFDD0000)),
             title: Text(
-              'Classificação',
+              'table'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -215,14 +224,23 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             onTap: () {
-              context.read<SettingCubit>().updateHomeIndex(1);
               Navigator.pop(context);
+              context.push(
+                '/$screenLeague?initialIndex=0',
+                extra: League(
+                  id: '78',
+                  externalId: 78,
+                  name: 'Bundesliga',
+                  country: 'Germany',
+                  logo: 'https://media.api-sports.io/football/leagues/78.png',
+                ),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.military_tech_outlined, color: Color(0xFFDD0000)),
             title: Text(
-              'Artilharia',
+              'top_scorers'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -237,7 +255,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.newspaper_outlined, color: Color(0xFFDD0000)),
             title: Text(
-              'Notícias',
+              'news'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -252,7 +270,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.play_circle_outline_rounded, color: Color(0xFFDD0000)),
             title: Text(
-              'Vídeos',
+              'videos'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -267,7 +285,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.auto_awesome, color: Color(0xFFDD0000)),
             title: Text(
-              'Palpites da IA',
+              'ai_predictions'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -282,7 +300,7 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.settings_outlined, color: Color(0xFFDD0000)),
             title: Text(
-              'Configurações',
+              'account'.tr(context),
               style: GoogleFonts.urbanist(
                 color: const Color(0xFF454444),
                 fontWeight: FontWeight.bold,
@@ -396,7 +414,7 @@ class _HomeAiPerformanceBannerState extends State<HomeAiPerformanceBanner> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Desempenho da IA',
+                        'ai_performance_title'.tr(context),
                         style: context.textTheme.bodySmall!.copyWith(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -405,7 +423,7 @@ class _HomeAiPerformanceBannerState extends State<HomeAiPerformanceBanner> {
                       ),
                       const Gap(2),
                       Text(
-                        'IA com ${_accuracy!.toStringAsFixed(1)}% de acertos nos últimos 7 dias!',
+                        'ai_banner_accuracy'.tr(context).replaceAll('{acc}', _accuracy!.toStringAsFixed(1)),
                         style: context.textTheme.labelSmall!.copyWith(
                           color: Colors.white70,
                           fontSize: 11,
@@ -428,3 +446,139 @@ class _HomeAiPerformanceBannerState extends State<HomeAiPerformanceBanner> {
     );
   }
 }
+
+class HomeNewsCarouselSection extends StatelessWidget {
+  const HomeNewsCarouselSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NewsCubit, NewsState>(
+      builder: (context, state) {
+        if (state is NewsLoaded && state.news.isNotEmpty) {
+          final carouselNews = state.news.take(5).toList();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'news'.tr(context),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        context.read<SettingCubit>().updateHomeIndex(2);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                        child: Text(
+                          'see_all_female'.tr(context),
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(6),
+              SizedBox(
+                width: context.width,
+                height: 135,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemBuilder: (_, i) {
+                    return CardNewsCarouselItem(
+                      news: carouselNews[i],
+                      onlyThumb: true,
+                    );
+                  },
+                  separatorBuilder: (_, i) => const Gap(10),
+                  itemCount: carouselNews.length,
+                ),
+              ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+}
+
+class HomeVideoCarouselSection extends StatelessWidget {
+  const HomeVideoCarouselSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<VideoCubit, VideoState>(
+      builder: (context, state) {
+        if (state is VideoLoaded && state.videos.isNotEmpty) {
+          final carouselVideos = state.videos.take(5).toList();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'watch'.tr(context),
+                      style: context.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        context.read<SettingCubit>().updateHomeIndex(3);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                        child: Text(
+                          'see_all_male'.tr(context),
+                          style: context.textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(6),
+              SizedBox(
+                width: context.width,
+                height: 135,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemBuilder: (_, i) {
+                    return CardNewsCarouselItem(
+                      isVideo: true,
+                      video: carouselVideos[i],
+                      onlyThumb: true,
+                    );
+                  },
+                  separatorBuilder: (_, i) => const Gap(10),
+                  itemCount: carouselVideos.length,
+                ),
+              ),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+}
+
