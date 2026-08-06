@@ -148,4 +148,109 @@ FORMATO JSON ESPERADO:
       commentary: data.commentary || 'Análise indisponível no momento.',
     };
   }
+
+  async translateAnalysis(analysis: any, targetLang: string): Promise<any> {
+    if (!targetLang || targetLang.toLowerCase() === 'pt' || targetLang.toLowerCase() === 'pt-br') {
+      return analysis;
+    }
+
+    const langCode = targetLang.toLowerCase().split('-')[0];
+    const langNameMap: Record<string, string> = {
+      en: 'English',
+      es: 'Spanish',
+      de: 'German',
+    };
+
+    const targetLangName = langNameMap[langCode] || langCode;
+
+    let translationsCache: Record<string, any> = {};
+    if (analysis.tipsStatus && typeof analysis.tipsStatus === 'object') {
+      const statusObj = analysis.tipsStatus as any;
+      if (statusObj._translations && typeof statusObj._translations === 'object') {
+        translationsCache = statusObj._translations;
+      }
+    }
+
+    if (translationsCache[langCode]) {
+      const cached = translationsCache[langCode];
+      return {
+        ...analysis,
+        predictionSummary: cached.predictionSummary || analysis.predictionSummary,
+        commentary: cached.commentary || analysis.commentary,
+        tips: cached.tips || analysis.tips,
+      };
+    }
+
+    try {
+      const prompt = `
+You are a professional football analyst and translator.
+Translate the following football match prediction details into ${targetLangName}.
+
+RULES:
+1. Respond STRICTLY with valid JSON.
+2. Do not include Markdown wrapping outside the JSON object.
+3. "predictionSummary": translate to ${targetLangName} (max 15 words).
+4. "commentary": translate the full commentary paragraphs accurately into ${targetLangName}.
+5. "tips": translate the array of betting tip strings into ${targetLangName}.
+
+SOURCE JSON (PORTUGUESE):
+${JSON.stringify({
+  predictionSummary: analysis.predictionSummary,
+  commentary: analysis.commentary,
+  tips: analysis.tips,
+})}
+
+EXPECTED JSON:
+{
+  "predictionSummary": "<translated text>",
+  "commentary": "<translated text>",
+  "tips": ["<translated tip 1>", "<translated tip 2>"]
+}
+`;
+
+      const provider = this.configService.get<string>('AI_PROVIDER', 'GEMINI').toUpperCase();
+      let rawResponse = '';
+
+      if (provider === 'GEMINI' && this.genAI) {
+        const model = this.genAI.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          generationConfig: { responseMimeType: 'application/json' },
+        });
+        const result = await model.generateContent(prompt);
+        rawResponse = result.response.text();
+      } else if (provider === 'OPENAI' && this.openai) {
+        const completion = await this.openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are a professional football translator.' },
+            { role: 'user', content: prompt },
+          ],
+          response_format: { type: 'json_object' },
+        });
+        rawResponse = completion.choices[0].message.content || '';
+      }
+
+      if (rawResponse) {
+        let clean = rawResponse.trim();
+        if (clean.startsWith('```')) {
+          clean = clean.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+        }
+        const translated = JSON.parse(clean);
+
+        translationsCache[langCode] = translated;
+
+        return {
+          ...analysis,
+          predictionSummary: translated.predictionSummary || analysis.predictionSummary,
+          commentary: translated.commentary || analysis.commentary,
+          tips: Array.isArray(translated.tips) ? translated.tips : analysis.tips,
+          _newTranslationsCache: translationsCache,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`Error translating AI analysis to ${targetLang}: ${error.message}`);
+    }
+
+    return analysis;
+  }
 }

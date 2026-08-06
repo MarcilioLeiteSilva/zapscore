@@ -26,7 +26,10 @@ export class AiAnalysisController {
   }
 
   @Get(':id/ai-analysis')
-  async getAnalysis(@Param('id') id: string) {
+  async getAnalysis(
+    @Param('id') id: string,
+    @Query('lang') lang?: string,
+  ) {
     let analysis = await this.prisma.fixtureAiAnalysis.findUnique({
       where: { fixtureId: id },
     });
@@ -38,6 +41,10 @@ export class AiAnalysisController {
       } catch (err) {
         throw new NotFoundException('Análise da IA não disponível para esta partida.');
       }
+    }
+
+    if (lang && lang.toLowerCase() !== 'pt' && lang.toLowerCase() !== 'pt-br') {
+      return this.aiSyncService.getOrTranslateAnalysis(analysis, lang);
     }
 
     return analysis;

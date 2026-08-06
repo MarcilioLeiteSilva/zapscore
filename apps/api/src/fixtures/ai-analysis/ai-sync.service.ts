@@ -607,4 +607,29 @@ export class AiSyncService {
 
     return stats;
   }
+
+  async getOrTranslateAnalysis(analysis: any, targetLang: string): Promise<any> {
+    const translated = await this.aiService.translateAnalysis(analysis, targetLang);
+
+    if (translated._newTranslationsCache) {
+      const newCache = translated._newTranslationsCache;
+      delete translated._newTranslationsCache;
+
+      try {
+        const currentTipsStatus = (analysis.tipsStatus && typeof analysis.tipsStatus === 'object')
+            ? (analysis.tipsStatus as any)
+            : {};
+        currentTipsStatus._translations = newCache;
+
+        await this.prisma.fixtureAiAnalysis.update({
+          where: { id: analysis.id },
+          data: { tipsStatus: currentTipsStatus },
+        });
+      } catch (err) {
+        this.logger.error(`Failed to persist translation cache for analysis ${analysis.id}: ${err.message}`);
+      }
+    }
+
+    return translated;
+  }
 }
