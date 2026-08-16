@@ -9,7 +9,7 @@
 
 Este documento consolida a arquitetura completa, os desafios superados, as soluções de engenharia implementadas e o roteiro exato para replicação do sistema de **Notificações Push em Tempo Real via PocketBase JS Hooks** nos aplicativos do **Módulo Estaduais** (ex: Copa do Nordeste, Paulistão, Cariocão, etc.) e demais módulos do Zapscore.
 
-O sistema opera de forma **100% autônoma e serverless** dentro da instância do PocketBase, sem necessitar de microsserviços Node.js externos para o envio de pushes, integrando-se diretamente à **API Google Firebase Cloud Messaging HTTP v1** através de criptografia **OAuth2 RS256 nativa em JavaScript puro**.
+O sistema opera de forma **100% autônoma e serverless** dentro da instância do PocketBase, sem necessitar de microsserviços Node.js externos para o envio de pushes, integrando-se diretamente à **API Google Firebase Cloud Messaging HTTP v1** através de criptografia **OAuth2 RS256 nativa em JavaScript puro**, com gerenciamento avançado de presença única do cliente e auto-expurgo de tokens obsoletos.
 
 ---
 
@@ -28,7 +28,9 @@ flowchart TD
     G & H & I --> J[Consulta assinantes na coleção 'subscriptions']
     J --> K[Gera Google OAuth2 RS256 Access Token]
     K --> L[Dispara Push via FCM HTTP v1 API]
-    L --> M[Aparelho do Usuário com App Instalado]
+    L --> M{Resposta do Google FCM}
+    M -->|200 OK| N[Notificação Entregue ao Aparelho]
+    M -->|404 / NotRegistered| O[Auto-Expurgo: $app.dao().deleteRecord]
 ```
 
 ---
@@ -82,13 +84,52 @@ O PocketBase utiliza o **Goja** (um runtime JavaScript escrito em Go) para execu
   4. Exponenciação modular com Teorema Chinês do Resto (CRT) usando `BigInt`.
   5. Codificação Base64URL RFC 7515.
 
+### 3.4. Auto-Expurgo de Tokens Mortos no PocketBase (`$app.dao().deleteRecord`)
+* **Desafio:** Quando um usuário desinstala o aplicativo, o Google FCM invalida seu token e retorna `404 Not Found` com erro `UNREGISTERED` ou `NotRegistered`. Manter esses registros no banco de dados causaria degradação contínua da performance de envio de push.
+* **Solução:** No hook de envio (`notifications.pb.js`), caso o Google responda status `404` ou código `UNREGISTERED`, o PocketBase invoca a DAO nativa para excluir o registro morto imediatamente do banco:
+  ```javascript
+  if (res.statusCode === 404 || (res.raw && (res.raw.indexOf("UNREGISTERED") >= 0 || res.raw.indexOf("NotRegistered") >= 0))) {
+      try {
+          $app.dao().deleteRecord(sub);
+          console.log("[Auto-Expurgo] Token morto removido do PocketBase: " + token.substring(0, 15) + "...");
+      } catch (delErr) {
+          console.log("[Auto-Expurgo Error] " + delErr);
+      }
+  }
+  ```
+
 ---
 
-## 4. Estrutura de Coleções Necessária no PocketBase
+## 4. Gestão de Ciclo de Vida do Cliente Flutter (Heartbeat & Presença Única)
+
+No lado dos aplicativos clientes (Flutter), foi implementada uma arquitetura robusta no `PushNotificationService` para garantir conformidade com o banco e evitar duplicações de registros:
+
+### 4.1. Identificador Único Persistente por Aparelho (`deviceId`)
+* Cada instalação gera e armazena localmente (`SharedPreferences`) uma chave única (ex: `dev_1771234567890_4521`).
+* Permite correlacionar o aparelho físico com o registro no banco mesmo se o token do Google sofrer rotação.
+
+### 4.2. Sincronização por `PATCH` (Presença Única)
+* Ao iniciar o app (`initialize`), o serviço consulta a coleção `subscriptions` filtrando por `fcm_token = '$token' && app_slug = '$appSlug'`.
+* Se o registro já existir, o cliente realiza apenas `PATCH`, atualizando a data de presença, times favoritos e perfil.
+* Se for uma nova instalação, faz o `POST` inicial.
+
+### 4.3. Bloqueio de Concorrência (`_isSyncing`) e Auto-Deduplicação Ativa
+* A flag booleana `_isSyncing` bloqueia requisições assíncronas concorrentes durante o carregamento inicial de Cubits.
+* Se a busca retornar mais de 1 registro com o mesmo token/slug (gerados por versões legadas), o app automaticamente faz `DELETE` dos registros excedentes, mantendo a base estritamente deduplicada (1 aparelho = 1 token = 1 registro).
+
+### 4.4. Preservação de Perfil e Times Favoritos
+* Todas as chamadas de sincronização consultam o `SharedPreferences` como fallback para preservar o apelido do usuário (`user_nickname`), nome (`user_name`) e lista de favoritos (`fav_teams`), impedindo que atualizações parciais de push restaurem valores padrão.
+
+### 4.5. Escuta de Rotação de Token Google (`onTokenRefresh`)
+* Listener configurado para detectar quando o Google Firebase renova o token do aparelho em segundo plano, disparando automaticamente a atualização do registro no PocketBase.
+
+---
+
+## 5. Estrutura de Coleções Necessária no PocketBase
 
 Para qualquer instância do PocketBase (Europa, Estaduais, etc.), a estrutura de dados necessária é:
 
-### 4.1. Coleção `apps` (Base de Configuração das Ligas)
+### 5.1. Coleção `apps` (Base de Configuração das Ligas)
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `app_slug` | Text (Unique) | Identificador do app (ex: `copanordeste`, `paulistao`) |
@@ -96,18 +137,21 @@ Para qualquer instância do PocketBase (Europa, Estaduais, etc.), a estrutura de
 | `league_id` | Number | ID externo da liga na Zapscore API (ex: `620`) |
 | `active` | Boolean | Se o monitoramento está ativo (`true`/`false`) |
 
-### 4.2. Coleção `subscriptions` (Inscrições dos Usuários)
+### 5.2. Coleção `subscriptions` (Inscrições dos Usuários)
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `app_slug` | Text | Slug do aplicativo do qual o push veio |
 | `fcm_token` | Text | Token de dispositivo gerado pelo Firebase SDK |
+| `device_id` | Text | Identificador único local do aparelho |
+| `user_name` | Text | Nome do usuário |
+| `user_nickname` | Text | Apelido do usuário |
 | `favorite_teams` | JSON / Text | Lista de IDs dos times favoritados `[123, 456]` (vazio = segue todos) |
 | `notify_start` | Boolean | Notificar início de partida |
 | `notify_goals` | Boolean | Notificar gols |
 | `notify_end` | Boolean | Notificar fim de jogo |
 | `platform` | Text | `android` ou `ios` |
 
-### 4.3. Coleção `match_cache` (Estado e Histórico em Tempo Real)
+### 5.3. Coleção `match_cache` (Estado e Histórico em Tempo Real)
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `fixture_id` | Number (Unique) | ID externo da partida na Zapscore API |
@@ -122,7 +166,19 @@ Para qualquer instância do PocketBase (Europa, Estaduais, etc.), a estrutura de
 
 ---
 
-## 5. Roteiro de Replicação para o Módulo Estaduais
+## 6. Status da Replicação nos Aplicativos Europeus
+
+| Aplicativo | Slug (`app_slug`) | Push Service Atualizado | Presença Única (Heartbeat) | Auto-Expurgo no PB |
+|---|---|:---:|:---:|:---:|
+| **La Liga** | `laliga` | ✅ Sim (v1.0.3) | ✅ Sim | ✅ Sim |
+| **Bundesliga** | `bundesliga` | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Ligue 1** | `ligue1-franca` | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Serie A** | `seriea-italia` | ✅ Sim | ✅ Sim | ✅ Sim |
+| **Premier League** | `premierleague` | ✅ Sim | ✅ Sim | ✅ Sim |
+
+---
+
+## 7. Roteiro de Replicação para o Módulo Estaduais
 
 Ao implementar o mesmo hook no PocketBase dos Estaduais (ex: `pocketbase-estaduais` ou `pocketbase-copanordeste`):
 
@@ -167,10 +223,12 @@ Validar que a resposta retorna `oauth_status: "OAuth2 Token Generated Successful
 
 ---
 
-## 6. Conclusão
+## 8. Conclusão
 
 A arquitetura implantada demonstrou **100% de estabilidade e conformidade**:
 - Autenticação OAuth2 RS256 nativa validada com sucesso em todos os 5 projetos Firebase Europeus.
 - Disparo real de notificações push HTTP v1 executado com entrega confirmada pelo Google Cloud (`StatusCode: 200`).
+- Auto-expurgo comprovado em tempo real ao desinstalar o app (remoção automática de tokens 404).
+- Presença única garantida (1 aparelho = 1 registro no PocketBase).
 - Monitoramento contínuo em tempo real via cron sem sobrecarga ou dependências externas.
 - Isolamento estrito de código: zero alterações colaterais na API principal ou em outros módulos do Zapscore.
