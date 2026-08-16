@@ -27,9 +27,9 @@ class PushNotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'bundesliga_live_channel',
-    'Alertas Bundesliga',
-    description: 'Notificações ao vivo de gols, início e fim de partidas da Bundesliga.',
+    'ligue1_live_channel',
+    'Alertas Ligue 1',
+    description: 'Notificações ao vivo de gols, início e fim de partidas da Ligue 1.',
     importance: Importance.max,
   );
 
