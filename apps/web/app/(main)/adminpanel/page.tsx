@@ -6,6 +6,7 @@ import {
   Video, 
   Trophy, 
   ShieldCheck, 
+  Bot,
   Activity, 
   ArrowRight, 
   Zap,
@@ -170,26 +171,26 @@ export default function AdminDashboard() {
               );
             })}
 
-            {/* Sentinela */}
+            {/* Central de Agentes */}
             <Link
-              href="/adminpanel/sentinel"
+              href="/adminpanel/agents"
               style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
               className="p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all group shadow-md"
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                  <ShieldCheck size={24} />
+                  <Bot size={24} />
                 </div>
                 <div>
                   <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors text-base">
-                    Monitor Sentinela (Autocorreção)
+                    Central de Agentes Autônomos (Sentinel & Guardiões)
                   </h3>
                   <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Auditoria contínua de fusos, placares ao vivo e consistência
+                    Auditoria multi-módulo, expurgo de tokens, curadoria RSS e proteção de infraestrutura
                   </p>
                 </div>
               </div>
-              <span className="badge badge-live text-xs px-3 py-1.5 shrink-0">• AUDITORIA ATIVA</span>
+              <span className="badge badge-live text-xs px-3 py-1.5 shrink-0">• 4 ATIVOS</span>
             </Link>
 
             {/* Gestão de Notícias */}

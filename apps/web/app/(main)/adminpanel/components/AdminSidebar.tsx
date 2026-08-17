@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
+  Bot,
   ShieldCheck, 
   Globe, 
   Flag, 
@@ -64,19 +65,19 @@ export default function AdminSidebar() {
             </Link>
 
             <Link 
-              href="/adminpanel/sentinel" 
+              href="/adminpanel/agents" 
               className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                isActive('/adminpanel/sentinel')
+                isActive('/adminpanel/agents') || isActive('/adminpanel/sentinel')
                   ? 'bg-emerald-500/10 text-emerald-400 border-l-2 border-emerald-500 font-bold'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               <div className="flex items-center space-x-2.5 min-w-0">
-                <ShieldCheck size={16} className={isActive('/adminpanel/sentinel') ? 'text-emerald-400' : 'text-slate-400'} />
-                <span className="truncate">Sentinela</span>
+                <Bot size={16} className={isActive('/adminpanel/agents') || isActive('/adminpanel/sentinel') ? 'text-emerald-400' : 'text-slate-400'} />
+                <span className="truncate">Agentes</span>
               </div>
               <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 ml-1">
-                Ativo
+                Ativos
               </span>
             </Link>
           </div>

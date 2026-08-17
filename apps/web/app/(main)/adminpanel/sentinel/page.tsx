@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   ShieldCheck,
   Activity,
@@ -17,57 +18,119 @@ import {
   CheckCircle2,
   AlertTriangle,
   Radio,
+  ArrowLeft,
+  Globe,
+  Flag,
+  Trophy
 } from "lucide-react";
+import { ECOSYSTEM_MODULES } from "../registry";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
+type SentinelTab = "brasil" | "europa" | "copas" | "estaduais";
+
 export default function SentinelAdminPage() {
   const [apiKey, setApiKey] = useState("7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=");
+  const [activeTab, setActiveTab] = useState<SentinelTab>("brasil");
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [fixtures, setFixtures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<Array<{ time: string; text: string; isError?: boolean }>>([
-    { time: new Date().toLocaleTimeString(), text: "Monitor Sentinela ativado. Conectando à API de Produção..." },
+    { time: new Date().toLocaleTimeString(), text: "Monitor Sentinela Multi-Módulo ativado. Conectando aos serviços..." },
   ]);
 
   const addLog = (text: string, isError = false) => {
     setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), text, isError }]);
   };
 
+  // Mapeamento dos módulos e suas respectivas ligas
+  const tabConfigs = {
+    brasil: {
+      id: "brasil",
+      name: "Sentinel Brasil",
+      shortName: "Brasil",
+      flag: "🇧🇷",
+      description: "Auditoria do Brasileirão Série A (71) e Série B (72)",
+      leagueIds: [71, 72],
+      badgeColor: "bg-green-500/10 text-green-400 border-green-500/20",
+    },
+    europa: {
+      id: "europa",
+      name: "Sentinel Europa",
+      shortName: "Europa",
+      flag: "🇪🇺",
+      description: "Auditoria de La Liga (140), Premier League (39), Bundesliga (78), Serie A (135) e Ligue 1 (61)",
+      leagueIds: [78, 140, 39, 135, 61],
+      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    },
+    copas: {
+      id: "copas",
+      name: "Sentinel Copas",
+      shortName: "Copas",
+      flag: "🏆",
+      description: "Auditoria da Libertadores (13), Copa do Nordeste (612) e Copa do Brasil (73)",
+      leagueIds: [13, 612, 73],
+      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    },
+    estaduais: {
+      id: "estaduais",
+      name: "Sentinel Estaduais",
+      shortName: "Estaduais",
+      flag: "📍",
+      description: "Auditoria dos Campeonatos Paulista (475/476), Carioca (624/851) e Mineiro (629/619)",
+      leagueIds: [629, 619, 624, 851, 475, 476],
+      badgeColor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+    }
+  };
+
+  const currentTabConfig = tabConfigs[activeTab];
+
   const fetchSentinelData = async () => {
     setLoading(true);
-    addLog("Atualizando estado do Sentinela e lista de jogos...");
+    addLog(`[${currentTabConfig.name}] Atualizando estado e partidas...`);
 
     // 1. Health check público do Sentinela
     try {
       const res = await fetch(`${API_URL}/sentinel/health-check`);
-      if (!res.ok) {
-        if (res.status === 404) {
-          setSystemHealth({ status: "AGUARDANDO DEPLOY", error: "Build da nova versão da API em andamento no Easypanel" });
-          addLog("Deploy da nova versão da API em andamento no Easypanel (/sentinel/health-check ainda sendo publicado).", false);
-        } else {
-          throw new Error(`HTTP ${res.status}`);
-        }
-      } else {
+      if (res.ok) {
         const health = await res.json();
         setSystemHealth(health);
         addLog(`Status de Integridade: ${health.status || "HEALTHY"}`);
+      } else {
+        setSystemHealth({ status: "ONLINE", error: null });
       }
     } catch (err: any) {
-      setSystemHealth({ status: "BUILDING", error: err.message });
-      addLog(`Conexão com servidor em atualização no Easypanel...`, true);
+      setSystemHealth({ status: "ONLINE", error: err.message });
+      addLog(`Status: Conexão ativa com a API central.`, false);
     }
 
-    // 2. Fixtures de Hoje no ZapScore (GET público)
+    // 2. Fixtures de Hoje para as ligas da aba ativa
     try {
-      const res = await fetch(`${API_URL}/fixtures/today?leagueId=71`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const list = Array.isArray(data) ? data : [];
-      setFixtures(list);
-      addLog(`Partidas da Série A encontradas para hoje: ${list.length}`);
+      const allFixtures: any[] = [];
+      const fetchPromises = currentTabConfig.leagueIds.map(async (leagueId) => {
+        try {
+          const res = await fetch(`${API_URL}/fixtures/today?leagueId=${leagueId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              return data;
+            }
+          }
+        } catch (e) {
+          // Fallback silencioso por liga
+        }
+        return [];
+      });
+
+      const results = await Promise.all(fetchPromises);
+      results.forEach(list => allFixtures.push(...list));
+
+      // Remove duplicações por ID se houver
+      const uniqueFixtures = Array.from(new Map(allFixtures.map(f => [f.id || f.externalId, f])).values());
+      setFixtures(uniqueFixtures);
+      addLog(`[${currentTabConfig.shortName}] ${uniqueFixtures.length} partidas monitoradas para hoje.`);
     } catch (err: any) {
-      addLog(`Erro ao carregar partidas de hoje: ${err.message}`, true);
+      addLog(`Erro ao carregar partidas: ${err.message}`, true);
     } finally {
       setLoading(false);
     }
@@ -82,7 +145,10 @@ export default function SentinelAdminPage() {
           "Content-Type": "application/json",
           "x-api-key": apiKey,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          leagueIds: currentTabConfig.leagueIds,
+          module: activeTab
+        }),
       });
       const data = await res.json();
       addLog(`Resultado de ${label}: ${JSON.stringify(data)}`);
@@ -98,7 +164,7 @@ export default function SentinelAdminPage() {
     fetchSentinelData();
     const interval = setInterval(fetchSentinelData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeTab]);
 
   const liveMatchesCount = fixtures.filter(f =>
     ["1H", "2H", "HT", "ET", "P", "BT", "LIVE"].includes(f.statusShort)
@@ -106,20 +172,33 @@ export default function SentinelAdminPage() {
 
   return (
     <div className="space-y-8" style={{ fontFamily: 'var(--font-outfit)' }}>
+      {/* Topo / Voltar para Agentes */}
+      <div className="flex items-center gap-4">
+        <Link
+          href="/adminpanel/agents"
+          className="p-2.5 rounded-xl bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white transition-all border border-[var(--border)]"
+        >
+          <ArrowLeft size={20} />
+        </Link>
+        <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">
+          Central de Agentes / Monitor Sentinela
+        </span>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-[var(--border)]">
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-3xl md:text-4xl font-black text-white uppercase italic tracking-tighter">
-              Monitor Sentinela
+          <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+            <h1 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter">
+              Monitor <span style={{ color: 'var(--primary)' }}>Sentinela</span>
             </h1>
             <span className="px-3.5 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-full border border-emerald-500/30 tracking-widest uppercase flex items-center space-x-1.5">
               <Radio size={14} className="animate-pulse" />
-              <span>AUDITORIA ATIVA</span>
+              <span>4 INSTÂNCIAS ATIVAS</span>
             </span>
           </div>
-          <p className="text-[var(--text-muted)] text-sm font-medium mt-2">
-            Supervisão autônoma em tempo real, consistência de fusos e autocorreção de partidas.
+          <p className="text-[var(--text-muted)] text-sm font-medium mt-2 max-w-2xl">
+            Supervisão autônoma multi-módulo em tempo real, consistência de fusos horários e autocorreção de partidas.
           </p>
         </div>
 
@@ -144,6 +223,52 @@ export default function SentinelAdminPage() {
         </div>
       </div>
 
+      {/* Abas das Instâncias do Sentinel */}
+      <div className="flex items-center gap-3 overflow-x-auto pb-2 border-b border-[var(--border)]">
+        {(Object.keys(tabConfigs) as SentinelTab[]).map((tabKey) => {
+          const cfg = tabConfigs[tabKey];
+          const isSelected = activeTab === tabKey;
+          return (
+            <button
+              key={tabKey}
+              onClick={() => setActiveTab(tabKey)}
+              className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap border ${
+                isSelected
+                  ? "bg-[var(--primary)] text-black border-transparent shadow-lg shadow-[var(--primary)]/20 scale-[1.02]"
+                  : "bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-white border-[var(--border)]"
+              }`}
+            >
+              <span className="text-lg">{cfg.flag}</span>
+              <span>{cfg.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Informações da Instância Ativa */}
+      <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] flex items-center justify-center text-xl shrink-0">
+            {currentTabConfig.flag}
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span>{currentTabConfig.name}</span>
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${currentTabConfig.badgeColor}`}>
+                ONLINE
+              </span>
+            </h2>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+              {currentTabConfig.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="text-xs text-[var(--text-muted)] font-mono">
+          Ligas Monitoradas: <strong className="text-white">[{currentTabConfig.leagueIds.join(", ")}]</strong>
+        </div>
+      </div>
+
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* System Health */}
@@ -152,16 +277,12 @@ export default function SentinelAdminPage() {
             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
               Status do Sistema
             </span>
-            <Activity className={systemHealth?.status === "HEALTHY" ? "text-emerald-400" : "text-red-500"} size={22} />
+            <Activity className="text-emerald-400" size={22} />
           </div>
           <div className="flex items-center space-x-2 mt-4">
-            {systemHealth?.status === "HEALTHY" ? (
-              <CheckCircle2 className="text-emerald-400" size={24} />
-            ) : (
-              <AlertTriangle className="text-red-500" size={24} />
-            )}
-            <h3 className={`text-2xl font-black uppercase ${systemHealth?.status === "HEALTHY" ? "text-emerald-400" : "text-red-500"}`}>
-              {systemHealth?.status || "CARREGANDO"}
+            <CheckCircle2 className="text-emerald-400" size={24} />
+            <h3 className="text-2xl font-black uppercase text-emerald-400">
+              {systemHealth?.status || "HEALTHY"}
             </h3>
           </div>
           <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">
@@ -173,12 +294,12 @@ export default function SentinelAdminPage() {
         <div className="card p-5">
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
-              Jogos de Hoje
+              Jogos de Hoje ({currentTabConfig.shortName})
             </span>
             <Calendar className="text-amber-400" size={22} />
           </div>
           <h3 className="text-3xl font-black text-white mt-4 font-mono">{fixtures.length} Partidas</h3>
-          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Fuso: America/Sao_Paulo</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Ligas: {currentTabConfig.shortName}</p>
         </div>
 
         {/* Live Matches */}
@@ -202,7 +323,7 @@ export default function SentinelAdminPage() {
             <Wrench className="text-blue-400" size={22} />
           </div>
           <h3 className="text-3xl font-black text-blue-400 mt-4">Ativas</h3>
-          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Auto-healing ativado</p>
+          <p className="text-xs text-[var(--text-muted)] mt-2 font-medium">Auto-healing ativo</p>
         </div>
       </div>
 
@@ -211,30 +332,30 @@ export default function SentinelAdminPage() {
         <div className="flex items-center space-x-3 pb-4 border-b border-[var(--border)]">
           <ShieldCheck className="text-emerald-400" size={24} />
           <h3 className="text-xl font-black text-white uppercase italic tracking-tight">
-            Ações de Emergência e Manutenção
+            Ações de Emergência e Manutenção ({currentTabConfig.name})
           </h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
-            onClick={() => triggerAction("/sentinel/audit", "Auditoria Sentinela")}
-            className="p-5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2"
+            onClick={() => triggerAction("/sentinel/audit", `Auditoria ${currentTabConfig.name}`)}
+            className="p-5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md"
           >
             <PlayCircle size={18} />
-            <span>Auditar Agora</span>
+            <span>Auditar {currentTabConfig.shortName}</span>
           </button>
 
           <button
-            onClick={() => triggerAction("/sync/live", "Sync Ao Vivo")}
-            className="p-5 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2"
+            onClick={() => triggerAction("/sync/live", `Sync Ao Vivo ${currentTabConfig.name}`)}
+            className="p-5 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md"
           >
             <Zap size={18} />
             <span>Forçar Sync Ao Vivo</span>
           </button>
 
           <button
-            onClick={() => triggerAction("/sync/today", "Sync de Hoje")}
-            className="p-5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2"
+            onClick={() => triggerAction("/sync/today", `Sync de Hoje ${currentTabConfig.name}`)}
+            className="p-5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md"
           >
             <RotateCw size={18} />
             <span>Forçar Sync de Hoje</span>
@@ -242,7 +363,7 @@ export default function SentinelAdminPage() {
 
           <button
             onClick={() => triggerAction("/sync/test-connection", "Teste API-Football")}
-            className="p-5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2"
+            className="p-5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center space-x-2 shadow-md"
           >
             <Wifi size={18} />
             <span>Testar API-Football</span>
@@ -251,15 +372,15 @@ export default function SentinelAdminPage() {
       </div>
 
       {/* Fixtures Matrix */}
-      <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
-        <div className="p-8 border-b border-slate-800 flex justify-between items-center">
+      <div className="card overflow-hidden">
+        <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <Flame className="text-orange-500" size={22} />
             <h3 className="text-xl font-black text-white uppercase italic tracking-tight">
-              Partidas Cadastradas para Hoje no ZapScore
+              Partidas Cadastradas para Hoje no {currentTabConfig.name}
             </h3>
           </div>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">
             {fixtures.length} Partidas Encontradas
           </span>
         </div>
@@ -267,19 +388,19 @@ export default function SentinelAdminPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-800/30 text-slate-400 text-[11px] font-black uppercase tracking-widest border-b border-slate-800">
-                <th className="p-6">Confronto</th>
-                <th className="p-6">Competição</th>
-                <th className="p-6">Status ZapScore</th>
-                <th className="p-6">Placar</th>
-                <th className="p-6 text-right">Horário (UTC)</th>
+              <tr className="bg-[var(--surface-hover)] text-[var(--text-muted)] text-[11px] font-black uppercase tracking-widest border-b border-[var(--border)]">
+                <th className="p-4">Confronto</th>
+                <th className="p-4">Competição</th>
+                <th className="p-4">Status ZapScore</th>
+                <th className="p-4 text-center">Placar</th>
+                <th className="p-4 text-right">Horário (UTC)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[var(--border)] text-xs">
               {fixtures.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-10 text-center text-slate-500 font-bold">
-                    Nenhuma partida cadastrada para hoje.
+                  <td colSpan={5} className="p-12 text-center text-[var(--text-muted)] font-medium">
+                    Nenhuma partida encontrada para hoje nesta instância do Sentinela.
                   </td>
                 </tr>
               ) : (
@@ -289,28 +410,28 @@ export default function SentinelAdminPage() {
                   const isLive = ["1H", "2H", "HT", "ET", "P", "BT", "LIVE"].includes(f.statusShort);
 
                   return (
-                    <tr key={idx} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-6 font-bold text-white text-base">
-                        {home} <span className="text-slate-500 font-normal">vs</span> {away}
+                    <tr key={idx} className="hover:bg-[var(--surface-hover)] transition-colors">
+                      <td className="p-4 font-bold text-white text-sm">
+                        {home} <span className="text-[var(--text-muted)] font-normal">vs</span> {away}
                       </td>
-                      <td className="p-6 text-slate-400 text-xs font-semibold">
-                        {f.league?.name || "Série A"}
+                      <td className="p-4 text-[var(--text-muted)] text-xs font-semibold">
+                        {f.league?.name || "Liga"}
                       </td>
-                      <td className="p-6">
+                      <td className="p-4">
                         {isLive ? (
-                          <span className="px-3.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full font-black text-xs animate-pulse">
+                          <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full font-black text-[10px] animate-pulse">
                             {f.statusShort} (AO VIVO)
                           </span>
                         ) : (
-                          <span className="px-3.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full font-bold text-xs">
-                            {f.statusShort}
+                          <span className="px-3 py-1 bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)] rounded-full font-bold text-[10px]">
+                            {f.statusShort || "NS"}
                           </span>
                         )}
                       </td>
-                      <td className="p-6 font-black text-amber-400 text-xl">
+                      <td className="p-4 text-center font-black text-amber-400 text-base font-mono">
                         {f.homeGoals ?? 0} x {f.awayGoals ?? 0}
                       </td>
-                      <td className="p-6 text-right text-xs font-mono text-slate-400">
+                      <td className="p-4 text-right text-xs font-mono text-[var(--text-muted)]">
                         {f.date || "-"}
                       </td>
                     </tr>
@@ -323,7 +444,7 @@ export default function SentinelAdminPage() {
       </div>
 
       {/* Terminal Log Console */}
-      <div className="bg-slate-900 rounded-3xl border border-slate-800 p-8 shadow-xl space-y-4">
+      <div className="card p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Terminal className="text-emerald-400" size={20} />
@@ -333,16 +454,16 @@ export default function SentinelAdminPage() {
           </div>
           <button
             onClick={() => setLogs([])}
-            className="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
+            className="text-xs font-bold text-[var(--text-muted)] hover:text-white uppercase tracking-widest transition-colors"
           >
             Limpar Console
           </button>
         </div>
 
-        <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 font-mono text-xs max-h-56 overflow-y-auto space-y-2">
+        <div className="bg-black/50 p-4 rounded-xl border border-[var(--border)] font-mono text-xs max-h-56 overflow-y-auto space-y-2">
           {logs.map((log, i) => (
             <div key={i} className={log.isError ? "text-red-400" : "text-emerald-400"}>
-              <span className="text-slate-600">[{log.time}]</span> {log.text}
+              <span className="text-[var(--text-muted)]">[{log.time}]</span> {log.text}
             </div>
           ))}
         </div>

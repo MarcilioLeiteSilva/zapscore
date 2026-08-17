@@ -11,6 +11,7 @@ import {
   Rss, 
   Video, 
   Sparkles,
+  Bot,
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
@@ -107,24 +108,24 @@ export default function ZapScoreAdminSidebar({
             </Link>
 
             <Link
-              href="/adminpanel/sentinel"
+              href="/adminpanel/agents"
               style={{
-                background: isActive('/adminpanel/sentinel') ? 'rgba(0, 255, 136, 0.12)' : 'transparent',
-                borderColor: isActive('/adminpanel/sentinel') ? 'var(--success)' : 'transparent',
-                color: isActive('/adminpanel/sentinel') ? '#ffffff' : 'var(--text-muted)',
+                background: isActive('/adminpanel/agents') || isActive('/adminpanel/sentinel') ? 'rgba(0, 255, 136, 0.12)' : 'transparent',
+                borderColor: isActive('/adminpanel/agents') || isActive('/adminpanel/sentinel') ? 'var(--success)' : 'transparent',
+                color: isActive('/adminpanel/agents') || isActive('/adminpanel/sentinel') ? '#ffffff' : 'var(--text-muted)',
               }}
               className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border hover:text-white hover:bg-[var(--surface-hover)] ${
-                isActive('/adminpanel/sentinel') ? 'border-l-4 border-l-emerald-400' : ''
+                isActive('/adminpanel/agents') || isActive('/adminpanel/sentinel') ? 'border-l-4 border-l-emerald-400' : ''
               } ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}
-              title={isCollapsed ? 'Monitor Sentinela' : undefined}
+              title={isCollapsed ? 'Agentes Autônomos' : undefined}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <ShieldCheck size={18} className="shrink-0 text-emerald-400" />
-                {!isCollapsed && <span className="truncate">Sentinela</span>}
+                <Bot size={18} className="shrink-0 text-emerald-400" />
+                {!isCollapsed && <span className="truncate">Agentes</span>}
               </div>
               {!isCollapsed && (
                 <span className="badge badge-ft text-[9px] px-2 py-0.5 font-bold shrink-0">
-                  ONLINE
+                  ATIVOS
                 </span>
               )}
             </Link>
