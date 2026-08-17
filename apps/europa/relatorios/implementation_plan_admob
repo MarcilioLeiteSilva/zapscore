@@ -1,0 +1,91 @@
+# Plano de Integração do Google Mobile Ads (AdMob)
+
+Este documento detalha o plano de implementação completo para integrar o **AdMob (Google Mobile Ads)** no aplicativo **ZapScore La Liga**, com suporte a **Banners Adaptáveis** em listas e telas estratégicas e **Anúncios Intersticiais** em transições de navegação.
+
+---
+
+## 🎯 Escopo da Integração
+
+1. **Banner Fixo na Home**: Posicionado logo acima do menu inferior (`HomeNavBottom`).
+2. **Banners em Listas de Conteúdo**:
+   - **Lista de Partidas**: 1 banner inline a cada 5 partidas (em conformidade com a política de densidade de anúncios do AdMob).
+   - **Lista de Notícias**: 1 banner inline a cada 3 notícias.
+   - **Lista de Vídeos**: 1 banner inline a cada 3 vídeos.
+3. **Banner na Aba de Análise de IA**:
+   - 1 banner inline posicionado entre os *Palpites Rápidos* e o *Comentário Técnico da IA* em [ai_analysis.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/screens/fixture/ai_analysis.dart).
+4. **Anúncios Intersticiais (Tela Cheia)**:
+   - Exibição ao clicar para **ler uma notícia** (`NewsContentScreen`).
+   - Exibição ao clicar para **assistir a um vídeo** (`WatchContentScreen`).
+   - Exibição ao clicar para abrir o **Painel Geral de IA** (`AiPerformanceDashboardPage`).
+
+---
+
+## 🛠️ Mudanças Propostas
+
+### Dependências e Configurações Globais
+
+#### [MODIFY] [pubspec.yaml](file:///d:/zapscore/apps/europa/laliga/pubspec.yaml)
+- Adicionar o pacote oficial `google_mobile_ads: ^5.1.0`.
+
+#### [MODIFY] [AndroidManifest.xml](file:///d:/zapscore/apps/europa/laliga/android/app/src/main/AndroidManifest.xml)
+- Adicionar a meta-tag `com.google.android.gms.ads.APPLICATION_ID` com os IDs de teste/produção do AdMob.
+
+#### [MODIFY] [Info.plist](file:///d:/zapscore/apps/europa/laliga/ios/Runner/Info.plist)
+- Adicionar a chave `GADApplicationIdentifier` e as redes de anúncios `SKAdNetworkItems`.
+
+---
+
+### Camada de Serviço e Widgets Reutilizáveis
+
+#### [NEW] [ad_service.dart](file:///d:/zapscore/apps/europa/laliga/lib/services/ad_service.dart)
+- Classe singleton `AdService` para centralizar a inicialização do AdMob, IDs de teste para desenvolvimento (Android/iOS) e chaves de produção.
+- Gerenciamento de carregamento prévio (*pre-loading*) e exibição segura de anúncios **Intersticiais**.
+
+#### [NEW] [ad_banner.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/widgets/ad_banner.dart)
+- Widget `AdBannerWidget` com gerenciamento completo de ciclo de vida (`BannerAd` load e `dispose`), suportando tamanhos adaptáveis (`AdSize.banner` ou `AdSize.anchoredAdaptiveBanner`) sem travar a interface nem causar vazamentos de memória.
+
+#### [MODIFY] [main.dart](file:///d:/zapscore/apps/europa/laliga/lib/main.dart)
+- Inicializar `MobileAds.instance.initialize()` na inicialização do aplicativo.
+
+---
+
+### Telas e Componentes Modificados
+
+#### [MODIFY] [home.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/screens/home/home.dart)
+- Inserir o `AdBannerWidget` fixo acima da barra de navegação inferior `HomeNavBottom`.
+
+#### [MODIFY] [ai_analysis.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/screens/fixture/ai_analysis.dart)
+- Inserir o `AdBannerWidget` entre o card de palpites rápidos e o comentário técnico da IA.
+
+#### [MODIFY] [news.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/widgets/news.dart) & [news.dart (screen)](file:///d:/zapscore/apps/europa/laliga/lib/presentation/screens/home/news.dart)
+- Intercalar 1 banner a cada 3 itens na `ListView` de notícias.
+- Disparar anúncio Interstitial antes de navegar para `NewsContentScreen`.
+
+#### [MODIFY] [watch.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/screens/home/watch.dart)
+- Intercalar 1 banner a cada 3 itens na `ListView` de vídeos.
+- Disparar anúncio Interstitial antes de navegar para `WatchContentScreen`.
+
+#### [MODIFY] [fixture.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/widgets/fixture.dart) & [competetion.dart](file:///d:/zapscore/apps/europa/laliga/lib/presentation/widgets/competetion.dart)
+- Intercalar 1 banner a cada 5 partidas nas listas de jogos.
+
+---
+
+## 🧪 Plano de Verificação
+
+### Testes Automatizados e de Compilação
+- `flutter pub get`: Instalação e resolução de dependências.
+- `flutter analyze` / `flutter build apk --debug`: Verificação da integridade do código e compatibilidade do Gradle.
+
+### Validação Manual
+1. **Verificação dos Banners Teste**:
+   - Confirmar que os anúncios de teste do Google (`ca-app-pub-3940256099942544/...`) são exibidos na Home, na lista de notícias, na lista de vídeos e na aba de Análise de IA.
+2. **Verificação dos Intersticiais**:
+   - Clicar em uma notícia e em um vídeo e verificar a abertura do anúncio intersticial em tela cheia antes do conteúdo.
+3. **Verificação de Desempenho e Memória**:
+   - Confirmar que a rolagem das listas continua suave e que os anúncios são descartados corretamente ao trocar de tela.
+
+---
+
+## ❓ Perguntas / Aprovação do Usuário
+
+Por favor, revise o plano de implementação acima. Ao aprovar este plano, iniciarei as alterações nos arquivos.

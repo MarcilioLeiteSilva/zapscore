@@ -169,7 +169,7 @@ export default function AdminNewsPage() {
                   </td>
                   <td className="p-6">
                     <div className="flex flex-col space-y-1">
-                      {item.league && <span className="text-[10px] bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-black w-fit uppercase">{item.league.name}</span>}
+                      {item.league && <span className="text-[10px] bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-black w-fit uppercase">{item.league.name}{item.league.country ? ` (${item.league.country})` : ''}</span>}
                       {item.team && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full font-black w-fit uppercase">{item.team.name}</span>}
                       {!item.league && !item.team && <span className="text-[10px] text-slate-600 font-bold uppercase italic">Sem classificação</span>}
                     </div>
@@ -217,7 +217,7 @@ export default function AdminNewsPage() {
                   >
                     <option value="">Nenhum</option>
                     {leagues.map(l => (
-                      <option key={l.id} value={l.id}>{l.name} ({l.season})</option>
+                      <option key={l.id} value={l.id}>{l.name}{l.country ? ` (${l.country})` : ''} - {l.season}</option>
                     ))}
                   </select>
                 </div>

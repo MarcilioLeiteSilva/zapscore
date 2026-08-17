@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -15,8 +15,7 @@ import {
   Loader2, 
   ExternalLink, 
   RefreshCw,
-  Search,
-  Globe
+  Search
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { ECOSYSTEM_MODULES, LeagueConfig } from "../../registry";
@@ -65,20 +64,20 @@ interface ScorerItem {
   };
 }
 
-export default function EuropaLeagueDetailPage() {
+export default function BrasilLeagueDetailPage() {
   const params = useParams();
   const leagueIdStr = (params?.id as string) || "";
   const leagueIdNum = parseInt(leagueIdStr, 10);
 
   // Informações da Liga
-  const europaModule = ECOSYSTEM_MODULES.find((m) => m.id === "europa");
-  const leagueInfo: LeagueConfig | undefined = europaModule?.leagues.find(
+  const brasilModule = ECOSYSTEM_MODULES.find((m) => m.id === "brasil");
+  const leagueInfo: LeagueConfig | undefined = brasilModule?.leagues.find(
     (l) => l.id === leagueIdNum || l.slug === leagueIdStr
   );
 
   const leagueName = leagueInfo?.name || `Competição #${leagueIdStr}`;
-  const leagueFlag = leagueInfo?.flag || "🇪🇺";
-  const leagueCountry = leagueInfo?.country || "Europa";
+  const leagueFlag = leagueInfo?.flag || "🇧🇷";
+  const leagueCountry = leagueInfo?.country || "Brasil";
 
   // Estado da Aba Ativa: 'noticias' | 'videos' | 'artilharia'
   const [activeTab, setActiveTab] = useState<"noticias" | "videos" | "artilharia">("noticias");
@@ -431,13 +430,13 @@ export default function EuropaLeagueDetailPage() {
       {/* Topo / Voltar */}
       <div className="flex items-center gap-4">
         <Link
-          href="/adminpanel/europa"
+          href="/adminpanel/brasil"
           className="p-2.5 rounded-xl bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white transition-all border border-[var(--border)]"
         >
           <ArrowLeft size={20} />
         </Link>
         <span className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">
-          Módulo Europa / Competições
+          Módulo Brasil / Competições
         </span>
       </div>
 
@@ -450,7 +449,7 @@ export default function EuropaLeagueDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl md:text-4xl font-black text-white">{leagueName}</h1>
-              <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-[var(--surface-hover)] text-emerald-400 border border-emerald-500/30">
+              <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-[var(--surface-hover)] text-green-400 border border-green-500/30">
                 ID: {leagueIdStr}
               </span>
             </div>
@@ -803,9 +802,9 @@ export default function EuropaLeagueDetailPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-[var(--surface-hover)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider border-b border-[var(--border)]">
-                    <th className="p-4 w-16 text-center">POS</th>
+                    <th className="p-4 w-16">Pos</th>
                     <th className="p-4">Jogador</th>
-                    <th className="p-4">Clube</th>
+                    <th className="p-4">Time</th>
                     <th className="p-4 text-center">Gols</th>
                     <th className="p-4 text-right">Ações</th>
                   </tr>
@@ -815,74 +814,64 @@ export default function EuropaLeagueDetailPage() {
                     <tr>
                       <td colSpan={5} className="p-12 text-center text-[var(--text-muted)]">
                         <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                        Carregando artilharia da liga...
+                        Carregando artilharia da competição...
                       </td>
                     </tr>
                   ) : filteredScorers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-12 text-center text-[var(--text-muted)]">
-                        Nenhum artilheiro registrado para esta temporada.
+                        Nenhum artilheiro cadastrado para esta competição.
                       </td>
                     </tr>
                   ) : (
-                    filteredScorers.map((item, idx) => {
-                      const pName = item.playerName || item.player?.name || "Jogador";
-                      const pPhoto = item.playerPhoto || item.player?.photo;
-                      const tName = item.teamName || item.team?.name || "Clube";
-                      const tLogo = item.teamLogo || item.team?.logo;
-                      const posRank = item.rank ?? (idx + 1);
-
-                      return (
-                        <tr key={item.id || idx} className="hover:bg-[var(--surface-hover)] transition-colors">
-                          <td className="p-4 text-center font-bold font-mono text-[var(--text-muted)]">
-                            {posRank}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-[var(--surface-hover)] border border-[var(--border)] overflow-hidden shrink-0 flex items-center justify-center">
-                                {pPhoto ? (
-                                  <img src={pPhoto} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <span className="font-bold text-xs text-[var(--text-muted)]">
-                                    {pName.substring(0, 2).toUpperCase()}
-                                  </span>
-                                )}
-                              </div>
-                              <span className="font-bold text-white text-sm">{pName}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              {tLogo && (
-                                <img src={tLogo} alt="" className="w-5 h-5 object-contain" />
+                    filteredScorers.map((item, index) => (
+                      <tr key={item.id || index} className="hover:bg-[var(--surface-hover)] transition-colors">
+                        <td className="p-4 font-black text-white text-base">
+                          {item.rank || index + 1}º
+                        </td>
+                        <td className="p-4 font-bold text-white">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[var(--surface-hover)] border border-[var(--border)] overflow-hidden shrink-0 flex items-center justify-center">
+                              {item.playerPhoto || item.player?.photo ? (
+                                <img src={item.playerPhoto || item.player?.photo} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[var(--text-muted)] font-bold">#</span>
                               )}
-                              <span className="text-[var(--text-muted)] font-medium">{tName}</span>
                             </div>
-                          </td>
-                          <td className="p-4 text-center font-black text-amber-400 text-sm font-mono">
-                            {item.goals}
-                          </td>
-                          <td className="p-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => openScorerModal(item)}
-                                className="p-2.5 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-lg transition-all"
-                                title="Editar Artilheiro"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteScorer(item.id)}
-                                className="p-2.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-all"
-                                title="Excluir Artilheiro"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+                            <span>{item.playerName || item.player?.name || "Desconhecido"}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-[var(--text-muted)] font-semibold">
+                          <div className="flex items-center gap-2">
+                            {item.teamLogo || item.team?.logo ? (
+                              <img src={item.teamLogo || item.team?.logo} alt="" className="w-5 h-5 object-contain" />
+                            ) : null}
+                            <span>{item.teamName || item.team?.name || "Time"}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center font-mono font-bold text-amber-400 text-sm">
+                          {item.goals}
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => openScorerModal(item)}
+                              className="p-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white rounded-lg transition-all"
+                              title="Editar Artilheiro"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteScorer(item.id)}
+                              className="p-2.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-lg transition-all"
+                              title="Excluir Artilheiro"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -891,227 +880,86 @@ export default function EuropaLeagueDetailPage() {
         </div>
       )}
 
-      {/* --- MODAL DE INSERIR / EDITAR ARTILHEIRO --- */}
-      {isScorerModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-container animate-in fade-in zoom-in duration-200">
-            <div className="modal-header">
-              <div className="flex items-center gap-2.5">
-                <Trophy size={20} className="text-amber-400" />
-                <h3 className="text-base font-bold text-white">
-                  {currentScorerId ? "Editar Artilheiro" : `Novo Artilheiro — ${leagueName}`}
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsScorerModalOpen(false)}
-                className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg text-[var(--text-muted)] hover:text-white"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveScorer} className="flex flex-col flex-1 min-h-0">
-              <div className="modal-body space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="admin-label">Posição no Ranking (rank) *</label>
-                    <input
-                      type="number"
-                      required
-                      min={1}
-                      className="admin-input font-mono"
-                      value={scorerFormData.rank}
-                      onChange={(e) =>
-                        setScorerFormData({ ...scorerFormData, rank: parseInt(e.target.value) || 1 })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="admin-label">Gols (goals) *</label>
-                    <input
-                      type="number"
-                      required
-                      min={0}
-                      className="admin-input font-mono text-amber-400 font-bold"
-                      value={scorerFormData.goals}
-                      onChange={(e) =>
-                        setScorerFormData({ ...scorerFormData, goals: parseInt(e.target.value) || 0 })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="admin-label">Nome do Jogador (playerName) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Harry Kane"
-                    className="admin-input"
-                    value={scorerFormData.playerName}
-                    onChange={(e) =>
-                      setScorerFormData({ ...scorerFormData, playerName: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="admin-label">Foto do Jogador URL (playerPhoto)</label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    className="admin-input font-mono"
-                    value={scorerFormData.playerPhoto}
-                    onChange={(e) =>
-                      setScorerFormData({ ...scorerFormData, playerPhoto: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="admin-label">Nome do Clube (teamName) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Bayern München"
-                    className="admin-input"
-                    value={scorerFormData.teamName}
-                    onChange={(e) =>
-                      setScorerFormData({ ...scorerFormData, teamName: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="admin-label">Logo do Clube URL (teamLogo)</label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    className="admin-input font-mono"
-                    value={scorerFormData.teamLogo}
-                    onChange={(e) =>
-                      setScorerFormData({ ...scorerFormData, teamLogo: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setIsScorerModalOpen(false)}
-                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white"
-                >
-                  CANCELAR
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingScorer}
-                  className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-2.5 rounded-xl text-xs font-bold shadow-lg disabled:opacity-50"
-                >
-                  {submittingScorer ? "SALVANDO..." : "SALVAR ARTILHEIRO"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL DE INSERIR / EDITAR VÍDEO --- */}
+      {/* --- MODAL DE VÍDEO --- */}
       {isVideoModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-container animate-in fade-in zoom-in duration-200">
-            <div className="modal-header">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
-                  <Video size={18} />
-                </div>
-                <h3 className="text-base font-bold text-white">
-                  {currentVideoId ? "Editar Vídeo" : `Novo Vídeo — ${leagueName}`}
-                </h3>
-              </div>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="card w-full max-w-lg p-6 space-y-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Video size={20} className="text-red-500" />
+                <span>{currentVideoId ? "Editar Vídeo" : "Inserir Novo Vídeo"}</span>
+              </h3>
               <button
                 onClick={() => setIsVideoModalOpen(false)}
-                className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg text-[var(--text-muted)] hover:text-white transition-colors"
+                className="p-1 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-white transition-colors"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveVideo} className="flex flex-col flex-1 min-h-0">
-              <div className="modal-body space-y-4">
-                <div>
-                  <label className="admin-label">Título do Vídeo *</label>
+            <form onSubmit={handleSaveVideo} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white">Título do Vídeo / Highlight</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Melhores Momentos: Flamengo 2 x 1 Palmeiras"
+                  value={videoFormData.title}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, title: e.target.value })}
+                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Duração</label>
                   <input
                     type="text"
-                    required
-                    placeholder="Ex: Melhores Momentos - Bayern vs Dortmund"
-                    className="admin-input"
-                    value={videoFormData.title}
-                    onChange={(e) => setVideoFormData({ ...videoFormData, title: e.target.value })}
+                    placeholder="Ex: 03:45"
+                    value={videoFormData.duration}
+                    onChange={(e) => setVideoFormData({ ...videoFormData, duration: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="admin-label">Duração (Ex: 04:30)</label>
-                    <input
-                      type="text"
-                      placeholder="00:00"
-                      className="admin-input font-mono"
-                      value={videoFormData.duration}
-                      onChange={(e) => setVideoFormData({ ...videoFormData, duration: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="admin-label">Competição</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={`${leagueName} (ID: ${leagueIdStr})`}
-                      className="admin-input text-[var(--text-muted)] cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="admin-label">URL da Thumbnail (Imagem)</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">URL da Thumbnail (Opcional)</label>
                   <input
-                    type="text"
+                    type="url"
                     placeholder="https://..."
-                    className="admin-input font-mono"
                     value={videoFormData.thumbnailUrl}
                     onChange={(e) => setVideoFormData({ ...videoFormData, thumbnailUrl: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="admin-label">URL do Vídeo (YouTube ou MP4) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    className="admin-input font-mono"
-                    value={videoFormData.videoUrl}
-                    onChange={(e) => setVideoFormData({ ...videoFormData, videoUrl: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white">URL do Vídeo (YouTube / MP4)</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={videoFormData.videoUrl}
+                  onChange={(e) => setVideoFormData({ ...videoFormData, videoUrl: e.target.value })}
+                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setIsVideoModalOpen(false)}
-                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white transition-colors"
+                  className="px-5 py-2.5 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--text-muted)] hover:text-white hover:bg-[var(--surface-hover)] transition-all"
                 >
-                  CANCELAR
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submittingVideo}
-                  className="bg-red-600 hover:bg-red-500 px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
+                  className="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"
                 >
-                  {submittingVideo ? "SALVANDO..." : "SALVAR VÍDEO"}
+                  {submittingVideo && <Loader2 size={16} className="animate-spin" />}
+                  <span>{currentVideoId ? "Salvar Alterações" : "Publicar Vídeo"}</span>
                 </button>
               </div>
             </form>
@@ -1119,111 +967,209 @@ export default function EuropaLeagueDetailPage() {
         </div>
       )}
 
-      {/* --- MODAL DE INSERIR / EDITAR NOTÍCIA --- */}
+      {/* --- MODAL DE NOTÍCIA --- */}
       {isNewsModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-container animate-in fade-in zoom-in duration-200">
-            <div className="modal-header">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center text-[var(--primary)]">
-                  <Newspaper size={18} />
-                </div>
-                <h3 className="text-base font-bold text-white">
-                  {currentNewsId ? "Editar Notícia" : `Nova Notícia — ${leagueName}`}
-                </h3>
-              </div>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="card w-full max-w-lg p-6 space-y-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Newspaper size={20} className="text-[var(--primary)]" />
+                <span>{currentNewsId ? "Editar Notícia" : "Inserir Nova Notícia"}</span>
+              </h3>
               <button
                 onClick={() => setIsNewsModalOpen(false)}
-                className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg text-[var(--text-muted)] hover:text-white transition-colors"
+                className="p-1 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-white transition-colors"
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveNews} className="flex flex-col flex-1 min-h-0">
-              <div className="modal-body space-y-4">
-                <div>
-                  <label className="admin-label">Título da Notícia *</label>
+            <form onSubmit={handleSaveNews} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white">Manchete / Título da Notícia</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Escalação confirmada para a grande final"
+                  value={newsFormData.title}
+                  onChange={(e) => setNewsFormData({ ...newsFormData, title: e.target.value })}
+                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white">Descrição / Resumo</label>
+                <textarea
+                  rows={3}
+                  placeholder="Breve resumo da matéria..."
+                  value={newsFormData.description}
+                  onChange={(e) => setNewsFormData({ ...newsFormData, description: e.target.value })}
+                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Veículo / Fonte</label>
                   <input
                     type="text"
-                    required
-                    placeholder="Ex: Bayern contrata novo reforço para a temporada"
-                    className="admin-input"
-                    value={newsFormData.title}
-                    onChange={(e) => setNewsFormData({ ...newsFormData, title: e.target.value })}
+                    placeholder="Ex: Globo Esporte, UOL..."
+                    value={newsFormData.source}
+                    onChange={(e) => setNewsFormData({ ...newsFormData, source: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </div>
-
-                <div>
-                  <label className="admin-label">Resumo / Descrição</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Link da Imagem (URL)</label>
                   <input
-                    type="text"
-                    placeholder="Resumo da matéria..."
-                    className="admin-input"
-                    value={newsFormData.description}
-                    onChange={(e) => setNewsFormData({ ...newsFormData, description: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="admin-label">Fonte / Portal</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Bild / Kicker"
-                      className="admin-input"
-                      value={newsFormData.source}
-                      onChange={(e) => setNewsFormData({ ...newsFormData, source: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="admin-label">Competição</label>
-                    <input
-                      type="text"
-                      disabled
-                      value={`${leagueName} (ID: ${leagueIdStr})`}
-                      className="admin-input text-[var(--text-muted)] cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="admin-label">URL da Imagem de Capa</label>
-                  <input
-                    type="text"
+                    type="url"
                     placeholder="https://..."
-                    className="admin-input font-mono"
                     value={newsFormData.imageUrl}
                     onChange={(e) => setNewsFormData({ ...newsFormData, imageUrl: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="admin-label">Link Externo da Notícia</label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    className="admin-input font-mono"
-                    value={newsFormData.url}
-                    onChange={(e) => setNewsFormData({ ...newsFormData, url: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-white">URL da Matéria Completa (Link Externo)</label>
+                <input
+                  type="url"
+                  placeholder="https://globoesporte.globo.com/..."
+                  value={newsFormData.url}
+                  onChange={(e) => setNewsFormData({ ...newsFormData, url: e.target.value })}
+                  className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setIsNewsModalOpen(false)}
-                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white transition-colors"
+                  className="px-5 py-2.5 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--text-muted)] hover:text-white hover:bg-[var(--surface-hover)] transition-all"
                 >
-                  CANCELAR
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={submittingNews}
-                  className="bg-[var(--primary)] text-black px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg disabled:opacity-50"
+                  className="bg-[var(--primary)] text-black px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2 hover:brightness-110"
                 >
-                  {submittingNews ? "SALVANDO..." : "SALVAR NOTÍCIA"}
+                  {submittingNews && <Loader2 size={16} className="animate-spin" />}
+                  <span>{currentNewsId ? "Salvar Alterações" : "Publicar Notícia"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE ARTILHARIA --- */}
+      {isScorerModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="card w-full max-w-lg p-6 space-y-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Trophy size={20} className="text-amber-400" />
+                <span>{currentScorerId ? "Editar Artilheiro" : "Cadastrar Novo Artilheiro"}</span>
+              </h3>
+              <button
+                onClick={() => setIsScorerModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveScorer} className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Posição (Rank)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={scorerFormData.rank}
+                    onChange={(e) => setScorerFormData({ ...scorerFormData, rank: parseInt(e.target.value, 10) || 1 })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[var(--primary)] font-mono font-bold"
+                  />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-white">Nome do Jogador</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Pedro, Calleri..."
+                    value={scorerFormData.playerName}
+                    onChange={(e) => setScorerFormData({ ...scorerFormData, playerName: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-white">Time / Clube</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: Flamengo, São Paulo..."
+                    value={scorerFormData.teamName}
+                    onChange={(e) => setScorerFormData({ ...scorerFormData, teamName: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Total de Gols</label>
+                  <input
+                    type="number"
+                    min={0}
+                    required
+                    value={scorerFormData.goals}
+                    onChange={(e) => setScorerFormData({ ...scorerFormData, goals: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Foto do Jogador (URL)</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={scorerFormData.playerPhoto}
+                    onChange={(e) => setScorerFormData({ ...scorerFormData, playerPhoto: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-white">Escudo do Time (URL)</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={scorerFormData.teamLogo}
+                    onChange={(e) => setScorerFormData({ ...scorerFormData, teamLogo: e.target.value })}
+                    className="w-full bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
+                <button
+                  type="button"
+                  onClick={() => setIsScorerModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-[var(--border)] text-xs font-bold text-[var(--text-muted)] hover:text-white hover:bg-[var(--surface-hover)] transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingScorer}
+                  className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"
+                >
+                  {submittingScorer && <Loader2 size={16} className="animate-spin" />}
+                  <span>{currentScorerId ? "Salvar Alterações" : "Cadastrar Artilheiro"}</span>
                 </button>
               </div>
             </form>

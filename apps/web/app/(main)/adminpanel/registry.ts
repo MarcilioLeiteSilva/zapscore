@@ -60,17 +60,16 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
   },
   {
     id: 'brasil',
-    name: 'Brasil & Estaduais',
+    name: 'Módulo Brasil',
     shortName: 'Brasil',
     icon: Flag,
-    badge: 'Supabase',
+    badge: 'Zapscore API',
     badgeColor: 'bg-green-500/10 text-green-400 border-green-500/20',
     href: '/adminpanel/brasil',
-    dbType: 'supabase',
+    dbType: 'rest',
     leagues: [
       { id: 71, slug: 'brasileirao-a', name: 'Brasileirão Série A', country: 'Brasil', flag: '🇧🇷' },
-      { id: 475, slug: 'paulistao', name: 'Paulistão', country: 'Brasil (SP)', flag: '🇧🇷' },
-      { id: 476, slug: 'cariocao', name: 'Cariocão', country: 'Brasil (RJ)', flag: '🇧🇷' },
+      { id: 72, slug: 'brasileirao-b', name: 'Brasileirão Série B', country: 'Brasil', flag: '🇧🇷' },
     ],
   },
   {

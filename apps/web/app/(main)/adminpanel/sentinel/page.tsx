@@ -22,7 +22,7 @@ import {
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
 export default function SentinelAdminPage() {
-  const [apiKey, setApiKey] = useState("dev-api-key-123");
+  const [apiKey, setApiKey] = useState("7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=");
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [fixtures, setFixtures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

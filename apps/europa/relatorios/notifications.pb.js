@@ -469,9 +469,9 @@ routerAdd("GET", "/api/test-notifications", function(c) {
                     try {
                         var deadSubs = [];
                         if (typeof $app.findRecordsByFilter === "function") {
-                            deadSubs = $app.findRecordsByFilter("subscriptions", "fcm_token = '" + testToken + "'");
+                            deadSubs = $app.findRecordsByFilter("subscriptions", "fcm_token = '" + testToken + "'", "-created", 10, 0);
                         } else if ($app.dao && typeof $app.dao().findRecordsByFilter === "function") {
-                            deadSubs = $app.dao().findRecordsByFilter("subscriptions", "fcm_token = '" + testToken + "'");
+                            deadSubs = $app.dao().findRecordsByFilter("subscriptions", "fcm_token = '" + testToken + "'", "-created", 10, 0);
                         }
 
                         for (var ds = 0; ds < deadSubs.length; ds++) {
@@ -495,12 +495,78 @@ routerAdd("GET", "/api/test-notifications", function(c) {
             }
         }
 
+        var subsDiagnose = [];
+        var subsCount = 0;
+        try {
+            var found = [];
+            if (typeof $app.findRecordsByFilter === "function") {
+                found = $app.findRecordsByFilter("subscriptions", "app_slug = '" + appParam + "'", "", 100, 0);
+            } else if ($app.dao && typeof $app.dao().findRecordsByFilter === "function") {
+                found = $app.dao().findRecordsByFilter("subscriptions", "app_slug = '" + appParam + "'", "", 100, 0);
+            }
+            subsCount = found.length;
+            for (var sd = 0; sd < Math.min(found.length, 10); sd++) {
+                var sItem = found[sd];
+                subsDiagnose.push({
+                    id: sItem.id,
+                    name: sItem.getString("user_name") || sItem.getString("user_nickname") || "User",
+                    token: (sItem.getString("fcm_token") || "").substring(0, 15) + "...",
+                    notify_goals: sItem.getBool("notify_goals"),
+                    notify_start: sItem.getBool("notify_start"),
+                    notify_end: sItem.getBool("notify_end"),
+                    favorite_teams: sItem.get("favorite_teams"),
+                    favorite_fixtures: sItem.get("favorite_fixtures")
+                });
+            }
+        } catch (diagErr) {
+            subsDiagnose = ["Error: " + diagErr.toString()];
+        }
+
+        var simulateResult = null;
+        var isSimulate = false;
+        try {
+            if (typeof c.queryParam === "function" && c.queryParam("simulate") === "true") isSimulate = true;
+            if (typeof c.QueryParam === "function" && c.QueryParam("simulate") === "true") isSimulate = true;
+            if (ri && ri["simulate"] === "true") isSimulate = true;
+        } catch (_) {}
+        if (req && req.URL && req.URL.RawQuery && req.URL.RawQuery.indexOf("simulate=true") >= 0) isSimulate = true;
+
+        if (isSimulate && found && found.length > 0) {
+            var sentSimCount = 0;
+            var simResults = [];
+            for (var si = 0; si < found.length; si++) {
+                var sRec = found[si];
+                var sTok = sRec.getString("fcm_token");
+                if (sTok) {
+                    var sRes = sendFcmPush(appParam, sTok, "⚽ GOL DO DEPORTIVO LA CORUNA!", "Deportivo La Coruna 2 x 1 Elche - Teste do Sistema", {
+                        fixture_id: "1570337",
+                        app_slug: appParam,
+                        event_type: "goal"
+                    });
+                    if (sRes && sRes.success) sentSimCount++;
+                    simResults.push({
+                        id: sRec.id,
+                        name: sRec.getString("user_name") || sRec.getString("user_nickname") || "User",
+                        status: sRes ? sRes.statusCode : "null",
+                        success: sRes ? sRes.success : false
+                    });
+                }
+            }
+            simulateResult = {
+                sent: sentSimCount + "/" + found.length,
+                details: simResults
+            };
+        }
+
         return c.json(200, {
             status: "PocketBase JS Hook is ACTIVE!",
             app_tested: appParam,
             firebase_project: config ? config.project_id : "Not Loaded",
             oauth_status: oauthStatus,
             auth_error: authError,
+            subscribers_count: subsCount,
+            subscribers_sample: subsDiagnose,
+            simulation_result: simulateResult,
             test_push_sent: testPushResult,
             token_received: testToken ? (testToken.substring(0, 10) + "...") : "None",
             timestamp: new Date().toISOString()
@@ -911,10 +977,36 @@ cronAdd("zapscore_live_sync", "* * * * *", function() {
 
             var subscribers = [];
             try {
-                subscribers = $app.findRecordsByFilter("subscriptions", filterStr);
+                if (typeof $app.findRecordsByFilter === "function") {
+                    subscribers = $app.findRecordsByFilter("subscriptions", filterStr, "", 1000, 0);
+                } else if ($app.dao && typeof $app.dao().findRecordsByFilter === "function") {
+                    subscribers = $app.dao().findRecordsByFilter("subscriptions", filterStr, "", 1000, 0);
+                }
             } catch (e) {
                 console.log("[POCKETBASE PUSH ERROR] [" + leagueName + "] Erro ao buscar subscriptions: " + e);
-                return;
+            }
+
+            if (!subscribers || subscribers.length === 0) {
+                try {
+                    var allSubs = [];
+                    if (typeof $app.findRecordsByFilter === "function") {
+                        allSubs = $app.findRecordsByFilter("subscriptions", "app_slug = '" + appSlug + "'", "", 1000, 0);
+                    } else if ($app.dao && typeof $app.dao().findRecordsByFilter === "function") {
+                        allSubs = $app.dao().findRecordsByFilter("subscriptions", "app_slug = '" + appSlug + "'", "", 1000, 0);
+                    }
+                    if (allSubs && allSubs.length > 0) {
+                        for (var s = 0; s < allSubs.length; s++) {
+                            var itemSub = allSubs[s];
+                            var wantNotify = true;
+                            if (eventType === "goal" && itemSub.getBool && !itemSub.getBool("notify_goals")) wantNotify = false;
+                            if (eventType === "start" && itemSub.getBool && !itemSub.getBool("notify_start")) wantNotify = false;
+                            if (eventType === "end" && itemSub.getBool && !itemSub.getBool("notify_end")) wantNotify = false;
+                            if (wantNotify) subscribers.push(itemSub);
+                        }
+                    }
+                } catch (fallbackErr) {
+                    console.log("[POCKETBASE PUSH ERROR FALLBACK] " + fallbackErr);
+                }
             }
 
             if (!subscribers || subscribers.length === 0) {
@@ -928,27 +1020,60 @@ cronAdd("zapscore_live_sync", "* * * * *", function() {
                 var token = sub.getString("fcm_token");
                 if (!token) continue;
 
-                var favs = sub.get("favorite_teams");
-                var isFavorite = true;
-
-                if (favs) {
-                    var favList = [];
+                function parseListField(record, fieldName) {
+                    var raw = record.get(fieldName);
+                    if (!raw) return [];
+                    var list = [];
                     try {
-                        if (Array.isArray(favs)) {
-                            favList = favs;
-                        } else if (typeof favs === "string" && favs.length > 0 && favs !== "[]") {
-                            favList = JSON.parse(favs);
-                        } else if (typeof favs.length === "number") {
-                            for (var f = 0; f < favs.length; f++) favList.push(favs[f]);
+                        var str = "";
+                        if (typeof raw === "string") {
+                            str = raw;
+                        } else if (typeof raw.length === "number") {
+                            var chars = [];
+                            for (var b = 0; b < raw.length; b++) {
+                                chars.push(typeof raw[b] === "number" ? String.fromCharCode(raw[b]) : String(raw[b]));
+                            }
+                            str = chars.join("");
+                        } else {
+                            str = JSON.stringify(raw);
+                        }
+
+                        if (str && str.trim() !== "" && str.trim() !== "[]" && str.trim() !== "null" && str.trim() !== "[91,93]") {
+                            var parsed = JSON.parse(str);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                for (var p = 0; p < parsed.length; p++) {
+                                    var pVal = String(parsed[p]).trim();
+                                    if (pVal !== "" && pVal !== "null" && pVal !== "0") list.push(pVal);
+                                }
+                            }
                         }
                     } catch (_) {}
+                    return list;
+                }
 
-                    if (favList && favList.length > 0) {
+                var favTeams = parseListField(sub, "favorite_teams");
+                var favFixtures = parseListField(sub, "favorite_fixtures");
+                var isFavorite = true;
+
+                var hasFilters = favTeams.length > 0 || favFixtures.length > 0;
+                if (hasFilters) {
+                    isFavorite = false;
+
+                    // 1. Verifica se favoritou a partida específica
+                    var fixStr = String(fixtureExtId);
+                    for (var fi = 0; fi < favFixtures.length; fi++) {
+                        if (favFixtures[fi] === fixStr) {
+                            isFavorite = true;
+                            break;
+                        }
+                    }
+
+                    // 2. Se não favoritou a partida, verifica se favoritou algum dos times
+                    if (!isFavorite && favTeams.length > 0) {
                         var hStr = String(homeTeamId);
                         var aStr = String(awayTeamId);
-                        isFavorite = false;
-                        for (var f = 0; f < favList.length; f++) {
-                            var item = String(favList[f]);
+                        for (var f = 0; f < favTeams.length; f++) {
+                            var item = favTeams[f];
                             if (item === hStr || item === aStr) {
                                 isFavorite = true;
                                 break;
@@ -957,12 +1082,18 @@ cronAdd("zapscore_live_sync", "* * * * *", function() {
                     }
                 }
 
+                if (!isFavorite) {
+                    console.log("[POCKETBASE PUSH SKIPPED] Sub " + (sub.getString("user_name") || sub.id) + " ignorado por filtro de favoritos: Times=" + JSON.stringify(favTeams) + ", Partidas=" + JSON.stringify(favFixtures) + " (Jogo: " + fixtureExtId + " | " + homeTeamId + " vs " + awayTeamId + ")");
+                }
+
                 if (isFavorite) {
                     var pushRes = sendFcmPush(appSlug, token, eventTitle, eventBody, {
                         fixture_id: fixtureExtId.toString(),
                         app_slug: appSlug,
                         event_type: eventType
                     });
+
+                    console.log("[POCKETBASE PUSH RESULT] Sub " + (sub.getString("user_name") || sub.id) + " -> " + (pushRes ? ("Status: " + pushRes.statusCode + " | " + JSON.stringify(pushRes.json || pushRes.raw)) : "NULL_RESULT"));
 
                     if (pushRes && pushRes.success) {
                         sentCount++;
@@ -987,7 +1118,16 @@ cronAdd("zapscore_live_sync", "* * * * *", function() {
         }
 
         // 1. Busca os aplicativos ativos cadastrados na coleção 'apps' do PocketBase Europa
-        var apps = $app.findRecordsByFilter("apps", "active = true");
+        var apps = [];
+        try {
+            if (typeof $app.findRecordsByFilter === "function") {
+                apps = $app.findRecordsByFilter("apps", "active = true", "", 100, 0);
+            } else if ($app.dao && typeof $app.dao().findRecordsByFilter === "function") {
+                apps = $app.dao().findRecordsByFilter("apps", "active = true", "", 100, 0);
+            }
+        } catch (eApps) {
+            console.log("[POCKETBASE APPS ERROR] " + eApps);
+        }
         if (!apps || apps.length === 0) {
             console.log("[POCKETBASE CRON] Nenhum aplicativo ativo encontrado na coleção 'apps'.");
             return;
@@ -1151,7 +1291,11 @@ cronAdd("zapscore_live_sync", "* * * * *", function() {
         // 6. VERIFICAÇÃO DE FIM DE JOGO PARA PARTIDAS QUE SAÍRAM DO FEED AO VIVO
         var activeCachedMatches = [];
         try {
-            activeCachedMatches = $app.findRecordsByFilter("match_cache", "status != 'FT'");
+            if (typeof $app.findRecordsByFilter === "function") {
+                activeCachedMatches = $app.findRecordsByFilter("match_cache", "status != 'FT'", "", 100, 0);
+            } else if ($app.dao && typeof $app.dao().findRecordsByFilter === "function") {
+                activeCachedMatches = $app.dao().findRecordsByFilter("match_cache", "status != 'FT'", "", 100, 0);
+            }
         } catch (e) {
             activeCachedMatches = [];
         }
