@@ -139,27 +139,36 @@ export default function AdminDashboard() {
           </div>
 
           <div className="space-y-4">
-            {/* Módulo Europa */}
-            <Link
-              href="/adminpanel/europa"
-              style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
-              className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold">
-                  🇪🇺
-                </div>
-                <div>
-                  <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-base">
-                    Módulo Europa (PocketBase)
-                  </h3>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    Bundesliga, La Liga, Premier League, Ligue 1, Serie A Itália
-                  </p>
-                </div>
-              </div>
-              <span className="badge badge-ft text-xs px-3 py-1.5">• ONLINE</span>
-            </Link>
+            {/* Lista dos Módulos do Ecossistema */}
+            {ECOSYSTEM_MODULES.map((module) => {
+              const IconComp = module.icon;
+              return (
+                <Link
+                  key={module.id}
+                  href={module.href}
+                  style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
+                  className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-xl font-bold shrink-0">
+                      <IconComp size={22} className="text-[var(--primary)]" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white group-hover:text-[var(--primary)] transition-colors text-base flex items-center gap-2">
+                        <span>{module.name}</span>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${module.badgeColor}`}>
+                          {module.badge}
+                        </span>
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">
+                        {module.leagues.map(l => l.name).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="badge badge-ft text-xs px-3 py-1.5 shrink-0">• ONLINE</span>
+                </Link>
+              );
+            })}
 
             {/* Sentinela */}
             <Link
@@ -168,7 +177,7 @@ export default function AdminDashboard() {
               className="p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/40 transition-all group shadow-md"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                   <ShieldCheck size={24} />
                 </div>
                 <div>
@@ -180,7 +189,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <span className="badge badge-live text-xs px-3 py-1.5">• AUDITORIA ATIVA</span>
+              <span className="badge badge-live text-xs px-3 py-1.5 shrink-0">• AUDITORIA ATIVA</span>
             </Link>
 
             {/* Gestão de Notícias */}
@@ -190,7 +199,7 @@ export default function AdminDashboard() {
               className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 shrink-0">
                   <Newspaper size={24} />
                 </div>
                 <div>
@@ -202,7 +211,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <span className="badge badge-ft text-xs px-3 py-1.5">• ONLINE</span>
+              <span className="badge badge-ft text-xs px-3 py-1.5 shrink-0">• ONLINE</span>
             </Link>
 
             {/* Gestão de Vídeos */}
@@ -212,7 +221,7 @@ export default function AdminDashboard() {
               className="p-5 rounded-2xl flex items-center justify-between hover:border-[var(--primary)] transition-all group shadow-md"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
                   <Video size={24} />
                 </div>
                 <div>
@@ -224,7 +233,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <span className="badge badge-ft text-xs px-3 py-1.5">• ONLINE</span>
+              <span className="badge badge-ft text-xs px-3 py-1.5 shrink-0">• ONLINE</span>
             </Link>
           </div>
         </div>
