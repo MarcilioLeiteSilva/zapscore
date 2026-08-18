@@ -393,7 +393,7 @@ export default function SentinelAdminPage() {
                 <th className="p-4">Competição</th>
                 <th className="p-4">Status ZapScore</th>
                 <th className="p-4 text-center">Placar</th>
-                <th className="p-4 text-right">Horário (UTC)</th>
+                <th className="p-4 text-right">Horário (BRT)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)] text-xs">
@@ -432,7 +432,13 @@ export default function SentinelAdminPage() {
                         {f.homeGoals ?? 0} x {f.awayGoals ?? 0}
                       </td>
                       <td className="p-4 text-right text-xs font-mono text-[var(--text-muted)]">
-                        {f.date || "-"}
+                        {f.date
+                          ? new Date(f.date).toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: "America/Sao_Paulo",
+                            })
+                          : "-"}
                       </td>
                     </tr>
                   );

@@ -2,7 +2,7 @@ name: zapscore_laliga
 description: "App da La Liga."
 publish_to: 'none'
 
-version: 1.0.3+5
+version: 1.0.4+6
 
 environment:
   sdk: ^3.11.4
