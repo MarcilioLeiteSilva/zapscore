@@ -393,7 +393,7 @@ export default function SentinelAdminPage() {
                 <th className="p-4">Competição</th>
                 <th className="p-4">Status ZapScore</th>
                 <th className="p-4 text-center">Placar</th>
-                <th className="p-4 text-right">Horário (BRT)</th>
+                <th className="p-4 text-right">Data & Horário (BRT)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)] text-xs">
@@ -433,11 +433,14 @@ export default function SentinelAdminPage() {
                       </td>
                       <td className="p-4 text-right text-xs font-mono text-[var(--text-muted)]">
                         {f.date
-                          ? new Date(f.date).toLocaleTimeString("pt-BR", {
+                          ? new Intl.DateTimeFormat("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
                               hour: "2-digit",
                               minute: "2-digit",
                               timeZone: "America/Sao_Paulo",
-                            })
+                            }).format(new Date(f.date))
                           : "-"}
                       </td>
                     </tr>
