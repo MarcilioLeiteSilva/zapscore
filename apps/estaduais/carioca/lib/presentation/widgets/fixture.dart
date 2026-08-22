@@ -312,9 +312,9 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           const Gap(12),

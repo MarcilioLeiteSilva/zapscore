@@ -13,8 +13,8 @@ class _NewsPageState extends State<NewsPage> {
   String _selectedLeagueId = AppConfig.cariocaSerieAId.toString();
 
   final List<Map<String, dynamic>> _leagues = [
-    {'id': AppConfig.cariocaSerieAId.toString(), 'name': 'Série A'},
-    {'id': AppConfig.cariocaSerieA2Id.toString(), 'name': 'Série A2'},
+    {'id': AppConfig.cariocaSerieAId.toString(), 'name': 'Carioca'},
+    {'id': AppConfig.cariocaSerieA2Id.toString(), 'name': 'Carioca A2'},
   ];
 
   @override
@@ -38,7 +38,7 @@ class _NewsPageState extends State<NewsPage> {
   }
 
   List<Map<String, String?>> _generateDynamicCategories(List<News> allNews, HomeState homeState) {
-    final String leagueLabel = _selectedLeagueId == AppConfig.cariocaSerieAId.toString() ? 'Série A' : 'Série A2';
+    final String leagueLabel = _selectedLeagueId == AppConfig.cariocaSerieAId.toString() ? 'Carioca' : 'Carioca A2';
     final List<Map<String, String?>> categories = [
       {'name': 'Todas ($leagueLabel)', 'filter': null},
     ];

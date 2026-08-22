@@ -71,10 +71,11 @@ export class NewsCrawlerService {
         break;
       }
       
-      // Fallbacks comuns para ligas brasileiras e estaduais
-      if (name === 'serie a' && (text.includes('brasileirão') || text.includes('série a'))) leagueId = league.id;
-      if (name === 'serie b' && (text.includes('série b'))) leagueId = league.id;
-      if ((name.includes('carioca') || name.includes('campeonato carioca')) && text.includes('carioca')) leagueId = league.id;
+      // Fallbacks específicos para ligas brasileiras e estaduais
+      if (name === 'serie a' && (text.includes('brasileirão') || text.includes('campeonato brasileiro'))) leagueId = league.id;
+      if (name === 'serie b' && (text.includes('brasileiro serie b') || text.includes('brasileirão série b'))) leagueId = league.id;
+      if ((name.includes('carioca') || name.includes('campeonato carioca')) && (text.includes('carioca') || text.includes('taça guanabara') || text.includes('taça rio'))) leagueId = league.id;
+      if (name.includes('carioca') && name.includes('a2') && (text.includes('carioca a2') || text.includes('carioca série a2') || text.includes('série a2 do carioca'))) leagueId = league.id;
       if ((name.includes('paulista') || name.includes('paulistão')) && (text.includes('paulista') || text.includes('paulistão'))) leagueId = league.id;
       if ((name.includes('mineiro')) && (text.includes('mineiro') || text.includes('mineirão'))) leagueId = league.id;
       if ((name.includes('gaúcho') || name.includes('gauchão')) && (text.includes('gaúcho') || text.includes('gauchão'))) leagueId = league.id;
