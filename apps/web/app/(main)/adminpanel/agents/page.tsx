@@ -15,11 +15,30 @@ import {
   Sparkles,
   Radio,
   Cpu,
-  Trophy
+  Trophy,
+  Brain
 } from 'lucide-react';
 
 export default function AgentsHubPage() {
   const agents = [
+    {
+      id: 'ia-monitor',
+      title: 'Monitor de IA',
+      subtitle: 'Auditoria de Previsões & Aprendizado Contínuo',
+      description: 'Supervisiona a qualidade das análises preditivas geradas por LLM (Gemini/OpenAI), controla o consumo de tokens/cotas da API e aperfeiçoa as previsões com histórico de erros e acertos.',
+      icon: Brain,
+      iconColor: 'text-orange-400',
+      iconBg: 'bg-orange-500/10 border-orange-500/20',
+      badge: 'APRENDIZADO ATIVO • 78.4% ACERTO',
+      badgeColor: 'badge-live',
+      href: '/adminpanel/agents/ia-monitor',
+      stats: [
+        { label: 'Assertividade', value: '78.4%' },
+        { label: 'Latência', value: '1.18s' },
+        { label: 'API Health', value: '100% OK' },
+      ],
+      actionText: 'Abrir Monitor de IA'
+    },
     {
       id: 'sentinel',
       title: 'Sentinel Multi-Módulo',
@@ -132,7 +151,7 @@ export default function AgentsHubPage() {
 
         <div className="card glass px-5 py-3 rounded-2xl flex items-center gap-3 border border-[var(--glass-border)] shrink-0">
           <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">5 Agentes Online</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">6 Agentes Online</span>
         </div>
       </div>
 
