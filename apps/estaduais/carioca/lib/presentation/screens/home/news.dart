@@ -11,6 +11,7 @@ class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
   String? selectedFilter;
   String _selectedLeagueId = AppConfig.cariocaSerieAId.toString();
+  final Map<String, List<News>> _newsCache = {};
 
   final List<Map<String, dynamic>> _leagues = [
     {'id': AppConfig.cariocaSerieAId.toString(), 'name': 'Carioca'},
@@ -177,102 +178,106 @@ class _NewsPageState extends State<NewsPage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => _loadNews(),
-        child: BlocBuilder<NewsCubit, NewsState>(
-          builder: (context, state) {
-            if (state is NewsLoading) {
-              return Column(
-                children: [
-                  _buildLeagueSelector(),
-                  const Expanded(child: Center(child: CircularProgressIndicator())),
-                ],
-              );
-            }
-            if (state is NewsError) {
-              return Column(
-                children: [
-                  _buildLeagueSelector(),
-                  Expanded(child: Center(child: Text(state.message))),
-                ],
-              );
-            }
-            if (state is NewsLoaded) {
-              final filteredNews = state.news.where((n) => _matchesFilter(n, selectedFilter)).toList();
-              final carouselNews = filteredNews.take(5).toList();
-              final listNews = filteredNews.skip(5).toList();
+      body: Column(
+        children: [
+          _buildLeagueSelector(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => _loadNews(),
+              child: BlocConsumer<NewsCubit, NewsState>(
+                listener: (context, state) {
+                  if (state is NewsLoaded) {
+                    setState(() {
+                      _newsCache[_selectedLeagueId] = state.news;
+                    });
+                  }
+                },
+                builder: (context, state) {
+                  final List<News>? cachedList = _newsCache[_selectedLeagueId];
 
-              return ListView(
-                children: [
-                  _buildLeagueSelector(),
-                  _buildCompetitionFilters(state.news),
-                  if (filteredNews.isEmpty)
-                    const SizedBox(
-                      height: 300,
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
+                  if (state is NewsLoading && (cachedList == null || cachedList.isEmpty)) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state is NewsError && (cachedList == null || cachedList.isEmpty)) {
+                    return Center(child: Text(state.message));
+                  }
+
+                  final List<News> currentNews = cachedList ?? (state is NewsLoaded ? state.news : []);
+                  final filteredNews = currentNews.where((n) => _matchesFilter(n, selectedFilter)).toList();
+                  final carouselNews = filteredNews.take(5).toList();
+                  final listNews = filteredNews.skip(5).toList();
+
+                  return ListView(
+                    children: [
+                      _buildCompetitionFilters(currentNews),
+                      if (filteredNews.isEmpty)
+                        const SizedBox(
+                          height: 300,
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text(
+                                'Nenhuma notícia encontrada para o filtro selecionado',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                              ),
+                            ),
+                          ),
+                        )
+                      else ...[
+                        const Gap(10),
+                        if (carouselNews.isNotEmpty)
+                          SizedBox(
+                            width: context.width,
+                            height: context.height * .35,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              itemBuilder: (_, i) {
+                                return CardNewsCarouselItem(news: carouselNews[i]);
+                              },
+                              separatorBuilder: (_, i) => const Gap(10),
+                              itemCount: carouselNews.length,
+                            ),
+                          ),
+                        const Gap(20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
-                            'Nenhuma notícia encontrada para o filtro selecionado',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                            'trending_news'.tr(context),
+                            style: context.textTheme.bodyMedium,
                           ),
                         ),
-                      ),
-                    )
-                  else ...[
-                    const Gap(10),
-                    if (carouselNews.isNotEmpty)
-                      SizedBox(
-                        width: context.width,
-                        height: context.height * .35,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
+                        const Gap(20),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const ScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           itemBuilder: (_, i) {
-                            return CardNewsCarouselItem(news: carouselNews[i]);
+                            final item = listNews.isNotEmpty ? listNews[i] : carouselNews[i];
+                            if (i == 3) {
+                              return Column(
+                                children: [
+                                  const AdBannerWidget(),
+                                  const Gap(15),
+                                  CardNewsItem(news: item),
+                                ],
+                              );
+                            }
+                            return CardNewsItem(news: item);
                           },
-                          separatorBuilder: (_, i) => const Gap(10),
-                          itemCount: carouselNews.length,
+                          separatorBuilder: (_, i) => const Gap(15),
+                          itemCount: listNews.isNotEmpty ? listNews.length : carouselNews.length,
                         ),
-                      ),
-                    const Gap(20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        'trending_news'.tr(context),
-                        style: context.textTheme.bodyMedium,
-                      ),
-                    ),
-                    const Gap(20),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const ScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      itemBuilder: (_, i) {
-                        final item = listNews.isNotEmpty ? listNews[i] : carouselNews[i];
-                        if (i == 3) {
-                          return Column(
-                            children: [
-                              const AdBannerWidget(),
-                              const Gap(15),
-                              CardNewsItem(news: item),
-                            ],
-                          );
-                        }
-                        return CardNewsItem(news: item);
-                      },
-                      separatorBuilder: (_, i) => const Gap(15),
-                      itemCount: listNews.isNotEmpty ? listNews.length : carouselNews.length,
-                    ),
-                  ],
-                  const Gap(80),
-                ],
-              );
-            }
-            return const SizedBox();
-          },
-        ),
+                      ],
+                      const Gap(80),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
