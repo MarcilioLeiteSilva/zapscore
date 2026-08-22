@@ -71,9 +71,13 @@ export class NewsCrawlerService {
         break;
       }
       
-      // Fallbacks comuns para ligas brasileiras
+      // Fallbacks comuns para ligas brasileiras e estaduais
       if (name === 'serie a' && (text.includes('brasileirão') || text.includes('série a'))) leagueId = league.id;
       if (name === 'serie b' && (text.includes('série b'))) leagueId = league.id;
+      if ((name.includes('carioca') || name.includes('campeonato carioca')) && text.includes('carioca')) leagueId = league.id;
+      if ((name.includes('paulista') || name.includes('paulistão')) && (text.includes('paulista') || text.includes('paulistão'))) leagueId = league.id;
+      if ((name.includes('mineiro')) && (text.includes('mineiro') || text.includes('mineirão'))) leagueId = league.id;
+      if ((name.includes('gaúcho') || name.includes('gauchão')) && (text.includes('gaúcho') || text.includes('gauchão'))) leagueId = league.id;
     }
 
     return { teamId, leagueId };

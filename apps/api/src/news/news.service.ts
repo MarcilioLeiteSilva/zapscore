@@ -9,11 +9,36 @@ export class NewsService {
     const { leagueId, teamId, limit } = params;
     const take = limit ? parseInt(limit) : 100;
 
+    let whereClause: any = {};
+
+    if (leagueId) {
+      // 1. Busca os IDs de times vinculados a esta liga (via tabela de classificação/standings)
+      const teamIdsInLeague = await this.prisma.standing
+        .findMany({
+          where: { leagueId },
+          select: { teamId: true },
+        })
+        .then((items) => items.map((i) => i.teamId));
+
+      whereClause = {
+        OR: [
+          { leagueId },
+          ...(teamIdsInLeague.length > 0
+            ? [{ teamId: { in: teamIdsInLeague } }]
+            : []),
+        ],
+      };
+    }
+
+    if (teamId) {
+      whereClause = {
+        ...whereClause,
+        teamId,
+      };
+    }
+
     return this.prisma.news.findMany({
-      where: {
-        ...(leagueId && { leagueId }),
-        ...(teamId && { teamId }),
-      },
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: take,
       include: {
