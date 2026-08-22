@@ -32,7 +32,7 @@ export class NewsCrawlerService {
    */
   private async initClassificationData() {
     this.teams = await this.prisma.team.findMany({ select: { id: true, name: true } });
-    this.leagues = await this.prisma.league.findMany({ select: { id: true, name: true } });
+    this.leagues = await this.prisma.league.findMany({ select: { id: true, name: true, externalId: true } });
     this.logger.log(`[CLASSIFIER] Loaded ${this.teams.length} teams and ${this.leagues.length} leagues for classification.`);
   }
 
@@ -74,8 +74,21 @@ export class NewsCrawlerService {
       // Fallbacks específicos para ligas brasileiras e estaduais
       if (name === 'serie a' && (text.includes('brasileirão') || text.includes('campeonato brasileiro'))) leagueId = league.id;
       if (name === 'serie b' && (text.includes('brasileiro serie b') || text.includes('brasileirão série b'))) leagueId = league.id;
-      if ((name.includes('carioca') || name.includes('campeonato carioca')) && (text.includes('carioca') || text.includes('taça guanabara') || text.includes('taça rio'))) leagueId = league.id;
-      if (name.includes('carioca') && name.includes('a2') && (text.includes('carioca a2') || text.includes('carioca série a2') || text.includes('série a2 do carioca'))) leagueId = league.id;
+
+      // Campeonato Carioca (Série A)
+      if ((name.includes('carioca') || name.includes('campeonato carioca')) && 
+          !name.includes('a2') && 
+          (text.includes('campeonato carioca') || text.includes('carioca') || text.includes('taça guanabara') || text.includes('taça rio')) && 
+          !text.includes('a2') && !text.includes('série a2') && !text.includes('serie a2')) {
+        leagueId = league.id;
+      }
+      
+      // Carioca Série A2
+      if (name.includes('carioca') && (name.includes('a2') || name.includes('serie a2')) && 
+          (text.includes('carioca a2') || text.includes('carioca série a2') || text.includes('carioca serie a2') || text.includes('série a2 do carioca') || text.includes('serie a2 do carioca'))) {
+        leagueId = league.id;
+      }
+
       if ((name.includes('paulista') || name.includes('paulistão')) && (text.includes('paulista') || text.includes('paulistão'))) leagueId = league.id;
       if ((name.includes('mineiro')) && (text.includes('mineiro') || text.includes('mineirão'))) leagueId = league.id;
       if ((name.includes('gaúcho') || name.includes('gauchão')) && (text.includes('gaúcho') || text.includes('gauchão'))) leagueId = league.id;
@@ -131,6 +144,21 @@ export class NewsCrawlerService {
             data: { lastSync: new Date() }
           }).catch(() => {});
         }
+      }
+
+      // 3. BUSCA ESPECÍFICA DE NOTÍCIAS PARA O CAMPEONATO CARIOCA (Série A e A2)
+      const cariocaSerieA = this.leagues.find(l => (l.name.toLowerCase().includes('carioca') && !l.name.toLowerCase().includes('a2')) || l.externalId === 624);
+      const cariocaSerieA2 = this.leagues.find(l => (l.name.toLowerCase().includes('carioca') && (l.name.toLowerCase().includes('a2') || l.name.toLowerCase().includes('serie a2'))) || l.externalId === 851);
+
+      if (cariocaSerieA) {
+        this.logger.log(`[CARIOCA] Running dedicated crawl for Campeonato Carioca (${cariocaSerieA.id})...`);
+        await this.crawlNewsForQuery('Campeonato Carioca', { leagueId: cariocaSerieA.id });
+        await this.crawlNewsForQuery('Taça Guanabara Carioca', { leagueId: cariocaSerieA.id });
+      }
+
+      if (cariocaSerieA2) {
+        this.logger.log(`[CARIOCA] Running dedicated crawl for Carioca Série A2 (${cariocaSerieA2.id})...`);
+        await this.crawlNewsForQuery('Carioca Série A2', { leagueId: cariocaSerieA2.id });
       }
 
       this.logger.log('Clean News Engine finished successfully.');
