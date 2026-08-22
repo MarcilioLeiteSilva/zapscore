@@ -14,7 +14,8 @@ import {
   Server,
   Sparkles,
   Radio,
-  Cpu
+  Cpu,
+  Trophy
 } from 'lucide-react';
 
 export default function AgentsHubPage() {
@@ -36,6 +37,24 @@ export default function AgentsHubPage() {
         { label: 'Status', value: '100% Ativo' },
       ],
       actionText: 'Abrir Sentinel Multi-Módulo'
+    },
+    {
+      id: 'scorer-engine',
+      title: 'Scorer Engine',
+      subtitle: 'Agregador de Artilharia Idempotente',
+      description: 'Calcula, consolida e atualiza automaticamente o ranking de artilheiros de todas as ligas (Europa, Estaduais, Brasil e Copas) com gatilhos em FT e Cron de 1h.',
+      icon: Trophy,
+      iconColor: 'text-amber-400',
+      iconBg: 'bg-amber-500/10 border-amber-500/20',
+      badge: 'CRON 1H • REATIVO FT',
+      badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      href: '/adminpanel/agents/scorers',
+      stats: [
+        { label: 'Escopo', value: 'Multi-Ligas' },
+        { label: 'Frequência', value: '1h / FT' },
+        { label: 'Integridade', value: '100% Idempotente' },
+      ],
+      actionText: 'Auditoria de Artilharia'
     },
     {
       id: 'push-healer',
@@ -113,7 +132,7 @@ export default function AgentsHubPage() {
 
         <div className="card glass px-5 py-3 rounded-2xl flex items-center gap-3 border border-[var(--glass-border)] shrink-0">
           <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">4 Agentes Online</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">5 Agentes Online</span>
         </div>
       </div>
 
