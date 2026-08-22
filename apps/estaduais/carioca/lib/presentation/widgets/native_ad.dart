@@ -39,6 +39,8 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
   void _loadNativeAd() {
     if (_nativeAd != null) return;
 
+    final double radius = widget.variant == NativeAdVariant.fixture ? 15.0 : 10.0;
+
     _nativeAd = NativeAd(
       adUnitId: AdService.nativeAdUnitId,
       request: const AdRequest(),
@@ -64,27 +66,30 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.small,
         mainBackgroundColor: AppColor.card,
-        cornerRadius: 10.0,
+        cornerRadius: radius,
         callToActionTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white,
           backgroundColor: const Color(0xFF008855),
           style: NativeTemplateFontStyle.bold,
-          size: 12.0,
+          size: 11.0,
         ),
         primaryTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white,
           style: NativeTemplateFontStyle.bold,
           size: 13.0,
+          backgroundColor: Colors.transparent,
         ),
         secondaryTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white70,
           style: NativeTemplateFontStyle.normal,
           size: 11.0,
+          backgroundColor: Colors.transparent,
         ),
         tertiaryTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white60,
           style: NativeTemplateFontStyle.normal,
           size: 10.0,
+          backgroundColor: Colors.transparent,
         ),
       ),
     );
@@ -105,24 +110,18 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
       return const SizedBox.shrink();
     }
 
-    double height = 90.0;
-    EdgeInsetsGeometry defaultMargin = const EdgeInsets.symmetric(horizontal: 10, vertical: 6);
-
-    if (widget.variant == NativeAdVariant.fixture) {
-      height = 90.0;
-      defaultMargin = const EdgeInsets.symmetric(horizontal: 14, vertical: 8);
-    } else if (widget.variant == NativeAdVariant.aiAnalysis) {
-      height = 90.0;
-      defaultMargin = const EdgeInsets.symmetric(horizontal: 16, vertical: 12);
-    }
+    final double height = 95.0;
+    final double radius = widget.variant == NativeAdVariant.fixture ? 15.0 : 10.0;
+    final EdgeInsetsGeometry defaultMargin = widget.variant == NativeAdVariant.aiAnalysis
+        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+        : EdgeInsets.zero;
 
     return Container(
       margin: widget.margin ?? defaultMargin,
       height: height,
       decoration: BoxDecoration(
         color: AppColor.card,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        borderRadius: BorderRadius.circular(radius),
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
