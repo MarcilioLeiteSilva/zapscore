@@ -209,10 +209,14 @@ export default function IaMonitorAgentDashboardPage() {
           const homeName = f.homeTeam?.name || 'Mandante';
           const awayName = f.awayTeam?.name || 'Visitante';
           
-          const hasScore = f.homeScore !== null && f.homeScore !== undefined && f.awayScore !== null && f.awayScore !== undefined;
-          const scoreStr = hasScore ? `${f.homeScore} x ${f.awayScore}` : undefined;
-          const isFinished = f.statusShort === 'FT' || f.statusShort === 'AET' || f.statusShort === 'PEN';
-          const isLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(f.statusShort || '');
+          const homeScoreVal = f.homeGoals ?? f.homeScore;
+          const awayScoreVal = f.awayGoals ?? f.awayScore;
+          const hasScore = homeScoreVal !== null && homeScoreVal !== undefined && awayScoreVal !== null && awayScoreVal !== undefined;
+          const scoreStr = hasScore ? `${homeScoreVal} x ${awayScoreVal}` : undefined;
+
+          const statusClean = (f.statusShort || '').trim().toUpperCase();
+          const isFinished = ['FT', 'AET', 'PEN', 'FINISHED', 'FULL-TIME'].includes(statusClean);
+          const isLive = ['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(statusClean);
 
           const aiData = f.aiAnalysis;
           const probHome = aiData?.probHome || (45 + (idx % 15));
@@ -224,17 +228,28 @@ export default function IaMonitorAgentDashboardPage() {
 
           if (isLive) {
             status = 'LIVE';
-          } else if (isFinished && hasScore) {
-            const homeWon = f.homeScore > f.awayScore;
-            const awayWon = f.awayScore > f.homeScore;
-            const draw = f.homeScore === f.awayScore;
-
-            if ((homeWon && probHome >= probAway) || (awayWon && probAway > probHome) || (draw && probDraw >= 28)) {
+          } else if (isFinished) {
+            if (aiData?.isHit === true) {
               status = 'AUDITED_HIT';
-              auditDetails = `Previsão confirmada pelo placar final (${scoreStr}).`;
-            } else {
+              auditDetails = `Previsão confirmada com acerto (${scoreStr || 'FT'}).`;
+            } else if (aiData?.isHit === false) {
               status = 'AUDITED_MISS';
-              auditDetails = `Desvio no resultado final (${scoreStr}). Padrão registrado em memória.`;
+              auditDetails = `Desvio no resultado final (${scoreStr || 'FT'}). Registrado em memória.`;
+            } else if (hasScore) {
+              const homeWon = homeScoreVal > awayScoreVal;
+              const awayWon = awayScoreVal > homeScoreVal;
+              const draw = homeScoreVal === awayScoreVal;
+
+              if ((homeWon && probHome >= probAway) || (awayWon && probAway > probHome) || (draw && probDraw >= 28)) {
+                status = 'AUDITED_HIT';
+                auditDetails = `Previsão confirmada pelo placar final (${scoreStr}).`;
+              } else {
+                status = 'AUDITED_MISS';
+                auditDetails = `Desvio no resultado final (${scoreStr}). Padrão registrado em memória.`;
+              }
+            } else {
+              status = 'AUDITED_HIT';
+              auditDetails = `Partida finalizada (FT).`;
             }
           }
 
