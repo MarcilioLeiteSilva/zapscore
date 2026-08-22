@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query, Post, Body, Put, Delete, Res, Logger } from '@nestjs/common';
 import { NewsService } from './news.service';
+import { NewsCrawlerService } from './news-crawler.service';
 import { HttpService } from '@nestjs/axios';
 import * as express from 'express';
 import { firstValueFrom } from 'rxjs';
@@ -10,8 +11,14 @@ export class NewsController {
 
   constructor(
     private readonly newsService: NewsService,
+    private readonly newsCrawlerService: NewsCrawlerService,
     private readonly http: HttpService,
   ) {}
+
+  @Post('publish-from-url')
+  async publishFromUrl(@Body() body: { url: string; leagueId?: string; teamId?: string; overrideTitle?: string; overrideDescription?: string }) {
+    return this.newsCrawlerService.scrapeAndPublishNews(body);
+  }
 
   @Get('proxy-image')
   async proxyImage(@Query('url') url: string, @Res() res: express.Response) {

@@ -585,6 +585,76 @@ export class NewsCrawlerService {
   }
 
   /**
+   * AGENTE PUBLICADOR: Extrai automaticamente imagem, manchete, lead e fonte de uma URL e publica diretamente
+   */
+  async scrapeAndPublishNews(data: { url: string; leagueId?: string; teamId?: string; overrideTitle?: string; overrideDescription?: string }) {
+    const { url, leagueId, teamId, overrideTitle, overrideDescription } = data;
+    if (!url) {
+      throw new Error('URL da notícia é obrigatória.');
+    }
+
+    await this.initClassificationData();
+    const fullData = await this.scrapeFullNewsData(url);
+    if (!fullData && !overrideTitle) {
+      throw new Error('Não foi possível extrair os dados da URL fornecida.');
+    }
+
+    const title = overrideTitle?.trim() || fullData?.title || '';
+    const description = overrideDescription?.trim() || fullData?.description || '';
+    const rawImage = fullData?.image || '';
+    let finalImage = this.cleanImageUrl(rawImage.trim()) || '';
+    const source = fullData?.source || new URL(url).hostname.replace('www.', '');
+
+    if (!title) {
+      throw new Error('Título da notícia não pôde ser identificado.');
+    }
+
+    // PROXY para domínios que bloqueiam hotlink
+    const blockedDomains = ['trivela.com.br', 'media.trivela.com.br'];
+    if (finalImage && blockedDomains.some(d => finalImage.includes(d))) {
+      finalImage = `https://zapscore-zapscore-api.gtalg3.easypanel.host/news/proxy-image?url=${encodeURIComponent(finalImage)}`;
+    }
+
+    // Se leagueId não foi passado, tenta classificar
+    let finalLeagueId = leagueId || null;
+    let finalTeamId = teamId || null;
+
+    if (!finalLeagueId || !finalTeamId) {
+      const classified = this.classifyNews(title, description);
+      if (!finalLeagueId) finalLeagueId = classified.leagueId;
+      if (!finalTeamId) finalTeamId = classified.teamId;
+    }
+
+    const newsRecord = await this.prisma.news.upsert({
+      where: { externalUrl: url },
+      update: {
+        title,
+        description,
+        imageUrl: finalImage || undefined,
+        source,
+        leagueId: finalLeagueId || undefined,
+        teamId: finalTeamId || undefined,
+      },
+      create: {
+        title,
+        description,
+        source,
+        imageUrl: finalImage || null,
+        externalUrl: url,
+        leagueId: finalLeagueId,
+        teamId: finalTeamId,
+        createdAt: new Date(),
+      },
+      include: {
+        league: true,
+        team: true,
+      },
+    });
+
+    return newsRecord;
+  }
+
+  /**
    * ROBÔ REPARADOR: Percorre as notícias do banco e tenta dar um "upgrade" nos dados
    */
   async repairNewsData(): Promise<{ message: string; repaired: number; total: number }> {

@@ -22,6 +22,24 @@ import {
 export default function AgentsHubPage() {
   const agents = [
     {
+      id: 'news-publisher',
+      title: 'Publicador de Notícias',
+      subtitle: 'Captura Automática por URL & Publicação por Liga',
+      description: 'Extrai foto em alta resolução, manchete, lead e fonte de qualquer link de portal esportivo ou site de clube e publica diretamente na competição selecionada (ex: Carioca, Carioca A2, etc.).',
+      icon: Newspaper,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20',
+      badge: 'SEMI-AUTOMÁTICO • INSTANTÂNEO',
+      badgeColor: 'badge-live',
+      href: '/adminpanel/agents/publisher',
+      stats: [
+        { label: 'Extração', value: '1-Click URL' },
+        { label: 'Captura Foto', value: '100% Full HD' },
+        { label: 'Destino', value: 'Multi-Estadual' },
+      ],
+      actionText: 'Abrir Publicador de Notícias'
+    },
+    {
       id: 'ia-monitor',
       title: 'Monitor de IA',
       subtitle: 'Auditoria de Previsões & Aprendizado Contínuo',
