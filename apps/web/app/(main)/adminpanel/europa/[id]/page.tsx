@@ -16,7 +16,8 @@ import {
   ExternalLink, 
   RefreshCw,
   Search,
-  Globe
+  Globe,
+  Sparkles
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { ECOSYSTEM_MODULES, LeagueConfig } from "../../registry";
@@ -131,6 +132,7 @@ export default function EuropaLeagueDetailPage() {
     goals: 0,
   });
   const [submittingScorer, setSubmittingScorer] = useState(false);
+  const [syncingAutoScorers, setSyncingAutoScorers] = useState(false);
 
   // UUID no banco Prisma (diferente de externalId)
   const [leagueUuid, setLeagueUuid] = useState<string | null>(null);
@@ -395,9 +397,31 @@ export default function EuropaLeagueDetailPage() {
         alert("Erro ao salvar artilheiro na API.");
       }
     } catch (e) {
-      alert("Erro de conexão com a API.");
+      console.error("Erro ao salvar artilheiro:", e);
+      alert("Erro de conexão ao salvar artilheiro.");
     } finally {
       setSubmittingScorer(false);
+    }
+  };
+
+  const handleAutoSyncScorers = async () => {
+    try {
+      setSyncingAutoScorers(true);
+      const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/scorers/auto-sync?season=2026`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const result = await res.json();
+        await fetchScorers();
+        alert(`Artilharia sincronizada com sucesso! Foram calculados ${result.totalGoalsFound || 0} gols de ${result.topScorersCount || 0} artilheiros.`);
+      } else {
+        alert("Falha ao sincronizar artilharia automaticamente.");
+      }
+    } catch (e) {
+      console.error("Erro ao sincronizar artilharia:", e);
+      alert("Erro de conexão ao sincronizar artilharia.");
+    } finally {
+      setSyncingAutoScorers(false);
     }
   };
 
@@ -782,9 +806,22 @@ export default function EuropaLeagueDetailPage() {
             </div>
             <div className="flex gap-3">
               <button
+                onClick={handleAutoSyncScorers}
+                disabled={syncingAutoScorers}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+                title="Varre automaticamente todos os gols das partidas desta liga e atualiza o ranking"
+              >
+                {syncingAutoScorers ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Sparkles size={16} className="text-emerald-200" />
+                )}
+                <span>{syncingAutoScorers ? "SINCRONIZANDO..." : "SINCRONIZAR AUTOMÁTICO"}</span>
+              </button>
+              <button
                 onClick={fetchScorers}
                 className="p-3 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-xl transition-all border border-[var(--border)]"
-                title="Atualizar Artilharia"
+                title="Atualizar Lista"
               >
                 <RefreshCw size={18} className={loadingScorers ? "animate-spin" : ""} />
               </button>

@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SyncService } from './sync.service';
 import { CompetitionsService } from '../competitions/competitions.service';
+import { ScorerAgentService } from '../competitions/scorer-agent.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,6 +15,7 @@ export class SyncJobsService implements OnApplicationBootstrap {
   constructor(
     private readonly syncService: SyncService,
     private readonly competitionsService: CompetitionsService,
+    private readonly scorerAgent: ScorerAgentService,
     private readonly newsCrawler: NewsCrawlerService,
     private readonly videoCrawler: VideoCrawlerService,
     private readonly prisma: PrismaService,
@@ -175,6 +177,18 @@ export class SyncJobsService implements OnApplicationBootstrap {
       this.logger.log('Scheduled AI predictions sync completed.');
     } catch (err) {
       this.logger.error(`AI predictions sync job failed: ${err.message}`);
+    }
+  }
+
+  // A cada 1 hora: Sincroniza e consolida a artilharia (Scorers) de todas as ligas ativas
+  @Cron(CronExpression.EVERY_HOUR)
+  async handleTopScorersSync() {
+    this.logger.log('[Cron] Iniciando rotina periódica de cálculo de artilharia (Scorer Agent)...');
+    try {
+      await this.scorerAgent.aggregateAllActiveLeagues(2026);
+      this.logger.log('[Cron] Sincronização periódica de artilharia concluída com sucesso.');
+    } catch (err) {
+      this.logger.error(`[Cron] Falha no job periódico de artilharia: ${err.message}`);
     }
   }
 }
