@@ -14,7 +14,7 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/6300978111'
           : 'ca-app-pub-3940256099942544/2934735716';
     }
-    return 'ca-app-pub-6887857057070736/3028902836';
+    return 'ca-app-pub-6887857057070736/6372300752';
   }
 
   static String get interstitialAdUnitId {
@@ -23,7 +23,16 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/1033173712'
           : 'ca-app-pub-3940256099942544/4411468910';
     }
-    return 'ca-app-pub-6887857057070736/4788707063';
+    return 'ca-app-pub-6887857057070736/3746137411';
+  }
+
+  static String get nativeAdUnitId {
+    if (kDebugMode) {
+      return Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/2247696110'
+          : 'ca-app-pub-3940256099942544/3986624511';
+    }
+    return 'ca-app-pub-6887857057070736/4126295846';
   }
 
   static String get rewardedAdUnitId {

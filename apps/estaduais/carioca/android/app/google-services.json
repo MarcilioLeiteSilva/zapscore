@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1070106091305",
+    "project_id": "appcarioca",
+    "storage_bucket": "appcarioca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1070106091305:android:1fb2b823c3709edb9f6138",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualcarioca"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCsF38F-rv06pIHspTP4VAuDAGeHAq14CU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

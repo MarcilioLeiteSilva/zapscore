@@ -37,6 +37,7 @@ import '../../logic/models/competition_phase.dart';
 import '../../logic/models/tie.dart';
 import '../../repository/api/api_client.dart';
 import 'ad_banner.dart';
+import 'native_ad.dart';
 import 'standings_table.dart';
 import 'competition_bracket.dart';
 import '../../services/ad_service.dart';

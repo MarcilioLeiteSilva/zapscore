@@ -181,7 +181,7 @@ class _WatchPageState extends State<WatchPage> {
                         if (i == 3) {
                           return Column(
                             children: [
-                              const AdBannerWidget(),
+                              const AppNativeAdWidget(variant: NativeAdVariant.newsOrVideo),
                               const Gap(15),
                               CardNewsItem(
                                 isVideo: true,

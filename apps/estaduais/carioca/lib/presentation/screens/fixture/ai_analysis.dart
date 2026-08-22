@@ -513,7 +513,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           const Gap(12),
         ],
 
-        const Center(child: AdBannerWidget()),
+        const AppNativeAdWidget(variant: NativeAdVariant.aiAnalysis),
         const Gap(12),
 
         // Comentário técnico completo

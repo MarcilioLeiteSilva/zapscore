@@ -156,7 +156,7 @@ class _NewsPageState extends State<NewsPage> {
                         if (i == 3) {
                           return Column(
                             children: [
-                              const AdBannerWidget(),
+                              const AppNativeAdWidget(variant: NativeAdVariant.newsOrVideo),
                               const Gap(15),
                               CardNewsItem(news: item),
                             ],

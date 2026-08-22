@@ -49,6 +49,7 @@ import '../../logic/models/competition_phase.dart';
 import '../../logic/models/tie.dart';
 import '../widgets/widgets.dart';
 import '../widgets/ad_banner.dart';
+import '../widgets/native_ad.dart';
 import '../widgets/standings_table.dart';
 import '../widgets/competition_bracket.dart';
 import '../../services/ad_service.dart';

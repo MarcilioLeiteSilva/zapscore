@@ -156,7 +156,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
               if (i > 0 && i % 6 == 0) {
                 return Column(
                   children: [
-                    const AdBannerWidget(),
+                    const AppNativeAdWidget(variant: NativeAdVariant.fixture),
                     const Gap(10),
                     CardFixtureLeagueItem(fixture: fix),
                   ],
@@ -755,7 +755,7 @@ class RoundLeaguePage extends StatelessWidget {
                           if (i > 0 && i % 5 == 0) {
                             return Column(
                               children: [
-                                const AdBannerWidget(),
+                                const AppNativeAdWidget(variant: NativeAdVariant.fixture),
                                 const Gap(10),
                                 CardFixtureLeagueItem(fixture: fix),
                               ],
