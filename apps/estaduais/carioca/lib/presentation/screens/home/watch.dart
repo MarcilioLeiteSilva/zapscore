@@ -178,7 +178,7 @@ class _WatchPageState extends State<WatchPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemBuilder: (_, i) {
                         final videoItem = trendingVideos.isNotEmpty ? trendingVideos[i] : carouselVideos[i];
-                        if (i == 3) {
+                        if (i > 0 && i % 6 == 0) {
                           return Column(
                             children: [
                               const AppNativeAdWidget(variant: NativeAdVariant.newsOrVideo),

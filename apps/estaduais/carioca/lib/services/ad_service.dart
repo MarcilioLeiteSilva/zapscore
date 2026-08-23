@@ -49,7 +49,7 @@ class AdService {
   static bool _isLoadingInterstitial = false;
   static DateTime? _lastInterstitialShownAt;
   static int _matchClickCounter = 0;
-  static const int _minIntervalSeconds = 60;
+  static const int _minIntervalSeconds = 15;
 
   /// Inicializa com o fluxo oficial de Consentimento do Google UMP (LGPD / GDPR)
   Future<void> init() async {

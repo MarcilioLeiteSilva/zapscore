@@ -153,7 +153,7 @@ class _NewsPageState extends State<NewsPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemBuilder: (_, i) {
                         final item = listNews.isNotEmpty ? listNews[i] : carouselNews[i];
-                        if (i == 3) {
+                        if (i > 0 && i % 6 == 0) {
                           return Column(
                             children: [
                               const AppNativeAdWidget(variant: NativeAdVariant.newsOrVideo),

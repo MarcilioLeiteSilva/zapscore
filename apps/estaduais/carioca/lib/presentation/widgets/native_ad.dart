@@ -77,12 +77,9 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
     }
 
     final double radius = widget.variant == NativeAdVariant.fixture ? 15.0 : 10.0;
-    final EdgeInsetsGeometry defaultMargin = widget.variant == NativeAdVariant.aiAnalysis
-        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-        : EdgeInsets.zero;
 
     return Container(
-      margin: widget.margin ?? defaultMargin,
+      margin: widget.margin ?? EdgeInsets.zero,
       width: double.infinity,
       height: 90,
       decoration: BoxDecoration(
