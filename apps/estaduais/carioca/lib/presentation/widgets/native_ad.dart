@@ -31,18 +31,15 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
   bool get wantKeepAlive => true;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
     _loadNativeAd();
   }
 
   void _loadNativeAd() {
-    if (_nativeAd != null) return;
-
-    final double radius = widget.variant == NativeAdVariant.fixture ? 15.0 : 10.0;
-
     _nativeAd = NativeAd(
       adUnitId: AdService.nativeAdUnitId,
+      factoryId: 'cariocaNativeAdFactory',
       request: const AdRequest(),
       listener: NativeAdListener(
         onAdLoaded: (ad) {
@@ -53,7 +50,7 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
           }
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('⚠️ [AdMob] Native Ad failed to load: ${error.message}');
+          debugPrint('⚠️ [AppNativeAdWidget] Failed to load native ad: $error');
           ad.dispose();
           if (mounted) {
             setState(() {
@@ -63,38 +60,7 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
           }
         },
       ),
-      nativeTemplateStyle: NativeTemplateStyle(
-        templateType: TemplateType.small,
-        mainBackgroundColor: AppColor.card,
-        cornerRadius: radius,
-        callToActionTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white,
-          backgroundColor: const Color(0xFF008855),
-          style: NativeTemplateFontStyle.bold,
-          size: 11.0,
-        ),
-        primaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white,
-          style: NativeTemplateFontStyle.bold,
-          size: 13.0,
-          backgroundColor: Colors.transparent,
-        ),
-        secondaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white70,
-          style: NativeTemplateFontStyle.normal,
-          size: 11.0,
-          backgroundColor: Colors.transparent,
-        ),
-        tertiaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white60,
-          style: NativeTemplateFontStyle.normal,
-          size: 10.0,
-          backgroundColor: Colors.transparent,
-        ),
-      ),
-    );
-
-    _nativeAd!.load();
+    )..load();
   }
 
   @override
@@ -110,7 +76,6 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
       return const SizedBox.shrink();
     }
 
-    final double height = 95.0;
     final double radius = widget.variant == NativeAdVariant.fixture ? 15.0 : 10.0;
     final EdgeInsetsGeometry defaultMargin = widget.variant == NativeAdVariant.aiAnalysis
         ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
@@ -118,7 +83,8 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
 
     return Container(
       margin: widget.margin ?? defaultMargin,
-      height: height,
+      width: double.infinity,
+      height: 90,
       decoration: BoxDecoration(
         color: AppColor.card,
         borderRadius: BorderRadius.circular(radius),
