@@ -86,6 +86,7 @@
   - [14.5 Serviços de Crawling e Ingestão de Mídia](#145-serviços-de-crawling-e-ingestão-de-mídia)
   - [14.6 Camada de Segurança, Rate Limiting e Guards](#146-camada-de-segurança-rate-limiting-e-guards)
   - [14.7 WebSockets e Transmissão em Tempo Real](#147-websockets-e-transmissão-em-tempo-real)
+  - [14.8 Protocolo Operacional para Ingestão e Povoamento de Novos Estaduais](#148-protocolo-operacional-para-ingestão-e-povoamento-de-novos-estaduais)
 
 
 ---
@@ -1138,3 +1139,72 @@ Localizado em `apps/api/src/sync/sync-jobs.service.ts`, o agendador gerencia o c
   - `fixture:score_change` (atualização imediata de placar).
   - `fixture:status_change` (início de jogo, intervalo, prorrogação, fim).
   - `fixture:event` (gols, cartões amarelos/vermelhos, substituições, VAR).
+
+---
+
+### 14.8 Protocolo Operacional para Ingestão e Povoamento de Novos Estaduais
+
+Este é o **roteiro de execução validado** que deve ser rigorosamente seguido ao adicionar qualquer novo campeonato estadual ao ecossistema (ex: Pernambucano, Cearense, Goiano, Catarinense, etc.):
+
+```mermaid
+flowchart TD
+    A["1. Mapear IDs na API-Football"] --> B["2. Cadastrar em competitions.config.ts"]
+    B --> C["3. Cadastrar Cards no AdminPanel (registry.ts & sentinel)"]
+    C --> D["4. Cadastrar no PocketBase Estaduais (coleção apps)"]
+    D --> E["5. Executar Bootstrap & Scorers via API (/sync/bootstrap)"]
+    E --> F["6. Validar Endpoints & Vincular no App Flutter"]
+```
+
+#### Passo 1 — Identificação de IDs na API-Football
+Consulte a API-Football para obter o ID numérico da 1ª e 2ª divisões da competição estadual (ex: `https://v3.football.api-sports.io/leagues?country=Brazil`).
+
+#### Passo 2 — Cadastro Central no Backend (`apps/api`)
+Arquivo: `apps/api/src/config/competitions.config.ts`
+Adicione as ligas ao array `SUPPORTED_COMPETITIONS`:
+```typescript
+{
+  code: 'BR_ESTADUAL_1',
+  externalId: 123, // ID API-Football
+  name: 'Campeonato X 1ª Divisão',
+  country: 'Brazil',
+  type: 'league',
+  activeSeasons: [2026],
+}
+```
+
+#### Passo 3 — Cadastro no AdminPanel e Sentinel (`apps/web`)
+1. **Cards e Rotas de Conteúdo:** Em `apps/web/app/(main)/adminpanel/registry.ts`, adicione a liga no array `leagues` do módulo `estaduais`:
+   ```typescript
+   { id: 123, slug: 'estadual-1', name: 'Campeonato X 1ª Divisão', country: 'Estado', flag: '📍' }
+   ```
+2. **Sentinel Estaduais:** Em `apps/web/app/(main)/adminpanel/sentinel/page.tsx`, inclua o ID no array `leagueIds` de `tabConfigs.estaduais`.
+
+#### Passo 4 — Registro na Coleção `apps` do PocketBase Estaduais
+No container do PocketBase Estaduais (`https://zapscore-pocketbase-estaduais.gtalg3.easypanel.host`):
+1. Crie o registro na coleção `apps`:
+   ```json
+   {
+     "name": "Campeonato X",
+     "league_id": 123,
+     "active": true
+   }
+   ```
+2. Faça o upload da Service Account Firebase do app correspondente (`service_account_campeonato_x.json`) para a pasta `/pb_hooks/`.
+
+#### Passo 5 — Povoamento Inicial Automatizado (Bootstrap & Scorers)
+Dispare a rotina de sincronização via API enviando o header `x-api-key: ADMIN_API_KEY`:
+```bash
+# 1. Bootstrap da temporada 2026 (Times, Rodadas, Partidas, Classificação)
+POST /sync/bootstrap
+Body: { "leagueId": 123, "season": 2026 }
+
+# 2. Ingestão da Artilharia
+POST /sync/scorers
+Body: { "leagueId": 123, "season": 2026 }
+```
+
+#### Passo 6 — Validação e Homologação
+Verifique a resposta dos endpoints públicos da ZapScore API:
+* `GET /standings?leagueId=123&season=2026` ➔ Deve retornar o array com todas as equipes e pontuações.
+* `GET /fixtures?leagueId=123&season=2026` ➔ Deve retornar as rodadas e confrontos agendados.
+* `GET /players/scorers?leagueId=123&season=2026` ➔ Deve listar o ranking de artilheiros com gols e fotos.
