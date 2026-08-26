@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "2396513433",
+    "project_id": "appgaucho-ad96b",
+    "storage_bucket": "appgaucho-ad96b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2396513433:android:e0dc3977857b4d7a044408",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualgaucho"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCF4cg-zzSpjDmYVT93RlVhnKRq8gCqzVg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
