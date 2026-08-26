@@ -88,6 +88,12 @@
   - [14.6 Camada de Segurança, Rate Limiting e Guards](#146-camada-de-segurança-rate-limiting-e-guards)
   - [14.7 WebSockets e Transmissão em Tempo Real](#147-websockets-e-transmissão-em-tempo-real)
   - [14.8 Protocolo Operacional para Ingestão e Povoamento de Novos Estaduais](#148-protocolo-operacional-para-ingestão-e-povoamento-de-novos-estaduais)
+- [Capítulo 15: [A FAZER] Agente de Comentários Táticos ao Vivo e Coleta Multi-Fontes (Crawl4AI + IA Engine)](#-capítulo-15-a-fazer-agente-de-comentários-táticos-ao-vivo-e-coleta-multi-fontes-crawl4ai--ia-engine)
+  - [15.1 Visão Geral e Proposta de Valor](#151-visão-geral-e-proposta-de-valor)
+  - [15.2 Ciclo de Vida e Cadência de 5 em 5 Minutos](#152-ciclo-de-vida-e-cadência-de-5-em-5-minutos)
+  - [15.3 Arquitetura Técnica em 4 Camadas](#153-arquitetura-técnica-em-4-camadas)
+  - [15.4 Modelo de Dados e Endpoints da ZapScore API](#154-modelo-de-dados-e-endpoints-da-zapscore-api)
+  - [15.5 Experiência nos Apps Flutter e Monitor no AdminPanel](#155-experiência-nos-apps-flutter-e-monitor-no-adminpanel)
 
 
 ---
@@ -419,6 +425,7 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 * **[2026-08-02]**: Implementação e homologação do motor de push notifications no PocketBase Europa com FCM HTTP v1 nativo em JavaScript.
 
 ### 8.2 Backlog e Próximos Incrementos Planejados
+* [ ] **Agente de Comentários Táticos ao Vivo (Crawl4AI + LLM Engine)**: Implementação do comentador em tempo real de 5 em 5 minutos em 6 fases cronológicas ([Capítulo 15](#-capítulo-15-a-fazer-agente-de-comentários-táticos-ao-vivo-e-coleta-multi-fontes-crawl4ai--ia-engine)).
 * [ ] **Ajuste Sintático na Chave PEM Bundesliga**: Ajustar os 4 hífens de fechamento para 5 (`-----END PRIVATE KEY-----`) em `notifications.pb.js`.
 * [ ] **Ativação dos Workers de Segundo Plano**:
   * Implementação do worker cron do Content Scout em `apps/api` (coleta RSS/YouTube a cada 30 min).
@@ -1269,3 +1276,48 @@ Verifique a resposta dos endpoints públicos da ZapScore API:
 * `GET /standings?leagueId=123&season=2026` ➔ Deve retornar o array com todas as equipes e pontuações.
 * `GET /fixtures?leagueId=123&season=2026` ➔ Deve retornar as rodadas e confrontos agendados.
 * `GET /players/scorers?leagueId=123&season=2026` ➔ Deve listar o ranking de artilheiros com gols e fotos.
+
+---
+
+## 🎙️ Capítulo 15: [A FAZER] Agente de Comentários Táticos ao Vivo e Coleta Multi-Fontes (Crawl4AI + IA Engine)
+
+> **Documento Completo do Plano:** [plano_implementacao_agente_comentarios_taticos_ia_2026_08_26.md](file:///d:/zapscore/relatorios/plano_implementacao_agente_comentarios_taticos_ia_2026_08_26.md)  
+> **Status:** `[A FAZER - PLANEJADO 🚀]`  
+> **Módulos:** `apps/api` (Worker Crawl4AI + NestJS Hub), `apps/web` (AdminPanel Monitor), Clientes Mobile (`apps/estaduais/*`, `apps/europa/*`, `apps/mobile`).
+
+### 15.1 Visão Geral e Proposta de Valor
+Transformar o acompanhamento de jogos em uma experiência imersiva de **transmissão escrita interativa com comentários táticos em tempo real**, superando narrativas estáticas e gerando análises técnicas dinâmicas a cada 5 minutos de bola rolando.
+
+### 15.2 Ciclo de Vida e Cadência de 5 em 5 Minutos (6 Fases Cronológicas)
+
+```mermaid
+flowchart LR
+    A[1. Pré-Jogo<br>-30 min] --> B[2. 1º Tempo<br>A cada 5 min]
+    B --> C[3. Intervalo<br>HT - Raio-X]
+    C --> D[4. 2º Tempo<br>A cada 5 min]
+    D --> E[5. Apito Final<br>FT - Veredito]
+    E --> F[6. Resenha Final<br>MVP & Notas]
+```
+
+1. **📋 Pré-Jogo (~30 a 15 min antes):** Análise das escalações oficiais, esquemas táticos (ex: 4-3-3 vs 3-5-2), desfalques e expectativa tática inicial.
+2. **⚽ 1º Tempo (A cada 5 minutos - 5', 10', 15', 20', 25', 30', 35', 40', 45'):** Pulso tático do jogo, quem controla as ações, chances perigosas, posse e faltas capitais.
+3. **⏸️ Intervalo (HT):** Raio-X estatístico consolidado (posse, chutes certos, desarmes) e diagnóstico do que os técnicos precisam mudar.
+4. **🔥 2º Tempo (A cada 5 minutos - 50', 55', 60', 65', 70', 75', 80', 85', 90'+):** Impacto das substituições, desgaste físico, contra-ataques e pressão nos acréscimos.
+5. **🏁 Apito Final (FT):** Veredito instantâneo do confronto e mérito do placar.
+6. **🏆 Resenha Final (Pós-Jogo):** Crônica completa, eleição dos **Melhores em Campo (MVP)**, notas dos treinadores e impacto na classificação.
+
+### 15.3 Arquitetura Técnica em 4 Camadas
+1. **Coleta Multi-Fontes (Crawl4AI / Scraper Assíncrono):** Extração em tempo real de 3 portais (*GE Tempo Real*, *Flashscore*, *UOL Esporte*).
+2. **Hub de Validação & Fusão de Dados (`apps/api`):** Cruzamento das narrativas com as estatísticas oficiais da API-Football (chutes, escanteios, faltas), eliminando alucinações.
+3. **Motor de IA (LLM Engine):** Processamento com prompts táticos estruturados (Gemini 1.5 Flash / DeepSeek) gerando payloads JSON padronizados.
+4. **Distribuição em Tempo Real:** Persistência no PostgreSQL (`FixtureInsight`) e transmissão via WebSockets (`FixturesGateway`) para os apps e AdminPanel.
+
+### 15.4 Modelo de Dados e Endpoints da ZapScore API
+* **Tabela Prisma:** `FixtureInsight` (`fixtureId`, `minute`, `phase`, `title`, `comment`, `sentiment`, `statsSnapshot`, `mvpPlayers`).
+* **Rotas REST:** `GET /fixtures/:id/insights` (comentários da partida) e `GET /fixtures/:id/insights/latest`.
+* **WebSocket Event:** `fixture-insight-new` transmitindo em tempo real para os clientes conectados.
+
+### 15.5 Experiência nos Apps Flutter e Monitor no AdminPanel
+* **No Flutter:** Nova aba *"Comentários & IA"* na `FixtureDetailScreen` com timeline vertical, cards estilizados por sentimento e badge de fase.
+* **No AdminPanel:** Painel de auditoria e moderação ao vivo em `/adminpanel/agents/tactical-insights`.
+
