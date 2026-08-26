@@ -55,6 +55,7 @@
   - [9.5 Integração com Backends e APIs](#95-integração-com-backends-e-apis)
   - [9.6 Telas de Governança de Agentes e Operações](#96-telas-de-governança-de-agentes-e-operações)
   - [9.7 Guia e Padrões para Desenvolvimento de Novas Funcionalidades](#97-guia-e-padrões-para-desenvolvimento-de-novas-funcionalidades)
+  - [9.8 Guia Operacional para Adição de Novas Competições no AdminPanel e Sentinel](#98-guia-operacional-para-adição-de-novas-competições-no-adminpanel-e-sentinel)
 - [Capítulo 10: [A FAZER - PRIORIDADE ARQUITETURAL 🚀] Server-Side FCM Topics & High-Throughput Push Engine](#-capítulo-10-a-fazer---prioridade-arquitetural--server-side-fcm-topics--high-throughput-push-engine)
   - [10.1 Objetivo e Escopo](#101-objetivo-e-escopo)
   - [10.2 Fases do Plano de Ação](#102-fases-do-plano-de-ação)
@@ -452,8 +453,8 @@ A aplicação está organizada sob a pasta `apps/web/app/(main)/adminpanel/`:
 | `/adminpanel/news` | `news/page.tsx` | **Curadoria de Notícias**: Gerenciamento de fontes RSS, feed capturado e publicação. |
 | `/adminpanel/videos` | `videos/page.tsx` | **Curadoria de Vídeos**: Importação e gestão de canais do YouTube por liga. |
 
-### 9.3 Registro Centralizado de Módulos (`registry.ts`)
-Localizado em `apps/web/app/(main)/adminpanel/registry.ts`, este arquivo centraliza os metadados de todas as competições e bancos de dados:
+### 9.3 Registro Centralizado de Módulos (`registry.ts`) e Renderização Dinâmica
+Localizado em `apps/web/app/(main)/adminpanel/registry.ts`, este arquivo centraliza os metadados de todas as competições e fontes de dados:
 
 ```typescript
 export interface LeagueConfig {
@@ -481,6 +482,18 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
   // europa, estaduais (12 competições), brasil, copas
 ];
 ```
+
+#### Arquitetura de Geração Dinâmica de Telas:
+1. **Cards do Módulo (`/adminpanel/[module]/page.tsx`):**
+   - Itera automaticamente sobre `ECOSYSTEM_MODULES.find(m => m.id === 'modulo')?.leagues`.
+   - Gera os cards de cada torneio com bandeira/ícone, ID numérico, país/estado e link direto para a rota de detalhe (`/adminpanel/[module]/${league.id}`).
+2. **Páginas de Gestão de Conteúdo (`/adminpanel/[module]/[id]/page.tsx`):**
+   - Resolve o torneio dinamicamente por ID ou slug a partir do `registry.ts`.
+   - Disponibiliza as 3 abas essenciais de governança para qualquer torneio cadastrado:
+     - **Notícias:** Curadoria manual e publicação instantânea.
+     - **Vídeos & Melhores Momentos:** Gestão de URLs do YouTube, players modais e sincronização.
+     - **Artilharia:** Tabela com classificação dos maiores goleadores, fotos e clubes.
+
 > **Diretriz:** Ao adicionar uma nova liga ou campeonato ao ecossistema, o registro em `registry.ts` deve ser atualizado obrigatoriamente. O módulo **Estaduais** contém 12 torneios cadastrados: Mineiro (Módulo 1 e 2), Carioca (Série A e A2), Paulista (Série A1 e A2), Gaúcho (Série A e A2), Baiano (1ª e 2ª Divisão) e Paranaense (1ª e 2ª Divisão).
 
 ### 9.4 Componentes Centrais de Layout e Navegação
@@ -508,8 +521,15 @@ O AdminPanel consome dados de três fontes distintas:
   * Painel de monitoramento dos agentes `Sentinel`, `Push Self-Healer`, `Scorer Engine`, `Monitor de IA`, `Content Scout` e `Quota Watchdog`.
   * Exibição de métricas: tokens purgados, assertividade de previsões, status de cotas e partidas auditadas.
 * **Sentinel Multi-Instâncias (`/adminpanel/sentinel`)**:
-  * Supervisão em 4 abas isoladas (Brasil, Europa, Copas, Estaduais).
-  * Varredura em tempo real para capturar partidas com status inconsistente (`LIVE`/`2H` > 115 min) e botão para forçar sincronização imediata.
+  * Supervisão em 4 abas isoladas configuradas via matriz `tabConfigs`:
+    - **Sentinel Brasil** (`leagueIds: [71, 72]`) — Brasileirão Série A e B.
+    - **Sentinel Europa** (`leagueIds: [78, 140, 39, 135, 61]`) — Bundesliga, La Liga, Premier League, Serie A, Ligue 1.
+    - **Sentinel Copas** (`leagueIds: [13, 612, 73]`) — Libertadores, Copa do Nordeste e Copa do Brasil.
+    - **Sentinel Estaduais** (`leagueIds: [629, 619, 624, 851, 475, 476, 477, 478, 602, 613, 606, 614]`) — 12 competições ativas (Mineiro, Carioca, Paulista, Gaúcho, Baiano e Paranaense).
+  * **Funcionalidades do Sentinel:**
+    - Varredura em tempo real para capturar partidas com status inconsistente (`LIVE`/`2H` > 115 min) e botão para forçar sincronização imediata.
+    - Consulta agregada de `GET /fixtures/today?leagueId=${id}` em paralelo para todas as ligas da aba ativa.
+    - Botão de ação rápida para disparar sync sob demanda via POST com `x-api-key`.
 * **Monitor de IA (`/adminpanel/agents/ia-monitor`)**:
   * Gráficos de assertividade preditiva pós-jogo (mercado de gols, resultado final, ambas marcam).
   * Tabela de confrontos com auditoria do payload enviado à LLM e diagnóstico de desvios táticos.
@@ -536,6 +556,43 @@ Ao desenvolver ou expandir páginas e componentes no `apps/web`:
 3. **Isolamento e Modificações Cirúrgicas:**
    * Nunca quebrar a tipagem de `registry.ts` ou componentes de navegação (`AdminSidebar.tsx` / `ZapScoreAdminSidebar.tsx`).
    * Adições de novas páginas devem respeitar a estrutura de pastas do Next.js App Router (`apps/web/app/(main)/adminpanel/<nome-da-rota>/page.tsx`).
+
+---
+
+### 9.8 Guia Operacional para Adição de Novas Competições no AdminPanel e Sentinel
+
+Ao integrar qualquer nova competição ao AdminPanel (seja novo Estadual, Copa ou Liga Internacional):
+
+#### 1. Cadastro no `registry.ts` (`apps/web/app/(main)/adminpanel/registry.ts`)
+Adicione a nova liga ao array `leagues` do respectivo módulo (`estaduais`, `copas`, `brasil`, `europa`):
+```typescript
+{
+  id: 123, // ID numérico API-Football
+  slug: 'nome-liga-divisao',
+  name: 'Nome Oficial da Competição',
+  country: 'Estado / País',
+  flag: '📍' // Emoji representativo
+}
+```
+*Efeito Imediato:* O card do torneio surgirá automaticamente na página do módulo correspondente (`/adminpanel/estaduais`), já com link para a tela de gestão `/adminpanel/estaduais/123` (Notícias, Vídeos e Artilharia).
+
+#### 2. Inclusão no Sentinel Multi-Módulos (`apps/web/app/(main)/adminpanel/sentinel/page.tsx`)
+Adicione o novo ID ao array `leagueIds` e atualize o texto descritivo na constante `tabConfigs`:
+```typescript
+tabConfigs: {
+  estaduais: {
+    description: "Auditoria dos Campeonatos ... e [NOVO ESTADUAL]",
+    leagueIds: [...antigosIds, 123], // Adicionar o novo ID
+  }
+}
+```
+*Efeito Imediato:* A aba do Sentinel passará a auditar a nova competição em tempo real contra partidas travadas e permitirá disparar sync de emergência para a nova liga com 1 clique.
+
+#### 3. Validação do Build Next.js
+Execute sempre a validação local antes de subir para produção:
+```bash
+npm run build # Dentro de apps/web (deve retornar Exit Code 0)
+```
 
 ---
 
