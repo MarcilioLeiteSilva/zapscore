@@ -56,6 +56,12 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
       { id: 851, slug: 'carioca-a2', name: 'Carioca Série A2', country: 'Rio de Janeiro', flag: '🌊' },
       { id: 475, slug: 'paulista-a1', name: 'Paulista Série A1', country: 'São Paulo', flag: '🏙️' },
       { id: 476, slug: 'paulista-a2', name: 'Paulista Série A2', country: 'São Paulo', flag: '🏙️' },
+      { id: 477, slug: 'gaucho-1', name: 'Gaúcho Série A', country: 'Rio Grande do Sul', flag: '🧉' },
+      { id: 478, slug: 'gaucho-2', name: 'Gaúcho Série A2', country: 'Rio Grande do Sul', flag: '🧉' },
+      { id: 602, slug: 'baiano-1', name: 'Baiano 1ª Divisão', country: 'Bahia', flag: '☀️' },
+      { id: 613, slug: 'baiano-2', name: 'Baiano 2ª Divisão', country: 'Bahia', flag: '☀️' },
+      { id: 606, slug: 'paranaense-1', name: 'Paranaense 1ª Divisão', country: 'Paraná', flag: '🌲' },
+      { id: 614, slug: 'paranaense-2', name: 'Paranaense 2ª Divisão', country: 'Paraná', flag: '🌲' },
     ],
   },
   {

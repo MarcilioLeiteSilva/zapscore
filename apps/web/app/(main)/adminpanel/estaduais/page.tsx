@@ -22,7 +22,7 @@ export default function EstaduaisModulePage() {
             <span className="badge badge-ft">• ZAPSCORE API ACTIVE</span>
           </div>
           <p className="text-[var(--text-muted)] text-sm mt-2 max-w-2xl">
-            Gerenciador Central de Notícias, Vídeos e Artilharia dos Campeonatos Estaduais (Mineiro 1 e 2, Carioca A e A2, Paulista A1 e A2).
+            Gerenciador Central de Notícias, Vídeos e Artilharia dos Campeonatos Estaduais (Mineiro, Carioca, Paulista, Gaúcho, Baiano e Paranaense).
           </p>
         </div>
 
