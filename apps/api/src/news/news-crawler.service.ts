@@ -10,6 +10,12 @@ export class NewsCrawlerService {
 
   private readonly TRUSTED_SOURCES = [
     { name: 'GE', url: 'https://ge.globo.com/rss/ge/futebol/', domain: 'ge.globo.com' },
+    { name: 'GE RS', url: 'https://ge.globo.com/rs/futebol/rss.xml', domain: 'ge.globo.com' },
+    { name: 'GE Grêmio', url: 'https://ge.globo.com/rs/futebol/times/gremio/rss.xml', domain: 'ge.globo.com' },
+    { name: 'GE Inter', url: 'https://ge.globo.com/rs/futebol/times/internacional/rss.xml', domain: 'ge.globo.com' },
+    { name: 'GE Juventude', url: 'https://ge.globo.com/rs/futebol/times/juventude/rss.xml', domain: 'ge.globo.com' },
+    { name: 'GE Bahia', url: 'https://ge.globo.com/ba/futebol/rss.xml', domain: 'ge.globo.com' },
+    { name: 'GE Paraná', url: 'https://ge.globo.com/pr/futebol/rss.xml', domain: 'ge.globo.com' },
     { name: 'Trivela', url: 'https://trivela.com.br/feed/', domain: 'trivela.com.br' },
     { name: 'UOL', url: 'https://noticias.uol.com.br/esporte/futebol/index.xml', domain: 'uol.com.br' },
     { name: 'CBF', url: 'https://www.cbf.com.br/futebol-brasileiro/noticias/rss', domain: 'cbf.com.br' },
@@ -91,7 +97,16 @@ export class NewsCrawlerService {
 
       if ((name.includes('paulista') || name.includes('paulistão')) && (text.includes('paulista') || text.includes('paulistão'))) leagueId = league.id;
       if ((name.includes('mineiro')) && (text.includes('mineiro') || text.includes('mineirão'))) leagueId = league.id;
-      if ((name.includes('gaúcho') || name.includes('gauchão')) && (text.includes('gaúcho') || text.includes('gauchão'))) leagueId = league.id;
+      if ((name.includes('gaúcho') || name.includes('gaucho') || name.includes('gauchão') || name.includes('gauchao')) && 
+          (text.includes('gaúcho') || text.includes('gaucho') || text.includes('gauchão') || text.includes('gauchao') || text.includes('grêmio') || text.includes('gremio') || text.includes('internacional') || text.includes('juventude') || text.includes('caxias') || text.includes('ypiranga') || text.includes('fgf'))) {
+        leagueId = league.id;
+      }
+      if ((name.includes('baiano') || name.includes('baianão')) && (text.includes('baiano') || text.includes('baianão') || text.includes('bahia') || text.includes('vitória') || text.includes('vitoria') || text.includes('fbf'))) {
+        leagueId = league.id;
+      }
+      if ((name.includes('paranaense') || name.includes('parana')) && (text.includes('paranaense') || text.includes('coritiba') || text.includes('athletico') || text.includes('operario') || text.includes('maringa') || text.includes('fpf'))) {
+        leagueId = league.id;
+      }
     }
 
     return { teamId, leagueId };
