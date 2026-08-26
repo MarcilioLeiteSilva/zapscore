@@ -16,7 +16,7 @@ class CompetitionNormalizer {
     required List<Standing> rawStandings,
     required List<Fixture> rawFixtures,
   }) {
-    if (leagueId == 622) {
+    if (leagueId == 477 || leagueId == 622) {
       return _buildGauchoSerieA(
         leagueId: leagueId,
         leagueName: leagueName,
@@ -25,7 +25,7 @@ class CompetitionNormalizer {
         rawStandings: rawStandings,
         rawFixtures: rawFixtures,
       );
-    } else if (leagueId == 853) {
+    } else if (leagueId == 478 || leagueId == 853) {
       return _buildGauchoDivisaoAcesso(
         leagueId: leagueId,
         leagueName: leagueName,

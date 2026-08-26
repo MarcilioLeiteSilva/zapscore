@@ -33,18 +33,18 @@ class HomeCubit extends Cubit<HomeState> {
         // Fallback com as ligas do Gaúcho
         final fallbackLeagues = [
           League(
-            id: '622',
-            externalId: 622,
+            id: '477',
+            externalId: 477,
             name: 'Gaúcho Série A',
             country: 'Brazil',
-            logo: 'https://media.api-sports.io/football/leagues/622.png',
+            logo: 'https://media.api-sports.io/football/leagues/477.png',
           ),
           League(
-            id: '853',
-            externalId: 853,
+            id: '478',
+            externalId: 478,
             name: 'Gaúcho Divisão de Acesso',
             country: 'Brazil',
-            logo: 'https://media.api-sports.io/football/leagues/853.png',
+            logo: 'https://media.api-sports.io/football/leagues/478.png',
           ),
         ];
 

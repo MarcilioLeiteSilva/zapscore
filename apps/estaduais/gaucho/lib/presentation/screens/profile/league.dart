@@ -77,10 +77,10 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                       Expanded(
                         child: _DivisionButton(
                           title: 'Série A',
-                          isSelected: currentLeagueId == 622 || currentLeagueId != 853,
+                          isSelected: currentLeagueId == 477 || currentLeagueId != 478,
                           onTap: () {
-                            if (currentLeagueId != 622) {
-                              cubit.switchDivision(622);
+                            if (currentLeagueId != 477) {
+                              cubit.switchDivision(477);
                             }
                           },
                         ),
@@ -89,10 +89,10 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                       Expanded(
                         child: _DivisionButton(
                           title: 'Divisão de Acesso',
-                          isSelected: currentLeagueId == 853,
+                          isSelected: currentLeagueId == 478,
                           onTap: () {
-                            if (currentLeagueId != 853) {
-                              cubit.switchDivision(853);
+                            if (currentLeagueId != 478) {
+                              cubit.switchDivision(478);
                             }
                           },
                         ),

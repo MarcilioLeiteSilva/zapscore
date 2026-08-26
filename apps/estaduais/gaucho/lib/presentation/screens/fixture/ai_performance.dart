@@ -37,8 +37,8 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       bool hasGaucho = filtered.any((l) => AppConfig.supportedLeagueIds.contains(l.externalId) || l.name.toLowerCase().contains('gaucho') || l.name.toLowerCase().contains('gaúcho'));
 
       if (!hasGaucho) {
-        filtered.insert(0, League(id: '622', externalId: 622, name: 'Gaúcho Série A', country: 'Brazil'));
-        filtered.add(League(id: '853', externalId: 853, name: 'Gaúcho Divisão de Acesso', country: 'Brazil'));
+        filtered.insert(0, League(id: '477', externalId: 477, name: 'Gaúcho Série A', country: 'Brazil'));
+        filtered.add(League(id: '478', externalId: 478, name: 'Gaúcho Divisão de Acesso', country: 'Brazil'));
       }
 
       setState(() {
@@ -48,8 +48,8 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       print('Error loading leagues for filter: $e');
       setState(() {
         _leagues = [
-          League(id: '622', externalId: 622, name: 'Gaúcho Série A', country: 'Brazil'),
-          League(id: '853', externalId: 853, name: 'Gaúcho Divisão de Acesso', country: 'Brazil'),
+          League(id: '477', externalId: 477, name: 'Gaúcho Série A', country: 'Brazil'),
+          League(id: '478', externalId: 478, name: 'Gaúcho Divisão de Acesso', country: 'Brazil'),
         ];
       });
     }
