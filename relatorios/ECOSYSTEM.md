@@ -1306,14 +1306,42 @@ flowchart LR
 5. **🏁 Apito Final (FT):** Veredito instantâneo do confronto e mérito do placar.
 6. **🏆 Resenha Final (Pós-Jogo):** Crônica completa, eleição dos **Melhores em Campo (MVP)**, notas dos treinadores e impacto na classificação.
 
-### 15.3 Arquitetura Técnica em 4 Camadas
-1. **Coleta Multi-Fontes (Crawl4AI / Scraper Assíncrono):** Extração em tempo real de 3 portais (*GE Tempo Real*, *Flashscore*, *UOL Esporte*).
-2. **Hub de Validação & Fusão de Dados (`apps/api`):** Cruzamento das narrativas com as estatísticas oficiais da API-Football (chutes, escanteios, faltas), eliminando alucinações.
-3. **Motor de IA (LLM Engine):** Processamento com prompts táticos estruturados (Gemini 1.5 Flash / DeepSeek) gerando payloads JSON padronizados.
-4. **Distribuição em Tempo Real:** Persistência no PostgreSQL (`FixtureInsight`) e transmissão via WebSockets (`FixturesGateway`) para os apps e AdminPanel.
+### 15.3 Arquitetura Técnica & Topologia no Easypanel (VPS)
 
-### 15.4 Modelo de Dados e Endpoints da ZapScore API
+```mermaid
+flowchart TD
+    subgraph VPS_EASYPANEL [VPS / Easypanel - Rede Interna Docker]
+        subgraph CONTAINER_CRAWL4AI [🐳 Container: Crawl4AI Service]
+            C4AI[Crawl4AI API Server :8000<br>Chromium Headless Assíncrono]
+        end
+
+        subgraph CONTAINER_API [⚡ Container: ZapScore API NestJS]
+            JOB[⏰ TacticalCronJob - A cada 5 min]
+            FUSION[🧩 Validador & Fusor de Dados]
+            AI_CALL[🤖 LLM Caller: Gemini Flash / DeepSeek]
+            WS_GATEWAY[📡 FixturesGateway - Socket.io]
+            
+            JOB -->|1. Pede extração das 3 fontes| C4AI
+            C4AI -->|2. Retorna Markdown/JSON limpo| FUSION
+            FUSION -->|3. Prompt com fatos + estatísticas| AI_CALL
+            AI_CALL -->|4. Salva insight gerado| DB[(📂 PostgreSQL: FixtureInsight)]
+            DB -->|5. Emite evento em tempo real| WS_GATEWAY
+        end
+    end
+
+    subgraph CLIENTES [📱 Clientes & Painel]
+        WS_GATEWAY -->|WebSocket / Realtime| APP[📱 Apps Flutter: Timeline da Partida]
+        WS_GATEWAY -->|WebSocket / Realtime| ADMIN[🖥️ AdminPanel: Live Monitor]
+    end
+```
+
+* **Microserviço Crawl4AI no Easypanel:** Imagem `unclecode/crawl4ai:latest` conectada à rede interna `zapscore_network` na porta `8000`. Sem exposição pública na internet para segurança total.
+* **Consumo de Recursos:** ~300MB a 600MB de RAM na VPS.
+* **Validação Cruzada:** A ZapScore API cruza os textos coletados com os dados estatísticos oficiais da API-Football (posse, chutes, faltas, cartões) antes de enviar para a LLM.
+
+### 15.4 Modelo de Dados e Custos de LLM
 * **Tabela Prisma:** `FixtureInsight` (`fixtureId`, `minute`, `phase`, `title`, `comment`, `sentiment`, `statsSnapshot`, `mvpPlayers`).
+* **Custos Estimados:** Usando modelos ultra rápidos (Gemini 1.5 Flash / DeepSeek V3), uma rodada cheia de 10 jogos simultâneos (250 comentários táticos com 3 fontes cruzadas) custará menos de **R$ 0,35 por rodada**.
 * **Rotas REST:** `GET /fixtures/:id/insights` (comentários da partida) e `GET /fixtures/:id/insights/latest`.
 * **WebSocket Event:** `fixture-insight-new` transmitindo em tempo real para os clientes conectados.
 

@@ -1,8 +1,8 @@
 # 🎙️ Plano de Implementação — Agente de Comentários Táticos ao Vivo & Coleta Multi-Fontes (Crawl4AI + LLM Engine)
 
 > **Data de Criação:** 26/08/2026  
-> **Status:** `[A FAZER - PLANEJADO 🚀]`  
-> **Módulos Envolvidos:** `apps/api` (Worker Crawl4AI + NestJS Hub), `relatorios/ECOSYSTEM.md`, `apps/web` (AdminPanel Monitor), `apps/mobile` / `apps/estaduais/*` / `apps/europa/*` (Flutter Live Timeline).
+> **Status:** `[A FAZER - PLANEJADO PARA AVALIAÇÃO DE IMPLANTAÇÃO 🚀]`  
+> **Módulos Envolvidos:** `apps/api` (Worker Crawl4AI + NestJS Hub), `relatorios/ECOSYSTEM.md`, `apps/web` (AdminPanel Monitor), Clientes Flutter (`apps/estaduais/*`, `apps/europa/*`, `apps/mobile`).
 
 ---
 
@@ -10,10 +10,10 @@
 
 O **Agente de Comentários Táticos ao Vivo** é um motor de inteligência esportiva autônomo projetado para transformar o acompanhamento de jogos no ZapScore em uma experiência imersiva de **transmissão escrita interativa com análises táticas em tempo real**.
 
-### 🌟 Diferencial Competitivo:
+### 🌟 Diferenciais Competitivos:
 * **Não é apenas narração de lances ("X chutou a gol"):** É um **comentarista tático inteligente** que analisa esquemas táticos, pressão alta, desvios defensivos, mapa de calor estatístico e impacto das alterações de técnicos.
 * **Cadência Contínua de 5 em 5 Minutos:** Gera entre 20 a 25 análises distribuídas em 6 fases cronológicas por jogo.
-* **Validação Cruzada Tripla (Crawl4AI + API-Football):** Coleta em tempo real de 3 portais esportivos consagrados (ex: *GE*, *Flashscore*, *UOL Esporte*), eliminando alucinações ao cruzar fatos com as estatísticas oficiais da partida.
+* **Validação Cruzada Tripla (Crawl4AI + API-Football):** Coleta em tempo real de 3 portais esportivos consagrados (*GE*, *Flashscore*, *UOL Esporte*), eliminando alucinações ao cruzar fatos com as estatísticas oficiais da partida.
 
 ---
 
@@ -41,47 +41,71 @@ flowchart LR
 
 ---
 
-## 🏗️ 3. Arquitetura Técnica em 4 Camadas
+## 🏗️ 3. Arquitetura Técnica & Topologia no Easypanel (VPS)
 
 ```mermaid
 flowchart TD
-    subgraph CAMADA_1 [1. Coleta Multi-Fontes em Tempo Real]
-        C1[GE Tempo Real]
-        C2[Flashscore / Sofascore]
-        C3[UOL Esporte]
-        WORKER[🤖 Microserviço Crawl4AI / Scraper Assíncrono Python ou Node]
-        C1 --> WORKER
-        C2 --> WORKER
-        C3 --> WORKER
+    subgraph VPS_EASYPANEL [VPS / Easypanel - Rede Interna Docker]
+        subgraph CONTAINER_CRAWL4AI [🐳 Container: Crawl4AI Service]
+            C4AI[Crawl4AI API Server :8000<br>Chromium Headless Assíncrono]
+        end
+
+        subgraph CONTAINER_API [⚡ Container: ZapScore API NestJS]
+            JOB[⏰ TacticalCronJob - A cada 5 min]
+            FUSION[🧩 Validador & Fusor de Dados]
+            AI_CALL[🤖 LLM Caller: Gemini Flash / DeepSeek]
+            WS_GATEWAY[📡 FixturesGateway - Socket.io]
+            
+            JOB -->|1. Pede extração das 3 fontes| C4AI
+            C4AI -->|2. Retorna Markdown/JSON limpo| FUSION
+            FUSION -->|3. Prompt com fatos + estatísticas| AI_CALL
+            AI_CALL -->|4. Salva insight gerado| DB[(📂 PostgreSQL: FixtureInsight)]
+            DB -->|5. Emite evento em tempo real| WS_GATEWAY
+        end
     end
 
-    subgraph CAMADA_2 [2. Hub de Validação & Fusão de Dados - apps/api]
-        API_DATA[Dados Oficiais ZapScore API:<br>Posse, Chutes, Cartões, Escalações]
-        VALIDATOR[Validador & Sanitizador de Contexto]
-        WORKER --> VALIDATOR
-        API_DATA --> VALIDATOR
-    end
-
-    subgraph CAMADA_3 [3. Motor de Inteligência Artificial LLM]
-        LLM[LLM Engine: Gemini 1.5 Flash / DeepSeek V3]
-        VALIDATOR -->|Prompt Estruturado a cada 5 min| LLM
-        INSIGHT[Geração do Insight JSON]
-        LLM --> INSIGHT
-    end
-
-    subgraph CAMADA_4 [4. Distribuição em Tempo Real]
-        DB[(PostgreSQL Prisma:<br>Tabela FixtureInsight)]
-        WS[Socket.io FixturesGateway]
-        INSIGHT --> DB
-        DB --> WS
-        WS --> FLUTTER[📱 Apps Flutter: Timeline Dinâmica]
-        WS --> ADMIN[🖥️ AdminPanel: Live Monitor]
+    subgraph CLIENTES [📱 Clientes & Painel]
+        WS_GATEWAY -->|WebSocket / Realtime| APP[📱 Apps Flutter: Timeline da Partida]
+        WS_GATEWAY -->|WebSocket / Realtime| ADMIN[🖥️ AdminPanel: Live Monitor]
     end
 ```
 
 ---
 
-## 🗄️ 4. Modelo de Dados Prisma (`apps/api/prisma/schema.prisma`)
+## 🐳 4. Especificação do Microserviço Crawl4AI no Easypanel
+
+* **Imagem Docker:** `unclecode/crawl4ai:latest`
+* **Rede Interna:** Conectado à bridge interna `zapscore_network` do Docker no Easypanel.
+* **Porta Interna:** `8000` (Acessível pelo backend via `http://crawl4ai:8000/crawl`, **sem exposição pública na internet** para máxima segurança).
+* **Consumo de Recursos:** Limite de 0.5 vCPU e 512MB a 1GB de RAM (muito leve para a VPS).
+* **Contrato de API Interna:**
+  ```json
+  POST http://crawl4ai:8000/crawl
+  {
+    "urls": [
+      "https://ge.globo.com/.../tempo-real/...",
+      "https://www.flashscore.com.br/jogo/.../#/resumo-de-jogo",
+      "https://www.uol.com.br/esporte/futebol/central-de-jogos/..."
+    ],
+    "priority": "speed",
+    "extraction_strategy": "markdown_blocks"
+  }
+  ```
+
+---
+
+## 🤖 5. Custos, Escalabilidade e Seleção da LLM
+
+| Provedor / Modelo | Tempo de Resposta | Custo por 1M Tokens (Entrada / Saída) | Custo Estimado por Jogo (25 insights) |
+| :--- | :--- | :--- | :--- |
+| **Google Gemini 1.5 Flash** | ~400ms - 800ms | $0.075 / $0.30 | **~$0.005 (Meio centavo de dólar)** |
+| **DeepSeek V3 (DeepSeek Chat)** | ~600ms - 1.2s | $0.14 / $0.28 | **~$0.007** |
+
+> 💡 **Estimativa de Escala:** Uma rodada cheia de 10 jogos simultâneos (250 comentários táticos com 3 fontes cruzadas) custará **menos de R$ 0,35 no total**!
+
+---
+
+## 🗄️ 6. Modelo de Dados Prisma (`apps/api/prisma/schema.prisma`)
 
 ```prisma
 model FixtureInsight {
@@ -103,34 +127,34 @@ model FixtureInsight {
 
 ---
 
-## 📱 5. Experiência do Usuário no Flutter (`apps/estaduais/*`, `apps/europa/*`, `apps/mobile`)
+## 📱 7. Experiência do Usuário no Flutter (`apps/estaduais/*`, `apps/europa/*`, `apps/mobile`)
 
 ### Nova Aba na Tela de Detalhes do Jogo (`FixtureDetailScreen`):
 * **Aba "Comentários & IA"**:
   * Timeline vertical moderna e fluida com cards enriquecidos.
   * Ícones visuais dinâmicos por tipo de lance/fase (📋 Pré-Jogo, 🔥 Pressão, ⚽ Gol/Análise, ⏸️ Intervalo, 🏆 Resenha).
   * Conexão via **WebSocket (Socket.io)** para receber novos insights da IA instantaneamente sem necessidade de recarregar a tela.
-  * Indicador de digitação/análise (*"IA analisando os últimos 5 minutos..."*).
+  * Indicador sutil de digitação/análise (*"IA analisando os últimos 5 minutos..."*).
 
 ---
 
-## 📋 6. Roteiro de Implementação em 5 Fases
+## 📋 8. Roteiro de Implementação em 5 Fases
 
-### Fase 1: Microserviço de Coleta (Crawl4AI / Scraper)
-- [ ] Configurar container leve com Crawl4AI / Scraper headless com suporte a extração rápida de minutos e eventos.
-- [ ] Criar adaptadores para as 3 fontes primárias (GE, Flashscore, UOL).
+### Fase 1: Setup do Container Crawl4AI no Easypanel
+- [ ] Criar serviço `crawl4ai` no Easypanel com a imagem `unclecode/crawl4ai:latest` na rede interna Docker.
+- [ ] Validar endpoint interno `http://crawl4ai:8000/crawl` via script de teste no backend.
 
-### Fase 2: Modelo de Dados e Endpoint na ZapScore API
-- [ ] Adicionar model `FixtureInsight` no schema Prisma da `apps/api` e rodar migration.
+### Fase 2: Modelo de Dados e Endpoints na ZapScore API
+- [ ] Adicionar model `FixtureInsight` no schema Prisma da `apps/api` e executar migration.
 - [ ] Criar `FixtureInsightsService` e rotas `GET /fixtures/:id/insights`.
 - [ ] Integrar broadcast no `FixturesGateway` (WebSocket `fixture-insight-new`).
 
 ### Fase 3: Orquestrador da LLM e Prompts Táticos
-- [ ] Implementar serviço de geração em lote com Gemini 1.5 Flash / DeepSeek com formatação estrita em JSON.
-- [ ] Configurar cron de 5 minutos que varre partidas com status `LIVE` ou `HT`.
+- [ ] Implementar serviço de fusão de dados e chamadas ao Gemini 1.5 Flash / DeepSeek com formatação estrita em JSON.
+- [ ] Configurar cron de 5 minutos que monitora partidas com status `LIVE` ou `HT`.
 
 ### Fase 4: Tela de Monitoramento no AdminPanel
-- [ ] Criar `/adminpanel/agents/tactical-insights` com feed ao vivo de insights para conferência do operador.
+- [ ] Criar `/adminpanel/agents/tactical-insights` com feed ao vivo de insights para conferência e moderação do operador.
 
 ### Fase 5: Integração nos Clientes Flutter
 - [ ] Implementar `InsightsCubit` e widget `TacticalTimelineWidget` nos aplicativos mobile.
