@@ -9,47 +9,11 @@ export class NewsService {
     const { leagueId, teamId, limit } = params;
     const take = limit ? parseInt(limit) : 100;
 
-    let targetLeagueId = leagueId;
-    let targetTeamIds: string[] = [];
-
-    if (leagueId) {
-      const numericId = parseInt(leagueId, 10);
-      if (!isNaN(numericId) && !leagueId.includes('-')) {
-        const foundLeague = await this.prisma.league.findFirst({
-          where: { externalId: numericId }
-        });
-        if (foundLeague) {
-          targetLeagueId = foundLeague.id;
-        }
-      }
-
-      if (targetLeagueId) {
-        const teamsInLeague = await this.prisma.team.findMany({
-          where: {
-            OR: [
-              { homeFixtures: { some: { leagueId: targetLeagueId } } },
-              { awayFixtures: { some: { leagueId: targetLeagueId } } },
-            ]
-          },
-          select: { id: true }
-        });
-        targetTeamIds = teamsInLeague.map(t => t.id);
-      }
-    }
-
-    const orConditions: any[] = [];
-    if (targetLeagueId) {
-      orConditions.push({ leagueId: targetLeagueId });
-    }
-    if (targetTeamIds.length > 0) {
-      orConditions.push({ teamId: { in: targetTeamIds } });
-    }
-    if (teamId) {
-      orConditions.push({ teamId });
-    }
-
     return this.prisma.news.findMany({
-      where: orConditions.length > 0 ? { OR: orConditions } : {},
+      where: {
+        ...(leagueId && { leagueId }),
+        ...(teamId && { teamId }),
+      },
       orderBy: { createdAt: 'desc' },
       take: take,
       include: {

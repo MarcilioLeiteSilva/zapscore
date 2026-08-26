@@ -71,9 +71,9 @@ export class VideoCrawlerService {
       
       let savedCount = 0;
       for (const item of items) {
-        // Trava de Segurança 1: Filtro de Título (Temporada 2026, 2025 ou Europeia 25/26)
+        // Trava de Segurança 1: Filtro de Título (Temporada 2026 ou Europeia 25/26)
         const titleUpper = item.title.toUpperCase();
-        const hasSeasonYear = titleUpper.includes('2026') || titleUpper.includes('2025') || titleUpper.includes('25/26') || titleUpper.includes('26/27');
+        const hasSeasonYear = titleUpper.includes('2026') || titleUpper.includes('25/26') || titleUpper.includes('26/27');
         
         // Trava de Segurança 2: Filtro de Idade (Bloquear vídeos com mais de 1 ano)
         const ageLower = (item.publishedAt || '').toLowerCase();
@@ -243,10 +243,10 @@ export class VideoCrawlerService {
       const result = await this.prisma.video.deleteMany({
         where: {
           NOT: {
-            OR: [
-              { title: { contains: '2026', mode: 'insensitive' } },
-              { title: { contains: '2025', mode: 'insensitive' } },
-            ],
+            title: {
+              contains: '2026',
+              mode: 'insensitive',
+            },
           },
         },
       });

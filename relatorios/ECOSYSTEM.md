@@ -399,6 +399,10 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 3. [ ] Nenhum layout, cor, padding ou estilo visual foi alterado sem pedido explícito?
 4. [ ] As chaves e slugs de competições continuam correspondendo à matriz do Capítulo 2?
 
+### 7.4 Imutabilidade Rígida dos Motores de Crawling (Notícias e Vídeos)
+* **PROIBIÇÃO ABSOLUTA DE MODIFICAÇÃO DO CÓDIGO FONTE:** É expressamente proibido modificar o código-fonte de `apps/api/src/news/news-crawler.service.ts` e `apps/api/src/videos/video-crawler.service.ts`, bem como qualquer pipeline de extração de imagens ou sanitização de HTML.
+* **Mecanismo Oficial de Expansão de Conteúdo:** O abastecimento e expansão de conteúdos para qualquer nova competição, estadual ou copa deve ser feito **EXCLUSIVAMENTE** via inserção e curadoria de URLs de Feeds RSS e canais através do AdminPanel (`/adminpanel/news/sources`) ou via endpoint `POST /news-sources`.
+
 ---
 
 ## 📈 Capítulo 8: Histórico de Implementações e Roadmap de Incrementos
