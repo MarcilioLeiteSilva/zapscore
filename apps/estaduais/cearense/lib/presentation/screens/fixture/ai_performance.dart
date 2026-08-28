@@ -37,8 +37,8 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       bool hasCearense = filtered.any((l) => AppConfig.supportedLeagueIds.contains(l.externalId) || l.name.toLowerCase().contains('cearense'));
 
       if (!hasCearense) {
-        filtered.insert(0, League(id: '607', externalId: 607, name: 'Cearense Série A', country: 'Brazil'));
-        filtered.add(League(id: '617', externalId: 617, name: 'Cearense Série B', country: 'Brazil'));
+        filtered.insert(0, League(id: '609', externalId: 609, name: 'Cearense Série A', country: 'Brazil'));
+        filtered.add(League(id: '620', externalId: 620, name: 'Cearense Série B', country: 'Brazil'));
       }
 
       setState(() {
@@ -48,8 +48,8 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       print('Error loading leagues for filter: $e');
       setState(() {
         _leagues = [
-          League(id: '607', externalId: 607, name: 'Cearense Série A', country: 'Brazil'),
-          League(id: '617', externalId: 617, name: 'Cearense Série B', country: 'Brazil'),
+          League(id: '609', externalId: 609, name: 'Cearense Série A', country: 'Brazil'),
+          League(id: '620', externalId: 620, name: 'Cearense Série B', country: 'Brazil'),
         ];
       });
     }

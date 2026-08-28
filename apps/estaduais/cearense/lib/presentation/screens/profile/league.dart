@@ -41,7 +41,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
           return Scaffold(
             appBar: AppBar(
               title: Text(
-                currentLeagueId == 617
+                currentLeagueId == 620
                     ? 'Cearense - Série B'
                     : 'Campeonato Cearense 2026',
               ),
@@ -68,7 +68,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
             ),
             body: Column(
               children: [
-                // 1. Seletor de Divisão: [Série A1] [Série A2]
+                // 1. Seletor de Divisão: [Série A] [Série B]
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   color: Theme.of(context).cardColor.withOpacity(0.4),
@@ -77,10 +77,10 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                       Expanded(
                         child: _DivisionButton(
                           title: 'Série A',
-                          isSelected: currentLeagueId == 607 || currentLeagueId != 617,
+                          isSelected: currentLeagueId == 609 || currentLeagueId != 620,
                           onTap: () {
-                            if (currentLeagueId != 607) {
-                              cubit.switchDivision(607);
+                            if (currentLeagueId != 609) {
+                              cubit.switchDivision(609);
                             }
                           },
                         ),
@@ -89,10 +89,10 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                       Expanded(
                         child: _DivisionButton(
                           title: 'Série B',
-                          isSelected: currentLeagueId == 617,
+                          isSelected: currentLeagueId == 620,
                           onTap: () {
-                            if (currentLeagueId != 617) {
-                              cubit.switchDivision(617);
+                            if (currentLeagueId != 620) {
+                              cubit.switchDivision(620);
                             }
                           },
                         ),

@@ -63,8 +63,8 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
       { id: 613, slug: 'baiano-2', name: 'Baiano 2ª Divisão', country: 'Bahia', flag: '☀️' },
       { id: 606, slug: 'paranaense-1', name: 'Paranaense 1ª Divisão', country: 'Paraná', flag: '🌲' },
       { id: 614, slug: 'paranaense-2', name: 'Paranaense 2ª Divisão', country: 'Paraná', flag: '🌲' },
-      { id: 607, slug: 'cearense-1', name: 'Cearense Série A', country: 'Ceará', flag: '🌴' },
-      { id: 617, slug: 'cearense-2', name: 'Cearense Série B', country: 'Ceará', flag: '🌴' },
+      { id: 609, slug: 'cearense-1', name: 'Cearense Série A', country: 'Ceará', flag: '🌴' },
+      { id: 620, slug: 'cearense-2', name: 'Cearense Série B', country: 'Ceará', flag: '🌴' },
     ],
   },
   {

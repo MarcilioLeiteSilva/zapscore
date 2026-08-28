@@ -16,7 +16,7 @@ class CompetitionNormalizer {
     required List<Standing> rawStandings,
     required List<Fixture> rawFixtures,
   }) {
-    if (leagueId == 607) {
+    if (leagueId == 609 || leagueId == 607) {
       return _buildCearenseA1(
         leagueId: leagueId,
         leagueName: leagueName,
@@ -25,7 +25,7 @@ class CompetitionNormalizer {
         rawStandings: rawStandings,
         rawFixtures: rawFixtures,
       );
-    } else if (leagueId == 617) {
+    } else if (leagueId == 620 || leagueId == 617) {
       return _buildCearenseB(
         leagueId: leagueId,
         leagueName: leagueName,

@@ -62,7 +62,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'UEFA Champions League',
     country: 'World',
     type: 'cup',
-    activeSeasons: [2025, 2026],
+    activeSeasons: [2024, 2025, 2026],
   },
   {
     code: 'AMISTOSOS_INT',
@@ -186,19 +186,19 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
   },
   {
     code: 'BR_CEARENSE_1',
-    externalId: 607,
+    externalId: 609,
     name: 'Campeonato Cearense Série A',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2024, 2025, 2026],
   },
   {
     code: 'BR_CEARENSE_2',
-    externalId: 617,
+    externalId: 620,
     name: 'Campeonato Cearense Série B',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2024, 2025, 2026],
   },
   {
     code: 'ENG_PREMIER_LEAGUE',

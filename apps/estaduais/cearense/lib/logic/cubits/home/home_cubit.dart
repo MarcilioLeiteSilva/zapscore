@@ -33,18 +33,18 @@ class HomeCubit extends Cubit<HomeState> {
         // Fallback com as ligas do Campeonato Cearense
         final fallbackLeagues = [
           League(
-            id: '607',
-            externalId: 607,
+            id: '609',
+            externalId: 609,
             name: 'Cearense Série A',
             country: 'Brazil',
-            logo: 'https://media.api-sports.io/football/leagues/607.png',
+            logo: 'https://media.api-sports.io/football/leagues/609.png',
           ),
           League(
-            id: '617',
-            externalId: 617,
+            id: '620',
+            externalId: 620,
             name: 'Cearense Série B',
             country: 'Brazil',
-            logo: 'https://media.api-sports.io/football/leagues/617.png',
+            logo: 'https://media.api-sports.io/football/leagues/620.png',
           ),
         ];
 

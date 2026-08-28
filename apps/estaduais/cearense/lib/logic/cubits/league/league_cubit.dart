@@ -28,7 +28,7 @@ class LeagueCubit extends Cubit<LeagueState> {
       final scorers = results[2] as List<Scorer>;
 
       // Obter nome da competição
-      String compName = leagueId == 617 ? 'Campeonato Cearense - Série B' : 'Campeonato Cearense - Série A';
+      String compName = leagueId == 620 ? 'Campeonato Cearense - Série B' : 'Campeonato Cearense - Série A';
 
       // Normalizar via Motor de Competições
       final competition = CompetitionNormalizer.normalize(

@@ -1072,8 +1072,8 @@ Abaixo está a matriz canônica de identificadores entre API-Football, ZapScore 
 | **Campeonato Baiano 2ª Divisão** | `613` | `Baiano - 2` | `BR_BAIANO_2` | `campeonato_baiano` | 2ª Divisão |
 | **Campeonato Paranaense 1ª Divisão** | `606` | `Paranaense - 1` | `BR_PARANAENSE_1` | `campeonato_paranaense` | 1ª Divisão |
 | **Campeonato Paranaense 2ª Divisão** | `614` | `Paranaense - 2` | `BR_PARANAENSE_2` | `campeonato_paranaense` | 2ª Divisão |
-| **Campeonato Cearense Série A** | `607` | `Cearense - 1` | `BR_CEARENSE_1` | `campeonato_cearense` | 1ª Divisão |
-| **Campeonato Cearense Série B** | `617` | `Cearense - 2` | `BR_CEARENSE_2` | `campeonato_cearense` | 2ª Divisão |
+| **Campeonato Cearense Série A** | `609` | `Cearense - 1` | `BR_CEARENSE_1` | `campeonato_cearense` | 1ª Divisão |
+| **Campeonato Cearense Série B** | `620` | `Cearense - 2` | `BR_CEARENSE_2` | `campeonato_cearense` | 2ª Divisão |
 
 ---
 
