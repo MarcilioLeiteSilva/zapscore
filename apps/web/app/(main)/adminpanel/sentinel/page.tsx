@@ -59,8 +59,8 @@ export default function SentinelAdminPage() {
       name: "Sentinel Europa",
       shortName: "Europa",
       flag: "🇪🇺",
-      description: "Auditoria de La Liga (140), Premier League (39), Bundesliga (78), Serie A (135) e Ligue 1 (61)",
-      leagueIds: [78, 140, 39, 135, 61],
+      description: "Auditoria da Champions League (2), La Liga (140), Premier League (39), Bundesliga (78), Serie A (135) e Ligue 1 (61)",
+      leagueIds: [2, 78, 140, 39, 135, 61],
       badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
     },
     copas: {
@@ -77,8 +77,8 @@ export default function SentinelAdminPage() {
       name: "Sentinel Estaduais",
       shortName: "Estaduais",
       flag: "📍",
-      description: "Auditoria dos Campeonatos Paulista (475/476), Carioca (624/851), Mineiro (629/619), Gaúcho (477/478), Baiano (602/613) e Paranaense (606/614)",
-      leagueIds: [629, 619, 624, 851, 475, 476, 477, 478, 602, 613, 606, 614],
+      description: "Auditoria dos Campeonatos Paulista (475/476), Carioca (624/851), Mineiro (629/619), Gaúcho (477/478), Baiano (602/613), Paranaense (606/614) e Cearense (607/617)",
+      leagueIds: [629, 619, 624, 851, 475, 476, 477, 478, 602, 613, 606, 614, 607, 617],
       badgeColor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     }
   };

@@ -33,6 +33,7 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
     dbType: 'pocketbase',
     dbUrl: 'https://zapscore-pocketbase-europa.gtalg3.easypanel.host',
     leagues: [
+      { id: 2, slug: 'champions-league', name: 'Champions League', country: 'Europa', flag: '⭐' },
       { id: 78, slug: 'bundesliga', name: 'Bundesliga', country: 'Alemanha', flag: '🇩🇪' },
       { id: 140, slug: 'laliga', name: 'La Liga', country: 'Espanha', flag: '🇪🇸' },
       { id: 39, slug: 'premier-league', name: 'Premier League', country: 'Inglaterra', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
@@ -62,6 +63,8 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
       { id: 613, slug: 'baiano-2', name: 'Baiano 2ª Divisão', country: 'Bahia', flag: '☀️' },
       { id: 606, slug: 'paranaense-1', name: 'Paranaense 1ª Divisão', country: 'Paraná', flag: '🌲' },
       { id: 614, slug: 'paranaense-2', name: 'Paranaense 2ª Divisão', country: 'Paraná', flag: '🌲' },
+      { id: 607, slug: 'cearense-1', name: 'Cearense Série A', country: 'Ceará', flag: '🌴' },
+      { id: 617, slug: 'cearense-2', name: 'Cearense Série B', country: 'Ceará', flag: '🌴' },
     ],
   },
   {

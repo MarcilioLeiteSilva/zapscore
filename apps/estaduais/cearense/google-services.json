@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1005187374117",
+    "project_id": "appcearense",
+    "storage_bucket": "appcearense.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1005187374117:android:86dd6a6703b1cdb66073cc",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualcearense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKxOR7uf3K1bLgd_bdcpL02o66pN4j5N0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

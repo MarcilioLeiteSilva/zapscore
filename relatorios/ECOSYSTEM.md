@@ -188,6 +188,7 @@ d:\zapscore\
 | **Gaúcho Série A / A2** | `477` (622) / `478` (853) | `/adminpanel/estaduais` | Estadual RS | `appgaucho-ad96b` (`2396513433`) | `service_account_campeonato_gaucho.json` |
 | **Baiano 1ª / 2ª Divisão** | `602` / `613` | `/adminpanel/estaduais` | Estadual BA | `appbaiano` | `service_account_campeonato_baiano.json` |
 | **Paranaense 1ª / 2ª Divisão** | `606` / `614` | `/adminpanel/estaduais` | Estadual PR | `appparanaense` | `service_account_campeonato_paranaense.json` |
+| **Cearense 1ª / 2ª Divisão** | `607` / `617` | `/adminpanel/estaduais` | Estadual CE | `appcearense` | `service_account_campeonato_cearense.json` |
 
 ### 2.3 Configurações dos Clientes Flutter (`AppConfig`)
 Cada app possui seu arquivo `lib/helpers/app_config.dart` com constantes imutáveis:
@@ -1019,25 +1020,33 @@ Antes de publicar ou entregar o app, confirme **cada item** abaixo:
 Centralizar a gestão e disparo de notificações push estratégicas no AdminPanel, permitindo controle editorial e automação semi-assistida para aumentar a retenção e sessões diárias nos apps móveis.
 
 ### 12.2 Funcionalidades do Agente:
-1. **🏁 Resumo da Rodada (Pós-Último Jogo):**
+1. **🏁 Resumo da Rodada (Apenas Placares Diretos):**
    * Detecção automática quando 100% das partidas de uma rodada atingem o status `FT`.
-   * Geração automática do resumo com resultados, líder e classificação.
-   * Sugestão no painel para envio em 1 clique com pré-visualização.
-2. **📰 Publicador de Notícias com Seletor de Push:**
+   * Geração objetiva contendo apenas os confrontos e resultados (ex: `Bahia 2x1 Vitória | Jacuipense 1x0 Juazeirense`).
+   * Sugestão no painel para envio em 1 clique com pré-visualização. Ao tocar, abre direto a classificação no app.
+2. **📰 Publicador de Notícias com Rich Push (Cabeça + Thumbnail):**
    * Inclusão do toggle `[x] Disparar Notificação Push ao Publicar` no `NewsPublisherAgentPage` (`/adminpanel/agents/publisher`).
-   * Deep linking no aplicativo (`data: { type: 'news', id: newsId }`) abrindo a matéria diretamente.
+   * Formato visual com **Título + Chamada Curta (Cabeça)** e **Foto em Thumbnail abaixo** em estilo BigPicture para gerar curiosidade e alto CTR.
+   * Deep linking no aplicativo (`data: { type: 'news', id: newsId }`) abrindo a matéria na íntegra.
 3. **📋 Alerta de Escalações Confirmadas:**
    * Monitoramento de partidas a < 60 min do início.
    * Disparo de alerta aos torcedores quando as escalações oficiais de ambos os clubes forem disponibilizadas.
-4. **📱 Simulador Visual de Notificação:**
-   * Mockup realista de tela de bloqueio Android e iOS no AdminPanel para validação prévia do layout do push.
+4. **📱 Simulador Visual de Notificação (Lock Screen Mockup):**
+   * Mockup realista de tela de bloqueio Android e iOS no AdminPanel exibindo cabeçalho, chamada e thumbnail antes do disparo.
 5. **🛡️ Cooldown e Anti-Spam:**
-   * Regra de governança para evitar envios excessivos para a mesma liga (limite de intervalo de segurança).
+   * Regra de governança para evitar envios excessivos para a mesma liga (limite de intervalo de segurança de 15-20 min).
 
-### 12.3 Fases de Implementação:
-* **Fase 1:** Criação da página do agente `/adminpanel/agents/push` e Simulador Visual de Lock Screen.
+### 12.3 Arquitetura de Roteamento Multi-Instâncias do PocketBase:
+* A ZapScore API central (`apps/api`) atua como gateway unificado via `POST /notifications/broadcast`.
+* O backend consulta `competitions.config.ts` e roteia automaticamente o comando de disparo para a instância correspondente:
+  * **Ligas Estaduais** ➔ `PocketBase Estaduais` (`service_account_{app_slug}.json`)
+  * **Ligas Europeias** ➔ `PocketBase Europa` (`service_account_{app_slug}.json`)
+* O AdminPanel interage exclusivamente com a ZapScore API, garantindo isolamento e facilidade para adicionar novas instâncias.
+
+### 12.4 Fases de Implementação:
+* **Fase 1:** Criação da página do agente `/adminpanel/agents/push` e Simulador Visual de Lock Screen (com suporte a Rich Push com Thumbnail).
 * **Fase 2:** Integração do seletor de push no agente publicador de notícias (`/adminpanel/agents/publisher`).
-* **Fase 3:** Serviço backend NestJS de detecção de fim de rodada e geração de resumo.
+* **Fase 3:** Rota centralizada na ZapScore API com roteamento dinâmico multi-PocketBase e serviço gerador de resumo direto de placares da rodada.
 * **Fase 4:** Monitor de escalações oficiais e alertas pré-jogo de clássicos.
 
 ---
@@ -1063,6 +1072,8 @@ Abaixo está a matriz canônica de identificadores entre API-Football, ZapScore 
 | **Campeonato Baiano 2ª Divisão** | `613` | `Baiano - 2` | `BR_BAIANO_2` | `campeonato_baiano` | 2ª Divisão |
 | **Campeonato Paranaense 1ª Divisão** | `606` | `Paranaense - 1` | `BR_PARANAENSE_1` | `campeonato_paranaense` | 1ª Divisão |
 | **Campeonato Paranaense 2ª Divisão** | `614` | `Paranaense - 2` | `BR_PARANAENSE_2` | `campeonato_paranaense` | 2ª Divisão |
+| **Campeonato Cearense Série A** | `607` | `Cearense - 1` | `BR_CEARENSE_1` | `campeonato_cearense` | 1ª Divisão |
+| **Campeonato Cearense Série B** | `617` | `Cearense - 2` | `BR_CEARENSE_2` | `campeonato_cearense` | 2ª Divisão |
 
 ---
 

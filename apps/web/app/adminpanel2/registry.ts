@@ -13,6 +13,7 @@ export interface EcosystemModule {
 }
 
 export const EUROPEAN_LEAGUES = [
+  { id: 2, slug: 'champions-league', name: 'Champions League', country: 'Europa', logo: 'https://media.api-sports.io/football/leagues/2.png' },
   { id: 78, slug: 'bundesliga', name: 'Bundesliga', country: 'Alemanha', logo: 'https://media.api-sports.io/football/leagues/78.png' },
   { id: 140, slug: 'laliga', name: 'La Liga', country: 'Espanha', logo: 'https://media.api-sports.io/football/leagues/140.png' },
   { id: 39, slug: 'premier-league', name: 'Premier League', country: 'Inglaterra', logo: 'https://media.api-sports.io/football/leagues/39.png' },
@@ -31,6 +32,7 @@ export const ECOSYSTEM_MODULES: EcosystemModule[] = [
     badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     description: 'Suíte de Ligas Europeias integradas ao PocketBase backend.',
     leagues: [
+      { id: 2, name: 'Champions League', country: 'Europa', flag: '⭐' },
       { id: 78, name: 'Bundesliga', country: 'Alemanha', flag: '🇩🇪' },
       { id: 140, name: 'La Liga', country: 'Espanha', flag: '🇪🇸' },
       { id: 39, name: 'Premier League', country: 'Inglaterra', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
