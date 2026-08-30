@@ -20,6 +20,11 @@ export class NewsController {
     return this.newsCrawlerService.scrapeAndPublishNews(body);
   }
 
+  @Post('reclassify')
+  async reclassify() {
+    return this.newsService.reclassifyNews();
+  }
+
   @Get('proxy-image')
   async proxyImage(@Query('url') url: string, @Res() res: express.Response) {
     if (!url) return res.status(400).send('URL is required');
