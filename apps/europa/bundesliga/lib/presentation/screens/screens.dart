@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
+import 'dart:ui';
 import 'package:intl/intl.dart';
 
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
@@ -49,6 +50,8 @@ import '../../logic/models/standing.dart';
 import '../../logic/models/scorer.dart';
 import '../../logic/models/ai_performance_stats.dart';
 import '../widgets/widgets.dart';
+import '../widgets/ad_banner.dart';
+import '../widgets/native_ad_widget.dart';
 
 part 'user/welcome.dart';
 part 'user/login.dart';

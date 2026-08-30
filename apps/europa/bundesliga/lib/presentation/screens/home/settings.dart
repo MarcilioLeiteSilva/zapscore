@@ -53,15 +53,16 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      state.userNickname ?? 'user@bundesliga.com',
-                      style: GoogleFonts.urbanist(
-                        textStyle: context.textTheme.bodySmall!.copyWith(
-                          color:
-                              context.textTheme.bodySmall!.color?.withOpacity(0.6),
+                    if (state.userNickname != null && state.userNickname!.isNotEmpty && state.userNickname != 'user@bundesliga.com')
+                      Text(
+                        state.userNickname!,
+                        style: GoogleFonts.urbanist(
+                          textStyle: context.textTheme.bodySmall!.copyWith(
+                            color:
+                                context.textTheme.bodySmall!.color?.withOpacity(0.6),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

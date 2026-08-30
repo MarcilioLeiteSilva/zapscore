@@ -141,7 +141,14 @@ class _NewsPageState extends State<NewsPage> {
                         physics: const ScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         itemBuilder: (_, i) {
-                          return CardNewsItem(news: listNews[i]);
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CardNewsItem(news: listNews[i]),
+                              if (i == 3 && listNews.length > 4)
+                                const AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 14)),
+                            ],
+                          );
                         },
                         separatorBuilder: (_, i) => const Gap(15),
                         itemCount: listNews.length,

@@ -11,6 +11,8 @@ class WatchContentScreen extends StatefulWidget {
 class _WatchContentScreenState extends State<WatchContentScreen> {
   late YoutubePlayerController _controller;
 
+  bool _interstitialShown = false;
+
   @override
   void initState() {
     super.initState();
@@ -21,11 +23,19 @@ class _WatchContentScreenState extends State<WatchContentScreen> {
         autoPlay: true,
         mute: false,
       ),
-    );
+    )..addListener(_videoListener);
+  }
+
+  void _videoListener() {
+    if (_controller.value.playerState == PlayerState.ended && !_interstitialShown) {
+      _interstitialShown = true;
+      AdService.showInterstitialAd(() {});
+    }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_videoListener);
     _controller.dispose();
     super.dispose();
   }

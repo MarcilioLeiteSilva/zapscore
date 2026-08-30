@@ -14,6 +14,8 @@ import 'package:zapscore/logic/models/video.dart';
 import 'package:zapscore/logic/models/news.dart';
 import '../presentation/screens/screens.dart';
 
+export 'ad_service.dart';
+
 part 'colors.dart';
 part 'theme.dart';
 part 'function.dart';

@@ -9,54 +9,24 @@ class HelpCenterScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Security'),
+          title: const Text('Central de Ajuda'),
+          centerTitle: true,
           bottom: TabBar(
             tabs: const [
-              Tab(text: 'FAQ'),
-              Tab(text: 'Contact us'),
+              Tab(text: 'Dúvidas Frequentes (FAQ)'),
+              Tab(text: 'Fale Conosco'),
             ],
-            labelStyle:
-                context.textTheme.bodySmall!.copyWith(color: AppColor.primary),
-            unselectedLabelColor: AppColor.hint,
+            labelStyle: context.textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelColor: Theme.of(context).hintColor,
           ),
         ),
-        body: TabBarView(
+        body: const TabBarView(
           children: [
-            const _FaqPage(),
-            ListView(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              children: const [
-                ContactItem(
-                  label: 'Customer Service',
-                  icon: FontAwesomeIcons.headphones,
-                ),
-                Gap(15),
-                ContactItem(
-                  label: 'Whatsapp',
-                  icon: FontAwesomeIcons.whatsapp,
-                ),
-                Gap(15),
-                ContactItem(
-                  label: 'Website',
-                  icon: FontAwesomeIcons.globe,
-                ),
-                Gap(15),
-                ContactItem(
-                  label: 'Facebook',
-                  icon: FontAwesomeIcons.facebook,
-                ),
-                Gap(15),
-                ContactItem(
-                  label: 'Twitter',
-                  icon: FontAwesomeIcons.twitter,
-                ),
-                Gap(15),
-                ContactItem(
-                  label: 'Instagram',
-                  icon: FontAwesomeIcons.instagram,
-                ),
-              ],
-            ),
+            _FaqPage(),
+            _ContactPage(),
           ],
         ),
       ),
@@ -64,52 +34,115 @@ class HelpCenterScreen extends StatelessWidget {
   }
 }
 
-class ContactItem extends StatelessWidget {
-  const ContactItem(
-      {super.key, required this.label, required this.icon, this.onTap});
-  final String label;
-  final dynamic icon;
-  final Function()? onTap;
+class _ContactPage extends StatelessWidget {
+  const _ContactPage();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          width: context.width,
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColor.card,
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColor.info,
-              width: 1,
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             ),
-            borderRadius: BorderRadius.circular(20),
           ),
-          padding: const EdgeInsets.all(20),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FaIcon(
-                icon,
-                color: AppColor.primary,
+              Row(
+                children: [
+                  Icon(Icons.support_agent_rounded, color: Theme.of(context).primaryColor, size: 28),
+                  const Gap(10),
+                  Text(
+                    'Atendimento ao Torcedor',
+                    style: context.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              const Gap(15),
+              const Gap(8),
               Text(
-                label,
-                style: context.textTheme.bodyMedium!.copyWith(
-                  fontSize: 20,
-                ),
+                'Nossa equipe está disponível para auxiliar você com qualquer dúvida, sugestão ou relato de problema técnico no ZapScore.',
+                style: context.textTheme.bodySmall?.copyWith(height: 1.4),
               ),
             ],
           ),
         ),
+        const Gap(16),
+        _buildContactCard(
+          context,
+          icon: Icons.email_outlined,
+          title: 'E-mail de Suporte',
+          subtitle: 'suporte@zapscore.com',
+          description: 'Tempo médio de resposta: até 24 horas úteis.',
+        ),
+        const Gap(12),
+        _buildContactCard(
+          context,
+          icon: Icons.language_outlined,
+          title: 'Portal Oficial',
+          subtitle: 'www.zapscore.com',
+          description: 'Acompanhe novidades, tabelas e estatísticas na web.',
+        ),
+        const Gap(12),
+        _buildContactCard(
+          context,
+          icon: Icons.security_outlined,
+          title: 'Privacidade e Dados (DPO)',
+          subtitle: 'privacidade@zapscore.com',
+          description: 'Canal dedicado para solicitações sobre a LGPD / GDPR.',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Theme.of(context).primaryColor, size: 22),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: context.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                const Gap(2),
+                Text(subtitle, style: context.textTheme.bodyMedium?.copyWith(color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600)),
+                const Gap(4),
+                Text(description, style: context.textTheme.bodySmall?.copyWith(color: context.textTheme.bodySmall?.color?.withValues(alpha: 0.6))),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
-
-///FAQ PAGE
 
 class _FaqPage extends StatefulWidget {
   const _FaqPage();
@@ -119,160 +152,76 @@ class _FaqPage extends StatefulWidget {
 }
 
 class _FaqPageState extends State<_FaqPage> {
-  int indexTab = 0;
-  int selectFaq = 0;
+  int? openFaqIndex;
 
-  List<String> listTabs = [
-    "General",
-    "Account",
-    "Service",
-    "Payment",
-    "Notification",
-    "Advertisement",
+  final List<Map<String, String>> faqs = [
+    {
+      'q': 'O que é o ZapScore?',
+      'a': 'O ZapScore é um aplicativo esportivo que oferece placares ao vivo, estatísticas de clubes e jogadores, tabelas de classificação atualizadas e previsões estatísticas orientadas por inteligência artificial.',
+    },
+    {
+      'q': 'Como favoritar times e partidas?',
+      'a': 'Para favoritar uma partida ou time, toque no ícone de coração disponível nos cards e telas de detalhes. Suas equipes favoritas aparecem destacadas na aba de Favoritos.',
+    },
+    {
+      'q': 'Como funcionam as Análises de IA?',
+      'a': 'Nossos algoritmos analisam o histórico recente de confrontos (H2H), aproveitamento recente, gols marcados/sofridos e desempenho dentro e fora de casa para gerar probabilidades estatísticas de vitória, empate e gols.',
+    },
+    {
+      'q': 'Como ativar ou desativar notificações?',
+      'a': 'Você pode personalizar os alertas de início de partida, gols e notícias no menu "Conta" > "Notificações", escolhendo exatamente os eventos que deseja receber.',
+    },
+    {
+      'q': 'Como meus dados são protegidos?',
+      'a': 'Suas preferências de clubes e fotos de perfil são armazenadas de forma estritamente local no seu celular. Toda a comunicação do app com nossa API é criptografada via HTTPS.',
+    },
   ];
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      children: [
-        Container(
-          width: context.width,
-          height: 60,
-          color: AppColor.background,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Material(
-            color: Colors.transparent,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemBuilder: (_, i) {
-                return CardCheepTabSearch(
-                  select: indexTab == i,
-                  label: listTabs[i],
-                  onTap: () {
-                    setState(() {
-                      indexTab = i;
-                    });
-                  },
-                );
-              },
-              separatorBuilder: (_, i) => const Gap(10),
-              itemCount: listTabs.length,
-            ),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      itemCount: faqs.length,
+      itemBuilder: (context, i) {
+        final isOpen = openFaqIndex == i;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.08)),
           ),
-        ),
-        const Padding(
-          padding: EdgeInsets.all(10.0),
-          child: CardSearchFollow(label: 'Search'),
-        ),
-        const Gap(10),
-        FaqItem(
-          label: 'What is ${AppText.appName}?',
-          select: selectFaq == 0,
-          onTap: () {
-            setState(() {
-              selectFaq = 0;
-            });
-          },
-        ),
-        const Gap(20),
-        FaqItem(
-          label: 'What are the services in ${AppText.appName}?',
-          select: selectFaq == 1,
-          onTap: () {
-            setState(() {
-              selectFaq = 1;
-            });
-          },
-        ),
-        const Gap(20),
-        FaqItem(
-          label: 'Can i stream sports on ${AppText.appName}?',
-          select: selectFaq == 2,
-          onTap: () {
-            setState(() {
-              selectFaq = 2;
-            });
-          },
-        ),
-        const Gap(20),
-        FaqItem(
-          label: 'How can I contact the support?',
-          select: selectFaq == 3,
-          onTap: () {
-            setState(() {
-              selectFaq = 3;
-            });
-          },
-        ),
-        const Gap(20),
-        FaqItem(
-          label: 'How to close an ${AppText.appName} Account?',
-          select: selectFaq == 4,
-          onTap: () {
-            setState(() {
-              selectFaq = 4;
-            });
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class FaqItem extends StatelessWidget {
-  const FaqItem(
-      {super.key, required this.label, this.select = false, this.onTap});
-  final String label;
-  final bool select;
-  final Function()? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Ink(
-        width: context.width,
-        decoration: BoxDecoration(
-          color: AppColor.card,
-          border: Border.all(
-            color: AppColor.info,
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.all(15),
-        child: Column(
-          children: [
-            InkWell(
-              onTap: onTap,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    label,
-                    style: context.textTheme.bodyMedium!.copyWith(
-                      fontSize: 18,
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_drop_down,
-                    color: AppColor.primary,
-                  ),
-                ],
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(
+                  faqs[i]['q']!,
+                  style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                trailing: Icon(
+                  isOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  color: Theme.of(context).primaryColor,
+                ),
+                onTap: () {
+                  setState(() {
+                    openFaqIndex = isOpen ? null : i;
+                  });
+                },
               ),
-            ),
-            if (select) ...[
-              const Divider(height: 30),
-              Text(
-                'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-                style: context.textTheme.labelSmall,
-              )
+              if (isOpen) ...[
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    faqs[i]['a']!,
+                    style: context.textTheme.bodySmall?.copyWith(height: 1.45),
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

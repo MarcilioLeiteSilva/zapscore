@@ -9,9 +9,28 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Firebase Service Accounts & Private Keys
 *firebase-adminsdk*.json
 *service_account*.json
+
+# PocketBase Hooks (Contêm chaves de serviço)
+apps/brasil/pb_hooks/
+apps/estaduais/pb_hooks/
 apps/europa/pb_hooks/
+
+# Keystores e Senhas Android
+*.jks
+*.keystore
+key.properties
+**/key.properties
+
+# Pacotes Binários de Release e APKs
+**/APK/*.aab
+**/APK/*.apk
+*.aab
+*.apk
+*.zip
 
 # Build artifacts
 *.js.map
@@ -20,6 +39,14 @@ apps/europa/pb_hooks/
 **/.dart_tool/
 build/
 **/build/
+.flutter-plugins-dependencies
+**/.flutter-plugins-dependencies
+
+# Logs e Scratch
+*.log
+flutter_*.log
+scratch/
+apps/api/scratch/
 
 # OS files
 .DS_Store
@@ -38,5 +65,6 @@ desktop.ini
 # Project specific
 apps/api/dist/
 apps/api/node_modules/
+apps/web/.next/
+apps/web/node_modules/
 relatorios/
-

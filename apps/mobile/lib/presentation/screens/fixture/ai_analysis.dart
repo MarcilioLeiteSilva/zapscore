@@ -364,7 +364,9 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
             ],
           ),
         ),
-        const Gap(20),
+        const Gap(10),
+        const AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 8)),
+        const Gap(10),
 
         // Card de Resumo / Frase curta
         if (summary.isNotEmpty) ...[

@@ -30,23 +30,14 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       final list = await _apiClient.getStoredLeagues();
       final filtered = list.where((league) {
         final name = league.name.toLowerCase();
-        final country = (league.country ?? '').toLowerCase();
         final extId = league.externalId;
-        
-        final isBundesliga = extId == 78 || name.contains('bundesliga');
-        final isBrasileirao = extId == 71 || name.contains('brasileir') || (name.contains('serie a') && (country.contains('brazil') || country.contains('brasil')));
-
-        return isBundesliga || isBrasileirao;
+        return extId == 78 || name.contains('bundesliga');
       }).toList();
 
       bool hasBundesliga = filtered.any((l) => l.externalId == 78 || l.name.toLowerCase().contains('bundesliga'));
-      bool hasBrasileirao = filtered.any((l) => l.externalId == 71 || l.name.toLowerCase().contains('brasileir'));
 
       if (!hasBundesliga) {
         filtered.insert(0, League(id: '78', externalId: 78, name: 'Bundesliga', country: 'Germany'));
-      }
-      if (!hasBrasileirao) {
-        filtered.add(League(id: '71', externalId: 71, name: 'Serie A Brasileirão', country: 'Brazil'));
       }
 
       setState(() {
@@ -57,7 +48,6 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       setState(() {
         _leagues = [
           League(id: '78', externalId: 78, name: 'Bundesliga', country: 'Germany'),
-          League(id: '71', externalId: 71, name: 'Serie A Brasileirão', country: 'Brazil'),
         ];
       });
     }
@@ -72,15 +62,14 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
 
     try {
       AiPerformanceStats data = await _apiClient.getAiPerformanceStats(
-        leagueId: _selectedLeague?.externalId,
-        leagueIds: _selectedLeague == null ? '78,71' : null,
+        leagueId: _selectedLeague?.externalId ?? 78,
         days: _selectedDays,
       );
 
-      if (_selectedLeague == null && data.recentAudits.isNotEmpty) {
+      if (data.recentAudits.isNotEmpty) {
         final filteredAudits = data.recentAudits.where((audit) {
           final lName = audit.leagueName.toLowerCase();
-          return lName.contains('bundesliga') || lName.contains('brasileir') || lName.contains('série a') || lName.contains('serie a');
+          return lName.contains('bundesliga');
         }).toList();
 
         final hits = filteredAudits.where((a) => a.isHit == true).length;
@@ -89,11 +78,11 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
         final accuracy = total > 0 ? double.parse(((hits / total) * 100).toStringAsFixed(1)) : 0.0;
 
         data = AiPerformanceStats(
-          totalGames: total > 0 ? total : data.totalGames,
-          hits: total > 0 ? hits : data.hits,
-          misses: total > 0 ? misses : data.misses,
-          accuracyPercentage: total > 0 ? accuracy : data.accuracyPercentage,
-          recentAudits: filteredAudits.isNotEmpty ? filteredAudits : data.recentAudits,
+          totalGames: total,
+          hits: hits,
+          misses: misses,
+          accuracyPercentage: accuracy,
+          recentAudits: filteredAudits,
         );
       }
 
@@ -224,14 +213,14 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<League?>(
                   value: _selectedLeague,
-                  hint: Text('all_competitions'.tr(context), style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                  hint: Text('all_competitions'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
                   isExpanded: true,
                   dropdownColor: theme.cardColor,
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface),
                   items: [
                     DropdownMenuItem<League?>(
                       value: null,
-                      child: Text('all_competitions'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('all_competitions'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13)),
                     ),
                     ..._leagues.map((league) {
                       return DropdownMenuItem<League?>(
@@ -240,7 +229,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
                           league.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13),
                         ),
                       );
                     }),
@@ -263,26 +252,26 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
               decoration: BoxDecoration(
                 color: theme.scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: theme.dividerColor),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<int?>(
                   value: _selectedDays,
                   isExpanded: true,
                   dropdownColor: theme.cardColor,
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface),
                   items: [
                     DropdownMenuItem<int?>(
                       value: null,
-                      child: Text('all_period'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('all_period'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13)),
                     ),
                     DropdownMenuItem<int?>(
                       value: 7,
-                      child: Text('last_7_days'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('last_7_days'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13)),
                     ),
                     DropdownMenuItem<int?>(
                       value: 30,
-                      child: Text('last_30_days'.tr(context), style: const TextStyle(color: Colors.white, fontSize: 13)),
+                      child: Text('last_30_days'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 13)),
                     ),
                   ],
                   onChanged: (days) {

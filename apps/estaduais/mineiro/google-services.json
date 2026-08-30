@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "584623894874",
+    "project_id": "appmineiro",
+    "storage_bucket": "appmineiro.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584623894874:android:b05b7f05cbc0a2cac3c363",
+        "android_client_info": {
+          "package_name": "com.zapscore.campeonatomineiro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtKn9QueGO5hNO1ebUc4lY1iXefuZh5DQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

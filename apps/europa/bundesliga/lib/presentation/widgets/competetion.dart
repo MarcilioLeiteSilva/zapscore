@@ -497,30 +497,37 @@ class RoundLeaguePage extends StatelessWidget {
 
           return Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(15),
-                decoration: const BoxDecoration(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: cubit.prevRound,
-                      icon: const Icon(Icons.arrow_back_ios, size: 20),
+              ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: (Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor).withOpacity(0.70),
                     ),
-                    Expanded(
-                      child: Text(
-                        formatRound(state.selectedRound, context),
-                        textAlign: TextAlign.center,
-                        style: context.textTheme.bodySmall!.copyWith(
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: cubit.prevRound,
+                          icon: const Icon(Icons.arrow_back_ios, size: 20),
                         ),
-                      ),
+                        Expanded(
+                          child: Text(
+                            formatRound(state.selectedRound, context),
+                            textAlign: TextAlign.center,
+                            style: context.textTheme.bodySmall!.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: cubit.nextRound,
+                          icon: const Icon(Icons.arrow_forward_ios, size: 20),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      onPressed: cubit.nextRound,
-                      icon: const Icon(Icons.arrow_forward_ios, size: 20),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               Expanded(

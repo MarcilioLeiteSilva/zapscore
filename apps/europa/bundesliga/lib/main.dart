@@ -16,6 +16,7 @@ import 'repository/locale/favorite_repository.dart';
 
 import 'repository/locale/user_repository.dart';
 import 'services/push_notification_service.dart';
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,7 @@ void main() async {
   await initializeDateFormatting('en', null);
   await initializeDateFormatting('es', null);
   await PushNotificationService.initialize();
+  await AdService.instance.init();
   runApp(MyApp());
 }
 

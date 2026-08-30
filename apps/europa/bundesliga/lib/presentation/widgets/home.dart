@@ -181,7 +181,7 @@ class AppDrawer extends StatelessWidget {
                   Text(
                     AppText.appName,
                     style: context.textTheme.headlineSmall!.copyWith(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -194,7 +194,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'rounds'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -218,7 +218,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'table'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -242,7 +242,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'top_scorers'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -257,7 +257,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'news'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -272,7 +272,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'videos'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -287,7 +287,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'ai_predictions'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -302,7 +302,7 @@ class AppDrawer extends StatelessWidget {
             title: Text(
               'account'.tr(context),
               style: GoogleFonts.urbanist(
-                color: const Color(0xFF454444),
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),

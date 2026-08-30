@@ -27,7 +27,7 @@ class PushNotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'ligue1_live_channel',
+    'ligue1-franca_live_channel',
     'Alertas Ligue 1',
     description: 'Notificações ao vivo de gols, início e fim de partidas da Ligue 1.',
     importance: Importance.max,
@@ -132,6 +132,7 @@ class PushNotificationService {
   /// Garante que apenas 1 registro exista por aparelho (sem duplicação).
   static Future<void> syncDeviceWithPocketBase({
     List<int>? favoriteTeamIds,
+    List<int>? favoriteFixtureIds,
     Map<String, dynamic>? userProfile,
     Map<String, bool>? notifSettings,
   }) async {
@@ -154,12 +155,15 @@ class PushNotificationService {
       final savedNickname = prefs.getString('user_nickname');
       final savedFavsList = prefs.getStringList('fav_teams') ?? [];
       final defaultFavs = savedFavsList.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toList();
+      final savedFixtList = prefs.getStringList('fav_fixtures') ?? [];
+      final defaultFixtFavs = savedFixtList.map((e) => int.tryParse(e) ?? 0).where((e) => e > 0).toList();
       final defaultNotifMatch = prefs.getBool('notif_match') ?? true;
 
       final payload = {
         'fcm_token': token,
         'app_slug': appSlug,
         'favorite_teams': favoriteTeamIds ?? defaultFavs,
+        'favorite_fixtures': favoriteFixtureIds ?? defaultFixtFavs,
         'notify_goals': notifSettings?['match'] ?? defaultNotifMatch,
         'notify_start': notifSettings?['match'] ?? defaultNotifMatch,
         'notify_end': notifSettings?['match'] ?? defaultNotifMatch,

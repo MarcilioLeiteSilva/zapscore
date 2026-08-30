@@ -16,7 +16,8 @@ import {
   Radio,
   Cpu,
   Trophy,
-  Brain
+  Brain,
+  Smartphone
 } from 'lucide-react';
 
 export default function AgentsHubPage() {
@@ -38,6 +39,24 @@ export default function AgentsHubPage() {
         { label: 'Destino', value: 'Multi-Estadual' },
       ],
       actionText: 'Abrir Publicador de Notícias'
+    },
+    {
+      id: 'push-agent',
+      title: 'Agente de Push Inteligente',
+      subtitle: 'Broadcast Multi-PocketBase, Placares & Rich Push',
+      description: 'Gerencie e dispare notificações push com simulador visual de Lock Screen, resumo automático de rodadas concluídas, alertas de escalações e Rich Push com foto via FCM HTTP v1.',
+      icon: Smartphone,
+      iconColor: 'text-indigo-400',
+      iconBg: 'bg-indigo-500/10 border-indigo-500/20',
+      badge: 'FCM V1 • MULTI-CLUSTER',
+      badgeColor: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+      href: '/adminpanel/agents/push',
+      stats: [
+        { label: 'Roteamento', value: '3 Clusters' },
+        { label: 'Preview', value: 'Lock Screen' },
+        { label: 'Rich Push', value: 'BigPicture' },
+      ],
+      actionText: 'Abrir Agente de Push'
     },
     {
       id: 'ia-monitor',

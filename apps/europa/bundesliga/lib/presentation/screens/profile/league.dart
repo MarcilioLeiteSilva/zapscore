@@ -40,6 +40,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
         child: Scaffold(
           appBar: AppBar(
             title: Text(widget.league.name),
+            flexibleSpace: buildBlurFlexibleSpace(),
             actions: [
               BlocBuilder<FavoriteCubit, FavoriteState>(
                 builder: (context, favState) {
@@ -63,14 +64,17 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
           ),
           body: Column(
             children: [
-            Container(
-              width: context.width,
-              height: 60,
-              color: Theme.of(context).scaffoldBackgroundColor,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Material(
-                color: Colors.transparent,
-                child: ListView.separated(
+            ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  width: context.width,
+                  height: 60,
+                  color: (Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor).withOpacity(0.70),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   itemBuilder: (_, i) {
@@ -89,7 +93,9 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                 ),
               ),
             ),
-            Expanded(
+          ),
+        ),
+        Expanded(
               child: [
                 const TableLeaguePage(),
                 const RoundLeaguePage(),

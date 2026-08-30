@@ -10,6 +10,7 @@ import 'package:like_button/like_button.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:pattern_formatter/date_formatter.dart';
 import 'package:intl/intl.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:zapscore/helpers/helpers.dart';
 
@@ -44,3 +45,4 @@ part 'competetion.dart';
 part 'news.dart';
 part 'team.dart';
 part 'account.dart';
+part 'ad_banner_widget.dart';

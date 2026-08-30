@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "954840066349",
+    "project_id": "appchampions",
+    "storage_bucket": "appchampions.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954840066349:android:d1ddb9f6b593ca9c8d0ba4",
+        "android_client_info": {
+          "package_name": "com.zapscore.championsleague"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKFVpx6gidK6EOoERZ3MCO-G_nJoP79js"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -43,6 +43,7 @@ export default function NewsPublisherAgentPage() {
   const [overrideTitle, setOverrideTitle] = useState('');
   const [overrideDescription, setOverrideDescription] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [sendPushWithNews, setSendPushWithNews] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [successResult, setSuccessResult] = useState<NewsItem | null>(null);
@@ -134,6 +135,30 @@ export default function NewsPublisherAgentPage() {
       }
 
       setSuccessResult(data);
+
+      // Dispara push opcional se habilitado
+      if (sendPushWithNews && data && data.title) {
+        try {
+          await fetch(`${API_URL}/notifications/broadcast`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leagueId: selectedLeagueId ? Number(selectedLeagueId) : undefined,
+              title: `📰 ${data.title}`,
+              body: data.description || 'Confira os detalhes completos desta notícia no aplicativo.',
+              imageUrl: data.imageUrl || undefined,
+              dataPayload: {
+                type: 'news',
+                id: String(data.id || ''),
+                league_id: String(selectedLeagueId || '')
+              }
+            })
+          });
+        } catch (pushErr) {
+          console.warn('Erro ao disparar push da notícia:', pushErr);
+        }
+      }
+
       setUrl('');
       setOverrideTitle('');
       setOverrideDescription('');
@@ -273,6 +298,23 @@ export default function NewsPublisherAgentPage() {
                   </div>
                 </div>
               )}
+
+              {/* Toggle de Disparo de Notificação Push */}
+              <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="sendPushToggle"
+                    checked={sendPushWithNews}
+                    onChange={(e) => setSendPushWithNews(e.target.checked)}
+                    className="h-4 w-4 rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <label htmlFor="sendPushToggle" className="text-xs font-semibold text-white cursor-pointer select-none">
+                    🔔 Disparar Notificação Push ao Publicar (com Rich Push / Foto)
+                  </label>
+                </div>
+                <span className="text-[10px] text-indigo-400 font-mono">FCM v1</span>
+              </div>
 
               {/* Mensagens de Feedback */}
               {errorMsg && (

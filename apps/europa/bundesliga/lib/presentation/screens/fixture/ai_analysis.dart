@@ -513,6 +513,12 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           const Gap(12),
         ],
 
+        // Banner Nativo AdMob
+        NativeAdCardWidget(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+        ),
+        const Gap(12),
+
         // Comentário técnico completo
         if (commentary.isNotEmpty) ...[
           Padding(
@@ -527,7 +533,8 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
           ),
           const Gap(12),
           Container(
-            padding: const EdgeInsets.all(15),
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
@@ -542,25 +549,25 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                 Text(
                   commentary,
                   style: context.textTheme.labelSmall!.copyWith(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.9),
                     fontSize: 15,
                     height: 1.5,
                   ),
                 ),
-                const Divider(height: 30, color: Colors.white10),
+                const Divider(height: 30),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'ai_generated_analysis'.tr(context),
                       style: context.textTheme.labelSmall!.copyWith(
-                        color: Colors.white38,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                         fontSize: 12,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.auto_awesome,
-                      color: Colors.white38,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                       size: 14,
                     ),
                   ],

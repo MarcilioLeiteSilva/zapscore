@@ -214,20 +214,20 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const FaIcon(FontAwesomeIcons.instagram,
+            leading: FaIcon(FontAwesomeIcons.instagram,
                 color: Colors.white, size: 20),
             title:
                 const Text('Instagram', style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
           ListTile(
-            leading: const FaIcon(FontAwesomeIcons.facebook,
+            leading: FaIcon(FontAwesomeIcons.facebook,
                 color: Colors.white, size: 20),
             title: const Text('Facebook', style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
           ListTile(
-            leading: const FaIcon(FontAwesomeIcons.twitter,
+            leading: FaIcon(FontAwesomeIcons.twitter,
                 color: Colors.white, size: 20),
             title: const Text('X', style: TextStyle(color: Colors.white)),
             onTap: () {},

@@ -12,7 +12,7 @@ class HomeScreen extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             children: [
               Padding(
-                padding: const EdgeInsets.only(bottom: 90),
+                padding: const EdgeInsets.only(bottom: 145),
                 child: [
                   const FixturePage(),
                   const FavoritePage(),
@@ -22,11 +22,17 @@ class HomeScreen extends StatelessWidget {
                 ][state.homeIndex],
               ),
               Positioned(
-                bottom: 20,
+                bottom: 10,
                 left: 10,
                 right: 10,
                 child: SafeArea(
-                  child: HomeNavBottom(index: state.homeIndex),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const AdBannerWidget(margin: EdgeInsets.only(bottom: 6)),
+                      HomeNavBottom(index: state.homeIndex),
+                    ],
+                  ),
                 ),
               ),
             ],

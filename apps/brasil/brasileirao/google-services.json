@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "704384421414",
+    "project_id": "appbrasileirao-a2daa",
+    "storage_bucket": "appbrasileirao-a2daa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704384421414:android:715a0d4d82eb43bd8560e7",
+        "android_client_info": {
+          "package_name": "com.prolaser.futebolbrasileirobr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFiPFEtehU5Dmt0SyG4TyfrR_a0weTfCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

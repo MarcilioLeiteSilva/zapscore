@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "733287056924",
+    "project_id": "app-paranaense",
+    "storage_bucket": "app-paranaense.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733287056924:android:d11028dd92a52c0aadc1d9",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualparanaense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBss8BOq8lARmPHaOJe14xPNHVG8arbxLk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

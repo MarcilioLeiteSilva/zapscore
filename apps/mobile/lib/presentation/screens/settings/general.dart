@@ -8,6 +8,7 @@ class GeneralScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('general'.tr(context)),
+        centerTitle: true,
       ),
       body: ListView(
         children: [
@@ -22,17 +23,7 @@ class GeneralScreen extends StatelessWidget {
               context.pushNamed(screenLanguages);
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.share, color: Colors.green),
-            title: Text(
-              'share'.tr(context),
-              style: context.textTheme.bodyMedium,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-            onTap: () {
-              // Share functionality
-            },
-          ),
+          const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.help_outline, color: Colors.orange),
             title: Text(
@@ -42,6 +33,27 @@ class GeneralScreen extends StatelessWidget {
             trailing: const Icon(Icons.arrow_forward_ios, size: 18),
             onTap: () {
               context.pushNamed(screenHelpCenter);
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.shield_outlined, color: Theme.of(context).primaryColor),
+            title: const Text('Política de Privacidade'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              context.pushNamed(screenPrivacyPolicy);
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: Colors.deepPurpleAccent),
+            title: Text(
+              'about'.tr(context),
+              style: context.textTheme.bodyMedium,
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              context.pushNamed(screenAbout);
             },
           ),
         ],

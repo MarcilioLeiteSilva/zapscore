@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "886264779035",
+    "project_id": "appligue1",
+    "storage_bucket": "appligue1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:886264779035:android:5629144e89f48e5fad83be",
+        "android_client_info": {
+          "package_name": "com.zapscore.ligue1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSH4jGyLIxp6dgGACGwc3quTFPEvmpSwQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

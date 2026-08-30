@@ -113,7 +113,7 @@ class _NewsPageState extends State<NewsPage> {
             onPressed: () => context.pushNamed(screenSearch),
             icon: SvgPicture.asset(
               Assets.searchLine,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 25,
             ),
           ),
@@ -181,7 +181,21 @@ class _NewsPageState extends State<NewsPage> {
                       physics: const ScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemBuilder: (_, i) {
-                        return CardNewsItem(news: listNews.isNotEmpty ? listNews[i] : carouselNews[i]);
+                        final currentList = listNews.isNotEmpty ? listNews : carouselNews;
+                        final newsItem = CardNewsItem(news: currentList[i]);
+                        if ((i + 1) % 4 == 0 && (i + 1) < currentList.length) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              newsItem,
+                              const Gap(15),
+                              NativeAdCardWidget(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                              ),
+                            ],
+                          );
+                        }
+                        return newsItem;
                       },
                       separatorBuilder: (_, i) => const Gap(15),
                       itemCount: listNews.isNotEmpty ? listNews.length : carouselNews.length,

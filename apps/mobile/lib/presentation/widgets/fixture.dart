@@ -465,7 +465,9 @@ class CardFixtureItem extends StatelessWidget {
         ],
         InkWell(
           onTap: () {
-            context.pushNamed(screenFixtureDetails, extra: fix);
+            AdService.showInterstitialAd(() {
+              context.pushNamed(screenFixtureDetails, extra: fix);
+            }, isMatch: true);
           },
           child: Row(
             children: [
@@ -1043,10 +1045,14 @@ class CardFormMatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.pushNamed(
-        screenFixtureDetails,
-        extra: fixture,
-      ),
+      onTap: () {
+        AdService.showInterstitialAd(() {
+          context.pushNamed(
+            screenFixtureDetails,
+            extra: fixture,
+          );
+        }, isMatch: true);
+      },
       borderRadius: BorderRadius.circular(30),
       child: Container(
         decoration: BoxDecoration(

@@ -27,6 +27,7 @@ const String screenEditNotification = "editnotif-sett";
 const String screenSecurity = "securty-sett";
 const String screenLanguages = "languages-sett";
 const String screenTheme = "theme-sett";
+const String screenPrivacyPolicy = "privacy-policy";
 
 abstract class RouterApp {
   static final router = GoRouter(
@@ -150,6 +151,11 @@ abstract class RouterApp {
         path: '/$screenTheme',
         name: screenTheme,
         builder: (context, state) => const ThemeScreen(),
+      ),
+      GoRoute(
+        path: '/$screenPrivacyPolicy',
+        name: screenPrivacyPolicy,
+        builder: (context, state) => const PrivacyPolicyScreen(),
       ),
       GoRoute(
         path: '/$screenAiPerformance',

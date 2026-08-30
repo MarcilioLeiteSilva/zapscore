@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553581652085",
+    "project_id": "appseriea-italia",
+    "storage_bucket": "appseriea-italia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553581652085:android:e977e1fd7e2602bb98703c",
+        "android_client_info": {
+          "package_name": "com.zapscore.serieaitalia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCp5_Q9YYFIwLShiPzNXnw8YVWGYsG6DtM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

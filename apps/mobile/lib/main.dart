@@ -21,6 +21,7 @@ void main() async {
   await initializeDateFormatting('pt', null);
   await initializeDateFormatting('en', null);
   await initializeDateFormatting('es', null);
+  await AdService.init();
   runApp(MyApp());
 }
 

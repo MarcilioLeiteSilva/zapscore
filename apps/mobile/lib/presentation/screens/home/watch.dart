@@ -144,9 +144,16 @@ class _WatchPageState extends State<WatchPage> {
                         physics: const ScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         itemBuilder: (_, i) {
-                          return CardNewsItem(
-                            isVideo: true,
-                            video: trendingVideos.isNotEmpty ? trendingVideos[i % trendingVideos.length] : null,
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CardNewsItem(
+                                isVideo: true,
+                                video: trendingVideos.isNotEmpty ? trendingVideos[i % trendingVideos.length] : null,
+                              ),
+                              if (i == 3 && (trendingVideos.isNotEmpty ? trendingVideos.length : 5) > 4)
+                                const AdBannerWidget(margin: EdgeInsets.symmetric(vertical: 14)),
+                            ],
                           );
                         },
                         separatorBuilder: (_, i) => const Gap(15),

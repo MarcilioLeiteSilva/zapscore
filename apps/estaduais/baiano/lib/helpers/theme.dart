@@ -1,0 +1,201 @@
+part of 'helpers.dart';
+
+class AppCustomColors extends ThemeExtension<AppCustomColors> {
+  final Color? drawerBackground;
+  final Color? drawerHeader;
+  final Color? darkGreen;
+  final Color? info;
+  final Color? hint;
+  final Color? logout;
+
+  AppCustomColors({
+    required this.drawerBackground,
+    required this.drawerHeader,
+    required this.darkGreen,
+    required this.info,
+    required this.hint,
+    required this.logout,
+  });
+
+  @override
+  AppCustomColors copyWith({
+    Color? drawerBackground,
+    Color? drawerHeader,
+    Color? darkGreen,
+    Color? info,
+    Color? hint,
+    Color? logout,
+  }) {
+    return AppCustomColors(
+      drawerBackground: drawerBackground ?? this.drawerBackground,
+      drawerHeader: drawerHeader ?? this.drawerHeader,
+      darkGreen: darkGreen ?? this.darkGreen,
+      info: info ?? this.info,
+      hint: hint ?? this.hint,
+      logout: logout ?? this.logout,
+    );
+  }
+
+  @override
+  AppCustomColors lerp(ThemeExtension<AppCustomColors>? other, double t) {
+    if (other is! AppCustomColors) return this;
+    return AppCustomColors(
+      drawerBackground: Color.lerp(drawerBackground, other.drawerBackground, t),
+      drawerHeader: Color.lerp(drawerHeader, other.drawerHeader, t),
+      darkGreen: Color.lerp(darkGreen, other.darkGreen, t),
+      info: Color.lerp(info, other.info, t),
+      hint: Color.lerp(hint, other.hint, t),
+      logout: Color.lerp(logout, other.logout, t),
+    );
+  }
+}
+
+extension AppThemeExtension on BuildContext {
+  AppCustomColors get appColors => Theme.of(this).extension<AppCustomColors>()!;
+}
+
+abstract class AppTheme {
+  static ThemeData getTheme(BuildContext context, String themeType) {
+    final textTheme = Theme.of(context).textTheme;
+    final isWhite = themeType == 'white';
+    final isDefault = themeType == 'default';
+
+    Color primaryColor;
+    Color bgColor;
+    Color cardColor;
+    Color textColor;
+    Color appBarBg;
+    
+    // Custom colors for extension
+    Color drawerBg;
+    Color drawerHead;
+    Color darkG;
+    Color infoColor;
+    Color hintColor;
+
+    switch (themeType) {
+      case 'dark':
+        primaryColor = AppColor.darkPrimary;
+        bgColor = AppColor.darkBackground;
+        cardColor = AppColor.darkCard;
+        textColor = AppColor.darkText;
+        appBarBg = AppColor.darkAppBarBackground;
+        drawerBg = AppColor.darkDrawerBackground;
+        drawerHead = AppColor.darkDrawerHeader;
+        darkG = const Color(0xFF38BDF8); // High contrast cyan/blue link accent for dark mode
+        infoColor = AppColor.darkAccent;
+        hintColor = AppColor.hint.withOpacity(0.5);
+        break;
+      case 'white':
+        primaryColor = AppColor.lightPrimary;
+        bgColor = AppColor.lightBackground;
+        cardColor = AppColor.lightCard;
+        textColor = AppColor.lightText;
+        appBarBg = AppColor.lightAppBarBackground;
+        drawerBg = AppColor.lightDrawerBackground;
+        drawerHead = AppColor.lightDrawerHeader;
+        darkG = AppColor.lightPrimary; // High contrast red link accent for white mode
+        infoColor = AppColor.lightAccent;
+        hintColor = AppColor.hint;
+        break;
+      default: // 'default'
+        primaryColor = AppColor.primary;
+        bgColor = AppColor.background;
+        cardColor = AppColor.card;
+        textColor = AppColor.text;
+        appBarBg = AppColor.appBarBackground;
+        drawerBg = AppColor.drawerBackground;
+        drawerHead = AppColor.drawerHeader;
+        darkG = AppColor.darkGreen;
+        infoColor = AppColor.info;
+        hintColor = AppColor.hint;
+    }
+
+    final isLight = isWhite;
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isLight ? Brightness.light : Brightness.dark,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: bgColor,
+      extensions: [
+        AppCustomColors(
+          drawerBackground: drawerBg,
+          drawerHeader: drawerHead,
+          darkGreen: darkG,
+          info: infoColor,
+          hint: hintColor,
+          logout: AppColor.logout,
+        ),
+      ],
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        primary: primaryColor,
+        onPrimary: isLight ? Colors.black : Colors.white,
+        secondary: isDefault ? AppColor.accent : primaryColor.withOpacity(0.8),
+        onSecondary: Colors.white,
+        surface: cardColor,
+        onSurface: textColor,
+        background: bgColor,
+        onBackground: textColor,
+        brightness: isLight ? Brightness.light : Brightness.dark,
+      ),
+      dividerTheme: DividerThemeData(color: isLight ? Colors.black12 : Colors.white10),
+      switchTheme: SwitchThemeData(
+        thumbColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return Colors.white;
+          }
+          return isLight ? Colors.grey.shade600 : Colors.grey.shade400;
+        }),
+        trackColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return isDefault ? AppColor.accent : (isLight ? primaryColor : primaryColor.withOpacity(0.8));
+          }
+          return isLight ? Colors.black12 : Colors.black38;
+        }),
+        trackOutlineColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return Colors.transparent;
+          }
+          return isLight ? Colors.black26 : Colors.white24;
+        }),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: appBarBg.withOpacity(0.85),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: true,
+        titleTextStyle: GoogleFonts.urbanist(
+          textStyle: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        iconTheme: IconThemeData(color: textColor),
+        actionsIconTheme: IconThemeData(color: textColor),
+      ),
+      cardTheme: CardThemeData(
+        color: cardColor,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+      textTheme: GoogleFonts.urbanistTextTheme(textTheme).apply(
+        bodyColor: textColor,
+        displayColor: textColor,
+      ).copyWith(
+        bodyLarge: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 24),
+        bodyMedium: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 20),
+        bodySmall: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 18),
+        labelLarge: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.normal, fontSize: 20),
+        labelMedium: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.normal, fontSize: 18),
+        labelSmall: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.normal, fontSize: 15),
+      ),
+      iconTheme: IconThemeData(color: textColor),
+    );
+  }
+}

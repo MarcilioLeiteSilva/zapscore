@@ -106,7 +106,7 @@ class _WatchPageState extends State<WatchPage> {
             onPressed: () => context.pushNamed(screenSearch),
             icon: SvgPicture.asset(
               Assets.searchLine,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 25,
             ),
           ),
@@ -177,10 +177,24 @@ class _WatchPageState extends State<WatchPage> {
                       physics: const ScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       itemBuilder: (_, i) {
-                        return CardNewsItem(
+                        final currentList = trendingVideos.isNotEmpty ? trendingVideos : carouselVideos;
+                        final videoItem = CardNewsItem(
                           isVideo: true,
-                          video: trendingVideos.isNotEmpty ? trendingVideos[i] : carouselVideos[i],
+                          video: currentList[i],
                         );
+                        if ((i + 1) % 4 == 0 && (i + 1) < currentList.length) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              videoItem,
+                              const Gap(15),
+                              NativeAdCardWidget(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                              ),
+                            ],
+                          );
+                        }
+                        return videoItem;
                       },
                       separatorBuilder: (_, i) => const Gap(15),
                       itemCount: trendingVideos.isNotEmpty ? trendingVideos.length : carouselVideos.length,

@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,6 +17,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:zapscore/helpers/helpers.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 import '../../logic/cubits/setting/setting_cubit.dart';
@@ -34,7 +34,6 @@ import '../../repository/api/api_client.dart';
 import '../../logic/models/home_competition.dart';
 import '../../logic/models/league.dart';
 import '../../logic/models/team.dart';
-import '../../logic/models/fixture_stat.dart';
 import '../../logic/models/fixture.dart';
 import '../../logic/models/player.dart';
 import '../../logic/models/video.dart';
@@ -89,3 +88,4 @@ part 'settings/notification.dart';
 part 'settings/security.dart';
 part 'settings/languages.dart';
 part 'settings/theme.dart';
+part 'settings/privacy_policy.dart';

@@ -78,9 +78,13 @@ class CardNewsItem extends StatelessWidget {
     return InkWell(
       onTap: () {
         if (isVideo && video != null) {
-          context.pushNamed(screenWatchContent, extra: video);
+          AdService.showInterstitialAd(() {
+            context.pushNamed(screenWatchContent, extra: video);
+          });
         } else if (news != null) {
-          context.pushNamed(screenNewsContent, extra: news);
+          AdService.showInterstitialAd(() {
+            context.pushNamed(screenNewsContent, extra: news);
+          });
         }
       },
       borderRadius: BorderRadius.circular(10),
@@ -198,9 +202,13 @@ class CardNewsCarouselItem extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (isVideo && video != null) {
-            context.pushNamed(screenWatchContent, extra: video);
+            AdService.showInterstitialAd(() {
+              context.pushNamed(screenWatchContent, extra: video);
+            });
           } else if (news != null) {
-            context.pushNamed(screenNewsContent, extra: news);
+            AdService.showInterstitialAd(() {
+              context.pushNamed(screenNewsContent, extra: news);
+            });
           }
         },
         borderRadius: BorderRadius.circular(15),

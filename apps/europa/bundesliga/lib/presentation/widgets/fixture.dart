@@ -545,7 +545,7 @@ class CardLiveButton extends StatelessWidget {
                       'Live',
                       style: context.textTheme.bodySmall!.copyWith(
                         fontSize: 16,
-                        color: isSelected ? const Color(0xFFFCBF04) : (isLive ? Colors.red : Colors.black),
+                        color: isSelected ? const Color(0xFFFCBF04) : (isLive ? Colors.red : Theme.of(context).colorScheme.onSurface),
                         fontWeight: (isLive || isSelected) ? FontWeight.bold : null,
                       ),
                     ),
@@ -572,7 +572,7 @@ class CardCalendarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = select ? const Color(0xFFFCBF04) : Colors.black;
+    final textColor = select ? const Color(0xFFFCBF04) : Theme.of(context).colorScheme.onSurface;
 
     return InkWell(
       onTap: onTap,
@@ -724,7 +724,30 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
             firstChild: Column(
               children: [
                 if (comp.matches.isNotEmpty)
-                  ...comp.matches.map((match) => CardFixtureItem(fixture: match))
+                  ...List.generate(comp.matches.length, (index) {
+                    final match = comp.matches[index];
+                    final matchCard = CardFixtureItem(fixture: match);
+                    if ((index + 1) % 4 == 0 && (index + 1) < comp.matches.length) {
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          matchCard,
+                          const Gap(5),
+                          const Divider(endIndent: 20),
+                          const Gap(5),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 15),
+                            child: Center(
+                              child: NativeAdCardWidget(
+                                margin: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return matchCard;
+                  })
                 else
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
@@ -771,7 +794,12 @@ class CardFixtureItem extends StatelessWidget {
         ],
         InkWell(
           onTap: () {
-            context.pushNamed(screenFixtureDetails, extra: fix);
+            AdService.instance.showInterstitialAd(
+              isMatch: true,
+              onAdClosed: () {
+                context.pushNamed(screenFixtureDetails, extra: fix);
+              },
+            );
           },
           child: Row(
             children: [

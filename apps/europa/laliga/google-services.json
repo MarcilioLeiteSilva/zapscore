@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "275514117294",
+    "project_id": "applaliga",
+    "storage_bucket": "applaliga.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275514117294:android:e8665048ff9e72360f713f",
+        "android_client_info": {
+          "package_name": "com.zapscore.laliga"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcKv5GN6I7ZlmaJGN2zJSx7MnL9oXRSE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
