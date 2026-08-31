@@ -7,9 +7,10 @@ import Link from "next/link";
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
 export default function AdminNewsPage() {
-  const [news, setNews] = useState([]);
+  const [news, setNews] = useState<any[]>([]);
   const [leagues, setLeagues] = useState<any[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
+  const [filterLeagueId, setFilterLeagueId] = useState("");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentId, setCurrentId] = useState(null);
@@ -22,6 +23,29 @@ export default function AdminNewsPage() {
     teamId: "" 
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const getLeagueDisplayName = (l: any) => {
+    if (!l) return "Sem liga";
+    const extId = l.externalId || (l.id && !isNaN(Number(l.id)) ? Number(l.id) : 0);
+    if (extId === 71 || (l.name === 'Serie A' && l.country === 'Brazil')) return 'Brasileirão Série A (Brasil)';
+    if (extId === 72 || (l.name === 'Serie B' && l.country === 'Brazil')) return 'Brasileirão Série B (Brasil)';
+    if (extId === 135 || (l.name === 'Serie A' && l.country === 'Italy')) return 'Serie A (Itália)';
+    if (extId === 39) return 'Premier League (Inglaterra)';
+    if (extId === 140) return 'La Liga (Espanha)';
+    if (extId === 78) return 'Bundesliga (Alemanha)';
+    if (extId === 61) return 'Ligue 1 (França)';
+    if (extId === 2) return 'Champions League (Europa)';
+    return `${l.name}${l.country ? ` (${l.country})` : ''}`;
+  };
+
+  const filteredNewsList = filterLeagueId
+    ? news.filter(
+        (n: any) =>
+          n.leagueId === filterLeagueId ||
+          n.league?.id === filterLeagueId ||
+          String(n.league?.externalId) === filterLeagueId
+      )
+    : news;
 
   useEffect(() => {
     fetchNews();
@@ -137,10 +161,27 @@ export default function AdminNewsPage() {
       </div>
 
       <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+        <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
            <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
-             {loading ? "Sincronizando..." : `${news.length} Notícias Ativas`}
+             {loading ? "Sincronizando..." : `${filteredNewsList.length} Notícias Ativas`}
            </span>
+
+           {/* Filtro por Liga */}
+           <div className="flex items-center gap-2">
+             <span className="text-xs text-slate-400 font-medium">Filtrar por Liga:</span>
+             <select
+               value={filterLeagueId}
+               onChange={(e) => setFilterLeagueId(e.target.value)}
+               className="bg-slate-950 border border-slate-700 text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-orange-500"
+             >
+               <option value="">Todas as Ligas</option>
+               {leagues.map((l) => (
+                 <option key={l.id} value={l.id}>
+                   {getLeagueDisplayName(l)}
+                 </option>
+               ))}
+             </select>
+           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -154,7 +195,7 @@ export default function AdminNewsPage() {
             <tbody className="divide-y divide-slate-800">
               {loading ? (
                 <tr><td colSpan={3} className="p-20 text-center text-slate-500"><Loader2 className="animate-spin mx-auto mb-4" size={32} /> Carregando base de dados...</td></tr>
-              ) : news.map((item: any) => (
+              ) : filteredNewsList.map((item: any) => (
                 <tr key={item.id} className="hover:bg-slate-800/40 transition-all border-b border-slate-800/50">
                   <td className="p-6">
                     <div className="flex items-center space-x-5">
@@ -169,7 +210,7 @@ export default function AdminNewsPage() {
                   </td>
                   <td className="p-6">
                     <div className="flex flex-col space-y-1">
-                      {item.league && <span className="text-[10px] bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-black w-fit uppercase">{item.league.name}{item.league.country ? ` (${item.league.country})` : ''}</span>}
+                      {item.league && <span className="text-[10px] bg-orange-500/10 text-orange-500 px-2 py-0.5 rounded-full font-black w-fit uppercase">{getLeagueDisplayName(item.league)}</span>}
                       {item.team && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full font-black w-fit uppercase">{item.team.name}</span>}
                       {!item.league && !item.team && <span className="text-[10px] text-slate-600 font-bold uppercase italic">Sem classificação</span>}
                     </div>
@@ -217,7 +258,7 @@ export default function AdminNewsPage() {
                   >
                     <option value="">Nenhum</option>
                     {leagues.map(l => (
-                      <option key={l.id} value={l.id}>{l.name}{l.country ? ` (${l.country})` : ''} - {l.season}</option>
+                      <option key={l.id} value={l.id}>{getLeagueDisplayName(l)}</option>
                     ))}
                   </select>
                 </div>

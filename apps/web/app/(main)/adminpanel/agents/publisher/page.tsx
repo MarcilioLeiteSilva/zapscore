@@ -49,9 +49,23 @@ export default function NewsPublisherAgentPage() {
   const [successResult, setSuccessResult] = useState<NewsItem | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [leagues, setLeagues] = useState<League[]>([]);
+  const [leagues, setLeagues] = useState<any[]>([]);
   const [recentNews, setRecentNews] = useState<NewsItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const getLeagueDisplayName = (l: any) => {
+    if (!l) return "Sem liga";
+    const extId = l.externalId || (l.id && !isNaN(Number(l.id)) ? Number(l.id) : 0);
+    if (extId === 71 || (l.name === 'Serie A' && l.country === 'Brazil')) return 'Brasileirão Série A (Brasil)';
+    if (extId === 72 || (l.name === 'Serie B' && l.country === 'Brazil')) return 'Brasileirão Série B (Brasil)';
+    if (extId === 135 || (l.name === 'Serie A' && l.country === 'Italy')) return 'Serie A (Itália)';
+    if (extId === 39) return 'Premier League (Inglaterra)';
+    if (extId === 140) return 'La Liga (Espanha)';
+    if (extId === 78) return 'Bundesliga (Alemanha)';
+    if (extId === 61) return 'Ligue 1 (França)';
+    if (extId === 2) return 'Champions League (Europa)';
+    return `${l.name}${l.country ? ` (${l.country})` : ''}`;
+  };
 
   // Lista padrão de fallback caso a API demore a responder
   const defaultLeagues: League[] = [
@@ -249,7 +263,7 @@ export default function NewsPublisherAgentPage() {
                     <option value="">Detectar Automaticamente pelo Conteúdo</option>
                     {leagues.map((league) => (
                       <option key={league.id} value={league.id}>
-                        {league.name}
+                        {getLeagueDisplayName(league)}
                       </option>
                     ))}
                   </select>

@@ -11,10 +11,10 @@ class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
 
   final List<Map<String, String?>> _categories = [
-    {'name': 'Todas', 'leagueId': null, 'type': 'all'},
+    {'name': 'Todas', 'leagueId': '71', 'type': 'all'},
     {'name': 'Brasileirão Série A', 'leagueId': '71', 'type': 'league'},
     {'name': 'Brasileirão Série B', 'leagueId': '72', 'type': 'league'},
-    {'name': 'Mercado da Bola', 'leagueId': null, 'type': 'mercado'},
+    {'name': 'Mercado da Bola', 'leagueId': '71', 'type': 'mercado'},
   ];
 
   @override
@@ -27,11 +27,8 @@ class _NewsPageState extends State<NewsPage> {
 
   void _loadNews() {
     final cat = _categories[indexTab];
-    if (cat['type'] == 'league' && cat['leagueId'] != null) {
-      context.read<NewsCubit>().fetchNews(leagueId: cat['leagueId'], limit: 100);
-    } else {
-      context.read<NewsCubit>().fetchNews(limit: 100);
-    }
+    final targetLeagueId = cat['leagueId'] ?? '71';
+    context.read<NewsCubit>().fetchNews(leagueId: targetLeagueId, limit: 100);
   }
 
   bool _matchesFilter(News news) {

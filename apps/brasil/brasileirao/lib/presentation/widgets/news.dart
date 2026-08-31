@@ -175,7 +175,7 @@ class CardNewsItem extends StatelessWidget {
                       Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
                       const Gap(4),
                       Text(
-                        date != null ? DateFormat('dd/MM HH:mm', context.read<SettingCubit>().state.language).format(date) : 'recently'.tr(context),
+                        date != null ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}' : 'recently'.tr(context),
                         style: GoogleFonts.urbanist(
                           textStyle: context.textTheme.labelSmall,
                         ),
@@ -301,7 +301,7 @@ class CardNewsCarouselItem extends StatelessWidget {
                   Icon(Icons.access_time, size: 12, color: context.textTheme.labelSmall?.color),
                   const Gap(4),
                   Text(
-                    date != null ? DateFormat('dd/MM HH:mm', context.read<SettingCubit>().state.language).format(date) : 'recently'.tr(context),
+                    date != null ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}' : 'recently'.tr(context),
                     style: context.textTheme.labelSmall,
                   ),
                 ],

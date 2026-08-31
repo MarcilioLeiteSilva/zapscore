@@ -105,11 +105,11 @@ export class NewsService implements OnModuleInit {
 
       const italianKeywords = [
         'football italia', 'serie a tim', 'calcio', 'scudetto', 'coppa italia',
-        'juventus', 'ac milan', 'milan', 'inter milan', 'internazionale', 'napoli', 'as roma', 'lazio',
+        'juventus', 'ac milan', 'inter milan', 'internazionale', 'as roma', 'lazio',
         'atalanta', 'fiorentina', 'bologna', 'torino', 'monza', 'sassuolo', 'genoa',
         'udinese', 'lecce', 'verona', 'cagliari', 'empoli', 'salernitana', 'frosinone',
-        'como', 'parma', 'venezia', 'leao', 'tedesco', 'orsolini', 'berardi', 'kessié',
-        'allegri', 'pioli', 'inzaghi', 'motta', 'conte', 'gasperini', 'serie a |', 'serie a:'
+        'como 1907', 'parma calcio', 'venezia fc', 'orsolini', 'berardi',
+        'allegri', 'pioli', 'inzaghi', 'motta', 'gasperini', 'serie a enilive'
       ];
 
       const brazilSerieBKeywords = [
@@ -126,7 +126,7 @@ export class NewsService implements OnModuleInit {
         'bahia', 'fortaleza', 'athletico-pr', 'cuiabá', 'cuiaba', 'vitória', 'vitoria',
         'juventude', 'criciúma', 'criciuma', 'atlético-go', 'atletico-go',
         'jovem pan', 'gazeta esportiva', 'torcedores', 'globo esporte', 'ge.globo',
-        'uol', 'lance!'
+        'uol', 'lance!', 'portal ne9', 'ne9'
       ];
 
       const allNews = await this.prisma.news.findMany({
@@ -143,12 +143,22 @@ export class NewsService implements OnModuleInit {
 
         let targetLeagueId: string | null = null;
 
-        if (italianKeywords.some((kw) => combined.includes(kw))) {
+        // 1. Prioriza fontes e termos brasileiros
+        const isBrazilianContext = brazilKeywords.some((kw) => combined.includes(kw));
+        const isSerieBContext = brazilSerieBKeywords.some((kw) => combined.includes(kw));
+        const isItalianContext = italianKeywords.some((kw) => combined.includes(kw));
+
+        if (isBrazilianContext && !isItalianContext) {
+          targetLeagueId = isSerieBContext && serieBBrasil ? serieBBrasil.id : serieABrasil.id;
+        } else if (isItalianContext && !isBrazilianContext) {
           targetLeagueId = serieAItalia.id;
-        } else if (serieBBrasil && brazilSerieBKeywords.some((kw) => combined.includes(kw))) {
-          targetLeagueId = serieBBrasil.id;
-        } else if (brazilKeywords.some((kw) => combined.includes(kw))) {
-          targetLeagueId = serieABrasil.id;
+        } else if (isBrazilianContext && isItalianContext) {
+          // Se houver conflito, prioriza a fonte (fontes brasileiras -> Brasil)
+          if (source.includes('gazeta') || source.includes('globo') || source.includes('lance') || source.includes('uol') || source.includes('ne9')) {
+            targetLeagueId = serieABrasil.id;
+          } else {
+            targetLeagueId = serieAItalia.id;
+          }
         }
 
         if (targetLeagueId && targetLeagueId !== item.leagueId) {
