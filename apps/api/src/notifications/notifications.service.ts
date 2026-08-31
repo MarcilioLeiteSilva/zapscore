@@ -110,6 +110,7 @@ export class NotificationsService {
         where: {
           league: { externalId: Number(leagueId) },
           season: Number(season),
+          statusShort: { in: ['FT', 'AET', 'PEN', '1H', '2H', 'HT', 'LIVE'] },
         },
         include: {
           homeTeam: true,
@@ -118,11 +119,11 @@ export class NotificationsService {
         orderBy: {
           date: 'desc',
         },
-        take: 30,
+        take: 50,
       });
 
       if (!fixtures || fixtures.length === 0) {
-        return { success: false, message: 'Nenhuma partida encontrada para esta liga.' };
+        return { success: false, message: 'Nenhuma partida finalizada recente encontrada para esta liga.' };
       }
 
       // Agrupa por rodada (round)
@@ -133,12 +134,18 @@ export class NotificationsService {
         roundsMap[roundName].push(f);
       });
 
-      // Encontra a rodada mais recente que possui jogos
+      // Encontra a rodada mais recente que possui jogos realizados
       const latestRound = Object.keys(roundsMap)[0];
       const roundFixtures = roundsMap[latestRound];
 
-      const isCompleted = roundFixtures.every((f) => ['FT', 'AET', 'PEN'].includes(f.status));
+      const finishedMatches = roundFixtures.filter((f) => ['FT', 'AET', 'PEN'].includes(f.statusShort || f.status)).length;
+      const isCompleted = finishedMatches > 0 && finishedMatches === roundFixtures.length;
+
+      // Formata nome amigável da rodada (ex: Regular Season - 23 -> 23ª Rodada)
+      const formattedRound = latestRound.replace(/Regular Season - (\d+)/i, '$1ª Rodada').replace(/Round (\d+)/i, '$1ª Rodada');
+
       const scoresList = roundFixtures
+        .filter((f) => ['FT', 'AET', 'PEN'].includes(f.statusShort || f.status))
         .map((f) => {
           const hName = f.homeTeam?.name || 'Mandante';
           const aName = f.awayTeam?.name || 'Visitante';
@@ -150,12 +157,12 @@ export class NotificationsService {
 
       return {
         success: true,
-        round: latestRound,
+        round: formattedRound,
         isCompleted,
         totalMatches: roundFixtures.length,
-        finishedMatches: roundFixtures.filter((f) => ['FT', 'AET', 'PEN'].includes(f.status)).length,
-        suggestedTitle: `🏁 Fim da ${latestRound}`,
-        suggestedBody: scoresList,
+        finishedMatches: finishedMatches,
+        suggestedTitle: isCompleted ? `🏁 Fim da ${formattedRound}` : `⚽ Resultados da ${formattedRound}`,
+        suggestedBody: scoresList || 'Confira todos os lances e estatísticas completas no aplicativo.',
       };
     } catch (e: any) {
       this.logger.error(`Erro ao gerar resumo da rodada: ${e.message}`);
