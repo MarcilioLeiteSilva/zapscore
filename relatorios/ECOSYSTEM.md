@@ -422,6 +422,7 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 ## 📈 Capítulo 8: Histórico de Implementações e Roadmap de Incrementos
 
 ### 8.1 Histórico de Entregas Validadas
+* **[2026-08-31]**: Integração do Agente Sentinel com o Agente Push: detecção autônoma de conclusão de partidas (100% FT do dia em todas as ligas monitoradas), geração imediata de resumo de placares da rodada, persistência na tabela `PushQueue` (Prisma/PostgreSQL), fila de aprovação com contagem regressiva em tempo real no AdminPanel e disparo automático por fallback após 60 minutos via worker em segundo plano.
 * **[2026-08-23]**: Validação e disparo em produção com 100% de sucesso (19/19 Serie A, 14/14 La Liga) via FCM HTTP v1.
 * **[2026-08-23]**: Unificação da regra de Início (`start`) e Fim (`end`) de jogos em `notifications.pb.js` para entrega universal a todos os inscritos.
 * **[2026-08-23]**: Criação e enriquecimento do documento vivo de arquitetura e governança [relatorios/ECOSYSTEM.md](file:///d:/zapscore/relatorios/ECOSYSTEM.md) com diretiva mandatória no [.agents/AGENTS.md](file:///d:/zapscore/.agents/AGENTS.md).
@@ -1493,11 +1494,11 @@ Durante a implementação e homologação em produção, foram identificados 3 p
    * Atualmente, o deploy dos arquivos `.pb.js` é realizado via script SFTP/SSH direto na VPS.
    * **Recomendação:** Configurar o volume persistente do Easypanel (`/pb_hooks`) mapeado para um diretório compartilhado no host para que qualquer `git pull` atualize os 3 PocketBases sem intervenção manual.
 
-2. **Cron Job Noturno de Resumo Automático de Placares:**
-   * Criar um job agendado às 23:30 nos dias de jogos para disparar o resumo de rodada de forma 100% autônoma caso o operador não tenha disparado manualmente pelo AdminPanel.
-
-3. **Migração para FCM Topics (Capítulo 10):**
+2. **Migração para FCM Topics (Capítulo 10):**
    * Integrar a fila de broadcasts manuais à arquitetura de **FCM Topics** para reduzir o tempo de envio em bases com mais de 500.000 dispositivos de ~45 segundos para menos de **1,5 segundo**.
+
+3. **Automação de Alertas de Escalação em Background:**
+   * Integrar o disparador de escalações diretamente ao Cron sem necessidade de clique na interface quando ambos os times confirmarem o elenco titular.
 
 ---
 
@@ -1588,6 +1589,57 @@ Para garantir total rastreabilidade técnica e auditoria de regressões, registr
 | **Rodada com Jogos Espalhados (Quarta e Quinta):** | Mostrava apenas os jogos que vinham no `take: 30`. | `take: 50` garante que todos os jogos da mesma rodada sejam agrupados no mesmo `roundsMap`. | 🟢 **Melhoria** (Sem perda de partidas). |
 | **Compatibilidade de Campos no Prisma (`status` vs `statusShort`):** | Checava `f.status` que poderia vir nulo caso a API-Football populate apenas `statusShort`. | Usa `f.statusShort || f.status`, eliminando falsos negativos em checagem de partidas concluídas. | 🟢 **Resiliência Reforçada**. |
 | **Outros Módulos da API (Crawlers, Sentinel, Fixtures):** | Nenhuma alteração fora do método `getRoundSummary`. | O isolamento é total: nenhum controller de partidas ao vivo, notícias ou vídeos consome esse método. | 🟢 **Zero Efeito Colateral Externo**. |
+
+---
+
+### 16.7 Integração Sentinel + Agente Push (Resumo FT & Fallback de 60 Minutos)
+
+Implantado em **31/08/2026** (Commit `c077e47`), este módulo estabelece o elo autônomo entre a auditoria de partidas em tempo real (Sentinel) e a esteira de disparos push estratégicos (Push Agent):
+
+```mermaid
+flowchart TD
+    subgraph SENTINEL_WATCH [🛡️ Sentinel Multi-Módulos]
+        S1["Auditoria Contínua dos Jogos do Dia (America/Sao_Paulo)"]
+        S2{"100% dos jogos da liga/data em FT/AET/PEN?"}
+        S1 --> S2
+    end
+
+    subgraph PUSH_QUEUE [📬 Fila de Notificações - PostgreSQL PushQueue]
+        Q1["Gera Resumo de Placares com getRoundSummary()"]
+        Q2["Insere em PushQueue (status: PENDING_APPROVAL, autoDispatch: +60 min)"]
+        S2 -- "SIM (Último apito final)" --> Q1
+        Q1 --> Q2
+    end
+
+    subgraph ADMIN_PANEL [🖥️ AdminPanel - /adminpanel/agents/push]
+        UI1["Banner Pulsante com Timer Regressivo (ex: 58:14 restantes)"]
+        UI2["Botões: [🚀 Aprovar Agora] | [✏️ Editar no Simulador] | [❌ Descartar]"]
+        Q2 --> UI1
+        UI1 --> UI2
+    end
+
+    subgraph DISPATCH_ENGINE [⚡ ZapScore API & PocketBase Hooks]
+        WORKER["⏰ SyncJobsService (handleAutoPushQueue a cada 1 min)"]
+        WORKER -->|60 min sem ação do operador| PB_AUTO["POST /api/broadcast-push (DISPATCHED_AUTO)"]
+        UI2 -->|Ação imediata do operador| PB_MANUAL["POST /api/broadcast-push (DISPATCHED_OPERATOR)"]
+    end
+```
+
+#### Componentes e Regras de Negócio:
+1. **Tabela `PushQueue` no Prisma (`apps/api/prisma/schema.prisma`):**
+   - Campos: `id`, `leagueId`, `appSlug`, `round`, `title`, `body`, `imageUrl`, `status` (`PENDING_APPROVAL`, `DISPATCHED_OPERATOR`, `DISPATCHED_AUTO`, `CANCELLED`), `detectedAt`, `scheduledAutoDispatchAt`, `dispatchedAt`, `sentCount`, `target`.
+   - Índices compostos em `[status, scheduledAutoDispatchAt]` e `[leagueId, round]`.
+2. **Detecção no Sentinel (`ZapScoreSentinelService.checkFinishedRounds`):**
+   - Varre partidas do dia (`today`) nos 4 eixos (Brasil, Europa, Estaduais, Copas).
+   - Ao constatar que todas as partidas daquela liga agendadas para hoje atingiram `FT`/`AET`/`PEN`, chama `notificationsService.enqueueRoundSummary(leagueId)`.
+   - Idempotência de 24h impede enfileiramento repetido da mesma rodada.
+3. **Controle Editorial & Timer no AdminPanel (`PushAgentPage`):**
+   - Banner de destaque no topo com relógio regressivo em tempo real (`MM:SS restantes`).
+   - Opções para o operador: Aprovar envio instantâneo, carregar no simulador para edição de texto/foto, ou descartar.
+4. **Worker de Auto-Dispatch (`SyncJobsService.handleAutoPushQueue`):**
+   - Cron de alta frequência (`* * * * *`) executado a cada 1 minuto.
+   - Dispara automaticamente itens com `status: 'PENDING_APPROVAL'` cujo `scheduledAutoDispatchAt <= now` (janela estrita de 60 minutos sem ação humana).
+
 
 
 
