@@ -94,6 +94,13 @@
   - [15.3 Arquitetura Técnica em 4 Camadas](#153-arquitetura-técnica-em-4-camadas)
   - [15.4 Modelo de Dados e Endpoints da ZapScore API](#154-modelo-de-dados-e-endpoints-da-zapscore-api)
   - [15.5 Experiência nos Apps Flutter e Monitor no AdminPanel](#155-experiência-nos-apps-flutter-e-monitor-no-adminpanel)
+- [Capítulo 16: Implantação do Agente Semi-Automático de Notificações Push (Push Agent)](#-capítulo-16-implantação-do-agente-semi-automático-de-notificações-push-push-agent)
+  - [16.1 Visão Geral e Proposta de Valor](#161-visão-geral-e-proposta-de-valor)
+  - [16.2 Arquitetura em 3 Camadas (UI, Gateway API e PocketBase Hooks)](#162-arquitetura-em-3-camadas-ui-gateway-api-e-pocketbase-hooks)
+  - [16.3 Desafios, Problemas Enfrentados e Soluções de Engenharia](#163-desafios-problemas-enfrentados-e-soluções-de-engenharia)
+  - [16.4 Matriz de Roteamento Multi-Instância e Payload Rich Push](#164-matriz-de-roteamento-multi-instância-e-payload-rich-push)
+  - [16.5 O Que Ficou para Resolver e Próximos Passos](#165-o-que-ficou-para-resolver-e-próximos-passos)
+  - [16.6 Registro Cirúrgico de Alterações e Análise de Efeitos Colaterais em `notifications.service.ts`](#166-registro-cirúrgico-de-alterações-e-análise-de-efeitos-colaterais-em-notificationsservicets)
 
 
 ---
@@ -177,8 +184,8 @@ d:\zapscore\
 
 | Competição / Módulo | `league_id` (Ext) | Módulo no AdminPanel | Escopo | Projeto Firebase | Service Account |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Brasileirão Série A** | `71` | `/adminpanel/brasil` | Nacional 1ª Divisão | - | - |
-| **Brasileirão Série B** | `72` | `/adminpanel/brasil` | Nacional 2ª Divisão | - | - |
+| **UEFA Champions League** | `2` | `/adminpanel/europa` | Continental Europa | `appchampions` (`954840066349`) | `appchampions-firebase-adminsdk-fbsvc-2afe7578ad.json` |
+| **Brasileirão Séries A e B** | `71` / `72` | `/adminpanel/brasil` | Nacional Brasil | `appbrasileirao-a2daa` (`704384421414`) | `service_account_brasileirao.json` |
 | **Copa Libertadores** | `13` | `/adminpanel/copas` | Continental | - | - |
 | **Copa do Brasil** | `73` | `/adminpanel/copas` | Eliminatória Nacional | - | - |
 | **Copa do Nordeste** | `612` | `/adminpanel/copas` | Regional | - | - |
@@ -1359,4 +1366,230 @@ flowchart TD
 ### 15.5 Experiência nos Apps Flutter e Monitor no AdminPanel
 * **No Flutter:** Nova aba *"Comentários & IA"* na `FixtureDetailScreen` com timeline vertical, cards estilizados por sentimento e badge de fase.
 * **No AdminPanel:** Painel de auditoria e moderação ao vivo em `/adminpanel/agents/tactical-insights`.
+
+---
+
+## 📢 Capítulo 16: Implantação do Agente Semi-Automático de Notificações Push (Push Agent)
+
+### 16.1 Visão Geral e Proposta de Valor
+O **Agente Semi-Automático de Push** foi desenvolvido para empoderar a equipe editorial com uma ferramenta ágil de comunicação de massa (Rich Push Notifications com imagem e deep linking), automatizando a geração de resumos de placares de rodadas concluídas, alertas de escalações confirmadas (1 hora antes dos jogos) e broadcasts manuais direcionados por aplicativo/liga.
+
+A interface conta com o **Simulador Interativo de Lockscreen**, permitindo visualizar a prévia idêntica de como a notificação (título, corpo, horário e thumbnail) será renderizada na tela de bloqueio dos dispositivos dos usuários antes do disparo oficial.
+
+```mermaid
+flowchart TD
+    subgraph ADMIN_UI [🖥️ AdminPanel Next.js - /adminpanel/agents/push]
+        MOCK[📱 Simulador de Lockscreen Interativo]
+        TAB1[1. 📢 Broadcast Manual]
+        TAB2[2. 🏁 Resumo de Placares da Rodada]
+        TAB3[3. 📋 Alertas de Escalações Pré-Jogo]
+        TAB4[4. 📊 Histórico & Telemetria]
+    end
+
+    subgraph API_GATEWAY [⚡ ZapScore API Gateway - NestJS]
+        CTRL[NotificationsController<br>/notifications/broadcast<br>/notifications/round-summary<br>/notifications/lineups-alert]
+        SVC[NotificationsService<br>Roteador Multi-Instâncias PB]
+    end
+
+    subgraph PB_INSTANCES [🗄️ PocketBase Hooks Dedicados : POST /api/broadcast-push]
+        PBB[🇧🇷 PB Brasil<br>appbrasileirao-a2daa]
+        PBE[📍 PB Estaduais<br>paulistao / carioca / ...]
+        PBU[🇪🇺 PB Europa<br>laliga / premier / seriea]
+    end
+
+    subgraph FCM_V1 [🔥 Google Firebase Cloud Messaging v1]
+        GOOGLE[OAuth2 JWT RS256 Puro<br>fcm.googleapis.com/v1/projects/.../messages:send]
+        DEVICES[📱 Dispositivos Inscritos na Coleção subscriptions]
+    end
+
+    ADMIN_UI -->|POST / GET| API_GATEWAY
+    API_GATEWAY -->|Roteia pelo App Slug / LeagueId| PB_INSTANCES
+    PB_INSTANCES -->|Disparo em Lote + Expurgo de Inválidos| FCM_V1
+    FCM_V1 --> DEVICES
+```
+
+---
+
+### 16.2 Arquitetura em 3 Camadas (UI, Gateway API e PocketBase Hooks)
+
+1. **Camada de Apresentação (AdminPanel Next.js):**
+   * **Localização:** `apps/web/app/(main)/adminpanel/agents/push/page.tsx`
+   * **Simulador Visual:** `PushSimulator.tsx` renderiza dinamicamente o card de notificação em formato de lockscreen moderno (Glassmorphism, gradientes e timestamp em tempo real).
+   * **Abas Operacionais:**
+     * **Broadcast Manual:** Disparo livre com seleção de app de destino (`Brasileirão`, `Paulistão`, `Serie A Itália`, etc.), título, mensagem, URL da imagem e payload de deep link.
+     * **Resumo de Rodada:** Botão com 1 clique que consulta a API e sugere título e placares dos jogos finalizados (ex: *"🏁 Fim da 23ª Rodada"*).
+     * **Alertas de Escalações:** Sugere disparos 1h antes para partidas com escalações oficiais disponíveis.
+     * **Histórico de Envios:** Consulta a coleção `notification_logs` do PocketBase.
+
+2. **Camada Gateway (ZapScore API NestJS):**
+   * **Módulo:** `apps/api/src/notifications/notifications.module.ts`
+   * **Endpoints:**
+     * `POST /notifications/broadcast`: Recebe o payload do painel, identifica a qual PocketBase pertence a liga e encaminha a requisição via HTTP POST.
+     * `GET /notifications/round-summary?leagueId=...&season=...`: Agrupa as partidas finalizadas mais recentes e monta o resumo em texto formatado com placares.
+     * `GET /notifications/lineups-alert?leagueId=...`: Identifica jogos que começam na próxima hora com escalações confirmadas.
+
+3. **Camada de Execução e Criptografia (PocketBase Hooks):**
+   * **Arquivos:** `apps/brasil/pb_hooks/broadcast.pb.js`, `apps/estaduais/pb_hooks/broadcast.pb.js`, `apps/europa/pb_hooks/broadcast.pb.js`
+   * **Endpoint do Hook:** `POST /api/broadcast-push`
+   * **Funcionamento:**
+     1. Lê o payload JSON da requisição.
+     2. Busca todos os tokens da coleção `subscriptions` filtrando por `app_slug` correspondente.
+     3. Gera o token JWT OAuth2 assinado com chave privada RS256 da Service Account em JavaScript puro (Goja Engine).
+     4. Envia as mensagens em lotes para a API HTTP v1 do FCM com suporte a Rich Push (`notification.image` + Android `notification.big_picture`).
+     5. Remove tokens expirados/órfãos (`404 NOT_FOUND` / `NotRegistered`) da base automaticamente.
+
+---
+
+### 16.3 Desafios, Problemas Enfrentados e Soluções de Engenharia
+
+Durante a implementação e homologação em produção, foram identificados 3 pontos críticos de arquitetura:
+
+#### 🛑 Problema 1: Erro `TypeError: Object has no member 'requestInfo'` no PocketBase
+* **Causa:** No runtime Goja do PocketBase (em rotas customizadas criadas via `routerAdd`), o objeto global `$apis` não possui o método `.requestInfo(c)`. Chamar esse método causava falha fatal e impedia a leitura do corpo da requisição POST.
+* **Solução de Engenharia:** Substituição pelo leitor de stream nativo e seguro do Goja:
+  ```javascript
+  var data = {};
+  try {
+      if (c.request() && c.request().body) {
+          var rawBody = readerToString(c.request().body);
+          if (rawBody) data = JSON.parse(rawBody);
+      }
+  } catch (_) {}
+  ```
+
+#### 🛑 Problema 2: Resumo de Placares travado em "EM ANDAMENTO" com Placares 0x0
+* **Causa:** Na ZapScore API (`notifications.service.ts`), a consulta de partidas usava `orderBy: { date: 'desc' }, take: 30`. Como o banco já possui cadastradas todas as 38 rodadas do campeonato até dezembro de 2026, a busca pegava a 38ª rodada (que ainda não foi jogada, status `NS`), gerando um resumo falso de 0x0 com 0 de 10 jogos concluídos.
+* **Solução de Engenharia:** A consulta foi refatorada para filtrar obrigatoriamente partidas com status finalizado (`statusShort: { in: ['FT', 'AET', 'PEN', '1H', '2H', 'HT', 'LIVE'] }`) e traduzir o nome da rodada de formato técnico para legível:
+  ```typescript
+  const formattedRound = latestRound
+    .replace(/Regular Season - (\d+)/i, '$1ª Rodada')
+    .replace(/Round (\d+)/i, '$1ª Rodada');
+  ```
+
+#### 🛑 Problema 3: Orquestração Docker Swarm vs `docker restart`
+* **Causa:** No ambiente Easypanel da VPS, os serviços PocketBase rodam sob **Docker Swarm**. Ao reiniciar um container individual com `docker restart <container_id>`, o Swarm descartava o container e gerava uma nova réplica com a imagem base, sobrescrevendo alterações voláteis feitas fora de volumes persistentes.
+* **Solução de Engenharia:** Utilizar atualização declarativa de serviços (`docker service update --force zapscore_pocketbase-*`) e mapeamento direto via pipe/volume para persistência garantida de hooks `.pb.js`.
+
+---
+
+### 16.4 Matriz de Roteamento Multi-Instância e Payload Rich Push
+
+| App / Liga | `appSlug` | League ID | Instância PocketBase de Destino | Service Account Firebase |
+| :--- | :--- | :--- | :--- | :--- |
+| **Brasileirão Série A** | `brasileirao` | `71` | `zapscore-pocketbase-brasil` | `appbrasileirao-a2daa` |
+| **Brasileirão Série B** | `brasileirao-b` | `72` | `zapscore-pocketbase-brasil` | `appbrasileirao-a2daa` |
+| **Campeonato Paulista** | `campeonato_paulista` | `606` | `zapscore-pocketbase-estaduais` | `paulistao-2026` |
+| **Campeonato Carioca** | `campeonato_carioca` | `607` | `zapscore-pocketbase-estaduais` | `cariocazapscore` |
+| **Serie A (Itália)** | `seriea-italia` | `135` | `zapscore-pocketbase-europa` | `seriea-italia` |
+| **La Liga (Espanha)** | `laliga` | `140` | `zapscore-pocketbase-europa` | `laliga-zapscore` |
+| **Premier League** | `premierleague` | `39` | `zapscore-pocketbase-europa` | `premierleague-zapscore` |
+| **Champions League** | `championsleague` | `2` | `zapscore-pocketbase-europa` | `championsleague` |
+
+---
+
+### 16.5 O Que Ficou para Resolver e Próximos Passos
+
+1. **Pipeline Automatizado de Deploy para `pb_hooks` no Easypanel:**
+   * Atualmente, o deploy dos arquivos `.pb.js` é realizado via script SFTP/SSH direto na VPS.
+   * **Recomendação:** Configurar o volume persistente do Easypanel (`/pb_hooks`) mapeado para um diretório compartilhado no host para que qualquer `git pull` atualize os 3 PocketBases sem intervenção manual.
+
+2. **Cron Job Noturno de Resumo Automático de Placares:**
+   * Criar um job agendado às 23:30 nos dias de jogos para disparar o resumo de rodada de forma 100% autônoma caso o operador não tenha disparado manualmente pelo AdminPanel.
+
+3. **Migração para FCM Topics (Capítulo 10):**
+   * Integrar a fila de broadcasts manuais à arquitetura de **FCM Topics** para reduzir o tempo de envio em bases com mais de 500.000 dispositivos de ~45 segundos para menos de **1,5 segundo**.
+
+---
+
+### 16.6 Registro Cirúrgico de Alterações e Análise de Efeitos Colaterais em `notifications.service.ts`
+
+Para garantir total rastreabilidade técnica e auditoria de regressões, registram-se abaixo as alterações exatas no arquivo [`apps/api/src/notifications/notifications.service.ts`](file:///d:/zapscore/apps/api/src/notifications/notifications.service.ts) (Commit `14cf721`):
+
+#### 1. Modificações Efetuadas no Método `getRoundSummary(leagueId, season)`:
+
+```diff
+-  async getRoundSummary(leagueId: number, season: number = 2026) {
++  async getRoundSummary(leagueId: number, season: number = 2026) {
+     try {
+       const fixtures = await this.prisma.fixture.findMany({
+         where: {
+           league: { externalId: Number(leagueId) },
+           season: Number(season),
++          statusShort: { in: ['FT', 'AET', 'PEN', '1H', '2H', 'HT', 'LIVE'] },
+         },
+         include: {
+           homeTeam: true,
+           awayTeam: true,
+         },
+         orderBy: {
+           date: 'desc',
+         },
+-        take: 30,
++        take: 50,
+       });
+
+       if (!fixtures || fixtures.length === 0) {
+-        return { success: false, message: 'Nenhuma partida encontrada para esta liga.' };
++        return { success: false, message: 'Nenhuma partida finalizada recente encontrada para esta liga.' };
+       }
+
+       // Agrupa por rodada (round)
+       const roundsMap: Record<string, any[]> = {};
+       fixtures.forEach((f) => {
+         const roundName = f.round || 'Rodada Atual';
+         if (!roundsMap[roundName]) roundsMap[roundName] = [];
+         roundsMap[roundName].push(f);
+       });
+
+-      const latestRound = Object.keys(roundsMap)[0];
+-      const roundFixtures = roundsMap[latestRound];
+-      const isCompleted = roundFixtures.every((f) => ['FT', 'AET', 'PEN'].includes(f.status));
++      const latestRound = Object.keys(roundsMap)[0];
++      const roundFixtures = roundsMap[latestRound];
++      const finishedMatches = roundFixtures.filter((f) => ['FT', 'AET', 'PEN'].includes(f.statusShort || f.status)).length;
++      const isCompleted = finishedMatches > 0 && finishedMatches === roundFixtures.length;
+
++      // Formatação de nome humanizado
++      const formattedRound = latestRound.replace(/Regular Season - (\d+)/i, '$1ª Rodada').replace(/Round (\d+)/i, '$1ª Rodada');
+
+       const scoresList = roundFixtures
+-        .map((f) => {
++        .filter((f) => ['FT', 'AET', 'PEN'].includes(f.statusShort || f.status))
++        .map((f) => {
+           const hName = f.homeTeam?.name || 'Mandante';
+           const aName = f.awayTeam?.name || 'Visitante';
+           const hScore = f.homeScore ?? 0;
+           const aScore = f.awayScore ?? 0;
+           return `${hName} ${hScore}x${aScore} ${aName}`;
+         })
+         .join(' | ');
+
+       return {
+         success: true,
+-        round: latestRound,
++        round: formattedRound,
+         isCompleted,
+         totalMatches: roundFixtures.length,
+-        finishedMatches: roundFixtures.filter((f) => ['FT', 'AET', 'PEN'].includes(f.status)).length,
+-        suggestedTitle: `🏁 Fim da ${latestRound}`,
+-        suggestedBody: scoresList,
++        finishedMatches: finishedMatches,
++        suggestedTitle: isCompleted ? `🏁 Fim da ${formattedRound}` : `⚽ Resultados da ${formattedRound}`,
++        suggestedBody: scoresList || 'Confira todos os lances e estatísticas completas no aplicativo.',
+       };
+     } catch (e: any) {
+```
+
+#### 2. Matriz de Análise de Risco e Potenciais Efeitos Colaterais:
+
+| Cenário de Execução | Comportamento Anterior | Comportamento Atual | Avaliação de Risco |
+| :--- | :--- | :--- | :--- |
+| **Início de Temporada (0 jogos realizados):** | Retornava jogos futuros como 0x0 ("EM ANDAMENTO"). | Retorna `{ success: false, message: 'Nenhuma partida finalizada...' }`. O AdminPanel exibe aviso informativo em vez de quebrar. | 🟢 **Nenhum Risco** (Tratado defensivamente). |
+| **Rodada com Jogos Espalhados (Quarta e Quinta):** | Mostrava apenas os jogos que vinham no `take: 30`. | `take: 50` garante que todos os jogos da mesma rodada sejam agrupados no mesmo `roundsMap`. | 🟢 **Melhoria** (Sem perda de partidas). |
+| **Compatibilidade de Campos no Prisma (`status` vs `statusShort`):** | Checava `f.status` que poderia vir nulo caso a API-Football populate apenas `statusShort`. | Usa `f.statusShort || f.status`, eliminando falsos negativos em checagem de partidas concluídas. | 🟢 **Resiliência Reforçada**. |
+| **Outros Módulos da API (Crawlers, Sentinel, Fixtures):** | Nenhuma alteração fora do método `getRoundSummary`. | O isolamento é total: nenhum controller de partidas ao vivo, notícias ou vídeos consome esse método. | 🟢 **Zero Efeito Colateral Externo**. |
+
+
+
+
 

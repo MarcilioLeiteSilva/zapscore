@@ -4,6 +4,8 @@ import { ApiFootballService } from '../integrations/api-football/api-football.se
 import { PrismaService } from '../prisma/prisma.service';
 import { SyncService } from '../sync/sync.service';
 import { SentinelAlertService } from './sentinel-alert.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
 export class ZapScoreSentinelService {
@@ -14,6 +16,7 @@ export class ZapScoreSentinelService {
     private readonly prisma: PrismaService,
     private readonly syncService: SyncService,
     private readonly alertService: SentinelAlertService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -26,8 +29,9 @@ export class ZapScoreSentinelService {
     try {
       const results = await this.auditLiveMatches();
       const timezoneResults = await this.auditTimezoneConsistency();
-      this.logger.log(`[Sentinel] Auditoria concluída. Partidas auditadas com sucesso. Live Anomalias: ${results.anomaliesCount}`);
-      return { live: results, timezone: timezoneResults };
+      const roundsResults = await this.checkFinishedRounds();
+      this.logger.log(`[Sentinel] Auditoria concluída. Partidas auditadas. Live Anomalias: ${results.anomaliesCount}, Rodadas Concluídas: ${roundsResults.completedRoundsCount}`);
+      return { live: results, timezone: timezoneResults, rounds: roundsResults };
     } catch (err: any) {
       this.logger.error(`[Sentinel] Erro durante auditoria: ${err.message}`, err.stack);
       await this.alertService.sendAlert({
@@ -38,6 +42,7 @@ export class ZapScoreSentinelService {
       return { error: err.message };
     }
   }
+
 
   /**
    * Auditoria de partidas ao vivo e verificação de desincronizações
@@ -160,4 +165,52 @@ export class ZapScoreSentinelService {
 
     return { todayDate: todayBrt, totalFixturesToday: countToday };
   }
+
+  /**
+   * Monitora partidas do dia e detecta quando 100% dos jogos de uma liga atingem FT.
+   * Enfileira o resumo de placares no Agente Push para aprovação ou auto-disparo em 60 min.
+   */
+  async checkFinishedRounds() {
+    const todayBrt = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+    const startBrt = new Date(`${todayBrt}T03:00:00.000Z`);
+    const endBrt = new Date(`${todayBrt}T02:59:59.999Z`);
+    endBrt.setDate(endBrt.getDate() + 1);
+
+    let completedRoundsCount = 0;
+    const monitoredLeagues = SUPPORTED_COMPETITIONS;
+
+    for (const comp of monitoredLeagues) {
+      try {
+        const todayFixtures = await this.prisma.fixture.findMany({
+          where: {
+            league: { externalId: comp.externalId },
+            date: { gte: startBrt, lte: endBrt },
+          },
+          select: {
+            id: true,
+            statusShort: true,
+            round: true,
+          },
+        });
+
+        if (todayFixtures.length === 0) continue;
+
+        // Verifica se TODOS os jogos agendados para hoje estão com status finalizado
+        const allFinished = todayFixtures.every((f) => ['FT', 'AET', 'PEN'].includes(f.statusShort || ''));
+
+        if (allFinished) {
+          const result = await this.notificationsService.enqueueRoundSummary(comp.externalId, 2026);
+          if (result.success && result.queueItem) {
+            completedRoundsCount++;
+            this.logger.log(`[Sentinel] 🏁 Todas as ${todayFixtures.length} partidas de hoje da liga ${comp.name} foram concluídas (FT). Resumo pronto no Agente Push.`);
+          }
+        }
+      } catch (err: any) {
+        this.logger.error(`[Sentinel] Erro ao auditar encerramento de rodada para ${comp.name}: ${err.message}`);
+      }
+    }
+
+    return { completedRoundsCount };
+  }
 }
+

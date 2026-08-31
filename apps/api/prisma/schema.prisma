@@ -333,3 +333,25 @@ model FixtureAiAnalysis {
 
   @@map("fixture_ai_analysis")
 }
+
+model PushQueue {
+  id                      String    @id @default(uuid())
+  leagueId                Int
+  appSlug                 String
+  round                   String
+  title                   String
+  body                    String    @db.Text
+  imageUrl                String?
+  status                  String    @default("PENDING_APPROVAL") // PENDING_APPROVAL, DISPATCHED_OPERATOR, DISPATCHED_AUTO, CANCELLED
+  detectedAt              DateTime  @default(now())
+  scheduledAutoDispatchAt DateTime
+  dispatchedAt            DateTime?
+  sentCount               Int?      @default(0)
+  target                  String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([status, scheduledAutoDispatchAt])
+  @@index([leagueId, round])
+}
+

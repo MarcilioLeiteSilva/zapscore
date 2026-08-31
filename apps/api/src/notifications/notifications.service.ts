@@ -218,4 +218,261 @@ export class NotificationsService {
       return { success: false, error: e.message };
     }
   }
+
+  /**
+   * Enfileira o resumo de placares de uma rodada finalizada para aprovação do operador
+   * e agenda o disparo automático de fallback para +60 minutos.
+   */
+  async enqueueRoundSummary(leagueId: number, season: number = 2026) {
+    try {
+      const summary = await this.getRoundSummary(leagueId, season);
+      if (!summary.success || !summary.round) {
+        return { success: false, message: summary.message || 'Não foi possível compilar o resumo da rodada.' };
+      }
+
+      const target = this.resolvePocketBaseTarget(leagueId);
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // Verificação de Idempotência: não enfileira se já existir notificação recente para esta rodada
+      const existing = await this.prisma.pushQueue.findFirst({
+        where: {
+          leagueId: Number(leagueId),
+          round: summary.round,
+          createdAt: { gte: twentyFourHoursAgo },
+          status: { in: ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO'] },
+        },
+      });
+
+      if (existing) {
+        return {
+          success: true,
+          message: 'Resumo já enfileirado ou despachado para esta rodada.',
+          queueItem: existing,
+        };
+      }
+
+      // Janela estrita de 60 minutos para ação do operador
+      const scheduledAutoDispatchAt = new Date(Date.now() + 60 * 60 * 1000);
+
+      const queueItem = await this.prisma.pushQueue.create({
+        data: {
+          leagueId: Number(leagueId),
+          appSlug: target.slug,
+          round: summary.round,
+          title: summary.suggestedTitle || `🏁 Fim da ${summary.round}`,
+          body: summary.suggestedBody || 'Confira os resultados completos no app!',
+          status: 'PENDING_APPROVAL',
+          scheduledAutoDispatchAt,
+          target: target.name,
+        },
+      });
+
+      this.logger.log(`[Push Queue] 📥 Resumo enfileirado para [${target.name}] (${summary.round}). Disparo automático agendado para ${scheduledAutoDispatchAt.toISOString()}`);
+
+      return {
+        success: true,
+        message: 'Resumo enfileirado com sucesso. Aguardando operador ou fallback de 60 min.',
+        queueItem,
+      };
+    } catch (e: any) {
+      this.logger.error(`Erro ao enfileirar resumo da rodada: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Consulta a fila de notificações com prioridade para as pendentes
+   */
+  async getQueue(status?: string) {
+    try {
+      const whereClause = status ? { status } : {};
+      const items = await this.prisma.pushQueue.findMany({
+        where: whereClause,
+        orderBy: [
+          { status: 'asc' },
+          { scheduledAutoDispatchAt: 'asc' },
+        ],
+        take: 50,
+      });
+
+      return {
+        success: true,
+        count: items.length,
+        items,
+      };
+    } catch (e: any) {
+      this.logger.error(`Erro ao consultar fila de push: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Disparo imediato aprovado pelo operador no AdminPanel
+   */
+  async dispatchQueueItem(id: string, operatorOverride?: { title?: string; body?: string; imageUrl?: string }) {
+    try {
+      const item = await this.prisma.pushQueue.findUnique({ where: { id } });
+      if (!item) {
+        return { success: false, message: 'Item da fila não encontrado.' };
+      }
+
+      if (item.status !== 'PENDING_APPROVAL') {
+        return { success: false, message: `Item já finalizado com status: ${item.status}` };
+      }
+
+      const finalTitle = operatorOverride?.title || item.title;
+      const finalBody = operatorOverride?.body || item.body;
+      const finalImage = operatorOverride?.imageUrl !== undefined ? operatorOverride.imageUrl : (item.imageUrl || '');
+
+      const broadcastResult = await this.sendBroadcast({
+        leagueId: item.leagueId,
+        appSlug: item.appSlug,
+        title: finalTitle,
+        body: finalBody,
+        imageUrl: finalImage,
+        dataPayload: {
+          app_slug: item.appSlug,
+          league_id: String(item.leagueId),
+          type: 'round_summary',
+          round: item.round,
+        },
+      });
+
+      const updated = await this.prisma.pushQueue.update({
+        where: { id },
+        data: {
+          title: finalTitle,
+          body: finalBody,
+          imageUrl: finalImage,
+          status: 'DISPATCHED_OPERATOR',
+          dispatchedAt: new Date(),
+          sentCount: broadcastResult.details?.sentCount || 0,
+          target: broadcastResult.target || item.target,
+        },
+      });
+
+      this.logger.log(`[Push Queue] 👤 Item ${id} disparado manualmente pelo operador via ${broadcastResult.target}`);
+
+      return {
+        success: true,
+        broadcastResult,
+        queueItem: updated,
+      };
+    } catch (e: any) {
+      this.logger.error(`Erro ao disparar item da fila ${id}: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Cancelamento/descarte do disparo pelo operador
+   */
+  async cancelQueueItem(id: string) {
+    try {
+      const item = await this.prisma.pushQueue.findUnique({ where: { id } });
+      if (!item) {
+        return { success: false, message: 'Item não encontrado.' };
+      }
+
+      const updated = await this.prisma.pushQueue.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+      });
+
+      this.logger.log(`[Push Queue] ❌ Item ${id} cancelado pelo operador.`);
+      return { success: true, queueItem: updated };
+    } catch (e: any) {
+      this.logger.error(`Erro ao cancelar item ${id}: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Atualização de título/mensagem do item antes do disparo
+   */
+  async updateQueueItem(id: string, dto: { title?: string; body?: string; imageUrl?: string }) {
+    try {
+      const item = await this.prisma.pushQueue.findUnique({ where: { id } });
+      if (!item || item.status !== 'PENDING_APPROVAL') {
+        return { success: false, message: 'Item não encontrado ou não está pendente de aprovação.' };
+      }
+
+      const updated = await this.prisma.pushQueue.update({
+        where: { id },
+        data: {
+          title: dto.title !== undefined ? dto.title : item.title,
+          body: dto.body !== undefined ? dto.body : item.body,
+          imageUrl: dto.imageUrl !== undefined ? dto.imageUrl : item.imageUrl,
+        },
+      });
+
+      return { success: true, queueItem: updated };
+    } catch (e: any) {
+      this.logger.error(`Erro ao atualizar item ${id}: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Processador de Fallback Autônomo:
+   * Dispara automaticamente itens da fila com status PENDING_APPROVAL que tenham ultrapassado os 60 minutos
+   */
+  async processPendingAutoDispatches() {
+    const now = new Date();
+    try {
+      const expiredItems = await this.prisma.pushQueue.findMany({
+        where: {
+          status: 'PENDING_APPROVAL',
+          scheduledAutoDispatchAt: { lte: now },
+        },
+      });
+
+      if (!expiredItems || expiredItems.length === 0) {
+        return { processedCount: 0 };
+      }
+
+      this.logger.log(`[AutoDispatch Worker] ⏰ Encontrados ${expiredItems.length} itens pendentes de auto-disparo (janela de 60m expirada).`);
+
+      let processedCount = 0;
+      for (const item of expiredItems) {
+        try {
+          const broadcastResult = await this.sendBroadcast({
+            leagueId: item.leagueId,
+            appSlug: item.appSlug,
+            title: item.title,
+            body: item.body,
+            imageUrl: item.imageUrl || '',
+            dataPayload: {
+              app_slug: item.appSlug,
+              league_id: String(item.leagueId),
+              type: 'round_summary',
+              round: item.round,
+              source: 'sentinel_auto_fallback',
+            },
+          });
+
+          await this.prisma.pushQueue.update({
+            where: { id: item.id },
+            data: {
+              status: 'DISPATCHED_AUTO',
+              dispatchedAt: new Date(),
+              sentCount: broadcastResult.details?.sentCount || 0,
+              target: broadcastResult.target || item.target,
+            },
+          });
+
+          this.logger.log(`[AutoDispatch Worker] 🚀 Auto-disparo executado com sucesso para ${item.round} (Liga ${item.leagueId}). Entregues: ${broadcastResult.details?.sentCount || 0}`);
+          processedCount++;
+        } catch (itemErr: any) {
+          this.logger.error(`[AutoDispatch Worker] Falha no auto-disparo do item ${item.id}: ${itemErr.message}`);
+        }
+      }
+
+      return { processedCount };
+    } catch (err: any) {
+      this.logger.error(`[AutoDispatch Worker] Erro no processamento de auto-disparo: ${err.message}`);
+      return { processedCount: 0, error: err.message };
+    }
+  }
 }
+

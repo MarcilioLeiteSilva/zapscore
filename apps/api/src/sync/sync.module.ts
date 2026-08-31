@@ -10,12 +10,14 @@ import { CompetitionsModule } from '../competitions/competitions.module';
 import { NewsModule } from '../news/news.module';
 import { VideosModule } from '../videos/videos.module';
 import { FixturesModule } from '../fixtures/fixtures.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule, VideosModule, FixturesModule],
+  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule, VideosModule, FixturesModule, NotificationsModule],
   controllers: [SyncController],
   providers: [SyncService, SyncJobsService, SyncContentService],
   exports: [SyncService],
 })
 export class SyncModule {}
+
 

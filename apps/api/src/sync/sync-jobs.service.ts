@@ -7,6 +7,7 @@ import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SyncJobsService implements OnApplicationBootstrap {
@@ -20,7 +21,9 @@ export class SyncJobsService implements OnApplicationBootstrap {
     private readonly videoCrawler: VideoCrawlerService,
     private readonly prisma: PrismaService,
     private readonly aiSyncService: AiSyncService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
 
   async onApplicationBootstrap() {
     this.logger.log('Startup: checking and resolving finished predictions in database...');
@@ -191,4 +194,15 @@ export class SyncJobsService implements OnApplicationBootstrap {
       this.logger.error(`[Cron] Falha no job periódico de artilharia: ${err.message}`);
     }
   }
+
+  // A cada 1 minuto: Processa itens da fila de push com janela de 60m expirada (Fallback Autônomo)
+  @Cron('* * * * *')
+  async handleAutoPushQueue() {
+    try {
+      await this.notificationsService.processPendingAutoDispatches();
+    } catch (err) {
+      this.logger.error(`[Cron] Falha no worker de auto-disparo de push: ${err.message}`);
+    }
+  }
 }
+
