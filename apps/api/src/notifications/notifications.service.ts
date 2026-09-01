@@ -487,6 +487,10 @@ export class NotificationsService {
     }
   }
 
+  // Controle de estado para escalações sem necessidade de alteração de schema no PostgreSQL
+  private readonly dispatchedLineupMap = new Map<number, Date>();
+  private readonly dismissedLineupSet = new Set<number>();
+
   /**
    * Retorna todas as partidas das próximas 2 horas para todas as competições monitoradas,
    * indicando se as escalações (22 titulares) estão disponíveis, status de disparo e timer de 10 min.
@@ -527,10 +531,13 @@ export class NotificationsService {
         const totalStarters = homeStarters + awayStarters;
         const isBothConfirmed = homeStarters >= 11 && awayStarters >= 11;
 
+        const isDispatched = this.dispatchedLineupMap.has(f.externalId);
+        const isDismissed = this.dismissedLineupSet.has(f.externalId);
+
         let status: 'AVAILABLE' | 'WAITING' | 'DISPATCHED' | 'DISMISSED' = 'WAITING';
-        if (f.lineupDispatchedAt) {
+        if (isDispatched) {
           status = 'DISPATCHED';
-        } else if (f.lineupDismissed) {
+        } else if (isDismissed) {
           status = 'DISMISSED';
         } else if (isBothConfirmed) {
           status = 'AVAILABLE';
@@ -569,7 +576,7 @@ export class NotificationsService {
           isBothConfirmed,
           totalStarters,
           autoDispatchAt,
-          lineupDispatchedAt: f.lineupDispatchedAt,
+          lineupDispatchedAt: this.dispatchedLineupMap.get(f.externalId) || null,
           target: target.name,
           appSlug: target.slug,
           suggestedTitle,
@@ -602,10 +609,10 @@ export class NotificationsService {
         return { success: false, message: 'Partida não encontrada.' };
       }
 
-      if (fixture.lineupDispatchedAt) {
+      if (this.dispatchedLineupMap.has(fixture.externalId)) {
         return {
           success: false,
-          message: `Alerta de escalação já disparado anteriormente para esta partida em ${fixture.lineupDispatchedAt.toISOString()}.`,
+          message: `Alerta de escalação já disparado anteriormente para esta partida em ${this.dispatchedLineupMap.get(fixture.externalId)?.toISOString()}.`,
         };
       }
 
@@ -629,17 +636,14 @@ export class NotificationsService {
         },
       });
 
-      const updated = await this.prisma.fixture.update({
-        where: { id: fixture.id },
-        data: { lineupDispatchedAt: new Date() },
-      });
+      this.dispatchedLineupMap.set(fixture.externalId, new Date());
 
       this.logger.log(`[Lineup Push] 🚀 Alerta de escalação disparado para ${fixture.homeTeam.name} x ${fixture.awayTeam.name} (${target.name})`);
 
       return {
         success: true,
         broadcastResult,
-        fixture: updated,
+        dispatchedAt: this.dispatchedLineupMap.get(fixture.externalId),
       };
     } catch (e: any) {
       this.logger.error(`Erro ao disparar alerta de escalação: ${e.message}`);
@@ -652,10 +656,7 @@ export class NotificationsService {
    */
   async dismissLineupAlert(fixtureId: number) {
     try {
-      await this.prisma.fixture.updateMany({
-        where: { externalId: Number(fixtureId) },
-        data: { lineupDismissed: true },
-      });
+      this.dismissedLineupSet.add(Number(fixtureId));
       return { success: true, message: 'Alerta de escalação descartado com sucesso.' };
     } catch (e: any) {
       this.logger.error(`Erro ao descartar alerta de escalação: ${e.message}`);
@@ -798,8 +799,6 @@ export class NotificationsService {
             externalId: { in: monitoredIds },
           },
           statusShort: { in: ['NS', 'TBD'] },
-          lineupDispatchedAt: null,
-          lineupDismissed: false,
         },
         include: {
           homeTeam: true,
@@ -813,8 +812,12 @@ export class NotificationsService {
         return { processedCount: 0 };
       }
 
+      const undispatchedCandidates = candidateFixtures.filter(
+        (f) => !this.dispatchedLineupMap.has(f.externalId) && !this.dismissedLineupSet.has(f.externalId),
+      );
+
       let processedCount = 0;
-      for (const f of candidateFixtures) {
+      for (const f of undispatchedCandidates) {
         const homeStarters = f.lineups.filter((l) => l.teamId === f.homeTeam.externalId && l.isStart).length;
         const awayStarters = f.lineups.filter((l) => l.teamId === f.awayTeam.externalId && l.isStart).length;
 
