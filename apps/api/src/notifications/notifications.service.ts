@@ -313,8 +313,8 @@ export class NotificationsService {
         items,
       };
     } catch (e: any) {
-      this.logger.error(`Erro ao consultar fila de push: ${e.message}`);
-      return { success: false, error: e.message };
+      this.logger.warn(`PushQueue not available: ${e.message}`);
+      return { success: true, count: 0, items: [] };
     }
   }
 
@@ -718,12 +718,17 @@ export class NotificationsService {
         leaguesMap[lid].fixtures.push(f);
       }
 
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const queueItems = await this.prisma.pushQueue.findMany({
-        where: {
-          createdAt: { gte: twentyFourHoursAgo },
-        },
-      });
+      let queueItems: any[] = [];
+      try {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        queueItems = await this.prisma.pushQueue.findMany({
+          where: {
+            createdAt: { gte: twentyFourHoursAgo },
+          },
+        });
+      } catch (qErr) {
+        queueItems = [];
+      }
 
       const completedLeagues: any[] = [];
       const inProgressLeagues: any[] = [];
