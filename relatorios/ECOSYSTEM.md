@@ -101,6 +101,9 @@
   - [16.4 Matriz de Roteamento Multi-Instância e Payload Rich Push](#164-matriz-de-roteamento-multi-instância-e-payload-rich-push)
   - [16.5 O Que Ficou para Resolver e Próximos Passos](#165-o-que-ficou-para-resolver-e-próximos-passos)
   - [16.6 Registro Cirúrgico de Alterações e Análise de Efeitos Colaterais em `notifications.service.ts`](#166-registro-cirúrgico-de-alterações-e-análise-de-efeitos-colaterais-em-notificationsservicets)
+  - [16.7 Integração Sentinel + Agente Push (Resumo FT & Fallback de 60 Minutos)](#167-integração-sentinel--agente-push-resumo-ft--fallback-de-60-minutos)
+  - [16.8 Diagnósticos Críticos de Produção, Gotchas e Soluções de Engenharia](#168-diagnósticos-críticos-de-produção-gotchas-e-soluções-de-engenharia)
+  - [16.9 Roadmap Imediato e Próximos Incrementos](#169-roadmap-imediato-e-próximos-incrementos)
 
 
 ---
@@ -1639,6 +1642,55 @@ flowchart TD
 4. **Worker de Auto-Dispatch (`SyncJobsService.handleAutoPushQueue`):**
    - Cron de alta frequência (`* * * * *`) executado a cada 1 minuto.
    - Dispara automaticamente itens com `status: 'PENDING_APPROVAL'` cujo `scheduledAutoDispatchAt <= now` (janela estrita de 60 minutos sem ação humana).
+
+---
+
+### 16.8 Diagnósticos Críticos de Produção, Gotchas e Soluções de Engenharia
+
+Durante a validação em produção do módulo de Broadcast e Agente Push (31/08/2026), foram mapeados e solucionados 4 incidentes críticos de infraestrutura e runtime, cujas lições aprendidas passam a compor o padrão de governança do projeto:
+
+#### 1. Dessincronia de Schema Prisma no Pipeline Easypanel (Erro 500 Central na API)
+* **Sintoma:** Todos os aplicativos móveis e a rota central `/fixtures/today` retornaram erro `500 Internal Server Error` instantaneamente.
+* **Causa Raiz:** O deploy da `apps/api` no Easypanel executa apenas `npm run build` (`nest build`), **sem rodar migrações de banco (`prisma migrate deploy` ou `prisma db push`)**. A adição de colunas (`lineupDispatchedAt`, `lineupDismissed`) no `schema.prisma` fez com que o Prisma Client gerasse queries SQL buscando colunas inexistentes na tabela física `Fixture` do PostgreSQL.
+* **Solução de Engenharia:**
+  - Reversão cirúrgica do `schema.prisma` (`commit 1f6c2dd`), restaurando o contrato físico do banco.
+  - Migração do estado volátil de escalações para mapas em memória (`dispatchedLineupMap` e `dismissedLineupSet`) no serviço `NotificationsService`.
+  - Inclusão da **Regra Máxima e Absoluta** em `AGENTS.md`, tornando mandatório o isolamento cirúrgico de banco.
+
+#### 2. Ausência Física da Tabela `PushQueue` no PostgreSQL
+* **Sintoma:** O endpoint `/notifications/rounds-dashboard` falhava com erro:
+  `Invalid prisma.pushQueue.findMany() invocation: The table public.PushQueue does not exist in the current database`.
+* **Causa Raiz:** O modelo `PushQueue` existia no `schema.prisma`, mas a tabela física não havia sido criada no PostgreSQL gerenciado pelo Easypanel.
+* **Solução de Engenharia:**
+  - Envolvimento defensivo de todas as queries que consultam `PushQueue` (`getRoundsDashboard`, `getQueue`) em blocos `try/catch` seguros.
+  - Caso a tabela não exista, o endpoint degrada graciosamente e calcula as rodadas finalizadas e partidas em andamento diretamente a partir da tabela `Fixture`, garantindo 100% de disponibilidade no AdminPanel.
+
+#### 3. Depreciação de APIs no Runtime Goja do PocketBase (`TypeError: Object has no member 'requestInfo'` & `'queryParam'`)
+* **Sintoma:** Ao invocar `POST /api/broadcast-push`, o PocketBase retornava status 500 com erro `Object has no member 'requestInfo'` e, em seguida, erro `Object has no member 'queryParam'`.
+* **Causa Raiz:** Em versões recentes do PocketBase (v0.22+), o método `$app.requestInfo()` e `c.queryParam()` foram descontinuados/removidos do interpretador Goja.
+* **Solução de Engenharia:**
+  - Implementação de um extrator defensivo de parâmetros em 4 camadas em `broadcast.pb.js`:
+    1. `$apis.requestInfo(c).data` (API moderna do PocketBase);
+    2. `readerToString(c.request().body)` / `readerToString(c.request.body)` (Fallback de stream);
+    3. `c.bind(data)` / `c.Bind(data)`;
+    4. Métodos PascalCase de compatibilidade (`c.QueryParam`, `c.FormValue`).
+
+#### 4. Isolamento de Escopo Global no Goja (`ReferenceError: _googleTokenCache is not defined`)
+* **Sintoma:** Falha na geração do token OAuth2 com Google FCM retornando `ReferenceError: _googleTokenCache is not defined`.
+* **Causa Raiz:** No interpretador Goja do PocketBase, **variáveis declaradas no escopo do arquivo `.pb.js` não são compartilhadas nem herdadas pelos callbacks de `routerAdd`**.
+* **Solução de Engenharia:**
+  - Toda variável de cache, credenciais de contingência ou estado (`var _googleTokenCache = {};`, `_EMBEDDED_FIREBASE_CONFIGS`) deve ser declarada **estritamente dentro do corpo da função do handler** `routerAdd("POST", ... , function(c) { ... })`.
+
+---
+
+### 16.9 Roadmap Imediato e Próximos Incrementos
+
+1. **⏱️ Countdown Timer de 60 Minutos nos Cards de Rodadas:**
+   - Exibir cronômetro regressivo dinâmico (`MM:SS restantes`) em cada card de liga no bloco *Rodadas Concluídas Hoje*.
+   - Ao expirar o tempo (60 min após o apito final do último jogo do dia), o auto-disparo de encerramento de rodada deve ser acionado com fallback e idempotência.
+2. **🔔 Deep Linking nos Apps Móveis:**
+   - Assegurar que ao tocar na notificação de encerramento de rodada, o app abra diretamente na aba de Tabela/Classificação ou na rodada correspondente.
+
 
 
 
