@@ -70,6 +70,8 @@ model Fixture {
   oddsHome    Float?
   oddsDraw    Float?
   oddsAway    Float?
+  lineupDispatchedAt DateTime? // Horário em que o push de escalação foi enviado (trava anti-duplicação)
+  lineupDismissed    Boolean?  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

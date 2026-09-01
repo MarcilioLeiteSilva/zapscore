@@ -23,6 +23,29 @@ export class NotificationsController {
     return this.notificationsService.getLineupAlerts(leagueId ? Number(leagueId) : undefined);
   }
 
+  @Get('lineups-dashboard')
+  async getLineupsDashboard() {
+    return this.notificationsService.getLineupsDashboard();
+  }
+
+  @Post('lineups/:fixtureId/dispatch')
+  async dispatchLineupAlert(
+    @Param('fixtureId') fixtureId: number,
+    @Body() overrideDto?: { title?: string; body?: string; imageUrl?: string },
+  ) {
+    return this.notificationsService.dispatchLineupAlert(Number(fixtureId), overrideDto);
+  }
+
+  @Post('lineups/:fixtureId/dismiss')
+  async dismissLineupAlert(@Param('fixtureId') fixtureId: number) {
+    return this.notificationsService.dismissLineupAlert(Number(fixtureId));
+  }
+
+  @Get('rounds-dashboard')
+  async getRoundsDashboard() {
+    return this.notificationsService.getRoundsDashboard();
+  }
+
   @Get('queue')
   async getQueue(@Query('status') status?: string) {
     return this.notificationsService.getQueue(status);

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
+import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 export interface BroadcastPushDto {
   leagueId?: number;
@@ -20,6 +21,17 @@ export class NotificationsService {
   private readonly PB_EUROPA = 'https://zapscore-pocketbase-europa.gtalg3.easypanel.host';
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Identifica o módulo correspondente da liga para categorização visual
+   */
+  private getModuleForLeague(leagueId: number): { id: string; name: string; icon: string } {
+    const id = Number(leagueId);
+    if ([71, 72].includes(id)) return { id: 'brasil', name: 'Brasil', icon: '🇧🇷' };
+    if ([39, 140, 135, 78, 61, 2].includes(id)) return { id: 'europa', name: 'Europa', icon: '🇪🇺' };
+    if ([73, 612, 13, 1, 10].includes(id)) return { id: 'copas', name: 'Copas', icon: '🏆' };
+    return { id: 'estaduais', name: 'Estaduais', icon: '📍' };
+  }
 
   /**
    * Mapeia a liga / appSlug para o endpoint correto do PocketBase
@@ -472,6 +484,352 @@ export class NotificationsService {
     } catch (err: any) {
       this.logger.error(`[AutoDispatch Worker] Erro no processamento de auto-disparo: ${err.message}`);
       return { processedCount: 0, error: err.message };
+    }
+  }
+
+  /**
+   * Retorna todas as partidas das próximas 2 horas para todas as competições monitoradas,
+   * indicando se as escalações (22 titulares) estão disponíveis, status de disparo e timer de 10 min.
+   */
+  async getLineupsDashboard() {
+    try {
+      const now = new Date();
+      const windowStart = new Date(now.getTime() - 30 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+      const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+
+      const fixtures = await this.prisma.fixture.findMany({
+        where: {
+          date: {
+            gte: windowStart,
+            lte: windowEnd,
+          },
+          league: {
+            externalId: { in: monitoredIds },
+          },
+          statusShort: { in: ['NS', 'TBD'] },
+        },
+        include: {
+          homeTeam: true,
+          awayTeam: true,
+          league: true,
+          lineups: true,
+        },
+        orderBy: {
+          date: 'asc',
+        },
+      });
+
+      const enriched = fixtures.map((f) => {
+        const homeStarters = f.lineups.filter((l) => l.teamId === f.homeTeam.externalId && l.isStart).length;
+        const awayStarters = f.lineups.filter((l) => l.teamId === f.awayTeam.externalId && l.isStart).length;
+        const totalStarters = homeStarters + awayStarters;
+        const isBothConfirmed = homeStarters >= 11 && awayStarters >= 11;
+
+        let status: 'AVAILABLE' | 'WAITING' | 'DISPATCHED' | 'DISMISSED' = 'WAITING';
+        if (f.lineupDispatchedAt) {
+          status = 'DISPATCHED';
+        } else if (f.lineupDismissed) {
+          status = 'DISMISSED';
+        } else if (isBothConfirmed) {
+          status = 'AVAILABLE';
+        }
+
+        const autoDispatchAt = new Date(new Date(f.date).getTime() - 10 * 60 * 1000);
+        const target = this.resolvePocketBaseTarget(f.league.externalId);
+        const moduleInfo = this.getModuleForLeague(f.league.externalId);
+
+        const suggestedTitle = `📋 Escalações Confirmadas: ${f.homeTeam.name} x ${f.awayTeam.name}!`;
+        const suggestedBody = `Escalação disponível. Confira os 11 titulares no aplicativo!`;
+
+        return {
+          id: f.id,
+          externalId: f.externalId,
+          leagueId: f.league.externalId,
+          leagueName: f.league.name,
+          module: moduleInfo,
+          homeTeam: {
+            id: f.homeTeam.id,
+            externalId: f.homeTeam.externalId,
+            name: f.homeTeam.name,
+            logo: f.homeTeam.logo,
+            startersCount: homeStarters,
+          },
+          awayTeam: {
+            id: f.awayTeam.id,
+            externalId: f.awayTeam.externalId,
+            name: f.awayTeam.name,
+            logo: f.awayTeam.logo,
+            startersCount: awayStarters,
+          },
+          date: f.date,
+          venueName: f.venueName,
+          status,
+          isBothConfirmed,
+          totalStarters,
+          autoDispatchAt,
+          lineupDispatchedAt: f.lineupDispatchedAt,
+          target: target.name,
+          appSlug: target.slug,
+          suggestedTitle,
+          suggestedBody,
+        };
+      });
+
+      return {
+        success: true,
+        count: enriched.length,
+        fixtures: enriched,
+      };
+    } catch (e: any) {
+      this.logger.error(`Erro ao buscar dashboard de escalações: ${e.message}`);
+      return { success: false, error: e.message, fixtures: [] };
+    }
+  }
+
+  /**
+   * Disparo de alerta de escalação com trava anti-duplicação
+   */
+  async dispatchLineupAlert(fixtureId: number, override?: { title?: string; body?: string; imageUrl?: string }) {
+    try {
+      const fixture = await this.prisma.fixture.findFirst({
+        where: { externalId: Number(fixtureId) },
+        include: { homeTeam: true, awayTeam: true, league: true },
+      });
+
+      if (!fixture) {
+        return { success: false, message: 'Partida não encontrada.' };
+      }
+
+      if (fixture.lineupDispatchedAt) {
+        return {
+          success: false,
+          message: `Alerta de escalação já disparado anteriormente para esta partida em ${fixture.lineupDispatchedAt.toISOString()}.`,
+        };
+      }
+
+      const target = this.resolvePocketBaseTarget(fixture.league.externalId);
+      const title = override?.title || `📋 Escalações Confirmadas: ${fixture.homeTeam.name} x ${fixture.awayTeam.name}!`;
+      const body = override?.body || 'Escalação disponível. Confira os 11 titulares no aplicativo!';
+      const imageUrl = override?.imageUrl || '';
+
+      const broadcastResult = await this.sendBroadcast({
+        leagueId: fixture.league.externalId,
+        appSlug: target.slug,
+        title,
+        body,
+        imageUrl,
+        dataPayload: {
+          app_slug: target.slug,
+          type: 'fixture',
+          fixture_id: String(fixture.externalId),
+          tab: 'lineups',
+          league_id: String(fixture.league.externalId),
+        },
+      });
+
+      const updated = await this.prisma.fixture.update({
+        where: { id: fixture.id },
+        data: { lineupDispatchedAt: new Date() },
+      });
+
+      this.logger.log(`[Lineup Push] 🚀 Alerta de escalação disparado para ${fixture.homeTeam.name} x ${fixture.awayTeam.name} (${target.name})`);
+
+      return {
+        success: true,
+        broadcastResult,
+        fixture: updated,
+      };
+    } catch (e: any) {
+      this.logger.error(`Erro ao disparar alerta de escalação: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Descarta alerta de escalação para que não fique pendente
+   */
+  async dismissLineupAlert(fixtureId: number) {
+    try {
+      await this.prisma.fixture.updateMany({
+        where: { externalId: Number(fixtureId) },
+        data: { lineupDismissed: true },
+      });
+      return { success: true, message: 'Alerta de escalação descartado com sucesso.' };
+    } catch (e: any) {
+      this.logger.error(`Erro ao descartar alerta de escalação: ${e.message}`);
+      return { success: false, error: e.message };
+    }
+  }
+
+  /**
+   * Dashboard Global de Resumo de Rodadas:
+   * Agrupa todas as competições que têm jogos no dia atual (today em BRT)
+   * separando em concluídas (100% FT) e em andamento.
+   */
+  async getRoundsDashboard() {
+    try {
+      const now = new Date();
+      const startBrt = new Date(now);
+      startBrt.setUTCHours(3, 0, 0, 0); // 00:00 BRT
+      const endBrt = new Date(now);
+      endBrt.setUTCHours(26, 59, 59, 999); // 23:59 BRT
+
+      const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+
+      const fixturesToday = await this.prisma.fixture.findMany({
+        where: {
+          date: {
+            gte: startBrt,
+            lte: endBrt,
+          },
+          league: {
+            externalId: { in: monitoredIds },
+          },
+        },
+        include: {
+          homeTeam: true,
+          awayTeam: true,
+          league: true,
+        },
+        orderBy: {
+          date: 'asc',
+        },
+      });
+
+      const leaguesMap: Record<number, any> = {};
+      for (const f of fixturesToday) {
+        const lid = f.league.externalId;
+        if (!leaguesMap[lid]) {
+          const compConfig = SUPPORTED_COMPETITIONS.find((c) => c.externalId === lid);
+          const target = this.resolvePocketBaseTarget(lid);
+          const moduleInfo = this.getModuleForLeague(lid);
+          leaguesMap[lid] = {
+            leagueId: lid,
+            leagueName: compConfig?.name || f.league.name,
+            country: compConfig?.country || f.league.country,
+            module: moduleInfo,
+            target: target.name,
+            appSlug: target.slug,
+            fixtures: [],
+          };
+        }
+        leaguesMap[lid].fixtures.push(f);
+      }
+
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const queueItems = await this.prisma.pushQueue.findMany({
+        where: {
+          createdAt: { gte: twentyFourHoursAgo },
+        },
+      });
+
+      const completedLeagues: any[] = [];
+      const inProgressLeagues: any[] = [];
+
+      for (const lidStr of Object.keys(leaguesMap)) {
+        const item = leaguesMap[Number(lidStr)];
+        const fixtures = item.fixtures;
+        const total = fixtures.length;
+        const finished = fixtures.filter((f: any) => ['FT', 'AET', 'PEN'].includes(f.statusShort || f.status)).length;
+        const live = fixtures.filter((f: any) => ['1H', '2H', 'HT', 'LIVE'].includes(f.statusShort || f.status)).length;
+        const scheduled = fixtures.filter((f: any) => ['NS', 'TBD'].includes(f.statusShort || f.status)).length;
+
+        const isCompleted = total > 0 && finished === total;
+        const queueItem = queueItems.find((q) => q.leagueId === item.leagueId);
+
+        const roundRaw = fixtures[0]?.round || 'Rodada Atual';
+        const formattedRound = roundRaw.replace(/Regular Season - (\d+)/i, '$1ª Rodada').replace(/Round (\d+)/i, '$1ª Rodada');
+
+        const leagueData = {
+          ...item,
+          round: formattedRound,
+          totalMatches: total,
+          finishedMatches: finished,
+          liveMatches: live,
+          scheduledMatches: scheduled,
+          isCompleted,
+          queueItem: queueItem || null,
+          suggestedTitle: isCompleted ? `🏁 Fim dos Jogos de Hoje!` : `⚽ Jogos da ${formattedRound}`,
+          suggestedBody: isCompleted
+            ? `Todos os confrontos do dia foram finalizados. Confira a classificação e os resultados atualizados no app!`
+            : `Acompanhe todos os lances e estatísticas em tempo real no aplicativo.`,
+        };
+
+        if (isCompleted) {
+          completedLeagues.push(leagueData);
+        } else {
+          inProgressLeagues.push(leagueData);
+        }
+      }
+
+      return {
+        success: true,
+        todayTotalLeagues: Object.keys(leaguesMap).length,
+        completedLeagues,
+        inProgressLeagues,
+      };
+    } catch (e: any) {
+      this.logger.error(`Erro ao buscar dashboard de rodadas: ${e.message}`);
+      return { success: false, error: e.message, completedLeagues: [], inProgressLeagues: [] };
+    }
+  }
+
+  /**
+   * Worker de Auto-Disparo de Escalações (executado a cada 1 min):
+   * Dispara o push padrão quando faltam <= 10 min para o início da partida
+   * e ambos os times possuem 11 titulares confirmados.
+   */
+  async processPendingLineupDispatches() {
+    try {
+      const now = new Date();
+      const windowStart = new Date(now.getTime() - 10 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + 10 * 60 * 1000);
+
+      const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+
+      const candidateFixtures = await this.prisma.fixture.findMany({
+        where: {
+          date: {
+            gte: windowStart,
+            lte: windowEnd,
+          },
+          league: {
+            externalId: { in: monitoredIds },
+          },
+          statusShort: { in: ['NS', 'TBD'] },
+          lineupDispatchedAt: null,
+          lineupDismissed: false,
+        },
+        include: {
+          homeTeam: true,
+          awayTeam: true,
+          league: true,
+          lineups: true,
+        },
+      });
+
+      if (!candidateFixtures || candidateFixtures.length === 0) {
+        return { processedCount: 0 };
+      }
+
+      let processedCount = 0;
+      for (const f of candidateFixtures) {
+        const homeStarters = f.lineups.filter((l) => l.teamId === f.homeTeam.externalId && l.isStart).length;
+        const awayStarters = f.lineups.filter((l) => l.teamId === f.awayTeam.externalId && l.isStart).length;
+
+        if (homeStarters >= 11 && awayStarters >= 11) {
+          this.logger.log(`[AutoLineup Worker] ⏰ Disparando escalação automática (10 min pré-jogo) para ${f.homeTeam.name} x ${f.awayTeam.name}`);
+          await this.dispatchLineupAlert(f.externalId);
+          processedCount++;
+        }
+      }
+
+      return { processedCount };
+    } catch (e: any) {
+      this.logger.error(`[AutoLineup Worker] Erro ao processar auto-disparo de escalações: ${e.message}`);
+      return { processedCount: 0, error: e.message };
     }
   }
 }

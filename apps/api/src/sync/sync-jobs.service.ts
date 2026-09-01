@@ -204,5 +204,15 @@ export class SyncJobsService implements OnApplicationBootstrap {
       this.logger.error(`[Cron] Falha no worker de auto-disparo de push: ${err.message}`);
     }
   }
+
+  // A cada 1 minuto: Processa auto-disparo de escalações confirmadas (10 minutos antes da partida)
+  @Cron('* * * * *')
+  async handleAutoLineupsDispatch() {
+    try {
+      await this.notificationsService.processPendingLineupDispatches();
+    } catch (err) {
+      this.logger.error(`[Cron] Falha no worker de auto-disparo de escalações: ${err.message}`);
+    }
+  }
 }
 
