@@ -1,9 +1,10 @@
 # Diretivas de Projeto e Regras de Modificação de Código
 
 ## Regra Máxima e Absoluta
+- **Avaliação Prévia e Obrigatória de Impacto**: É **TERMINANTEMENTE PROIBIDO** em hipótese alguma realizar qualquer alteração em schemas de banco de dados, contratos de API, dependências, rotas ou estruturas compartilhadas sem antes medir e auditar todos os efeitos colaterais em cascata (produção, pipelines de deploy no Easypanel, migrations e compatibilidade retroativa com todos os apps).
 - **Edição Estritamente Cirúrgica**: É **PROIBIDO** alterar qualquer arquivo, widget, estilo, padding, cor, fonte ou estrutura que não tenha sido **explicitamente solicitada** pelo usuário.
 - **Nenhum Efeito Colateral**: Alterações devem afetar **apenas e tão somente** o elemento ou linha estritamente determinada.
-- **Preservação Integral de Layouts**: Preservar 100% dos layouts, contratos de API, widgets e estilos já estabelecidos em todo o projeto.
+- **Preservação Integral de Layouts e Contratos**: Preservar 100% dos layouts, contratos de API existentes, estabilidade de endpoints dos apps móveis, widgets e estilos já estabelecidos em todo o projeto.
 
 ## Leitura Obrigatória de Contexto e Memória do Ecossistema
 - Antes de iniciar qualquer análise, diagnóstico ou edição de código, o agente DEVE consultar obrigatoriamente o arquivo `relatorios/ECOSYSTEM.md`.
