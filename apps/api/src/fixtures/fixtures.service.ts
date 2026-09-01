@@ -64,9 +64,10 @@ export class FixturesService {
       skip: (page - 1) * limit,
     });
 
-    // Cache the result if not a live request
+    // Cache the result if not a live request (15s for today/date queries, 300s for historical/season lists)
     if (cacheKey) {
-      await this.redis.setJson(cacheKey, data, 300);
+      const ttl = date ? 15 : 300;
+      await this.redis.setJson(cacheKey, data, ttl);
     }
     return data;
   }

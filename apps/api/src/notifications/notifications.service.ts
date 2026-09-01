@@ -671,10 +671,9 @@ export class NotificationsService {
   async getRoundsDashboard() {
     try {
       const now = new Date();
-      const startBrt = new Date(now);
-      startBrt.setUTCHours(3, 0, 0, 0); // 00:00 BRT
-      const endBrt = new Date(now);
-      endBrt.setUTCHours(26, 59, 59, 999); // 23:59 BRT
+      const dateStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+      const startBrt = new Date(`${dateStr}T00:00:00-03:00`);
+      const endBrt = new Date(`${dateStr}T23:59:59.999-03:00`);
 
       const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
 
