@@ -1843,3 +1843,17 @@ Em estrita conformidade com as regras de governança e prevenção de regressõe
 O módulo disponibiliza endpoints para monitoramento e auditoria em `apps/api/src/lineups/lineups.controller.ts`:
 * `GET /lineups/status` — Retorna telemetria detalhada de taxa de sucesso por provedor, último ciclo executado e status de saúde do agente.
 * `POST /lineups/sync-now` — Permite forçar uma varredura instantânea da janela de 4 horas sob demanda para homologação.
+
+### 18.7 Arquitetura com PocketBase Buffer e Ingestão Automática (Cron 2 Horas)
+Para garantir isolamento absoluto contra bloqueios WAF externos e desacoplar o monitoramento das partidas:
+* **Coleções no PocketBase (`https://zapscore-pocketbase-multiapkagent.gtalg3.easypanel.host`):**
+  - `active_fixtures`: Contém as partidas do dia com IDs canônicos do Zapscore, datas e status.
+  - `team_aliases`: Mapeamento tolerante a acentos e apelidos para pareamento imediato de clubes.
+  - `match_lineups`: Buffer de ingestão de escalações completas em JSON (com status `PENDING`, `RESOLVED`, `UNRESOLVED_ALIAS`, `SYNCED`).
+* **Ingestão Automática de Grade (Cron de 2 Horas - `@Cron('0 */2 * * *')`):**
+  - O worker `handleSyncPocketBaseFixtures()` em `sync-jobs.service.ts` (e no boot da aplicação) consulta as partidas de hoje no ZapScore e cadastra automaticamente na collection `active_fixtures` do PocketBase, sem duplicidades.
+* **Consumo Prioritário (Lineup Agent ➔ PocketBase):**
+  - A cada 2 minutos, o Lineup Agent verifica primeiramente o PocketBase por registros com status `RESOLVED`.
+  - Ao identificar uma partida com os 22 titulares, persiste atomicamente no PostgreSQL (`FixtureLineup`), emite WebSocket para os apps móveis e atualiza o status no PocketBase para `SYNCED`.
+  - Em seguida, o Agente Push detecta os 22 titulares confirmados e inicia a contagem regressiva para envio das notificações.
+
