@@ -104,7 +104,15 @@
   - [16.7 Integração Sentinel + Agente Push (Resumo FT & Fallback de 60 Minutos)](#167-integração-sentinel--agente-push-resumo-ft--fallback-de-60-minutos)
   - [16.8 Diagnósticos Críticos de Produção, Gotchas e Soluções de Engenharia](#168-diagnósticos-críticos-de-produção-gotchas-e-soluções-de-engenharia)
   - [16.9 Roadmap Imediato e Próximos Incrementos](#169-roadmap-imediato-e-próximos-incrementos)
-
+- [Capítulo 17: Ajustes e Soluções — Registro de Diagnósticos e Correções](#️-capítulo-17-ajustes-e-soluções--registro-de-diagnósticos-e-correções)
+  - [17.1 App `brasileirao` — Crash Fatal na Tela de Notícias](#171-app-brasileirao--crash-fatal-na-tela-de-notícias)
+- [Capítulo 18: Implantação do Agente Autônomo de Escalações Multi-Fonte (Lineup Agent)](#-capítulo-18-implantação-do-agente-autônomo-de-escalações-multi-fonte-lineup-agent)
+  - [18.1 Visão Geral e Proposta de Valor](#181-visão-geral-e-proposta-de-valor)
+  - [18.2 A Regra dos 3 Pilares (Janela de 4 Horas, Escopo Sentinel e Zero API-Football)](#182-a-regra-dos-3-pilares-janela-de-4-horas-escopo-sentinel-e-zero-api-football)
+  - [18.3 Arquitetura de Coleta em Cascata Tripla (Sofascore, FotMob e GloboEsporte/365)](#183-arquitetura-de-coleta-em-cascata-tripla-sofascore-fotmob-e-globoesporte365)
+  - [18.4 Mecanismo de Pareamento Fuzzy em Memória (Zero Impacto no Schema Prisma)](#184-mecanismo-de-pareamento-fuzzy-em-memória-zero-impacto-no-schema-prisma)
+  - [18.5 Integração em Cadeia com o Push Agent e Emissão WebSocket](#185-integração-em-cadeia-com-o-push-agent-e-emissão-websocket)
+  - [18.6 Observabilidade, Telemetria e Endpoints de Diagnóstico](#186-observabilidade-telemetria-e-endpoints-de-diagnóstico)
 
 ---
 
@@ -425,6 +433,7 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 ## 📈 Capítulo 8: Histórico de Implementações e Roadmap de Incrementos
 
 ### 8.1 Histórico de Entregas Validadas
+* **[2026-09-03]**: Implementação do **Lineup Agent** (Agente Autônomo de Escalações Multi-Fonte) na ZapScore API central (`apps/api/src/lineups`). Coleta antecipada (50 a 60 min antes do jogo) com tripla redundância em cascata (Sofascore, FotMob e GloboEsporte/365), janela estrita de 4 horas, escopo filtrado pelas ligas do Sentinel, zero chamadas à API-Football e integração automática com o worker de 10 minutos do Push Agent.
 * **[2026-08-31]**: Integração do Agente Sentinel com o Agente Push: detecção autônoma de conclusão de partidas (100% FT do dia em todas as ligas monitoradas), geração imediata de resumo de placares da rodada, persistência na tabela `PushQueue` (Prisma/PostgreSQL), fila de aprovação com contagem regressiva em tempo real no AdminPanel e disparo automático por fallback após 60 minutos via worker em segundo plano.
 * **[2026-08-23]**: Validação e disparo em produção com 100% de sucesso (19/19 Serie A, 14/14 La Liga) via FCM HTTP v1.
 * **[2026-08-23]**: Unificação da regra de Início (`start`) e Fim (`end`) de jogos em `notifications.pb.js` para entrega universal a todos os inscritos.
@@ -1691,9 +1700,146 @@ Durante a validação em produção do módulo de Broadcast e Agente Push (31/08
 2. **🔔 Deep Linking nos Apps Móveis:**
    - Assegurar que ao tocar na notificação de encerramento de rodada, o app abra diretamente na aba de Tabela/Classificação ou na rodada correspondente.
 
+---
 
+## 🛠️ Capítulo 17: Ajustes e Soluções — Registro de Diagnósticos e Correções
 
+> Este capítulo documenta problemas identificados em produção/debug, suas causas raiz e as correções cirúrgicas aplicadas. Cada entrada deve ser consultada antes de qualquer refatoração futura nos módulos afetados.
 
+---
 
+### 17.1 App `brasileirao` — Crash Fatal na Tela de Notícias
 
+**Data:** 2026-09-01
+**App:** `apps/brasil/brasileirao` (`com.prolaser.futebolbrasileirobr`)
+**Dispositivo de Teste:** Samsung SM A075M (Android)
 
+#### Sintoma
+Ao abrir a tela de **Notícias** (via botão do menu ou Drawer), o app carregava as notícias normalmente e depois fechava para o modo minimizado do celular. Ao reabrir do modo minimizado, o app reiniciava.
+
+#### Investigação — 3 Causas Raiz Identificadas
+
+**Causa 1 — Crash de Inflação do Layout Nativo (ThemeUtils)**
+
+| Item | Detalhe |
+|:---|:---|
+| **Arquivo** | `android/app/src/main/res/layout/custom_native_ad.xml` |
+| **Tag problemática** | `<androidx.appcompat.widget.AppCompatButton>` |
+| **Erro no logcat** | `ThemeUtils: View class AppCompatButton can only be used with a Theme.AppCompat theme` |
+| **Causa** | O tema da `MainActivity` Flutter herda de `@android:style/Theme.Light.NoTitleBar`, incompatível com widgets AppCompat |
+
+**Causa 2 — ID do Dispositivo de Teste Desatualizado (AdMob)**
+
+| Item | Detalhe |
+|:---|:---|
+| **Arquivo** | `lib/services/ad_service.dart` |
+| **ID antigo** | `009A55C88C73C446B985FB6F333F961B` |
+| **ID correto** | `447AA0DFA3C3CD8724DBF89DBA08C946` |
+| **Impacto** | `LoadAdError code: 3 — No fill` (sem preenchimento de anúncio de teste) |
+
+**Causa 3 — OOM Kill por renderização massiva de PlatformViews (Crash Principal)**
+
+| Item | Detalhe |
+|:---|:---|
+| **Arquivo** | `lib/presentation/screens/home/news.dart` |
+| **Problema** | `ListView.separated` com `shrinkWrap: true` dentro de `ListView` pai renderizava **todos os 100 itens de notícia de uma vez** |
+| **Impacto** | Com `AppNativeAdWidget` a cada 6 itens → até **16 PlatformViews nativos Android** instanciados simultaneamente |
+| **Evidência no logcat** | `Choreographer: Skipped 265 frames!`, `Skipped 270 frames!` — main thread bloqueada por centenas de frames |
+| **Resultado** | Android OOM Killer encerrava o processo → app ia para modo minimizado e reiniciava |
+
+#### Correções Aplicadas
+
+```
+1. custom_native_ad.xml (linha 107)
+   - ANTES: <androidx.appcompat.widget.AppCompatButton .../>
+   + DEPOIS: <Button .../>
+
+2. lib/services/ad_service.dart (linhas 67-97) — 3 blocos
+   - ANTES: testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']
+   + DEPOIS: testDeviceIds: [
+               '009A55C88C73C446B985FB6F333F961B',
+               '447AA0DFA3C3CD8724DBF89DBA08C946',
+             ]
+
+3. lib/presentation/screens/home/news.dart (build method)
+   - ANTES: ListView (pai) > ListView.separated(shrinkWrap: true) — renderiza 100 itens de uma vez
+   + DEPOIS: CustomScrollView > SliverList(SliverChildBuilderDelegate) — lazy: só renderiza itens visíveis
+```
+
+#### Resultado Pós-Correção
+- Zero crashes fatais no logcat
+- Máximo de **1 PlatformView nativo** renderizado por vez (antes: até 16)
+- Tela de Notícias estável — abre, rola e exibe anúncios corretamente
+
+---
+
+## 📋 Capítulo 18: Implantação do Agente Autônomo de Escalações Multi-Fonte (Lineup Agent)
+
+### 18.1 Visão Geral e Proposta de Valor
+O **Lineup Agent** foi desenvolvido para solucionar de forma 100% autônoma o atraso crônico na disponibilização das escalações oficiais pré-jogo na ZapScore API. Anteriormente, as escalações só eram buscadas quando a partida já estava em andamento (`LIVE`/`1H`) ou após o término (`FT`), gerando uma janela cega durante a hora que antecede o início das partidas.
+
+Com o Lineup Agent, as escalações (11 titulares e banco de reservas de cada equipe) são capturadas e persistidas no banco de dados local com **50 a 60 minutos de antecedência**, alimentando em tempo real os aplicativos móveis e permitindo que o **Push Agent** envie o alerta de escalação de forma totalmente automatizada 10 minutos antes do jogo.
+
+### 18.2 A Regra dos 3 Pilares (Janela de 4 Horas, Escopo Sentinel e Zero API-Football)
+O agente foi arquitetado sob 3 diretrizes fundamentais:
+1. **Janela Estrita de 4 Horas:** O motor de busca monitora apenas confrontos com status `NS` (*Not Started*) ou `TBD` agendados para iniciar dentro de uma janela de **até 4 horas à frente** (`now - 15m` até `now + 4h`).
+2. **Escopo Restrito do Sentinel:** Não há varredura de jogos aleatórios. O agente filtra apenas as partidas pertencentes às competições ativas e monitoradas pela ZapScore (`SUPPORTED_COMPETITIONS` — Séries A e B, Estaduais, Europa e Copas).
+3. **Zero Consumo da API-Football:** Nenhuma requisição de escalação é feita para a API-Football, preservando **100% da cota diária** para as atualizações de partidas ao vivo e classificações.
+
+### 18.3 Arquitetura de Coleta em Cascata Tripla (Sofascore, FotMob e GloboEsporte/365)
+A coleta opera através de uma esteira em cascata com 3 provedores externos especializados, cada um atuando como contingência do anterior:
+
+```mermaid
+flowchart TD
+    CRON["⏰ Lineup Cron Worker (A cada 2 min)"]
+    FILTER["1. Filtra partidas NS das próximas 4h no Prisma local"]
+    P1["2. Provedor 1: Sofascore API (/event/{id}/lineups)"]
+    CHECK1{"Confirmado e 22 titulares?"}
+    P2["3. Provedor 2: FotMob API (/matchDetails?matchId={id})"]
+    CHECK2{"Confirmado e 22 titulares?"}
+    P3["4. Provedor 3: GloboEsporte / 365Scores (Foco Brasil)"]
+    CHECK3{"Confirmado e 22 titulares?"}
+    SAVE["5. Gravação Atômica em FixtureLineup (Prisma)"]
+    WS["6. Emissão WebSocket (/fixtures)"]
+    PUSH["7. Push Agent agenda/dispara a 10 min pré-jogo"]
+
+    CRON --> FILTER
+    FILTER --> P1
+    P1 --> CHECK1
+    CHECK1 -- SIM --> SAVE
+    CHECK1 -- NÃO --> P2
+    P2 --> CHECK2
+    CHECK2 -- SIM --> SAVE
+    CHECK2 -- NÃO --> P3
+    P3 --> CHECK3
+    CHECK3 -- SIM --> SAVE
+    CHECK3 -- NÃO --> IDLE["Aguardar próximo ciclo (2 min)"]
+    SAVE --> WS
+    SAVE --> PUSH
+```
+
+* **1. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
+  - **Endpoint:** `GET https://api.sofascore.com/api/v1/event/{sofascore_id}/lineups`
+  - **Destaque:** Fonte primária de maior velocidade mundial (50 a 60 min pré-jogo), com envio de cabeçalhos de navegador (`User-Agent`, `Referer`, `Origin`, `Cache-Control`) para imunidade contra bloqueios Cloudflare.
+* **2. FotmobProvider (`apps/api/src/lineups/providers/fotmob.provider.ts`):**
+  - **Endpoint:** `GET https://www.fotmob.com/api/matchDetails?matchId={fotmob_id}`
+  - **Destaque:** Primeiro fallback automático com API REST leve e sem desafios WAF.
+* **3. GloboesporteProvider (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
+  - **Endpoint:** Feed de tempo real / 365Scores (`https://webws.365scores.com/web/game/?gameId={id}`)
+  - **Destaque:** Contingência especializada para torneios regionais e estaduais brasileiros.
+
+### 18.4 Mecanismo de Pareamento Fuzzy em Memória (Zero Impacto no Schema Prisma)
+Em estrita conformidade com as regras de governança e prevenção de regressões de banco de dados no Easypanel (Capítulo 16.8):
+* **Fuzzy Matching de Clubes:** O agente normaliza os nomes dos times (remoção de acentos, pontuação, sufixos como FC, EC, CR, etc.) e cruza com os eventos do dia (`scheduled-events`) com tolerância de até 90 minutos de horário.
+* **Cache em Memória:** Os mapeamentos `externalFixtureId ➔ sofascoreEventId / fotmobMatchId` são persistidos em mapas em memória (`fixtureToSofaEventMap`, `fixtureToFotmobIdMap`) com TTL dinâmico.
+* **Zero Alterações no PostgreSQL:** Nenhuma coluna nova foi criada na tabela `Fixture`, garantindo 100% de estabilidade nas migrações do Prisma.
+
+### 18.5 Integração em Cadeia com o Push Agent e Emissão WebSocket
+1. **Gravação Atômica:** Ao capturar os 22 titulares, o `LineupsService` executa uma transação Prisma que limpa registros provisórios e insere todos os titulares (`isStart = true`) e reservas (`isStart = false`) com posições e números.
+2. **WebSocket em Tempo Real:** Dispara `FixturesGateway.emitFixtureUpdate` e `emitLeagueUpdate`, atualizando a tela do app mobile instantaneamente sem exigir recarregamento.
+3. **Disparo Push Autônomo:** O worker `handleAutoLineupsDispatch` do Push Agent (que executa a cada 1 minuto) detecta automaticamente os 22 titulares confirmados e despacha o push nos **10 minutos que antecedem a partida**, sem que nenhum operador precise monitorar ou clicar em botões.
+
+### 18.6 Observabilidade, Telemetria e Endpoints de Diagnóstico
+O módulo disponibiliza endpoints para monitoramento e auditoria em `apps/api/src/lineups/lineups.controller.ts`:
+* `GET /lineups/status` — Retorna telemetria detalhada de taxa de sucesso por provedor, último ciclo executado e status de saúde do agente.
+* `POST /lineups/sync-now` — Permite forçar uma varredura instantânea da janela de 4 horas sob demanda para homologação.

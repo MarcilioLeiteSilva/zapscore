@@ -20,6 +20,7 @@ import { VideosModule } from './videos/videos.module';
 import { PlayersModule } from './players/players.module';
 import { SentinelModule } from './sentinel/sentinel.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { LineupsModule } from './lineups/lineups.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PlayersModule,
     SentinelModule,
     NotificationsModule,
+    LineupsModule,
   ],
   controllers: [AppController],
   providers: [

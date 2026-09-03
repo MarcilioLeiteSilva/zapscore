@@ -8,6 +8,7 @@ import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LineupsService } from '../lineups/lineups.service';
 
 @Injectable()
 export class SyncJobsService implements OnApplicationBootstrap {
@@ -22,6 +23,7 @@ export class SyncJobsService implements OnApplicationBootstrap {
     private readonly prisma: PrismaService,
     private readonly aiSyncService: AiSyncService,
     private readonly notificationsService: NotificationsService,
+    private readonly lineupsService: LineupsService,
   ) {}
 
 
@@ -212,6 +214,16 @@ export class SyncJobsService implements OnApplicationBootstrap {
       await this.notificationsService.processPendingLineupDispatches();
     } catch (err) {
       this.logger.error(`[Cron] Falha no worker de auto-disparo de escalações: ${err.message}`);
+    }
+  }
+
+  // A cada 2 minutos: Busca escalações pré-jogo via 3 fontes externas (Janela de 4h, Zero API-Football)
+  @Cron('*/2 * * * *')
+  async handleUpcomingLineups() {
+    try {
+      await this.lineupsService.syncUpcomingLineups();
+    } catch (err: any) {
+      this.logger.error(`[Cron] Falha no worker de busca de escalações: ${err.message}`);
     }
   }
 }
