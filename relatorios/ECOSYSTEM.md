@@ -35,6 +35,7 @@
   - [5.3 Agente Scorer Engine (Artilharia Automática Idempotente)](#53-agente-scorer-engine-artilharia-automática-idempotente)
   - [5.4 Agente Monitor de IA (AI Sentinel & Feedback Loop Preditivo)](#54-agente-monitor-de-ia-ai-sentinel--feedback-loop-preditivo)
   - [5.5 Agente Quota Watchdog (Controle de Taxa da API-Football)](#55-agente-quota-watchdog-controle-de-taxa-da-api-football)
+  - [5.6 Agente Lineup Agent (Escalações Oficiais Multi-Fonte & Buffer PocketBase)](#56-agente-lineup-agent-escalações-oficiais-multi-fonte--buffer-pocketbase)
 - [Capítulo 6: Aplicativos Mobile Flutter (Arquitetura White-Label & Cubits)](#-capítulo-6-aplicativos-mobile-flutter-arquitetura-white-label--cubits)
   - [6.1 Padrão White-Label e Diretrizes de Isolamento](#61-padrão-white-label-e-diretrizes-de-isolamento)
   - [6.2 Camada de Estado e Cubits (`HomeCubit`, `LeagueCubit`, `LiveCubit`)](#62-camada-de-estado-e-cubits-homecubit-leaguecubit-livecubit)
@@ -113,6 +114,8 @@
   - [18.4 Mecanismo de Pareamento Fuzzy em Memória (Zero Impacto no Schema Prisma)](#184-mecanismo-de-pareamento-fuzzy-em-memória-zero-impacto-no-schema-prisma)
   - [18.5 Integração em Cadeia com o Push Agent e Emissão WebSocket](#185-integração-em-cadeia-com-o-push-agent-e-emissão-websocket)
   - [18.6 Observabilidade, Telemetria e Endpoints de Diagnóstico](#186-observabilidade-telemetria-e-endpoints-de-diagnóstico)
+  - [18.7 Arquitetura com PocketBase Buffer e Ingestão Automática (Cron 2 Horas)](#187-arquitetura-com-pocketbase-buffer-e-ingestão-automática-cron-2-horas)
+  - [18.8 Interface de Gestão e Operação no AdminPanel (`/adminpanel/agents/lineups`)](#188-interface-de-gestão-e-operação-no-adminpanel-adminpanelagentslineups)
 
 ---
 
@@ -364,6 +367,13 @@ Auditoria em tempo real dividida em 4 abas isoladas:
 * Monitora o cabeçalho `x-requests-remaining` da API-Football.
 * Se a cota diária atingir nível crítico (<20%), comuta a cadência de polling dos jogos ao vivo para proteger o serviço contra rate limits.
 
+### 5.6 Agente Lineup Agent (Escalações Oficiais Multi-Fonte & Buffer PocketBase)
+* **Rota no AdminPanel:** `/adminpanel/agents/lineups`.
+* **Proposta:** Captura antecipada (50 a 60 min pré-jogo) dos 22 titulares oficiais para todas as partidas monitoradas nas próximas 4 horas, com zero consumo da API-Football.
+* **Buffer Desacoplado no PocketBase:** Ingestão segura via coleção `match_lineups` em `zapscore-pocketbase-multiapkagent`, isolando a API ZapScore de variações ou bloqueios WAF externos.
+* **Cascata Multi-Fonte:** Sofascore (Principal) ➔ FotMob (Fallback 1) ➔ GloboEsporte/365 (Fallback 2).
+* **Integração Automática com Push Agent:** Ao consolidar os 22 titulares, atualiza atomicamente o PostgreSQL local (`FixtureLineup`), emite WebSocket para os apps móveis e arma o gatilho automático de disparo pré-jogo do Push Agent a 10 min do apito inicial.
+
 ---
 
 ## 📱 Capítulo 6: Aplicativos Mobile Flutter (Arquitetura White-Label & Cubits)
@@ -565,6 +575,12 @@ O AdminPanel consome dados de três fontes distintas:
 * **Monitor de IA (`/adminpanel/agents/ia-monitor`)**:
   * Gráficos de assertividade preditiva pós-jogo (mercado de gols, resultado final, ambas marcam).
   * Tabela de confrontos com auditoria do payload enviado à LLM e diagnóstico de desvios táticos.
+* **Lineup Agent Dashboard (`/adminpanel/agents/lineups`)**:
+  * **Supervisão em Tempo Real:** Monitora as partidas do dia das competições ativas na janela de 4 horas.
+  * **Telemetria de Sucesso:** Acompanha capturas e consolidações por provedor (`pocketbaseSuccessCount`, `sofascoreSuccessCount`, etc.).
+  * **Progresso Visual de Titulares:** Exibe o preenchimento de titulares (0 a 22) com badges dinâmicos (22 Confirmados, Parcial ou Aguardando).
+  * **Auditoria de 22 Titulares:** Modal com divisão completa entre mandante e visitante (número, nome e posição tática).
+  * **Ações Imediatas:** Botão de varredura imediata (`POST /lineups/sync-now`), disparo manual de push de escalação (`POST /notifications/lineups/:fixtureId/dispatch`) e descarte de alertas.
 
 ### 9.7 Guia e Padrões para Desenvolvimento de Novas Funcionalidades
 
@@ -1856,4 +1872,15 @@ Para garantir isolamento absoluto contra bloqueios WAF externos e desacoplar o m
   - A cada 2 minutos, o Lineup Agent verifica primeiramente o PocketBase por registros com status `RESOLVED`.
   - Ao identificar uma partida com os 22 titulares, persiste atomicamente no PostgreSQL (`FixtureLineup`), emite WebSocket para os apps móveis e atualiza o status no PocketBase para `SYNCED`.
   - Em seguida, o Agente Push detecta os 22 titulares confirmados e inicia a contagem regressiva para envio das notificações.
+
+### 18.8 Interface de Gestão e Operação no AdminPanel (`/adminpanel/agents/lineups`)
+Desenvolvida sob o stack Next.js App Router (`apps/web/app/(main)/adminpanel/agents/lineups/page.tsx`), a página centraliza a governança operacional do Lineup Agent:
+1. **Radar de Partidas Monitoradas:** Consome `GET /notifications/lineups-dashboard` e lista os confrontos do dia na janela de 4 horas com módulos, escudos, status da escalação e status do push.
+2. **Visualização Tática de Titulares:** Modal interativo que consome `GET /fixtures/:id/lineups`, renderizando a lista completa dos 11 titulares do mandante e 11 do visitante com camisa, nome e posição em campo.
+3. **Telemetria de Redundância:** Consome `GET /lineups/status`, exibindo o status operacional (`ONLINE`), data/hora da última checagem e contadores em tempo real para PocketBase Buffer, Sofascore Scraper e Notificações Push disparadas.
+4. **Controles Operacionais:**
+   - **Forçar Varredura Agora:** Dispara `POST /lineups/sync-now` sob demanda para testes ou homologação imediata.
+   - **Disparo Manual de Push:** Dispara `POST /notifications/lineups/:fixtureId/dispatch` com trava de segurança para 22 titulares.
+   - **Descarte de Alerta:** Dispara `POST /notifications/lineups/:fixtureId/dismiss` para partidas que não devem notificar.
+5. **Integração no Hub Central:** O card `Lineup Agent` na página principal `/adminpanel/agents` direciona diretamente para este dashboard.
 
