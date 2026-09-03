@@ -69,13 +69,13 @@ export default function AgentsHubPage() {
       iconBg: 'bg-cyan-500/10 border-cyan-500/20',
       badge: 'CRON 2M • TRIPLA CASCATA',
       badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      href: '/adminpanel/agents/push',
+      href: '/adminpanel/agents/lineups',
       stats: [
         { label: 'Janela Alvo', value: '4 Horas' },
         { label: 'Fontes', value: '3 em Cascata' },
         { label: 'Cota API-Sports', value: '0 Consumo' },
       ],
-      actionText: 'Monitorar Escalações On-Time'
+      actionText: 'Abrir Lineup Agent'
     },
     {
       id: 'ia-monitor',
