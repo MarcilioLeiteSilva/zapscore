@@ -72,11 +72,11 @@ export class PocketbaseProvider implements ILineupProvider {
       const normalized: NormalizedPlayer = {
         player: p.name || p.player || 'Jogador',
         number: p.number ? Number(p.number) : undefined,
-        pos: p.position || undefined,
-        grid: undefined,
+        pos: p.position || p.pos || undefined,
+        grid: p.grid || undefined,
         isStart,
-        playerPhoto: undefined,
-        externalPlayerId: undefined,
+        playerPhoto: p.photo || p.playerPhoto || undefined,
+        externalPlayerId: p.id ? Number(p.id) : (p.externalPlayerId ? Number(p.externalPlayerId) : undefined),
       };
 
       if (isStart) {

@@ -195,7 +195,7 @@ export class SofascoreProvider implements ILineupProvider {
         player: p.name,
         number: item.jerseyNumber ? Number(item.jerseyNumber) : undefined,
         pos: item.position || p.position || undefined,
-        grid: item.player?.grid || undefined,
+        grid: item.grid || undefined,
         isStart,
         playerPhoto: p.id ? `https://api.sofascore.app/api/v1/player/${p.id}/image` : undefined,
         externalPlayerId: p.id ? Number(p.id) : undefined,
