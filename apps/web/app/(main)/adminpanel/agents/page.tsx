@@ -17,7 +17,8 @@ import {
   Cpu,
   Trophy,
   Brain,
-  Smartphone
+  Smartphone,
+  Users
 } from 'lucide-react';
 
 export default function AgentsHubPage() {
@@ -57,6 +58,24 @@ export default function AgentsHubPage() {
         { label: 'Rich Push', value: 'BigPicture' },
       ],
       actionText: 'Abrir Agente de Push'
+    },
+    {
+      id: 'lineup-agent',
+      title: 'Lineup Agent',
+      subtitle: 'Escalações Oficiais Multi-Fonte (50m Pré-Jogo)',
+      description: 'Varre ativamente partidas das próximas 4 horas com tripla redundância (Sofascore, FotMob e GloboEsporte/365). Capta os 22 titulares oficiais com 50 a 60 minutos de antecedência e alimenta o gatilho automático do Push Agent sem consumir cota da API-Football.',
+      icon: Users,
+      iconColor: 'text-cyan-400',
+      iconBg: 'bg-cyan-500/10 border-cyan-500/20',
+      badge: 'CRON 2M • TRIPLA CASCATA',
+      badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      href: '/adminpanel/agents/push',
+      stats: [
+        { label: 'Janela Alvo', value: '4 Horas' },
+        { label: 'Fontes', value: '3 em Cascata' },
+        { label: 'Cota API-Sports', value: '0 Consumo' },
+      ],
+      actionText: 'Monitorar Escalações On-Time'
     },
     {
       id: 'ia-monitor',
@@ -188,7 +207,7 @@ export default function AgentsHubPage() {
 
         <div className="card glass px-5 py-3 rounded-2xl flex items-center gap-3 border border-[var(--glass-border)] shrink-0">
           <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">6 Agentes Online</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">{agents.length} Agentes Online</span>
         </div>
       </div>
 
