@@ -186,4 +186,67 @@ export class PocketbaseProvider implements ILineupProvider {
       this.logger.warn(`[PocketBase] Falha ao atualizar status para SYNCED no record ${recordId}: ${err.message}`);
     }
   }
+
+  /**
+   * Ingestão automática das partidas do dia na collection active_fixtures do PocketBase
+   */
+  async syncActiveFixtures(fixtures: any[]): Promise<void> {
+    const token = await this.getAuthToken();
+    if (!token || !Array.isArray(fixtures) || fixtures.length === 0) return;
+
+    try {
+      const existingRes = await axios.get(
+        `${this.baseUrl}/api/collections/active_fixtures/records?perPage=100`,
+        { headers: { Authorization: token }, timeout: 8000 },
+      );
+      const existingZapIds = new Set((existingRes.data?.items || []).map((f: any) => f.zapscore_match_id));
+
+      for (const f of fixtures) {
+        if (existingZapIds.has(f.id)) continue;
+
+        const payload = {
+          zapscore_match_id: f.id,
+          competition_id: f.league?.id || '',
+          competition_name: f.league?.name || '',
+          home_team_id: f.homeTeam?.id || '',
+          away_team_id: f.awayTeam?.id || '',
+          home_team_name: f.homeTeam?.name || '',
+          away_team_name: f.awayTeam?.name || '',
+          match_date: f.date,
+          status: f.statusShort === 'NS' ? 'SCHEDULED' : f.statusShort === 'FT' ? 'FINISHED' : 'LIVE',
+        };
+
+        try {
+          await axios.post(
+            `${this.baseUrl}/api/collections/active_fixtures/records`,
+            payload,
+            { headers: { Authorization: token }, timeout: 6000 },
+          );
+          this.logger.log(`[PocketBase] 📥 Partida ${f.homeTeam?.name} x ${f.awayTeam?.name} cadastrada em active_fixtures`);
+        } catch (postErr: any) {
+          // Registro já existe ou erro ignorado
+        }
+
+        // Criação de aliases básicos para os dois times
+        const teams = [f.homeTeam, f.awayTeam].filter(Boolean);
+        for (const t of teams) {
+          try {
+            await axios.post(
+              `${this.baseUrl}/api/collections/team_aliases/records`,
+              {
+                alias: t.name,
+                canonical_name: t.name,
+                zapscore_team_id: t.id,
+              },
+              { headers: { Authorization: token }, timeout: 4000 },
+            );
+          } catch (aliasErr) {
+            // já existe
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`[PocketBase] Falha ao sincronizar active_fixtures: ${err.message}`);
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FixturesGateway } from '../fixtures/fixtures.gateway';
+import { FixturesService } from '../fixtures/fixtures.service';
 import { SofascoreProvider } from './providers/sofascore.provider';
 import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
@@ -24,6 +25,7 @@ export class LineupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fixturesGateway: FixturesGateway,
+    private readonly fixturesService: FixturesService,
     private readonly pocketbaseProvider: PocketbaseProvider,
     private readonly sofascoreProvider: SofascoreProvider,
     private readonly fotmobProvider: FotmobProvider,
@@ -293,5 +295,20 @@ export class LineupsService {
       sources: ['PocketBase Buffer (Prioritário)', 'Sofascore (Principal)', 'FotMob (Fallback 1)', 'GloboEsporte/365 (Fallback 2)'],
       telemetry: this.telemetry,
     };
+  }
+
+  /**
+   * Sincroniza todas as partidas do dia para o PocketBase (active_fixtures)
+   * Executado a cada 2 horas pelo cron worker
+   */
+  async syncTodayFixturesToPocketBase(): Promise<void> {
+    try {
+      const fixtures = (await this.fixturesService.findToday()) as any[];
+      if (!fixtures || !Array.isArray(fixtures) || fixtures.length === 0) return;
+      await this.pocketbaseProvider.syncActiveFixtures(fixtures);
+      this.logger.log(`[LineupsService] 🔄 Sincronizadas ${fixtures.length} partidas de hoje com o PocketBase`);
+    } catch (err: any) {
+      this.logger.warn(`[LineupsService] Falha ao sincronizar partidas do dia para o PocketBase: ${err.message}`);
+    }
   }
 }

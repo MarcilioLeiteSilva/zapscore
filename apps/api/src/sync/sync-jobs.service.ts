@@ -51,6 +51,11 @@ export class SyncJobsService implements OnApplicationBootstrap {
     } catch (err) {
       this.logger.error(`Failed startup resolution: ${err.message}`);
     }
+
+    // Ingestão inicial da grade de jogos de hoje no PocketBase Buffer
+    this.lineupsService.syncTodayFixturesToPocketBase().catch((err: any) => {
+      this.logger.warn(`Startup PocketBase fixtures sync: ${err.message}`);
+    });
   }
 
   // A cada 3 minutos: Sincroniza jogos ao vivo
@@ -224,6 +229,16 @@ export class SyncJobsService implements OnApplicationBootstrap {
       await this.lineupsService.syncUpcomingLineups();
     } catch (err: any) {
       this.logger.error(`[Cron] Falha no worker de busca de escalações: ${err.message}`);
+    }
+  }
+
+  // A cada 2 horas: Sincroniza a grade de partidas do dia com o PocketBase Buffer (active_fixtures)
+  @Cron('0 */2 * * *')
+  async handleSyncPocketBaseFixtures() {
+    try {
+      await this.lineupsService.syncTodayFixturesToPocketBase();
+    } catch (err: any) {
+      this.logger.error(`[Cron] Falha ao sincronizar grade com PocketBase: ${err.message}`);
     }
   }
 }
