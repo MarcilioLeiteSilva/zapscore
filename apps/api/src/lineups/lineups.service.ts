@@ -4,6 +4,7 @@ import { FixturesGateway } from '../fixtures/fixtures.gateway';
 import { SofascoreProvider } from './providers/sofascore.provider';
 import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
+import { PocketbaseProvider, PocketbaseLineupResult } from './providers/pocketbase.provider';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class LineupsService {
 
   // Telemetria de sucesso por provedor
   private readonly telemetry = {
+    pocketbaseSuccessCount: 0,
     sofascoreSuccessCount: 0,
     fotmobSuccessCount: 0,
     globoesporteSuccessCount: 0,
@@ -22,6 +24,7 @@ export class LineupsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fixturesGateway: FixturesGateway,
+    private readonly pocketbaseProvider: PocketbaseProvider,
     private readonly sofascoreProvider: SofascoreProvider,
     private readonly fotmobProvider: FotmobProvider,
     private readonly globoesporteProvider: GloboesporteProvider,
@@ -103,19 +106,25 @@ export class LineupsService {
           externalFixtureId: f.externalId,
           homeTeamExternalId: f.homeTeam.externalId,
           awayTeamExternalId: f.awayTeam.externalId,
+          fixtureId: f.id,
         };
 
         const matchLabel = `${f.homeTeam.name} x ${f.awayTeam.name}`;
 
-        // 1ª Tentativa: Sofascore
-        let result = await this.sofascoreProvider.getLineup(params);
+        // 1ª Tentativa: PocketBase Buffer (Se já estiver validado como RESOLVED na collection)
+        let result = (await this.pocketbaseProvider.getLineup(params)) as any;
 
-        // 2ª Tentativa: FotMob (se Sofascore ainda não tiver ou falhar)
+        // 2ª Tentativa: Sofascore (se PocketBase não tiver)
+        if (!result || !result.confirmed) {
+          result = await this.sofascoreProvider.getLineup(params);
+        }
+
+        // 3ª Tentativa: FotMob (se Sofascore ainda não tiver ou falhar)
         if (!result || !result.confirmed) {
           result = await this.fotmobProvider.getLineup(params);
         }
 
-        // 3ª Tentativa: GloboEsporte / Regional (se ainda não tiver)
+        // 4ª Tentativa: GloboEsporte / Regional (se ainda não tiver)
         if (!result || !result.confirmed) {
           result = await this.globoesporteProvider.getLineup(params);
         }
@@ -131,9 +140,18 @@ export class LineupsService {
           syncedCount++;
           this.telemetry.totalLineupsDispatched++;
 
-          if (result.source === 'sofascore') this.telemetry.sofascoreSuccessCount++;
-          else if (result.source === 'fotmob') this.telemetry.fotmobSuccessCount++;
-          else if (result.source === 'globoesporte') this.telemetry.globoesporteSuccessCount++;
+          if (result.source === 'pocketbase') {
+            this.telemetry.pocketbaseSuccessCount++;
+            if (result.recordId) {
+              await this.pocketbaseProvider.markAsSynced(result.recordId);
+            }
+          } else if (result.source === 'sofascore') {
+            this.telemetry.sofascoreSuccessCount++;
+          } else if (result.source === 'fotmob') {
+            this.telemetry.fotmobSuccessCount++;
+          } else if (result.source === 'globoesporte') {
+            this.telemetry.globoesporteSuccessCount++;
+          }
 
           details.push({
             fixtureId: f.externalId,
@@ -270,9 +288,9 @@ export class LineupsService {
   getStatus() {
     return {
       status: 'ONLINE',
-      agent: 'Lineup Agent (Multi-Source Tripla Redundância)',
+      agent: 'Lineup Agent (Multi-Source Tripla Redundância + PocketBase Buffer)',
       strategy: 'Zero API-Football / Janela de 4 Horas',
-      sources: ['Sofascore (Principal)', 'FotMob (Fallback 1)', 'GloboEsporte/365 (Fallback 2)'],
+      sources: ['PocketBase Buffer (Prioritário)', 'Sofascore (Principal)', 'FotMob (Fallback 1)', 'GloboEsporte/365 (Fallback 2)'],
       telemetry: this.telemetry,
     };
   }

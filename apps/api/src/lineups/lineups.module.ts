@@ -6,11 +6,12 @@ import { LineupsController } from './lineups.controller';
 import { SofascoreProvider } from './providers/sofascore.provider';
 import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
+import { PocketbaseProvider } from './providers/pocketbase.provider';
 
 @Module({
   imports: [PrismaModule, FixturesModule],
   controllers: [LineupsController],
-  providers: [LineupsService, SofascoreProvider, FotmobProvider, GloboesporteProvider],
+  providers: [LineupsService, SofascoreProvider, FotmobProvider, GloboesporteProvider, PocketbaseProvider],
   exports: [LineupsService],
 })
 export class LineupsModule {}
