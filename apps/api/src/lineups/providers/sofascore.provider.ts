@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { ILineupProvider, NormalizedLineupResult, NormalizedPlayer } from '../interfaces/lineup-provider.interface';
+
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class SofascoreProvider implements ILineupProvider {
@@ -20,6 +24,44 @@ export class SofascoreProvider implements ILineupProvider {
   // Cache em memória para evitar requisições repetidas
   private readonly fixtureToSofaEventMap = new Map<number, number>();
   private readonly scheduledEventsCache = new Map<string, { timestamp: number; events: any[] }>();
+
+  /**
+   * Executa requisição HTTP com fallback nativo (curl) caso o axios receba 403 (firewall Sofascore)
+   */
+  private async fetchSofascoreJson(url: string): Promise<any> {
+    try {
+      const response = await axios.get(url, {
+        headers: this.headers,
+        timeout: 6000,
+      });
+      return response.data;
+    } catch (axiosErr: any) {
+      // Bypass automático de firewall Varnish/Cloudflare via curl nativo
+      try {
+        const args = [
+          '-s',
+          url,
+          '-H',
+          'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          '-H',
+          'Accept: application/json, text/plain, */*',
+          '-H',
+          'Referer: https://www.sofascore.com/',
+          '-H',
+          'Origin: https://www.sofascore.com/',
+          '-H',
+          'Cache-Control: no-cache',
+        ];
+        const { stdout } = await execFileAsync('curl', args, {
+          maxBuffer: 15 * 1024 * 1024,
+          timeout: 10000,
+        });
+        return JSON.parse(stdout);
+      } catch (curlErr: any) {
+        return null;
+      }
+    }
+  }
 
   /**
    * Normalização de strings para fuzzy matching de clubes
@@ -47,14 +89,9 @@ export class SofascoreProvider implements ILineupProvider {
     }
 
     try {
-      this.logger.log(`[Sofascore] Buscando eventos agendados para a data ${dateStr}...`);
       const url = `https://api.sofascore.com/api/v1/sport/football/scheduled-events/${dateStr}`;
-      const response = await axios.get(url, {
-        headers: this.headers,
-        timeout: 10000,
-      });
-
-      const events = response.data?.events || [];
+      const data = await this.fetchSofascoreJson(url);
+      const events = data?.events || [];
       this.scheduledEventsCache.set(dateStr, { timestamp: now, events });
       return events;
     } catch (err: any) {
@@ -76,32 +113,65 @@ export class SofascoreProvider implements ILineupProvider {
       return this.fixtureToSofaEventMap.get(externalFixtureId)!;
     }
 
-    const events = await this.getScheduledEventsForDate(matchDate);
-    if (!events || events.length === 0) return null;
-
     const normHome = this.normalizeTeamName(homeTeamName);
     const normAway = this.normalizeTeamName(awayTeamName);
     const matchTimeMs = new Date(matchDate).getTime();
 
-    for (const ev of events) {
-      const evHome = this.normalizeTeamName(ev.homeTeam?.name || '');
-      const evAway = this.normalizeTeamName(ev.awayTeam?.name || '');
-      const evTimeMs = (ev.startTimestamp || 0) * 1000;
+    // 1. Tenta encontrar na grade de eventos agendados para a data
+    const events = await this.getScheduledEventsForDate(matchDate);
+    if (events && events.length > 0) {
+      for (const ev of events) {
+        const evHome = this.normalizeTeamName(ev.homeTeam?.name || '');
+        const evAway = this.normalizeTeamName(ev.awayTeam?.name || '');
+        const evTimeMs = (ev.startTimestamp || 0) * 1000;
 
-      // Tolerância de até 90 minutos para fusos ou pequenas alterações de tabela
-      const timeDiff = Math.abs(matchTimeMs - evTimeMs);
-      const isTimeClose = timeDiff <= 90 * 60 * 1000;
+        const timeDiff = Math.abs(matchTimeMs - evTimeMs);
+        const isTimeClose = timeDiff <= 120 * 60 * 1000;
 
-      const isHomeMatch = normHome.includes(evHome) || evHome.includes(normHome);
-      const isAwayMatch = normAway.includes(evAway) || evAway.includes(normAway);
+        const isHomeMatch = normHome.includes(evHome) || evHome.includes(normHome);
+        const isAwayMatch = normAway.includes(evAway) || evAway.includes(normAway);
 
-      if (isTimeClose && isHomeMatch && isAwayMatch) {
-        this.logger.log(
-          `[Sofascore] Pareamento encontrado: ${homeTeamName} x ${awayTeamName} ➔ Sofascore Event ID: ${ev.id}`,
-        );
-        this.fixtureToSofaEventMap.set(externalFixtureId, ev.id);
-        return ev.id;
+        if (isTimeClose && isHomeMatch && isAwayMatch) {
+          this.logger.log(
+            `[Sofascore] Pareamento encontrado (Grade): ${homeTeamName} x ${awayTeamName} ➔ Event ID: ${ev.id}`,
+          );
+          this.fixtureToSofaEventMap.set(externalFixtureId, ev.id);
+          return ev.id;
+        }
       }
+    }
+
+    // 2. Se não encontrou na grade do dia, busca pelos eventos recentes/próximos do clube mandante
+    try {
+      const searchUrl = `https://api.sofascore.com/api/v1/search/all?q=${encodeURIComponent(homeTeamName)}`;
+      const searchData = await this.fetchSofascoreJson(searchUrl);
+      const teamEntity = searchData?.results?.find((r: any) => r.type === 'team')?.entity;
+
+      if (teamEntity && teamEntity.id) {
+        const [nextData, lastData] = await Promise.all([
+          this.fetchSofascoreJson(`https://api.sofascore.com/api/v1/team/${teamEntity.id}/events/next/0`),
+          this.fetchSofascoreJson(`https://api.sofascore.com/api/v1/team/${teamEntity.id}/events/last/0`),
+        ]);
+
+        const teamEvents = [...(nextData?.events || []), ...(lastData?.events || [])];
+        for (const ev of teamEvents) {
+          const evHome = this.normalizeTeamName(ev.homeTeam?.name || '');
+          const evAway = this.normalizeTeamName(ev.awayTeam?.name || '');
+
+          const isHomeMatch = normHome.includes(evHome) || evHome.includes(normHome);
+          const isAwayMatch = normAway.includes(evAway) || evAway.includes(normAway);
+
+          if (isHomeMatch && isAwayMatch) {
+            this.logger.log(
+              `[Sofascore] Pareamento encontrado (Time): ${homeTeamName} x ${awayTeamName} ➔ Event ID: ${ev.id}`,
+            );
+            this.fixtureToSofaEventMap.set(externalFixtureId, ev.id);
+            return ev.id;
+          }
+        }
+      }
+    } catch (teamSearchErr: any) {
+      this.logger.warn(`[Sofascore] Falha na busca por time para ${homeTeamName}: ${teamSearchErr.message}`);
     }
 
     return null;
@@ -165,12 +235,7 @@ export class SofascoreProvider implements ILineupProvider {
       }
 
       const url = `https://api.sofascore.com/api/v1/event/${eventId}/lineups`;
-      const response = await axios.get(url, {
-        headers: this.headers,
-        timeout: 8000,
-      });
-
-      const data = response.data;
+      const data = await this.fetchSofascoreJson(url);
       if (!data) return null;
 
       const isConfirmed = Boolean(data.confirmed);
