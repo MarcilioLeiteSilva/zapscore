@@ -1802,25 +1802,32 @@ O agente foi arquitetado sob 3 diretrizes fundamentais:
 2. **Escopo Restrito do Sentinel:** Não há varredura de jogos aleatórios. O agente filtra apenas as partidas pertencentes às competições ativas e monitoradas pela ZapScore (`SUPPORTED_COMPETITIONS` — Séries A e B, Estaduais, Europa e Copas).
 3. **Zero Consumo da API-Football:** Nenhuma requisição de escalação é feita para a API-Football, preservando **100% da cota diária** para as atualizações de partidas ao vivo e classificações.
 
-### 18.3 Arquitetura de Coleta em Cascata Tripla (Sofascore, FotMob e GloboEsporte/365)
-A coleta opera através de uma esteira em cascata com 3 provedores externos especializados, cada um atuando como contingência do anterior:
+### 18.3 Arquitetura de Coleta em Cascata (PocketBase Buffer, ESPN Core API, Sofascore, FotMob e GloboEsporte/365)
+A coleta opera através de uma esteira em cascata altamente resiliente com provedores especializados:
 
 ```mermaid
 flowchart TD
     CRON["⏰ Lineup Cron Worker (A cada 2 min)"]
-    FILTER["1. Filtra partidas NS das próximas 4h no Prisma local"]
-    P1["2. Provedor 1: Sofascore API (/event/{id}/lineups)"]
+    FILTER["1. Filtra partidas das próximas 4h no Prisma local"]
+    P0["2. Provedor 0: PocketBase Buffer (match_lineups)"]
+    CHECK0{"Validado RESOLVED?"}
+    P1["3. Provedor 1: ESPN Core API (Principal Aberto / Zero WAF)"]
     CHECK1{"Confirmado e 22 titulares?"}
-    P2["3. Provedor 2: FotMob API (/matchDetails?matchId={id})"]
+    P2["4. Provedor 2: Sofascore API (/event/{id}/lineups)"]
     CHECK2{"Confirmado e 22 titulares?"}
-    P3["4. Provedor 3: GloboEsporte / 365Scores (Foco Brasil)"]
+    P3["5. Provedor 3: FotMob API (/matchDetails?matchId={id})"]
     CHECK3{"Confirmado e 22 titulares?"}
-    SAVE["5. Gravação Atômica em FixtureLineup (Prisma)"]
-    WS["6. Emissão WebSocket (/fixtures)"]
-    PUSH["7. Push Agent agenda/dispara a 10 min pré-jogo"]
+    P4["6. Provedor 4: GloboEsporte / 365Scores (Foco Brasil)"]
+    CHECK4{"Confirmado e 22 titulares?"}
+    SAVE["7. Gravação Atômica em FixtureLineup (Prisma)"]
+    WS["8. Emissão WebSocket (/fixtures)"]
+    PUSH["9. Push Agent agenda/dispara a 10 min pré-jogo"]
 
     CRON --> FILTER
-    FILTER --> P1
+    FILTER --> P0
+    P0 --> CHECK0
+    CHECK0 -- SIM --> SAVE
+    CHECK0 -- NÃO --> P1
     P1 --> CHECK1
     CHECK1 -- SIM --> SAVE
     CHECK1 -- NÃO --> P2
@@ -1829,18 +1836,26 @@ flowchart TD
     CHECK2 -- NÃO --> P3
     P3 --> CHECK3
     CHECK3 -- SIM --> SAVE
-    CHECK3 -- NÃO --> IDLE["Aguardar próximo ciclo (2 min)"]
+    CHECK3 -- NÃO --> P4
+    P4 --> CHECK4
+    CHECK4 -- SIM --> SAVE
+    CHECK4 -- NÃO --> IDLE["Aguardar próximo ciclo (2 min)"]
     SAVE --> WS
     SAVE --> PUSH
 ```
 
-* **1. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
+* **0. PocketbaseProvider (`apps/api/src/lineups/providers/pocketbase.provider.ts`):**
+  - Ingestão prioritária a partir da collection `match_lineups` com status `RESOLVED`.
+* **1. EspnProvider (`apps/api/src/lineups/providers/espn.provider.ts`):**
+  - **Endpoint:** `GET https://site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/summary?event={id}`
+  - **Destaque:** Fonte primária 100% aberta, imune a bloqueios Cloudflare WAF, com entrega de 22 titulares, reservas, formações táticas completas e fotos oficiais CDN (`a.espncdn.com`).
+* **2. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
   - **Endpoint:** `GET https://api.sofascore.com/api/v1/event/{sofascore_id}/lineups`
-  - **Destaque:** Fonte primária de maior velocidade mundial (50 a 60 min pré-jogo), com envio de cabeçalhos de navegador (`User-Agent`, `Referer`, `Origin`, `Cache-Control`) para imunidade contra bloqueios Cloudflare.
-* **2. FotmobProvider (`apps/api/src/lineups/providers/fotmob.provider.ts`):**
+  - **Destaque:** Fonte de contingência mundial.
+* **3. FotmobProvider (`apps/api/src/lineups/providers/fotmob.provider.ts`):**
   - **Endpoint:** `GET https://www.fotmob.com/api/matchDetails?matchId={fotmob_id}`
-  - **Destaque:** Primeiro fallback automático com API REST leve e sem desafios WAF.
-* **3. GloboesporteProvider (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
+  - **Destaque:** Contingência com API REST leve.
+* **4. GloboesporteProvider (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
   - **Endpoint:** Feed de tempo real / 365Scores (`https://webws.365scores.com/web/game/?gameId={id}`)
   - **Destaque:** Contingência especializada para torneios regionais e estaduais brasileiros.
 

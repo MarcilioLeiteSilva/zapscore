@@ -6,6 +6,7 @@ import { SofascoreProvider } from './providers/sofascore.provider';
 import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
 import { PocketbaseProvider, PocketbaseLineupResult } from './providers/pocketbase.provider';
+import { EspnProvider } from './providers/espn.provider';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class LineupsService {
   // Telemetria de sucesso por provedor
   private readonly telemetry = {
     pocketbaseSuccessCount: 0,
+    espnSuccessCount: 0,
     sofascoreSuccessCount: 0,
     fotmobSuccessCount: 0,
     globoesporteSuccessCount: 0,
@@ -27,6 +29,7 @@ export class LineupsService {
     private readonly fixturesGateway: FixturesGateway,
     private readonly fixturesService: FixturesService,
     private readonly pocketbaseProvider: PocketbaseProvider,
+    private readonly espnProvider: EspnProvider,
     private readonly sofascoreProvider: SofascoreProvider,
     private readonly fotmobProvider: FotmobProvider,
     private readonly globoesporteProvider: GloboesporteProvider,
@@ -130,17 +133,22 @@ export class LineupsService {
         // 1ª Tentativa: PocketBase Buffer (Se já estiver validado como RESOLVED na collection)
         let result = (await this.pocketbaseProvider.getLineup(params)) as any;
 
-        // 2ª Tentativa: Sofascore (se PocketBase não tiver)
+        // 2ª Tentativa: ESPN (Provedor Principal Aberto / Zero WAF)
+        if (!result || !result.confirmed) {
+          result = await this.espnProvider.getLineup(params);
+        }
+
+        // 3ª Tentativa: Sofascore (se ESPN ainda não tiver)
         if (!result || !result.confirmed) {
           result = await this.sofascoreProvider.getLineup(params);
         }
 
-        // 3ª Tentativa: FotMob (se Sofascore ainda não tiver ou falhar)
+        // 4ª Tentativa: FotMob (se Sofascore ainda não tiver ou falhar)
         if (!result || !result.confirmed) {
           result = await this.fotmobProvider.getLineup(params);
         }
 
-        // 4ª Tentativa: GloboEsporte / Regional (se ainda não tiver)
+        // 5ª Tentativa: GloboEsporte / Regional (se ainda não tiver)
         if (!result || !result.confirmed) {
           result = await this.globoesporteProvider.getLineup(params);
         }
@@ -161,6 +169,8 @@ export class LineupsService {
             if (result.recordId) {
               await this.pocketbaseProvider.markAsSynced(result.recordId);
             }
+          } else if (result.source === 'espn') {
+            this.telemetry.espnSuccessCount++;
           } else if (result.source === 'sofascore') {
             this.telemetry.sofascoreSuccessCount++;
           } else if (result.source === 'fotmob') {
@@ -306,7 +316,13 @@ export class LineupsService {
       status: 'ONLINE',
       agent: 'Lineup Agent (Multi-Source Tripla Redundância + PocketBase Buffer)',
       strategy: 'Zero API-Football / Janela de 4 Horas',
-      sources: ['PocketBase Buffer (Prioritário)', 'Sofascore (Principal)', 'FotMob (Fallback 1)', 'GloboEsporte/365 (Fallback 2)'],
+      sources: [
+        'PocketBase Buffer (Prioritário)',
+        'ESPN Core API (Principal Aberto)',
+        'Sofascore (Fallback 1)',
+        'FotMob (Fallback 2)',
+        'GloboEsporte/365 (Fallback 3)',
+      ],
       telemetry: this.telemetry,
     };
   }
