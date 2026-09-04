@@ -242,7 +242,7 @@ export class SofascoreProvider implements ILineupProvider {
         pos: item.position || p.position || undefined,
         grid: item.grid || undefined,
         isStart,
-        playerPhoto: p.id ? `https://api.sofascore.app/api/v1/player/${p.id}/image` : undefined,
+        playerPhoto: p.id ? `https://img.sofascore.com/api/v1/player/${p.id}/image` : undefined,
         externalPlayerId: p.id ? Number(p.id) : undefined,
       };
 

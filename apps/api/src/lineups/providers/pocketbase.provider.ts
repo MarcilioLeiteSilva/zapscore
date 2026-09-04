@@ -69,14 +69,20 @@ export class PocketbaseProvider implements ILineupProvider {
 
     for (const p of players) {
       const isStart = p.starter !== false;
+      const playerId = p.id || p.externalPlayerId;
+      let photoUrl = p.photo || p.playerPhoto || (playerId ? `https://img.sofascore.com/api/v1/player/${playerId}/image` : undefined);
+      if (photoUrl && photoUrl.includes('api.sofascore.app')) {
+        photoUrl = photoUrl.replace('api.sofascore.app', 'img.sofascore.com');
+      }
+
       const normalized: NormalizedPlayer = {
         player: p.name || p.player || 'Jogador',
         number: p.number ? Number(p.number) : undefined,
         pos: p.position || p.pos || undefined,
         grid: p.grid || undefined,
         isStart,
-        playerPhoto: p.photo || p.playerPhoto || undefined,
-        externalPlayerId: p.id ? Number(p.id) : (p.externalPlayerId ? Number(p.externalPlayerId) : undefined),
+        playerPhoto: photoUrl || undefined,
+        externalPlayerId: playerId ? Number(playerId) : undefined,
       };
 
       if (isStart) {
