@@ -161,6 +161,15 @@ export class LineupsService {
           result.homeTeam.starters.length >= 11 &&
           result.awayTeam.starters.length >= 11
         ) {
+          // Centraliza a persistência no PocketBase como SSOT (Single Source of Truth)
+          if (result.source !== 'pocketbase') {
+            const pbRecordId = await this.pocketbaseProvider.saveLineupToPocketBase(f, result, result.source);
+            if (pbRecordId) {
+              result.recordId = pbRecordId;
+            }
+          }
+
+          // Sincroniza a tabela relacional no PostgreSQL para consultas de alta performance da API/Apps
           await this.saveLineupToDatabase(f, result);
           syncedCount++;
           this.telemetry.totalLineupsDispatched++;

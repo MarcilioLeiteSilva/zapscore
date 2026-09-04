@@ -834,14 +834,15 @@ export class NotificationsService {
 
   /**
    * Worker de Auto-Disparo de Escalações (executado a cada 1 min):
-   * Dispara o push padrão quando faltam <= 10 min para o início da partida
-   * e ambos os times possuem 11 titulares confirmados.
+   * Dispara o push imediatamente assim que ambos os times possuírem 11 titulares confirmados,
+   * desde que ainda faltem no mínimo 10 minutos para o início da partida (cutoff de segurança).
    */
   async processPendingLineupDispatches() {
     try {
       const now = new Date();
-      const windowStart = new Date(now.getTime() - 10 * 60 * 1000);
-      const windowEnd = new Date(now.getTime() + 10 * 60 * 1000);
+      // Busca partidas do dia que ainda não iniciaram (de 2h atrás para cobrir atrasos até 12h à frente)
+      const windowStart = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
       const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
 
@@ -878,9 +879,23 @@ export class NotificationsService {
         const awayStarters = f.lineups.filter((l) => l.teamId === f.awayTeam.externalId && l.isStart).length;
 
         if (homeStarters >= 11 && awayStarters >= 11) {
-          this.logger.log(`[AutoLineup Worker] ⏰ Disparando escalação automática (10 min pré-jogo) para ${f.homeTeam.name} x ${f.awayTeam.name}`);
-          await this.dispatchLineupAlert(f.externalId);
-          processedCount++;
+          const matchDate = new Date(f.date);
+          const minutesUntilKickoff = (matchDate.getTime() - now.getTime()) / (60 * 1000);
+
+          // Trava de segurança: só dispara se ainda faltarem pelo menos 10 minutos para o início
+          if (minutesUntilKickoff >= 10) {
+            this.logger.log(
+              `[AutoLineup Worker] ⚡ Disparando push imediato de escalações confirmadas (${Math.round(minutesUntilKickoff)} min antes) para ${f.homeTeam.name} x ${f.awayTeam.name}`,
+            );
+            await this.dispatchLineupAlert(f.externalId);
+            processedCount++;
+          } else {
+            this.logger.warn(
+              `[AutoLineup Worker] ⛔ Cutoff atingido (< 10 min para início: ${Math.round(minutesUntilKickoff)} min). Push ignorado para ${f.homeTeam.name} x ${f.awayTeam.name}`,
+            );
+            // Marca como dismissed para não checar novamente em loop
+            this.dismissedLineupSet.add(f.externalId);
+          }
         }
       }
 

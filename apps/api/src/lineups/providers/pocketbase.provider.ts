@@ -300,4 +300,90 @@ export class PocketbaseProvider implements ILineupProvider {
       this.logger.warn(`[PocketBase] Falha ao sincronizar active_fixtures: ${err.message}`);
     }
   }
+
+  /**
+   * Salva uma escalação confirmada diretamente na collection match_lineups do PocketBase
+   */
+  async saveLineupToPocketBase(
+    fixture: any,
+    lineupData: NormalizedLineupResult,
+    sourceId: string = 'espn',
+  ): Promise<string | null> {
+    const token = await this.getAuthToken();
+    if (!token) return null;
+
+    try {
+      const mapPlayersToPB = (players: NormalizedPlayer[], isStart: boolean) =>
+        players.map((p) => {
+          let photo = p.playerPhoto;
+          if (!photo && p.externalPlayerId) {
+            photo = `https://img.sofascore.com/api/v1/player/${p.externalPlayerId}/image`;
+          }
+          return {
+            name: p.player,
+            number: p.number ?? null,
+            position: p.pos ?? null,
+            grid: p.grid ?? null,
+            starter: isStart,
+            photo: photo ?? null,
+            externalPlayerId: p.externalPlayerId ?? null,
+          };
+        });
+
+      const homePlayers = [
+        ...mapPlayersToPB(lineupData.homeTeam.starters, true),
+        ...mapPlayersToPB(lineupData.homeTeam.substitutes, false),
+      ];
+
+      const awayPlayers = [
+        ...mapPlayersToPB(lineupData.awayTeam.starters, true),
+        ...mapPlayersToPB(lineupData.awayTeam.substitutes, false),
+      ];
+
+      const payload = {
+        match_id: String(fixture.externalId || fixture.id),
+        zapscore_match_id: String(fixture.id),
+        competition_name: fixture.league?.name || '',
+        home_team: fixture.homeTeam?.name || '',
+        away_team: fixture.awayTeam?.name || '',
+        formation_home: lineupData.formation?.home || '',
+        formation_away: lineupData.formation?.away || '',
+        home_players: homePlayers,
+        away_players: awayPlayers,
+        status: 'RESOLVED',
+        source_id: sourceId,
+        match_date: fixture.date ? new Date(fixture.date).toISOString() : new Date().toISOString(),
+        detected_at: new Date().toISOString(),
+      };
+
+      // Verifica se já existe registro para este zapscore_match_id ou match_id
+      const checkRes = await axios.get(
+        `${this.baseUrl}/api/collections/match_lineups/records?filter=(zapscore_match_id='${fixture.id}' || match_id='${fixture.externalId}')&perPage=1`,
+        { headers: { Authorization: token }, timeout: 6000 },
+      );
+
+      const existing = checkRes.data?.items?.[0];
+      if (existing) {
+        await axios.patch(
+          `${this.baseUrl}/api/collections/match_lineups/records/${existing.id}`,
+          payload,
+          { headers: { Authorization: token }, timeout: 6000 },
+        );
+        this.logger.log(`[PocketBase] 🔄 Escalação atualizada com status RESOLVED no record ${existing.id}`);
+        return existing.id;
+      } else {
+        const createRes = await axios.post(
+          `${this.baseUrl}/api/collections/match_lineups/records`,
+          payload,
+          { headers: { Authorization: token }, timeout: 6000 },
+        );
+        const newId = createRes.data?.id;
+        this.logger.log(`[PocketBase] 📥 Nova escalação criada com status RESOLVED no record ${newId}`);
+        return newId;
+      }
+    } catch (err: any) {
+      this.logger.warn(`[PocketBase] Falha ao salvar lineup em match_lineups: ${err.message}`);
+      return null;
+    }
+  }
 }
