@@ -7,6 +7,7 @@ import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
 import { PocketbaseProvider, PocketbaseLineupResult } from './providers/pocketbase.provider';
 import { EspnProvider } from './providers/espn.provider';
+import { NormalizedPlayer } from './interfaces/lineup-provider.interface';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
@@ -161,6 +162,12 @@ export class LineupsService {
           result.homeTeam.starters.length >= 11 &&
           result.awayTeam.starters.length >= 11
         ) {
+          // Enriquece fotos de jogadores com a base oficial de plantéis (TeamSquad) do clube
+          await this.enrichPlayersWithSquadPhotos(f.homeTeam.externalId, result.homeTeam.starters);
+          await this.enrichPlayersWithSquadPhotos(f.homeTeam.externalId, result.homeTeam.substitutes);
+          await this.enrichPlayersWithSquadPhotos(f.awayTeam.externalId, result.awayTeam.starters);
+          await this.enrichPlayersWithSquadPhotos(f.awayTeam.externalId, result.awayTeam.substitutes);
+
           // Centraliza a persistência no PocketBase como SSOT (Single Source of Truth)
           if (result.source !== 'pocketbase') {
             const pbRecordId = await this.pocketbaseProvider.saveLineupToPocketBase(f, result, result.source);
@@ -347,8 +354,66 @@ export class LineupsService {
       if (!fixtures || !Array.isArray(fixtures) || fixtures.length === 0) return;
       await this.pocketbaseProvider.syncActiveFixtures(fixtures);
       this.logger.log(`[LineupsService] 🔄 Sincronizadas ${fixtures.length} partidas de hoje com o PocketBase`);
-    } catch (err: any) {
-      this.logger.warn(`[LineupsService] Falha ao sincronizar partidas do dia para o PocketBase: ${err.message}`);
+    } catch (e: any) {
+      this.logger.error(`[LineupsService] Erro ao sincronizar partidas no PocketBase: ${e.message}`);
+    }
+  }
+
+  /**
+   * Enriquece fotos de jogadores cruzando com a tabela TeamSquad (plantel oficial do clube já existente no banco)
+   */
+  private async enrichPlayersWithSquadPhotos(
+    teamExternalId: number,
+    players: NormalizedPlayer[],
+  ): Promise<void> {
+    if (!teamExternalId || !Array.isArray(players) || players.length === 0) return;
+
+    try {
+      const teamSquad = await (this.prisma as any).teamSquad.findUnique({
+        where: { teamExternalId },
+      });
+
+      if (!teamSquad || !teamSquad.squadJson) return;
+
+      const squadList: Array<{ name: string; number?: number; photo?: string; id?: number }> =
+        JSON.parse(teamSquad.squadJson);
+      if (!Array.isArray(squadList) || squadList.length === 0) return;
+
+      const normalize = (n: string) =>
+        (n || '')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .trim();
+
+      for (const p of players) {
+        if (p.playerPhoto) continue; // Já possui foto preenchida
+
+        const pNorm = normalize(p.player);
+
+        // 1. Tenta correspondência por número da camisa
+        let matched = p.number ? squadList.find((s) => s.number === p.number && s.photo) : undefined;
+
+        // 2. Se não casou por camisa ou não tem número, tenta por nome aproximado
+        if (!matched) {
+          matched = squadList.find((s) => {
+            if (!s.name || !s.photo) return false;
+            const sNorm = normalize(s.name);
+            return (
+              sNorm === pNorm ||
+              (pNorm.length >= 4 && sNorm.includes(pNorm)) ||
+              (sNorm.length >= 4 && pNorm.includes(sNorm))
+            );
+          });
+        }
+
+        if (matched && matched.photo) {
+          p.playerPhoto = matched.photo;
+        }
+      }
+    } catch (e: any) {
+      this.logger.warn(`[Lineup Agent] Falha ao enriquecer fotos do time ${teamExternalId}: ${e.message}`);
     }
   }
 }
