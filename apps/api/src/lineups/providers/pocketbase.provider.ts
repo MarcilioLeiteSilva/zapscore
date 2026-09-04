@@ -90,6 +90,48 @@ export class PocketbaseProvider implements ILineupProvider {
   }
 
   /**
+   * Calcula posições táticas (grid) para os titulares a partir da formação (ex: "4-2-3-1", "4-3-3")
+   */
+  private calculateGrid(starters: NormalizedPlayer[], formation?: string): void {
+    if (!starters || starters.length === 0) return;
+
+    // Goleiro sempre linha 1, coluna 1
+    if (starters[0] && !starters[0].grid) {
+      starters[0].grid = '1:1';
+    }
+
+    let lines = (formation || '4-3-3')
+      .split('-')
+      .map(Number)
+      .filter((n) => !isNaN(n) && n > 0);
+    const total = lines.reduce((a, b) => a + b, 0);
+    if (total !== 10) {
+      lines = [4, 3, 3];
+    }
+
+    let idx = 1;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const row = lineIdx + 2;
+      const count = lines[lineIdx];
+      for (let col = 1; col <= count; col++) {
+        if (starters[idx]) {
+          if (!starters[idx].grid) {
+            starters[idx].grid = `${row}:${col}`;
+          }
+          idx++;
+        }
+      }
+    }
+
+    while (idx < starters.length) {
+      if (!starters[idx].grid) {
+        starters[idx].grid = `${lines.length + 1}:1`;
+      }
+      idx++;
+    }
+  }
+
+  /**
    * Busca e extrai escalação RESOLVED no PocketBase para a partida
    */
   async getLineup(params: {
@@ -119,13 +161,13 @@ export class PocketbaseProvider implements ILineupProvider {
       const normAway = this.normalizeTeamName(params.awayTeamName);
 
       for (const rec of records) {
+        const recHome = this.normalizeTeamName(rec.home_team || '');
+        const recAway = this.normalizeTeamName(rec.away_team || '');
+
         const isZapIdMatch =
           params.fixtureId && (rec.zapscore_match_id === params.fixtureId || rec.match_id === params.fixtureId);
 
         const isExternalIdMatch = rec.zapscore_match_id === String(params.externalFixtureId);
-
-        const recHome = this.normalizeTeamName(rec.home_team || '');
-        const recAway = this.normalizeTeamName(rec.away_team || '');
 
         const isNameMatch =
           (normHome.includes(recHome) || recHome.includes(normHome)) &&
@@ -134,6 +176,9 @@ export class PocketbaseProvider implements ILineupProvider {
         if (isZapIdMatch || isExternalIdMatch || isNameMatch) {
           const homeParsed = this.parsePlayers(rec.home_players);
           const awayParsed = this.parsePlayers(rec.away_players);
+
+          this.calculateGrid(homeParsed.starters, rec.formation_home);
+          this.calculateGrid(awayParsed.starters, rec.formation_away);
 
           if (homeParsed.starters.length >= 11 && awayParsed.starters.length >= 11) {
             this.logger.log(

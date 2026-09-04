@@ -178,9 +178,54 @@ export class SofascoreProvider implements ILineupProvider {
   }
 
   /**
+   * Calcula posições táticas (grid) para os titulares a partir da formação (ex: "4-2-3-1", "4-3-3")
+   */
+  private calculateGrid(starters: NormalizedPlayer[], formation?: string): void {
+    if (!starters || starters.length === 0) return;
+
+    // Goleiro sempre linha 1, coluna 1
+    if (starters[0] && !starters[0].grid) {
+      starters[0].grid = '1:1';
+    }
+
+    let lines = (formation || '4-3-3')
+      .split('-')
+      .map(Number)
+      .filter((n) => !isNaN(n) && n > 0);
+    const total = lines.reduce((a, b) => a + b, 0);
+    if (total !== 10) {
+      lines = [4, 3, 3];
+    }
+
+    let idx = 1;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const row = lineIdx + 2;
+      const count = lines[lineIdx];
+      for (let col = 1; col <= count; col++) {
+        if (starters[idx]) {
+          if (!starters[idx].grid) {
+            starters[idx].grid = `${row}:${col}`;
+          }
+          idx++;
+        }
+      }
+    }
+
+    while (idx < starters.length) {
+      if (!starters[idx].grid) {
+        starters[idx].grid = `${lines.length + 1}:1`;
+      }
+      idx++;
+    }
+  }
+
+  /**
    * Mapeia lista de jogadores do Sofascore para o formato padronizado do ZapScore
    */
-  private mapPlayers(players: any[]): { starters: NormalizedPlayer[]; substitutes: NormalizedPlayer[] } {
+  private mapPlayers(
+    players: any[],
+    formation?: string,
+  ): { starters: NormalizedPlayer[]; substitutes: NormalizedPlayer[] } {
     const starters: NormalizedPlayer[] = [];
     const substitutes: NormalizedPlayer[] = [];
 
@@ -207,6 +252,8 @@ export class SofascoreProvider implements ILineupProvider {
         substitutes.push(normalized);
       }
     }
+
+    this.calculateGrid(starters, formation);
 
     return { starters, substitutes };
   }
@@ -239,8 +286,8 @@ export class SofascoreProvider implements ILineupProvider {
       if (!data) return null;
 
       const isConfirmed = Boolean(data.confirmed);
-      const homeParsed = this.mapPlayers(data.home?.players);
-      const awayParsed = this.mapPlayers(data.away?.players);
+      const homeParsed = this.mapPlayers(data.home?.players, data.home?.formation);
+      const awayParsed = this.mapPlayers(data.away?.players, data.away?.formation);
 
       const hasFullStarters = homeParsed.starters.length >= 11 && awayParsed.starters.length >= 11;
 

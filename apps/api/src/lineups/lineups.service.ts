@@ -45,18 +45,18 @@ export class LineupsService {
     const now = new Date();
     this.telemetry.lastRunAt = now;
 
-    const windowStart = new Date(now.getTime() - 15 * 60 * 1000); // 15 min atrás para segurança
-    const windowEnd = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Janela estrita de 4 horas
+    const windowStart = new Date(now.getTime() - 4 * 60 * 60 * 1000); // 4h atrás para cobrir partidas recentes/ao vivo
+    const windowEnd = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Janela de 4 horas à frente
 
     const monitoredLeagueIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
 
     try {
-      // 1. Busca todas as partidas NS na janela de 4 horas para as ligas do Sentinel
+      // 1. Busca partidas na janela para as ligas do Sentinel
       const fixtures = await this.prisma.fixture.findMany({
         where: {
           date: { gte: windowStart, lte: windowEnd },
           league: { externalId: { in: monitoredLeagueIds } },
-          statusShort: { in: ['NS', 'TBD'] },
+          statusShort: { in: ['NS', 'TBD', '1H', '2H', 'HT', 'LIVE'] },
         },
         include: {
           homeTeam: true,
@@ -76,10 +76,14 @@ export class LineupsService {
         };
       }
 
-      // 2. Filtra partidas que ainda não possuem os 22 titulares confirmados
+      // 2. Filtra partidas que ainda não possuem os 22 titulares com foto e grid completos
       const candidates = fixtures.filter((f) => {
-        const homeStarters = f.lineups.filter((l) => l.teamId === f.homeTeam.externalId && l.isStart).length;
-        const awayStarters = f.lineups.filter((l) => l.teamId === f.awayTeam.externalId && l.isStart).length;
+        const homeStarters = f.lineups.filter(
+          (l) => l.teamId === f.homeTeam.externalId && l.isStart && l.grid && l.playerPhoto,
+        ).length;
+        const awayStarters = f.lineups.filter(
+          (l) => l.teamId === f.awayTeam.externalId && l.isStart && l.grid && l.playerPhoto,
+        ).length;
         return homeStarters < 11 || awayStarters < 11;
       });
 
