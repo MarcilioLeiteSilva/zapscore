@@ -1884,3 +1884,13 @@ Desenvolvida sob o stack Next.js App Router (`apps/web/app/(main)/adminpanel/age
    - **Descarte de Alerta:** Dispara `POST /notifications/lineups/:fixtureId/dismiss` para partidas que não devem notificar.
 5. **Integração no Hub Central:** O card `Lineup Agent` na página principal `/adminpanel/agents` direciona diretamente para este dashboard.
 
+### 18.9 Padronização de Fotos CDN e Grid Tático Automático
+Para garantir que as aplicações clientes (Flutter) renderizem perfeitamente as escalações tanto no campo tático (`CardLineup`) quanto com as fotos dos atletas:
+1. **CDN Oficial de Imagens Sofascore:**
+   - As fotos de jogadores utilizam o CDN oficial de alta performance `https://img.sofascore.com/api/v1/player/{id}/image`.
+   - Assegura compatibilidade nativa com o `CachedNetworkImage` do Flutter e `proxyImage`, entregando imagens WebP sem restrições de CORS/User-Agent.
+2. **Cálculo de Grid Tático Dinâmico:**
+   - A partir da formação tática dos clubes (ex: `4-3-3`, `4-2-3-1`, `3-5-2`), o motor calcula automaticamente as coordenadas de linha e coluna (`grid: "row:col"`, como `1:1` para o goleiro, `2:1` a `2:4` para defensores, etc.).
+   - O `CardLineup` nos apps Flutter consome as coordenadas e agrupa os atletas por linha sobre o gramado, eliminando a dependência de layouts genéricos em `Wrap`.
+
+
