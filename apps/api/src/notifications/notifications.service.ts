@@ -492,27 +492,28 @@ export class NotificationsService {
   private readonly dismissedLineupSet = new Set<number>();
 
   /**
-   * Retorna todas as partidas das próximas 2 horas para todas as competições monitoradas,
-   * indicando se as escalações (22 titulares) estão disponíveis, status de disparo e timer de 10 min.
+   * Retorna todas as partidas do dia atual (00:00 às 23:59 BRT) para todas as competições monitoradas,
+   * indicando se as escalações (22 titulares) estão gravadas, a fonte da ingestão (ESPN, PB, etc.),
+   * status de monitoramento e status de disparo do Push Agent.
    */
   async getLineupsDashboard() {
     try {
       const now = new Date();
-      const windowStart = new Date(now.getTime() - 30 * 60 * 1000);
-      const windowEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      const dateStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+      const startBrt = new Date(`${dateStr}T00:00:00-03:00`);
+      const endBrt = new Date(`${dateStr}T23:59:59.999-03:00`);
 
       const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
 
       const fixtures = await this.prisma.fixture.findMany({
         where: {
           date: {
-            gte: windowStart,
-            lte: windowEnd,
+            gte: startBrt,
+            lte: endBrt,
           },
           league: {
             externalId: { in: monitoredIds },
           },
-          statusShort: { in: ['NS', 'TBD'] },
         },
         include: {
           homeTeam: true,
@@ -525,11 +526,53 @@ export class NotificationsService {
         },
       });
 
+      let recordedCount = 0;
+      let monitoringCount = 0;
+      let upcomingCount = 0;
+
+      const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+      const fourHoursAgo = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+
       const enriched = fixtures.map((f) => {
         const homeStarters = f.lineups.filter((l) => l.teamId === f.homeTeam.externalId && l.isStart).length;
         const awayStarters = f.lineups.filter((l) => l.teamId === f.awayTeam.externalId && l.isStart).length;
         const totalStarters = homeStarters + awayStarters;
         const isBothConfirmed = homeStarters >= 11 && awayStarters >= 11;
+
+        // Identifica fonte da escalação
+        let lineupSource = 'Pendente';
+        if (f.lineups && f.lineups.length > 0) {
+          const sample = f.lineups.find((l) => l.playerPhoto)?.playerPhoto || '';
+          if (sample.includes('espncdn')) {
+            lineupSource = 'ESPN Core API';
+          } else if (sample.includes('sofascore')) {
+            lineupSource = 'Sofascore';
+          } else if (sample.includes('fotmob')) {
+            lineupSource = 'FotMob';
+          } else if (sample.includes('api-sports')) {
+            lineupSource = 'PocketBase / Sync';
+          } else if (isBothConfirmed) {
+            lineupSource = 'Oficial Confirmado';
+          }
+        }
+
+        // Determina estado de gravação e ciclo
+        let recordingStatus: 'RECORDED' | 'MONITORING' | 'UPCOMING' = 'UPCOMING';
+        const matchDate = new Date(f.date);
+
+        if (isBothConfirmed) {
+          recordingStatus = 'RECORDED';
+          recordedCount++;
+        } else if (
+          ['1H', '2H', 'HT', 'LIVE'].includes(f.statusShort || '') ||
+          (matchDate >= fourHoursAgo && matchDate <= fourHoursFromNow)
+        ) {
+          recordingStatus = 'MONITORING';
+          monitoringCount++;
+        } else {
+          recordingStatus = 'UPCOMING';
+          upcomingCount++;
+        }
 
         const isDispatched = this.dispatchedLineupMap.has(f.externalId);
         const isDismissed = this.dismissedLineupSet.has(f.externalId);
@@ -543,7 +586,7 @@ export class NotificationsService {
           status = 'AVAILABLE';
         }
 
-        const autoDispatchAt = new Date(new Date(f.date).getTime() - 10 * 60 * 1000);
+        const autoDispatchAt = new Date(matchDate.getTime() - 10 * 60 * 1000);
         const target = this.resolvePocketBaseTarget(f.league.externalId);
         const moduleInfo = this.getModuleForLeague(f.league.externalId);
 
@@ -572,7 +615,10 @@ export class NotificationsService {
           },
           date: f.date,
           venueName: f.venueName,
+          statusShort: f.statusShort || 'NS',
           status,
+          recordingStatus,
+          lineupSource,
           isBothConfirmed,
           totalStarters,
           autoDispatchAt,
@@ -586,6 +632,11 @@ export class NotificationsService {
 
       return {
         success: true,
+        totalMatchesToday: fixtures.length,
+        recordedMatchesToday: recordedCount,
+        monitoringMatchesToday: monitoringCount,
+        upcomingMatchesToday: upcomingCount,
+        dispatchedPushesToday: this.dispatchedLineupMap.size,
         count: enriched.length,
         fixtures: enriched,
       };
