@@ -79,10 +79,20 @@ export class LineupsService {
       // 2. Filtra partidas que ainda não possuem os 22 titulares com foto e grid completos
       const candidates = fixtures.filter((f) => {
         const homeStarters = f.lineups.filter(
-          (l) => l.teamId === f.homeTeam.externalId && l.isStart && l.grid && l.playerPhoto,
+          (l) =>
+            l.teamId === f.homeTeam.externalId &&
+            l.isStart &&
+            l.grid &&
+            l.playerPhoto &&
+            !l.playerPhoto.includes('api.sofascore.app'),
         ).length;
         const awayStarters = f.lineups.filter(
-          (l) => l.teamId === f.awayTeam.externalId && l.isStart && l.grid && l.playerPhoto,
+          (l) =>
+            l.teamId === f.awayTeam.externalId &&
+            l.isStart &&
+            l.grid &&
+            l.playerPhoto &&
+            !l.playerPhoto.includes('api.sofascore.app'),
         ).length;
         return homeStarters < 11 || awayStarters < 11;
       });
