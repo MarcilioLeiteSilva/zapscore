@@ -125,6 +125,7 @@ export class LineupsService {
           externalFixtureId: f.externalId,
           homeTeamExternalId: f.homeTeam.externalId,
           awayTeamExternalId: f.awayTeam.externalId,
+          leagueExternalId: f.league?.externalId,
           fixtureId: f.id,
         };
 

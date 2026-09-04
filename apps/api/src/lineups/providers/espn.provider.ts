@@ -113,11 +113,11 @@ export class EspnProvider implements ILineupProvider {
   /**
    * Busca eventos agendados da ESPN por liga e data
    */
-  private async getEventsForLeagueAndDate(leagueCode: string, date: Date): Promise<any[]> {
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const dateStr = `${year}${month}${day}`;
+  private async getEventsForLeagueAndDate(leagueCode: string, date: Date | string): Promise<any[]> {
+    const d = new Date(date);
+    const dateStr = !isNaN(d.getTime())
+      ? `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`
+      : '';
 
     const cacheKey = `${leagueCode}_${dateStr}`;
     const cached = this.scoreboardCache.get(cacheKey);
@@ -128,9 +128,21 @@ export class EspnProvider implements ILineupProvider {
     }
 
     try {
-      const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard?dates=${dateStr}`;
+      const url = dateStr
+        ? `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard?dates=${dateStr}`
+        : `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`;
       const response = await axios.get(url, { headers: this.headers, timeout: 8000 });
-      const events = response.data?.events || [];
+      let events = response.data?.events || [];
+
+      // Se não encontrou jogos na data exata, busca o scoreboard geral da rodada
+      if (events.length === 0) {
+        const fallbackRes = await axios.get(
+          `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`,
+          { headers: this.headers, timeout: 8000 },
+        );
+        events = fallbackRes.data?.events || [];
+      }
+
       this.scoreboardCache.set(cacheKey, { timestamp: now, events });
       return events;
     } catch (err: any) {
@@ -146,7 +158,8 @@ export class EspnProvider implements ILineupProvider {
     externalFixtureId: number,
     homeTeamName: string,
     awayTeamName: string,
-    matchDate: Date,
+    matchDate: Date | string,
+    leagueExternalId?: number,
   ): Promise<{ eventId: string; leagueCode: string } | null> {
     if (this.fixtureToEspnEventMap.has(externalFixtureId)) {
       return this.fixtureToEspnEventMap.get(externalFixtureId)!;
@@ -155,8 +168,10 @@ export class EspnProvider implements ILineupProvider {
     const normHome = this.normalizeTeamName(homeTeamName);
     const normAway = this.normalizeTeamName(awayTeamName);
 
-    // Lista de ligas a verificar (priorizando ligas europeias e brasileiras)
-    const leagueCodes = Object.values(this.leagueCodeMap);
+    // Prioriza o código da liga específica se conhecido, caso contrário varre todas
+    const primaryCode = leagueExternalId ? this.leagueCodeMap[leagueExternalId] : undefined;
+    const allCodes = Object.values(this.leagueCodeMap);
+    const leagueCodes = primaryCode ? [primaryCode, ...allCodes.filter((c) => c !== primaryCode)] : allCodes;
 
     for (const code of leagueCodes) {
       const events = await this.getEventsForLeagueAndDate(code, matchDate);
@@ -170,10 +185,15 @@ export class EspnProvider implements ILineupProvider {
         const evHome = this.normalizeTeamName(homeComp?.displayName || homeComp?.name || '');
         const evAway = this.normalizeTeamName(awayComp?.displayName || awayComp?.name || '');
 
-        const isHomeMatch = normHome.includes(evHome) || evHome.includes(normHome);
-        const isAwayMatch = normAway.includes(evAway) || evAway.includes(normAway);
+        const isDirectMatch =
+          (normHome.includes(evHome) || evHome.includes(normHome)) &&
+          (normAway.includes(evAway) || evAway.includes(normAway));
 
-        if (isHomeMatch && isAwayMatch) {
+        const isInverseMatch =
+          (normHome.includes(evAway) || evAway.includes(normHome)) &&
+          (normAway.includes(evHome) || evHome.includes(normAway));
+
+        if (isDirectMatch || isInverseMatch) {
           const mapping = { eventId: String(ev.id), leagueCode: code };
           this.logger.log(
             `[ESPN] ✅ Pareamento encontrado: ${homeTeamName} x ${awayTeamName} ➔ Event ID: ${ev.id} (Liga: ${code})`,
@@ -237,6 +257,7 @@ export class EspnProvider implements ILineupProvider {
     externalFixtureId: number;
     homeTeamExternalId: number;
     awayTeamExternalId: number;
+    leagueExternalId?: number;
   }): Promise<NormalizedLineupResult | null> {
     try {
       const match = await this.resolveEspnEvent(
@@ -244,6 +265,7 @@ export class EspnProvider implements ILineupProvider {
         params.homeTeamName,
         params.awayTeamName,
         params.matchDate,
+        params.leagueExternalId,
       );
 
       if (!match) return null;
