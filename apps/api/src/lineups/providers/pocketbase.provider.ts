@@ -70,7 +70,7 @@ export class PocketbaseProvider implements ILineupProvider {
     for (const p of players) {
       const isStart = p.starter !== false;
       const playerId = p.id || p.externalPlayerId;
-      let photoUrl = p.photo || p.playerPhoto || (playerId ? `https://img.sofascore.com/api/v1/player/${playerId}/image` : undefined);
+      let photoUrl = p.photo || p.playerPhoto;
       if (photoUrl && photoUrl.includes('api.sofascore.app')) {
         photoUrl = photoUrl.replace('api.sofascore.app', 'img.sofascore.com');
       }
@@ -315,17 +315,13 @@ export class PocketbaseProvider implements ILineupProvider {
     try {
       const mapPlayersToPB = (players: NormalizedPlayer[], isStart: boolean) =>
         players.map((p) => {
-          let photo = p.playerPhoto;
-          if (!photo && p.externalPlayerId) {
-            photo = `https://img.sofascore.com/api/v1/player/${p.externalPlayerId}/image`;
-          }
           return {
             name: p.player,
             number: p.number ?? null,
             position: p.pos ?? null,
             grid: p.grid ?? null,
             starter: isStart,
-            photo: photo ?? null,
+            photo: p.playerPhoto ?? null,
             externalPlayerId: p.externalPlayerId ?? null,
           };
         });

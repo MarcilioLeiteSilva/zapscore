@@ -7,6 +7,7 @@ import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
 import { PocketbaseProvider, PocketbaseLineupResult } from './providers/pocketbase.provider';
 import { EspnProvider } from './providers/espn.provider';
+import { TeamsService } from '../teams/teams.service';
 import { NormalizedPlayer } from './interfaces/lineup-provider.interface';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
@@ -29,6 +30,7 @@ export class LineupsService {
     private readonly prisma: PrismaService,
     private readonly fixturesGateway: FixturesGateway,
     private readonly fixturesService: FixturesService,
+    private readonly teamsService: TeamsService,
     private readonly pocketbaseProvider: PocketbaseProvider,
     private readonly espnProvider: EspnProvider,
     private readonly sofascoreProvider: SofascoreProvider,
@@ -369,14 +371,9 @@ export class LineupsService {
     if (!teamExternalId || !Array.isArray(players) || players.length === 0) return;
 
     try {
-      const teamSquad = await (this.prisma as any).teamSquad.findUnique({
-        where: { teamExternalId },
-      });
+      const squadList: Array<{ name: string; number?: number | null; photo?: string; id?: number }> =
+        await this.teamsService.getSquad(teamExternalId);
 
-      if (!teamSquad || !teamSquad.squadJson) return;
-
-      const squadList: Array<{ name: string; number?: number; photo?: string; id?: number }> =
-        JSON.parse(teamSquad.squadJson);
       if (!Array.isArray(squadList) || squadList.length === 0) return;
 
       const normalize = (n: string) =>
