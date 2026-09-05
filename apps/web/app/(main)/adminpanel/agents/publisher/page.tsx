@@ -21,7 +21,8 @@ import {
   Smartphone,
   X,
   Flame,
-  Check
+  Check,
+  ChevronDown
 } from 'lucide-react';
 import { PushSimulator } from '../push/components/PushSimulator';
 
@@ -72,6 +73,13 @@ export default function NewsPublisherAgentPage() {
   const [leagues, setLeagues] = useState<any[]>([]);
   const [recentNews, setRecentNews] = useState<NewsItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  
+  // Sanfona de competições (null = todas fechadas por padrão; abrir uma fecha a outra)
+  const [openAccordionKey, setOpenAccordionKey] = useState<string | null>(null);
+
+  const toggleAccordion = (key: string) => {
+    setOpenAccordionKey((prev) => (prev === key ? null : key));
+  };
 
   const showToast = (type: 'success' | 'error', text: string) => {
     setToastMsg({ type, text });
@@ -301,7 +309,7 @@ export default function NewsPublisherAgentPage() {
   const fetchRecentNews = async () => {
     setLoadingHistory(true);
     try {
-      const res = await fetch(`${API_URL}/news?limit=15`);
+      const res = await fetch(`${API_URL}/news?limit=250`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -314,6 +322,170 @@ export default function NewsPublisherAgentPage() {
       setLoadingHistory(false);
     }
   };
+
+  // Agrupamento das notícias por competição para as abas sanfona
+  const competitionGroups = React.useMemo(() => {
+    const baseGroups: { key: string; name: string; icon: string; match: (item: NewsItem, info: any) => boolean }[] = [
+      {
+        key: 'brasileirao-a',
+        name: 'Brasileirão Série A',
+        icon: '🇧🇷',
+        match: (item, info) => info.externalId === 71 || (item.league?.name === 'Serie A' && (item.league as any)?.country === 'Brazil'),
+      },
+      {
+        key: 'brasileirao-b',
+        name: 'Brasileirão Série B',
+        icon: '🇧🇷',
+        match: (item, info) => info.externalId === 72 || item.league?.name === 'Serie B',
+      },
+      {
+        key: 'copa-brasil',
+        name: 'Copa do Brasil',
+        icon: '🏆',
+        match: (item, info) => info.externalId === 73 || (item.league?.name || '').toLowerCase().includes('copa do brasil'),
+      },
+      {
+        key: 'seriea-italia',
+        name: 'Serie A (Itália)',
+        icon: '🇮🇹',
+        match: (item, info) => info.externalId === 135 || info.appSlug === 'seriea-italia' || (item.league?.name === 'Serie A' && (item.league as any)?.country === 'Italy'),
+      },
+      {
+        key: 'premierleague',
+        name: 'Premier League',
+        icon: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+        match: (item, info) => info.externalId === 39 || info.appSlug === 'premierleague',
+      },
+      {
+        key: 'laliga',
+        name: 'La Liga',
+        icon: '🇪🇸',
+        match: (item, info) => info.externalId === 140 || info.appSlug === 'laliga',
+      },
+      {
+        key: 'champions-league',
+        name: 'Champions League',
+        icon: '⭐️',
+        match: (item, info) => info.externalId === 2 || info.appSlug === 'champions_league',
+      },
+      {
+        key: 'bundesliga',
+        name: 'Bundesliga',
+        icon: '🇩🇪',
+        match: (item, info) => info.externalId === 78 || info.appSlug === 'bundesliga',
+      },
+      {
+        key: 'ligue1',
+        name: 'Ligue 1',
+        icon: '🇫🇷',
+        match: (item, info) => info.externalId === 61 || info.appSlug === 'ligue1-franca',
+      },
+      {
+        key: 'paulista',
+        name: 'Campeonato Paulista',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_paulista' || (item.league?.name || '').toLowerCase().includes('paulista'),
+      },
+      {
+        key: 'carioca',
+        name: 'Campeonato Carioca',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_carioca' || (item.league?.name || '').toLowerCase().includes('carioca'),
+      },
+      {
+        key: 'mineiro',
+        name: 'Campeonato Mineiro',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_mineiro' || (item.league?.name || '').toLowerCase().includes('mineiro'),
+      },
+      {
+        key: 'gaucho',
+        name: 'Campeonato Gaúcho',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_gaucho' || (item.league?.name || '').toLowerCase().includes('gaucho') || (item.league?.name || '').toLowerCase().includes('gaúcho'),
+      },
+      {
+        key: 'baiano',
+        name: 'Campeonato Baiano',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_baiano' || (item.league?.name || '').toLowerCase().includes('baiano'),
+      },
+      {
+        key: 'paranaense',
+        name: 'Campeonato Paranaense',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_paranaense' || (item.league?.name || '').toLowerCase().includes('paranaense'),
+      },
+      {
+        key: 'cearense',
+        name: 'Campeonato Cearense',
+        icon: '📍',
+        match: (item, info) => info.appSlug === 'campeonato_cearense' || (item.league?.name || '').toLowerCase().includes('cearense'),
+      },
+    ];
+
+    const mappedGroups: { [key: string]: { key: string; name: string; icon: string; news: NewsItem[] } } = {};
+
+    baseGroups.forEach((bg) => {
+      mappedGroups[bg.key] = {
+        key: bg.key,
+        name: bg.name,
+        icon: bg.icon,
+        news: [],
+      };
+    });
+
+    const otherGroups: { [key: string]: { key: string; name: string; icon: string; news: NewsItem[] } } = {};
+    const generalNews: NewsItem[] = [];
+
+    // Distribui cada notícia para a respectiva competição
+    for (const item of recentNews) {
+      const info = resolveLeagueInfo(item.league || (item as any).leagueId);
+      let matched = false;
+
+      for (const bg of baseGroups) {
+        if (bg.match(item, info)) {
+          mappedGroups[bg.key].news.push(item);
+          matched = true;
+          break;
+        }
+      }
+
+      if (!matched) {
+        if (item.league?.name) {
+          const customKey = `custom-${item.league.name.toLowerCase().replace(/\s+/g, '-')}`;
+          if (!otherGroups[customKey]) {
+            otherGroups[customKey] = {
+              key: customKey,
+              name: item.league.name,
+              icon: '⚽',
+              news: [],
+            };
+          }
+          otherGroups[customKey].news.push(item);
+        } else {
+          generalNews.push(item);
+        }
+      }
+    }
+
+    const result = Object.values(mappedGroups);
+
+    // Adiciona outras competições que possuam notícias
+    Object.values(otherGroups).forEach((og) => {
+      if (og.news.length > 0) result.push(og);
+    });
+
+    // Adiciona grupo geral/sem liga no final
+    result.push({
+      key: 'geral',
+      name: 'Outras Notícias / Geral',
+      icon: '🌐',
+      news: generalNews,
+    });
+
+    return result;
+  }, [recentNews, leagues]);
 
   useEffect(() => {
     fetchLeagues();
@@ -841,58 +1013,112 @@ export default function NewsPublisherAgentPage() {
               <div className="py-8 flex justify-center text-white/40">
                 <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
               </div>
-            ) : recentNews.length === 0 ? (
+            ) : competitionGroups.length === 0 ? (
               <p className="text-xs text-white/40 text-center py-6">
                 Nenhuma notícia encontrada no momento.
               </p>
             ) : (
-              <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
-                {recentNews.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl transition-all flex flex-col gap-2.5"
-                  >
-                    <div className="flex gap-3">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-white/5"
+              <div className="space-y-2.5 max-h-[600px] overflow-y-auto pr-1 custom-scrollbar">
+                {competitionGroups.map((group) => {
+                  const isOpen = openAccordionKey === group.key;
+                  const displayNews = group.news.slice(0, 10);
+
+                  return (
+                    <div
+                      key={group.key}
+                      className="border border-white/5 rounded-xl bg-white/[0.02] overflow-hidden transition-all duration-200"
+                    >
+                      {/* Cabeçalho da Sanfona */}
+                      <button
+                        type="button"
+                        onClick={() => toggleAccordion(group.key)}
+                        className={`w-full flex items-center justify-between p-3 transition-colors text-left select-none cursor-pointer ${
+                          isOpen ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-sm flex-shrink-0">{group.icon}</span>
+                          <span className="font-semibold text-xs text-white truncate">
+                            {group.name}
+                          </span>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                              group.news.length > 0
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                                : 'bg-white/5 text-white/30'
+                            }`}
+                          >
+                            {group.news.length > 0 ? `${Math.min(group.news.length, 10)} de ${group.news.length}` : '0'}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-white/50 transition-transform duration-200 flex-shrink-0 ${
+                            isOpen ? 'rotate-180 text-emerald-400' : ''
+                          }`}
                         />
-                      ) : (
-                        <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-white/20">
-                          <ImageIcon className="w-5 h-5" />
+                      </button>
+
+                      {/* Conteúdo Expandido da Sanfona (Últimas 10 notícias) */}
+                      {isOpen && (
+                        <div className="p-3 border-t border-white/5 space-y-2.5 bg-black/20 animate-fadeIn">
+                          {displayNews.length === 0 ? (
+                            <p className="text-[11px] text-white/40 text-center py-4 italic">
+                              Nenhuma notícia recente cadastrada para esta competição.
+                            </p>
+                          ) : (
+                            displayNews.map((item) => (
+                              <div
+                                key={item.id}
+                                className="p-2.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-lg transition-all flex flex-col gap-2"
+                              >
+                                <div className="flex gap-2.5">
+                                  {item.imageUrl ? (
+                                    <img
+                                      src={item.imageUrl}
+                                      alt={item.title}
+                                      className="w-14 h-14 rounded-lg object-cover flex-shrink-0 bg-white/5"
+                                    />
+                                  ) : (
+                                    <div className="w-14 h-14 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-white/20">
+                                      <ImageIcon className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1 text-[10px] text-white/40 mb-0.5">
+                                      <span className="text-emerald-400 font-semibold truncate">
+                                        {item.source || group.name}
+                                      </span>
+                                      <span>•</span>
+                                      <span>{new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
+                                    </div>
+                                    <h4 className="text-[11px] font-medium text-white/90 line-clamp-2 leading-tight">
+                                      {item.title}
+                                    </h4>
+                                  </div>
+                                </div>
+
+                                {/* Barra de Ação de Disparo de Rich Push */}
+                                <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
+                                  <span className="text-[9px] text-slate-500 font-mono">
+                                    ID: {item.id.slice(0, 8)}...
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => openPushModal(item)}
+                                    className="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/25 text-[10px] font-bold flex items-center gap-1 transition-all"
+                                  >
+                                    <Bell className="w-3 h-3 text-indigo-400" />
+                                    Disparar Rich Push
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 text-[10px] text-white/40 mb-1">
-                          <span className="text-emerald-400 font-semibold truncate">
-                            {item.league?.name || item.source || 'Geral'}
-                          </span>
-                          <span>•</span>
-                          <span>{new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                        <h4 className="text-xs font-medium text-white/90 line-clamp-2 leading-snug">
-                          {item.title}
-                        </h4>
-                      </div>
                     </div>
-
-                    {/* Barra de Ação de Disparo de Rich Push */}
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                      <span className="text-[10px] text-slate-500 font-mono">
-                        ID: {item.id.slice(0, 8)}...
-                      </span>
-                      <button
-                        onClick={() => openPushModal(item)}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/20 text-[11px] font-bold flex items-center gap-1.5 transition-all"
-                      >
-                        <Bell className="w-3 h-3 text-indigo-400" />
-                        Disparar Rich Push
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
