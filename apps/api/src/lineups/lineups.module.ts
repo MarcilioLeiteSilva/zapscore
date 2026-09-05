@@ -9,11 +9,24 @@ import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
 import { PocketbaseProvider } from './providers/pocketbase.provider';
 import { EspnProvider } from './providers/espn.provider';
+import { UolProvider } from './providers/uol.provider';
+import { LivescoreProvider } from './providers/livescore.provider';
+import { BesoccerProvider } from './providers/besoccer.provider';
 
 @Module({
   imports: [PrismaModule, FixturesModule, TeamsModule],
   controllers: [LineupsController],
-  providers: [LineupsService, EspnProvider, SofascoreProvider, FotmobProvider, GloboesporteProvider, PocketbaseProvider],
+  providers: [
+    LineupsService,
+    PocketbaseProvider,
+    UolProvider,
+    EspnProvider,
+    GloboesporteProvider,
+    LivescoreProvider,
+    BesoccerProvider,
+    SofascoreProvider,
+    FotmobProvider,
+  ],
   exports: [LineupsService],
 })
 export class LineupsModule {}

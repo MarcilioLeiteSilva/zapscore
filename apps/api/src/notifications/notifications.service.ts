@@ -482,7 +482,11 @@ export class NotificationsService {
 
       return { processedCount };
     } catch (err: any) {
-      this.logger.error(`[AutoDispatch Worker] Erro no processamento de auto-disparo: ${err.message}`);
+      if (err.message?.includes('does not exist')) {
+        this.logger.debug?.(`[AutoDispatch Worker] Tabela PushQueue não provisionada no PostgreSQL. Ignorando.`);
+      } else {
+        this.logger.error(`[AutoDispatch Worker] Erro no processamento de auto-disparo: ${err.message}`);
+      }
       return { processedCount: 0, error: err.message };
     }
   }

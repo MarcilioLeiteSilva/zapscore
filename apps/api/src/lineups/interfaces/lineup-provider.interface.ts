@@ -11,7 +11,7 @@ export interface NormalizedPlayer {
 export interface NormalizedLineupResult {
   success: boolean;
   confirmed: boolean;
-  source: 'sofascore' | 'fotmob' | 'globoesporte' | 'pocketbase' | 'espn' | 'uol';
+  source: 'sofascore' | 'fotmob' | 'globoesporte' | 'pocketbase' | 'espn' | 'uol' | '365scores' | 'livescore' | 'besoccer';
   formation?: {
     home?: string;
     away?: string;

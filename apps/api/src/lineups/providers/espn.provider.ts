@@ -18,12 +18,6 @@ export class EspnProvider implements ILineupProvider {
     72: 'bra.2', // Brasileirão Série B
     2: 'uefa.champions', // UEFA Champions League
     13: 'conmebol.libertadores', // Copa Libertadores
-    73: 'bra.copa_do_brasil', // Copa do Brasil
-    612: 'bra.copa_nordeste', // Copa do Nordeste
-    475: 'bra.paulista', // Paulistão
-    624: 'bra.carioca', // Carioca
-    629: 'bra.mineiro', // Mineiro
-    477: 'bra.gaucho', // Gaúcho
   };
 
   private readonly headers = {
@@ -186,10 +180,13 @@ export class EspnProvider implements ILineupProvider {
     const normHome = this.normalizeTeamName(homeTeamName);
     const normAway = this.normalizeTeamName(awayTeamName);
 
-    // Prioriza o código da liga específica se conhecido, caso contrário varre todas
+    // Se a liga é informada e não faz parte do catálogo da ESPN, ignora imediatamente
+    if (leagueExternalId && !this.leagueCodeMap[leagueExternalId]) {
+      return null;
+    }
+
     const primaryCode = leagueExternalId ? this.leagueCodeMap[leagueExternalId] : undefined;
-    const allCodes = Object.values(this.leagueCodeMap);
-    const leagueCodes = primaryCode ? [primaryCode, ...allCodes.filter((c) => c !== primaryCode)] : allCodes;
+    const leagueCodes = primaryCode ? [primaryCode] : Object.values(this.leagueCodeMap);
 
     for (const code of leagueCodes) {
       const events = await this.getEventsForLeagueAndDate(code, matchDate);

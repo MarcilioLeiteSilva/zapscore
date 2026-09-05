@@ -7,6 +7,9 @@ import { FotmobProvider } from './providers/fotmob.provider';
 import { GloboesporteProvider } from './providers/globoesporte.provider';
 import { PocketbaseProvider, PocketbaseLineupResult } from './providers/pocketbase.provider';
 import { EspnProvider } from './providers/espn.provider';
+import { UolProvider } from './providers/uol.provider';
+import { LivescoreProvider } from './providers/livescore.provider';
+import { BesoccerProvider } from './providers/besoccer.provider';
 import { TeamsService } from '../teams/teams.service';
 import { NormalizedPlayer } from './interfaces/lineup-provider.interface';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
@@ -18,10 +21,13 @@ export class LineupsService {
   // Telemetria de sucesso por provedor
   private readonly telemetry = {
     pocketbaseSuccessCount: 0,
+    uolSuccessCount: 0,
     espnSuccessCount: 0,
+    globoesporteSuccessCount: 0,
+    livescoreSuccessCount: 0,
+    besoccerSuccessCount: 0,
     sofascoreSuccessCount: 0,
     fotmobSuccessCount: 0,
-    globoesporteSuccessCount: 0,
     lastRunAt: null as Date | null,
     totalLineupsDispatched: 0,
   };
@@ -32,10 +38,13 @@ export class LineupsService {
     private readonly fixturesService: FixturesService,
     private readonly teamsService: TeamsService,
     private readonly pocketbaseProvider: PocketbaseProvider,
+    private readonly uolProvider: UolProvider,
     private readonly espnProvider: EspnProvider,
+    private readonly globoesporteProvider: GloboesporteProvider,
+    private readonly livescoreProvider: LivescoreProvider,
+    private readonly besoccerProvider: BesoccerProvider,
     private readonly sofascoreProvider: SofascoreProvider,
     private readonly fotmobProvider: FotmobProvider,
-    private readonly globoesporteProvider: GloboesporteProvider,
   ) {}
 
   /**
@@ -137,24 +146,34 @@ export class LineupsService {
         // 1ª Tentativa: PocketBase Buffer (Se já estiver validado como RESOLVED na collection)
         let result = (await this.pocketbaseProvider.getLineup(params)) as any;
 
-        // 2ª Tentativa: ESPN (Provedor Principal Aberto / Zero WAF)
+        // 2ª Tentativa: UOL Placar (Foco Futebol Brasileiro, Séries A/B e Estaduais)
+        if (!result || !result.confirmed) {
+          result = await this.uolProvider.getLineup(params);
+        }
+
+        // 3ª Tentativa: ESPN (Grandes Ligas Europeias e Séries A/B sem WAF)
         if (!result || !result.confirmed) {
           result = await this.espnProvider.getLineup(params);
         }
 
-        // 3ª Tentativa: Sofascore (se ESPN ainda não tiver)
-        if (!result || !result.confirmed) {
-          result = await this.sofascoreProvider.getLineup(params);
-        }
-
-        // 4ª Tentativa: FotMob (se Sofascore ainda não tiver ou falhar)
-        if (!result || !result.confirmed) {
-          result = await this.fotmobProvider.getLineup(params);
-        }
-
-        // 5ª Tentativa: GloboEsporte / Regional (se ainda não tiver)
+        // 4ª Tentativa: 365Scores (Grade Global e Nacional Aberta)
         if (!result || !result.confirmed) {
           result = await this.globoesporteProvider.getLineup(params);
+        }
+
+        // 5ª Tentativa: LiveScore (Internacional Aberto / 255 Ligas sem Cloudflare)
+        if (!result || !result.confirmed) {
+          result = await this.livescoreProvider.getLineup(params);
+        }
+
+        // 6ª Tentativa: BeSoccer (Contingência Aberta)
+        if (!result || !result.confirmed) {
+          result = await this.besoccerProvider.getLineup(params);
+        }
+
+        // 7ª Tentativa: Sofascore (Fallback de contingência final)
+        if (!result || !result.confirmed) {
+          result = await this.sofascoreProvider.getLineup(params);
         }
 
         // Se uma das fontes entregou a escalação com os 22 titulares
@@ -188,14 +207,20 @@ export class LineupsService {
             if (result.recordId) {
               await this.pocketbaseProvider.markAsSynced(result.recordId);
             }
+          } else if (result.source === 'uol') {
+            this.telemetry.uolSuccessCount++;
           } else if (result.source === 'espn') {
             this.telemetry.espnSuccessCount++;
+          } else if (result.source === 'globoesporte' || result.source === '365scores') {
+            this.telemetry.globoesporteSuccessCount++;
+          } else if (result.source === 'livescore') {
+            this.telemetry.livescoreSuccessCount++;
+          } else if (result.source === 'besoccer') {
+            this.telemetry.besoccerSuccessCount++;
           } else if (result.source === 'sofascore') {
             this.telemetry.sofascoreSuccessCount++;
           } else if (result.source === 'fotmob') {
             this.telemetry.fotmobSuccessCount++;
-          } else if (result.source === 'globoesporte') {
-            this.telemetry.globoesporteSuccessCount++;
           }
 
           details.push({
@@ -336,11 +361,13 @@ export class LineupsService {
       agent: 'Lineup Agent (Multi-Source Tripla Redundância + PocketBase Buffer)',
       strategy: 'Zero API-Football / Janela de 4 Horas',
       sources: [
-        'PocketBase Buffer (Prioritário)',
-        'ESPN Core API (Principal Aberto)',
-        'Sofascore (Fallback 1)',
-        'FotMob (Fallback 2)',
-        'GloboEsporte/365 (Fallback 3)',
+        'PocketBase Buffer (SSOT / Cache Local)',
+        'UOL Placar (Foco Brasil / Estaduais / Copas)',
+        'ESPN Core API (Principal Aberto / Europa & Séries A/B)',
+        '365Scores (Grade Rápida 800+ Jogos)',
+        'LiveScore (Mundial Aberto / 255 Ligas)',
+        'BeSoccer (Contingência Aberta)',
+        'Sofascore (Fallback Final)',
       ],
       telemetry: this.telemetry,
     };

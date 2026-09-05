@@ -1802,26 +1802,28 @@ O agente foi arquitetado sob 3 diretrizes fundamentais:
 2. **Escopo Restrito do Sentinel:** Não há varredura de jogos aleatórios. O agente filtra apenas as partidas pertencentes às competições ativas e monitoradas pela ZapScore (`SUPPORTED_COMPETITIONS` — Séries A e B, Estaduais, Europa e Copas).
 3. **Zero Consumo da API-Football:** Nenhuma requisição de escalação é feita para a API-Football, preservando **100% da cota diária** para as atualizações de partidas ao vivo e classificações.
 
-### 18.3 Arquitetura de Coleta em Cascata (PocketBase Buffer, ESPN Core API, Sofascore, FotMob e GloboEsporte/365)
-A coleta opera através de uma esteira em cascata altamente resiliente com provedores especializados:
+### 18.3 Arquitetura de Coleta em Cascata (PocketBase Buffer, UOL, ESPN, 365Scores, LiveScore e BeSoccer)
+A coleta opera através de uma esteira em cascata altamente resiliente, priorizando fontes abertas sem Cloudflare e zero consumo da cota da API-Football:
 
 ```mermaid
 flowchart TD
     CRON["⏰ Lineup Cron Worker (A cada 2 min)"]
     FILTER["1. Filtra partidas das próximas 4h no Prisma local"]
-    P0["2. Provedor 0: PocketBase Buffer (match_lineups)"]
+    P0["2. Provedor 0: PocketBase Buffer (match_lineups SSOT)"]
     CHECK0{"Validado RESOLVED?"}
-    P1["3. Provedor 1: ESPN Core API (Principal Aberto / Zero WAF)"]
+    P1["3. Provedor 1: UOL Placar (Foco Brasil / Séries A/B e Estaduais)"]
     CHECK1{"Confirmado e 22 titulares?"}
-    P2["4. Provedor 2: Sofascore API (/event/{id}/lineups)"]
+    P2["4. Provedor 2: ESPN Core API (Grandes Ligas Europeias / Zero WAF)"]
     CHECK2{"Confirmado e 22 titulares?"}
-    P3["5. Provedor 3: FotMob API (/matchDetails?matchId={id})"]
+    P3["5. Provedor 3: 365Scores (Grade Aberta 800+ Jogos do Dia)"]
     CHECK3{"Confirmado e 22 titulares?"}
-    P4["6. Provedor 4: GloboEsporte / 365Scores (Foco Brasil)"]
+    P4["6. Provedor 4: LiveScore API (Internacional Aberto / 255 Ligas)"]
     CHECK4{"Confirmado e 22 titulares?"}
-    SAVE["7. Gravação Atômica em FixtureLineup (Prisma)"]
-    WS["8. Emissão WebSocket (/fixtures)"]
-    PUSH["9. Push Agent agenda/dispara a 10 min pré-jogo"]
+    P5["7. Provedor 5: BeSoccer (Contingência Aberta)"]
+    CHECK5{"Confirmado e 22 titulares?"}
+    SAVE["8. Gravação Atômica em FixtureLineup (Prisma)"]
+    WS["9. Emissão WebSocket (/fixtures)"]
+    PUSH["10. Push Agent agenda/dispara a 10 min pré-jogo"]
 
     CRON --> FILTER
     FILTER --> P0
@@ -1839,31 +1841,33 @@ flowchart TD
     CHECK3 -- NÃO --> P4
     P4 --> CHECK4
     CHECK4 -- SIM --> SAVE
-    CHECK4 -- NÃO --> IDLE["Aguardar próximo ciclo (2 min)"]
+    CHECK4 -- NÃO --> P5
+    P5 --> CHECK5
+    CHECK5 -- SIM --> SAVE
+    CHECK5 -- NÃO --> IDLE["Aguardar próximo ciclo (2 min)"]
     SAVE --> WS
     SAVE --> PUSH
 ```
 
 * **0. PocketbaseProvider (`apps/api/src/lineups/providers/pocketbase.provider.ts`):**
-  - Ingestão prioritária a partir da collection `match_lineups` com status `RESOLVED`.
-* **1. EspnProvider (`apps/api/src/lineups/providers/espn.provider.ts`):**
-  - **Endpoint:** `GET https://site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/summary?event={id}`
-  - **Destaque:** Fonte primária 100% aberta, imune a bloqueios Cloudflare WAF, com entrega de 22 titulares, reservas, formações táticas completas e fotos oficiais CDN (`a.espncdn.com`).
-* **1. PocketbaseProvider (`apps/api/src/lineups/providers/pocketbase.provider.ts`):**
   - **Endpoint:** `GET/POST https://zapscore-pocketbase-multiapkagent.gtalg3.easypanel.host/api/collections/match_lineups/records`
   - **Destaque:** Buffer central e Single Source of Truth (SSOT). Recebe escalações estruturadas de APKs e crawlers, persistindo os dados em JSON com status `RESOLVED` / `SYNCED`.
+* **1. UolProvider (`apps/api/src/lineups/providers/uol.provider.ts`):**
+  - **Endpoint:** `GET https://placar.uol.com.br/esporte/futebol/{slug}/{ano}/{mes}/{dia}/{time1}-x-{time2}.htm`
+  - **Destaque:** Especialista em futebol nacional e regional (Série A, Série B, Copa do Brasil e Estaduais Paulistão, Carioca, Mineiro, Gaúcho, etc.). Totalmente aberto e imune a Cloudflare.
 * **2. EspnProvider (`apps/api/src/lineups/providers/espn.provider.ts`):**
   - **Endpoint:** `GET https://site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/summary?event={id}`
-  - **Destaque:** Motor principal aberto, imune a bloqueios Cloudflare WAF, com emulação de User-Agent mobile (`ESPN/5.0`), busca de datas multi-fuso (BRT UTC-3 e UTC para jogos noturnos) e entrega de 22 titulares, reservas e esquemas táticos.
-* **3. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
-  - **Endpoint:** `GET https://api.sofascore.com/api/v1/event/{sofascore_id}/lineups`
-  - **Destaque:** Fonte de contingência mundial.
-* **4. FotmobProvider (`apps/api/src/lineups/providers/fotmob.provider.ts`):**
-  - **Endpoint:** `GET https://www.fotmob.com/api/matchDetails?matchId={fotmob_id}`
-  - **Destaque:** Contingência com API REST leve.
-* **5. GloboesporteProvider / UOL (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
-  - **Endpoint:** Feeds de tempo real nacionais (*ge.globo*, *365Scores* e *UOL Central de Jogos*).
-  - **Destaque:** Contingência ultra-rápida especializada para o futebol brasileiro e torneios regionais.
+  - **Destaque:** Motor principal aberto para ligas europeias e continentais (Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Champions, Libertadores e Séries A/B). Otimizado cirurgicamente para ignorar ligas regionais não catalogadas, eliminando 100% dos erros HTTP 400.
+* **3. GloboesporteProvider / 365Scores (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
+  - **Endpoint:** `GET https://webws.365scores.com/web/games/allscores/` e `/web/game/?gameId={id}`
+  - **Destaque:** Varredura diária abrangente de mais de 800 partidas simultâneas com 11 titulares confirmados, reservas, números, fotos oficiais e formações táticas.
+* **4. LivescoreProvider (`apps/api/src/lineups/providers/livescore.provider.ts`):**
+  - **Endpoint:** `GET https://prod-public-api.livescore.com/v1/api/app/lineups/soccer/{eid}`
+  - **Destaque:** Rota direta com entrega nativa de grid de campo (`Fp: "row:col"`), 255 ligas mundiais e zero restrições de Cloudflare.
+* **5. BesoccerProvider (`apps/api/src/lineups/providers/besoccer.provider.ts`):**
+  - **Endpoint:** API pública de contingência global do BeSoccer / Resultados-Futbol.
+* **6. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
+  - **Destaque:** Mantido como fallback final de contingência caso todas as fontes abertas anteriores não localizem a súmula.
 
 ### 18.4 Mecanismo de Pareamento Fuzzy em Memória (Zero Impacto no Schema Prisma)
 Em estrita conformidade com as regras de governança e prevenção de regressões de banco de dados no Easypanel (Capítulo 16.8):
