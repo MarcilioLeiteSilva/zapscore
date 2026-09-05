@@ -16,8 +16,14 @@ import {
   Send,
   RefreshCw,
   Clock,
-  Eye
+  Eye,
+  Bell,
+  Smartphone,
+  X,
+  Flame,
+  Check
 } from 'lucide-react';
+import { PushSimulator } from '../push/components/PushSimulator';
 
 interface League {
   id: string;
@@ -33,7 +39,7 @@ interface NewsItem {
   source?: string | null;
   externalUrl?: string | null;
   createdAt: string;
-  league?: { name: string } | null;
+  league?: { name: string; externalId?: number } | null;
   team?: { name: string } | null;
 }
 
@@ -43,15 +49,34 @@ export default function NewsPublisherAgentPage() {
   const [overrideTitle, setOverrideTitle] = useState('');
   const [overrideDescription, setOverrideDescription] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Rich Push States para Publicação Direta
   const [sendPushWithNews, setSendPushWithNews] = useState(false);
+  const [customPushTitle, setCustomPushTitle] = useState('');
+  const [customPushBody, setCustomPushBody] = useState('');
+  const [showPushCustomizer, setShowPushCustomizer] = useState(false);
+  const [showLiveSimulator, setShowLiveSimulator] = useState(false);
+
+  // Modal de Disparo de Rich Push para Notícia do Histórico
+  const [pushModalItem, setPushModalItem] = useState<NewsItem | null>(null);
+  const [modalPushTitle, setModalPushTitle] = useState('');
+  const [modalPushBody, setModalPushBody] = useState('');
+  const [modalPushLeagueId, setModalPushLeagueId] = useState('');
+  const [isSendingModalPush, setIsSendingModalPush] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [successResult, setSuccessResult] = useState<NewsItem | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [leagues, setLeagues] = useState<any[]>([]);
   const [recentNews, setRecentNews] = useState<NewsItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const showToast = (type: 'success' | 'error', text: string) => {
+    setToastMsg({ type, text });
+    setTimeout(() => setToastMsg(null), 5000);
+  };
 
   const getLeagueDisplayName = (l: any) => {
     if (!l) return "Sem liga";
@@ -67,7 +92,26 @@ export default function NewsPublisherAgentPage() {
     return `${l.name}${l.country ? ` (${l.country})` : ''}`;
   };
 
-  // Lista padrão de fallback caso a API demore a responder
+  const getAppNameForLeague = (leagueId?: string | number) => {
+    if (!leagueId) return "ZapScore";
+    const l = leagues.find(x => String(x.id) === String(leagueId) || String(x.externalId) === String(leagueId));
+    if (!l) return "ZapScore";
+    const extId = l.externalId || (l.id && !isNaN(Number(l.id)) ? Number(l.id) : 0);
+    if (extId === 71 || extId === 72) return "Brasileirão";
+    if (extId === 475 || extId === 476) return "Campeonato Paulista";
+    if (extId === 624) return "Campeonato Carioca";
+    if (extId === 629) return "Campeonato Mineiro";
+    if (extId === 477) return "Campeonato Gaúcho";
+    if (extId === 617 || extId === 602) return "Campeonato Baiano";
+    if (extId === 140) return "La Liga";
+    if (extId === 39) return "Premier League";
+    if (extId === 78) return "Bundesliga";
+    if (extId === 135) return "Serie A";
+    if (extId === 61) return "Ligue 1";
+    if (extId === 2) return "Champions League";
+    return l.name || "ZapScore";
+  };
+
   const defaultLeagues: League[] = [
     { id: 'carioca-a1', name: 'Campeonato Carioca (Série A)' },
     { id: 'carioca-a2', name: 'Carioca Série A2' },
@@ -100,7 +144,7 @@ export default function NewsPublisherAgentPage() {
   const fetchRecentNews = async () => {
     setLoadingHistory(true);
     try {
-      const res = await fetch(`${API_URL}/news?limit=10`);
+      const res = await fetch(`${API_URL}/news?limit=15`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -150,16 +194,19 @@ export default function NewsPublisherAgentPage() {
 
       setSuccessResult(data);
 
-      // Dispara push opcional se habilitado
+      // Dispara Rich Push com BigPicture se habilitado
       if (sendPushWithNews && data && data.title) {
         try {
-          await fetch(`${API_URL}/notifications/broadcast`, {
+          const pushTitleToSend = customPushTitle.trim() || `📰 ${data.title}`;
+          const pushBodyToSend = customPushBody.trim() || data.description || 'Confira os detalhes completos desta notícia no aplicativo.';
+
+          const pushRes = await fetch(`${API_URL}/notifications/broadcast`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              leagueId: selectedLeagueId ? Number(selectedLeagueId) : undefined,
-              title: `📰 ${data.title}`,
-              body: data.description || 'Confira os detalhes completos desta notícia no aplicativo.',
+              leagueId: selectedLeagueId && !isNaN(Number(selectedLeagueId)) ? Number(selectedLeagueId) : undefined,
+              title: pushTitleToSend,
+              body: pushBodyToSend,
               imageUrl: data.imageUrl || undefined,
               dataPayload: {
                 type: 'news',
@@ -168,14 +215,25 @@ export default function NewsPublisherAgentPage() {
               }
             })
           });
-        } catch (pushErr) {
+
+          if (pushRes.ok) {
+            showToast('success', 'Notícia publicada e Rich Push com BigPicture disparado com sucesso!');
+          } else {
+            showToast('error', 'Notícia publicada, mas ocorreu uma falha ao disparar o push.');
+          }
+        } catch (pushErr: any) {
           console.warn('Erro ao disparar push da notícia:', pushErr);
+          showToast('error', `Notícia salva, mas falhou o push: ${pushErr.message}`);
         }
+      } else {
+        showToast('success', 'Notícia extraída e publicada com sucesso!');
       }
 
       setUrl('');
       setOverrideTitle('');
       setOverrideDescription('');
+      setCustomPushTitle('');
+      setCustomPushBody('');
       fetchRecentNews();
     } catch (err: any) {
       setErrorMsg(err.message || 'Erro inesperado ao conectar com o serviço do agente.');
@@ -184,8 +242,64 @@ export default function NewsPublisherAgentPage() {
     }
   };
 
+  // Abre modal para disparo de Rich Push a partir de notícia existente no histórico
+  const openPushModal = (item: NewsItem) => {
+    setPushModalItem(item);
+    setModalPushTitle(`📰 ${item.title}`);
+    setModalPushBody(item.description || 'Toque para conferir a matéria completa no aplicativo!');
+    const legId = (item.league as any)?.id || (item.league as any)?.externalId || '';
+    setModalPushLeagueId(String(legId));
+  };
+
+  const handleSendModalPush = async () => {
+    if (!pushModalItem) return;
+    setIsSendingModalPush(true);
+
+    try {
+      const res = await fetch(`${API_URL}/notifications/broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leagueId: modalPushLeagueId && !isNaN(Number(modalPushLeagueId)) ? Number(modalPushLeagueId) : undefined,
+          title: modalPushTitle.trim() || `📰 ${pushModalItem.title}`,
+          body: modalPushBody.trim() || pushModalItem.description || '',
+          imageUrl: pushModalItem.imageUrl || undefined,
+          dataPayload: {
+            type: 'news',
+            id: String(pushModalItem.id),
+            league_id: String(modalPushLeagueId || '')
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('success', `Rich Push disparado com sucesso via ${data.target || 'FCM'}!`);
+        setPushModalItem(null);
+      } else {
+        showToast('error', data.error || data.message || 'Falha ao disparar Rich Push.');
+      }
+    } catch (e: any) {
+      showToast('error', `Erro na requisição: ${e.message}`);
+    } finally {
+      setIsSendingModalPush(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl border flex items-center gap-2.5 text-xs font-bold animate-fadeIn ${
+          toastMsg.type === 'success' 
+            ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300' 
+            : 'bg-red-950/90 border-red-500/30 text-red-300'
+        }`}>
+          {toastMsg.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          <span>{toastMsg.text}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
@@ -198,10 +312,10 @@ export default function NewsPublisherAgentPage() {
           </div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <Newspaper className="w-7 h-7 text-emerald-400" />
-            Agente Publicador de Notícias
+            Agente Publicador de Notícias com Rich Push
           </h1>
           <p className="text-white/60 text-sm mt-1">
-            Cole a URL de qualquer notícia de clube ou portal e o agente extrai foto, manchete, lead e publica na competição selecionada.
+            Cole a URL de qualquer matéria e publique com extração automática de imagem, manchete e disparo simultâneo de Rich Push (BigPicture).
           </p>
         </div>
 
@@ -209,6 +323,10 @@ export default function NewsPublisherAgentPage() {
           <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             MOTOR CRAWLER ATIVO
+          </span>
+          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1.5">
+            <Bell className="w-3.5 h-3.5 text-indigo-400" />
+            RICH PUSH (BIGPICTURE)
           </span>
         </div>
       </div>
@@ -218,12 +336,24 @@ export default function NewsPublisherAgentPage() {
         {/* Coluna Esquerda: Formulário de Entrada */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-[#121824] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500"></div>
 
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
-              Publicação Semi-Automática por Link
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-400" />
+                Publicação & Disparo de Alerta
+              </h2>
+              {sendPushWithNews && (
+                <button
+                  type="button"
+                  onClick={() => setShowLiveSimulator(!showLiveSimulator)}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-500/20 transition-all"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  {showLiveSimulator ? 'Ocultar Simulador' : 'Ver Simulador Lock Screen'}
+                </button>
+              )}
+            </div>
 
             <form onSubmit={handlePublish} className="space-y-4">
               {/* URL Input */}
@@ -269,18 +399,18 @@ export default function NewsPublisherAgentPage() {
                   </select>
                 </div>
                 <p className="text-xs text-white/40 mt-1">
-                  💡 Selecione <strong>Carioca Série A2</strong> ou <strong>Campeonato Carioca</strong> para forçar a matéria na aba correta mesmo se não citar o campeonato.
+                  💡 Roteia automaticamente o push para o aplicativo correspondente ({getAppNameForLeague(selectedLeagueId)}).
                 </p>
               </div>
 
-              {/* Toggle de Ajustes Opcionais */}
+              {/* Toggle de Ajustes da Matéria */}
               <div>
                 <button
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className="text-xs text-emerald-400/90 hover:text-emerald-300 flex items-center gap-1 font-medium transition-colors"
                 >
-                  {showAdvanced ? '- Ocultar Edição Manual' : '+ Personalizar Manchete / Lead (Opcional)'}
+                  {showAdvanced ? '- Ocultar Edição Manual de Manchete/Lead' : '+ Personalizar Manchete / Lead (Opcional)'}
                 </button>
               </div>
 
@@ -288,19 +418,19 @@ export default function NewsPublisherAgentPage() {
                 <div className="space-y-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl animate-fadeIn">
                   <div>
                     <label className="block text-xs font-medium text-white/70 mb-1">
-                      Manchete Personalizada (Substituir a original)
+                      Manchete Personalizada para a Matéria
                     </label>
                     <input
                       type="text"
                       value={overrideTitle}
                       onChange={(e) => setOverrideTitle(e.target.value)}
-                      placeholder="Deixe em branco para extrair automaticamente do site"
+                      placeholder="Deixe em branco para extrair automaticamente do portal"
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 text-xs focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-white/70 mb-1">
-                      Resumo / Lead Personalizado
+                      Resumo / Lead Personalizado para a Matéria
                     </label>
                     <textarea
                       value={overrideDescription}
@@ -313,21 +443,73 @@ export default function NewsPublisherAgentPage() {
                 </div>
               )}
 
-              {/* Toggle de Disparo de Notificação Push */}
-              <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    id="sendPushToggle"
-                    checked={sendPushWithNews}
-                    onChange={(e) => setSendPushWithNews(e.target.checked)}
-                    className="h-4 w-4 rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <label htmlFor="sendPushToggle" className="text-xs font-semibold text-white cursor-pointer select-none">
-                    🔔 Disparar Notificação Push ao Publicar (com Rich Push / Foto)
-                  </label>
+              {/* Bloco de Rich Push */}
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="sendPushToggle"
+                      checked={sendPushWithNews}
+                      onChange={(e) => setSendPushWithNews(e.target.checked)}
+                      className="h-4 w-4 rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <label htmlFor="sendPushToggle" className="text-xs font-bold text-white cursor-pointer select-none">
+                      🔔 Disparar Rich Push com BigPicture ao Publicar
+                    </label>
+                  </div>
+                  <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold">
+                    FCM v1 / BigPicture
+                  </span>
                 </div>
-                <span className="text-[10px] text-indigo-400 font-mono">FCM v1</span>
+
+                {sendPushWithNews && (
+                  <div className="pt-2 border-t border-indigo-500/20 space-y-3">
+                    <div className="flex items-center justify-between text-xs text-slate-300">
+                      <span>Destino: <strong>{getAppNameForLeague(selectedLeagueId)}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPushCustomizer(!showPushCustomizer)}
+                        className="text-indigo-400 hover:text-indigo-300 text-[11px] underline font-medium"
+                      >
+                        {showPushCustomizer ? 'Usar texto da matéria' : 'Personalizar texto do Push'}
+                      </button>
+                    </div>
+
+                    {showPushCustomizer && (
+                      <div className="space-y-2.5 bg-slate-950/40 p-3 rounded-lg border border-indigo-500/20 text-xs">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                            Título Chamativo do Push (ex: 🔥 URGENTE / REFORÇO NOVO)
+                          </label>
+                          <input
+                            type="text"
+                            value={customPushTitle}
+                            onChange={(e) => setCustomPushTitle(e.target.value)}
+                            placeholder="Ex: 🔥 REFORÇO CONFIRMADO NO CLUBE!"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                            Chamada Curta da Notificação (Lead do Push)
+                          </label>
+                          <input
+                            type="text"
+                            value={customPushBody}
+                            onChange={(e) => setCustomPushBody(e.target.value)}
+                            placeholder="Ex: Confira os bastidores e detalhes da contratação..."
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 text-xs"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-slate-400">
+                      📸 A foto capturada na matéria será exibida nativamente na barra de notificações como <strong>BigPicture</strong>.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Mensagens de Feedback */}
@@ -342,31 +524,51 @@ export default function NewsPublisherAgentPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Raspando Imagem e Publicando Notícia...
+                    Extraindo Imagem e Processando Publicação...
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    Capturar Foto & Publicar Notícia
+                    {sendPushWithNews ? 'Publicar Matéria & Disparar Rich Push' : 'Capturar Foto & Publicar Notícia'}
                   </>
                 )}
               </button>
             </form>
           </div>
 
+          {/* Simulador Lock Screen em Tempo Real (Inline quando ativado) */}
+          {sendPushWithNews && showLiveSimulator && (
+            <div className="bg-[#121824] border border-indigo-500/30 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-indigo-400" />
+                  Pré-visualização do Rich Push na Tela de Bloqueio
+                </h3>
+                <span className="text-[11px] text-slate-400">Tempo Real</span>
+              </div>
+              <PushSimulator
+                title={customPushTitle || overrideTitle || "📰 Manchete da Notícia em Destaque"}
+                body={customPushBody || overrideDescription || "Lead da matéria com resumo curto atraindo o torcedor para o aplicativo..."}
+                imageUrl={successResult?.imageUrl || "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&auto=format&fit=crop&q=80"}
+                appName={getAppNameForLeague(selectedLeagueId)}
+                timeAgo="Agora"
+              />
+            </div>
+          )}
+
           {/* Card de Informações e Dicas */}
           <div className="bg-[#121824]/60 border border-white/5 rounded-xl p-4 text-xs text-white/60 space-y-2">
             <div className="flex items-center gap-2 text-white font-medium">
               <ImageIcon className="w-4 h-4 text-emerald-400" />
-              Como a Captura de Fotos Funciona:
+              Como a Captura de Fotos e o Rich Push Funcionam:
             </div>
             <p>
-              O robô utiliza os mesmos seletores de OpenGraph (<code>og:image</code>), Twitter Cards e resolução de CDN do Crawler oficial, garantindo imagens nítidas sem marcas d’água e com proxy de bypass quando necessário.
+              O robô utiliza os seletores OpenGraph (<code>og:image</code>) e Twitter Cards do portal oficial, garantindo imagens de alta resolução sem marcas d’água. Ao marcar o envio de push, o FCM envia a imagem no formato <strong>BigPicture</strong>, gerando visualização completa na tela bloqueada do usuário.
             </p>
           </div>
         </div>
@@ -376,9 +578,18 @@ export default function NewsPublisherAgentPage() {
           {/* Preview da Notícia Recém-Publicada */}
           {successResult && (
             <div className="bg-[#121824] border border-emerald-500/30 rounded-2xl p-5 shadow-2xl relative animate-fadeIn">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm mb-3">
-                <CheckCircle2 className="w-5 h-5" />
-                Notícia Publicada com Sucesso no App!
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Publicada no App!
+                </div>
+                <button
+                  onClick={() => openPushModal(successResult)}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 transition-all"
+                >
+                  <Bell className="w-3.5 h-3.5 text-indigo-400" />
+                  Disparar Push Agora
+                </button>
               </div>
 
               <div className="rounded-xl overflow-hidden bg-black/40 border border-white/10 mb-3">
@@ -428,13 +639,16 @@ export default function NewsPublisherAgentPage() {
             </div>
           )}
 
-          {/* Histórico Recente de Publicações */}
+          {/* Histórico Recente de Publicações com Ação de Rich Push */}
           <div className="bg-[#121824] border border-white/10 rounded-2xl p-5 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-400" />
-                Últimas Notícias no Sistema
-              </h3>
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-400" />
+                  Últimas Notícias no Sistema
+                </h3>
+                <p className="text-[11px] text-white/40">Dispare Rich Push para qualquer matéria cadastrada</p>
+              </div>
               <button
                 onClick={fetchRecentNews}
                 className="text-white/40 hover:text-white transition-colors p-1"
@@ -453,34 +667,50 @@ export default function NewsPublisherAgentPage() {
                 Nenhuma notícia encontrada no momento.
               </p>
             ) : (
-              <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
                 {recentNews.map((item) => (
                   <div
                     key={item.id}
-                    className="p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl transition-all flex gap-3"
+                    className="p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl transition-all flex flex-col gap-2.5"
                   >
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-white/5"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-white/20">
-                        <ImageIcon className="w-5 h-5" />
+                    <div className="flex gap-3">
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0 bg-white/5"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-white/20">
+                          <ImageIcon className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 text-[10px] text-white/40 mb-1">
+                          <span className="text-emerald-400 font-semibold truncate">
+                            {item.league?.name || item.source || 'Geral'}
+                          </span>
+                          <span>•</span>
+                          <span>{new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
+                        </div>
+                        <h4 className="text-xs font-medium text-white/90 line-clamp-2 leading-snug">
+                          {item.title}
+                        </h4>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-[10px] text-white/40 mb-1">
-                        <span className="text-emerald-400 font-semibold truncate">
-                          {item.league?.name || item.source || 'Geral'}
-                        </span>
-                        <span>•</span>
-                        <span>{new Date(item.createdAt).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                      <h4 className="text-xs font-medium text-white/90 line-clamp-2 leading-snug">
-                        {item.title}
-                      </h4>
+                    </div>
+
+                    {/* Barra de Ação de Disparo de Rich Push */}
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        ID: {item.id.slice(0, 8)}...
+                      </span>
+                      <button
+                        onClick={() => openPushModal(item)}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/20 text-[11px] font-bold flex items-center gap-1.5 transition-all"
+                      >
+                        <Bell className="w-3 h-3 text-indigo-400" />
+                        Disparar Rich Push
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -489,6 +719,134 @@ export default function NewsPublisherAgentPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Confirmação e Disparo de Rich Push com Simulador */}
+      {pushModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#121824] border border-indigo-500/30 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                  <Bell className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Disparo de Rich Push (BigPicture)</h3>
+                  <p className="text-xs text-white/50">Confira a chamada e a foto antes de enviar aos torcedores</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPushModalItem(null)}
+                className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+              {/* Formulário do Push */}
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    App / Competição de Destino
+                  </label>
+                  <select
+                    value={modalPushLeagueId}
+                    onChange={(e) => setModalPushLeagueId(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-xs"
+                  >
+                    <option value="">Geral / Detectar</option>
+                    {leagues.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {getLeagueDisplayName(l)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    Título do Push
+                  </label>
+                  <input
+                    type="text"
+                    value={modalPushTitle}
+                    onChange={(e) => setModalPushTitle(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-xs"
+                    placeholder="Título da notificação"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-bold mb-1">
+                    Chamada Curta (Corpo)
+                  </label>
+                  <textarea
+                    value={modalPushBody}
+                    onChange={(e) => setModalPushBody(e.target.value)}
+                    rows={3}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-xs"
+                    placeholder="Texto do corpo da notificação"
+                  />
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-slate-300 space-y-1">
+                  <div className="flex items-center gap-1.5 text-indigo-300 font-bold">
+                    <Check className="w-3.5 h-3.5" />
+                    Deep Linking Configurado:
+                  </div>
+                  <p className="text-slate-400">
+                    Ao tocar na notificação, o app abrirá direto a notícia ID: <code className="text-white font-mono">{pushModalItem.id.slice(0, 8)}</code>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Simulador Lock Screen BigPicture */}
+              <div className="bg-slate-950/60 p-3 rounded-2xl border border-white/5 flex flex-col items-center">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                  Preview Lock Screen
+                </span>
+                <PushSimulator
+                  title={modalPushTitle}
+                  body={modalPushBody}
+                  imageUrl={pushModalItem.imageUrl || undefined}
+                  appName={getAppNameForLeague(modalPushLeagueId)}
+                  timeAgo="Agora"
+                />
+              </div>
+            </div>
+
+            {/* Footer do Modal */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setPushModalItem(null)}
+                disabled={isSendingModalPush}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSendModalPush}
+                disabled={isSendingModalPush}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50"
+              >
+                {isSendingModalPush ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Disparando Notificação...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Confirmar & Disparar Rich Push
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
