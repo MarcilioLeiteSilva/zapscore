@@ -92,24 +92,181 @@ export default function NewsPublisherAgentPage() {
     return `${l.name}${l.country ? ` (${l.country})` : ''}`;
   };
 
+  const resolveLeagueInfo = (leagueOrId: any): { leagueIdForPrisma?: string; externalId?: number; appSlug?: string; appName: string } => {
+    if (!leagueOrId) return { appName: "ZapScore" };
+
+    let l: any = null;
+    if (typeof leagueOrId === 'object') {
+      l = leagueOrId;
+    } else {
+      l = leagues.find(
+        (x) =>
+          String(x.id) === String(leagueOrId) ||
+          String(x.externalId) === String(leagueOrId)
+      );
+    }
+
+    const prismaId = l?.id || (typeof leagueOrId === 'string' && leagueOrId.includes('-') ? leagueOrId : undefined);
+    const extId = l?.externalId || (!isNaN(Number(leagueOrId)) ? Number(leagueOrId) : undefined);
+    const name = (l?.name || '').trim();
+    const country = (l?.country || '').trim();
+    const nameLower = name.toLowerCase();
+
+    // 1. Brasil (Brasileirão Séries A e B, Copa do Brasil)
+    if (
+      extId === 71 ||
+      extId === 72 ||
+      extId === 73 ||
+      (name === 'Serie A' && country === 'Brazil') ||
+      (name === 'Serie B' && country === 'Brazil') ||
+      nameLower.includes('brasileir')
+    ) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 71,
+        appSlug: 'brasileirao',
+        appName: 'Brasileirão',
+      };
+    }
+
+    // 2. Europa: Serie A Itália
+    if (
+      extId === 135 ||
+      (name === 'Serie A' && country === 'Italy') ||
+      (nameLower.includes('serie a') && country.toLowerCase().includes('ital'))
+    ) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 135,
+        appSlug: 'seriea-italia',
+        appName: 'Serie A (Itália)',
+      };
+    }
+
+    // Premier League
+    if (extId === 39 || nameLower.includes('premier')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 39,
+        appSlug: 'premierleague',
+        appName: 'Premier League',
+      };
+    }
+
+    // La Liga
+    if (extId === 140 || nameLower.includes('la liga')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 140,
+        appSlug: 'laliga',
+        appName: 'La Liga',
+      };
+    }
+
+    // Bundesliga
+    if (extId === 78 || nameLower.includes('bundesliga')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 78,
+        appSlug: 'bundesliga',
+        appName: 'Bundesliga',
+      };
+    }
+
+    // Ligue 1
+    if (extId === 61 || nameLower.includes('ligue 1')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 61,
+        appSlug: 'ligue1-franca',
+        appName: 'Ligue 1',
+      };
+    }
+
+    // Champions League
+    if (extId === 2 || nameLower.includes('champions')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 2,
+        appSlug: 'champions_league',
+        appName: 'Champions League',
+      };
+    }
+
+    // 3. Estaduais
+    if (extId === 475 || extId === 476 || extId === 610 || nameLower.includes('paulista')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 475,
+        appSlug: 'campeonato_paulista',
+        appName: 'Campeonato Paulista',
+      };
+    }
+
+    if (extId === 624 || extId === 625 || extId === 851 || nameLower.includes('carioca')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 624,
+        appSlug: 'campeonato_carioca',
+        appName: 'Campeonato Carioca',
+      };
+    }
+
+    if (extId === 629 || extId === 619 || nameLower.includes('mineiro')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 629,
+        appSlug: 'campeonato_mineiro',
+        appName: 'Campeonato Mineiro',
+      };
+    }
+
+    if (extId === 477 || extId === 478 || extId === 614 || nameLower.includes('gaucho') || nameLower.includes('gaúcho')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 477,
+        appSlug: 'campeonato_gaucho',
+        appName: 'Campeonato Gaúcho',
+      };
+    }
+
+    if (extId === 602 || extId === 613 || extId === 617 || nameLower.includes('baiano')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 602,
+        appSlug: 'campeonato_baiano',
+        appName: 'Campeonato Baiano',
+      };
+    }
+
+    if (extId === 606 || extId === 616 || nameLower.includes('paranaense')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 606,
+        appSlug: 'campeonato_paranaense',
+        appName: 'Campeonato Paranaense',
+      };
+    }
+
+    if (extId === 609 || extId === 620 || extId === 618 || nameLower.includes('cearense')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 609,
+        appSlug: 'campeonato_cearense',
+        appName: 'Campeonato Cearense',
+      };
+    }
+
+    return {
+      leagueIdForPrisma: prismaId,
+      externalId: extId,
+      appName: name || "ZapScore",
+    };
+  };
+
   const getAppNameForLeague = (leagueId?: string | number) => {
     if (!leagueId) return "ZapScore";
-    const l = leagues.find(x => String(x.id) === String(leagueId) || String(x.externalId) === String(leagueId));
-    if (!l) return "ZapScore";
-    const extId = l.externalId || (l.id && !isNaN(Number(l.id)) ? Number(l.id) : 0);
-    if (extId === 71 || extId === 72) return "Brasileirão";
-    if (extId === 475 || extId === 476) return "Campeonato Paulista";
-    if (extId === 624) return "Campeonato Carioca";
-    if (extId === 629) return "Campeonato Mineiro";
-    if (extId === 477) return "Campeonato Gaúcho";
-    if (extId === 617 || extId === 602) return "Campeonato Baiano";
-    if (extId === 140) return "La Liga";
-    if (extId === 39) return "Premier League";
-    if (extId === 78) return "Bundesliga";
-    if (extId === 135) return "Serie A";
-    if (extId === 61) return "Ligue 1";
-    if (extId === 2) return "Champions League";
-    return l.name || "ZapScore";
+    return resolveLeagueInfo(leagueId).appName;
   };
 
   const defaultLeagues: League[] = [
@@ -200,24 +357,29 @@ export default function NewsPublisherAgentPage() {
           const pushTitleToSend = customPushTitle.trim() || `📰 ${data.title}`;
           const pushBodyToSend = customPushBody.trim() || data.description || 'Confira os detalhes completos desta notícia no aplicativo.';
 
+          const selectedLeagueObj = leagues.find(l => l.id === selectedLeagueId || String(l.externalId) === selectedLeagueId) || (data as any).league;
+          const targetInfo = resolveLeagueInfo(selectedLeagueObj || selectedLeagueId);
+
           const pushRes = await fetch(`${API_URL}/notifications/broadcast`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              leagueId: selectedLeagueId && !isNaN(Number(selectedLeagueId)) ? Number(selectedLeagueId) : undefined,
+              leagueId: targetInfo.externalId,
+              appSlug: targetInfo.appSlug,
               title: pushTitleToSend,
               body: pushBodyToSend,
               imageUrl: data.imageUrl || undefined,
               dataPayload: {
                 type: 'news',
                 id: String(data.id || ''),
-                league_id: String(selectedLeagueId || '')
+                league_id: String(targetInfo.externalId || ''),
+                app_slug: targetInfo.appSlug || ''
               }
             })
           });
 
           if (pushRes.ok) {
-            showToast('success', 'Notícia publicada e Rich Push com BigPicture disparado com sucesso!');
+            showToast('success', `Notícia publicada e Rich Push disparado com sucesso para ${targetInfo.appName}!`);
           } else {
             showToast('error', 'Notícia publicada, mas ocorreu uma falha ao disparar o push.');
           }
@@ -247,8 +409,20 @@ export default function NewsPublisherAgentPage() {
     setPushModalItem(item);
     setModalPushTitle(`📰 ${item.title}`);
     setModalPushBody(item.description || 'Toque para conferir a matéria completa no aplicativo!');
-    const legId = (item.league as any)?.id || (item.league as any)?.externalId || '';
-    setModalPushLeagueId(String(legId));
+    
+    // Procura a liga correspondente no array leagues
+    const itemLeague: any = item.league;
+    const itemLeagueId = (item as any).leagueId;
+
+    const matchedLeague = leagues.find((l) => 
+      (itemLeague?.id && l.id === itemLeague.id) ||
+      (itemLeagueId && l.id === itemLeagueId) ||
+      (itemLeague?.externalId && l.externalId === itemLeague.externalId) ||
+      (itemLeague?.name && l.name === itemLeague.name && (!itemLeague?.country || l.country === itemLeague.country))
+    );
+
+    const targetKey = matchedLeague?.id || itemLeague?.id || itemLeagueId || (itemLeague?.externalId ? String(itemLeague.externalId) : '');
+    setModalPushLeagueId(targetKey);
   };
 
   const handleSendModalPush = async () => {
@@ -256,25 +430,30 @@ export default function NewsPublisherAgentPage() {
     setIsSendingModalPush(true);
 
     try {
+      const selectedLeagueObj = leagues.find(l => l.id === modalPushLeagueId || String(l.externalId) === modalPushLeagueId) || (pushModalItem as any).league;
+      const targetInfo = resolveLeagueInfo(selectedLeagueObj || modalPushLeagueId);
+
       const res = await fetch(`${API_URL}/notifications/broadcast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          leagueId: modalPushLeagueId && !isNaN(Number(modalPushLeagueId)) ? Number(modalPushLeagueId) : undefined,
+          leagueId: targetInfo.externalId,
+          appSlug: targetInfo.appSlug,
           title: modalPushTitle.trim() || `📰 ${pushModalItem.title}`,
           body: modalPushBody.trim() || pushModalItem.description || '',
           imageUrl: pushModalItem.imageUrl || undefined,
           dataPayload: {
             type: 'news',
             id: String(pushModalItem.id),
-            league_id: String(modalPushLeagueId || '')
+            league_id: String(targetInfo.externalId || ''),
+            app_slug: targetInfo.appSlug || ''
           }
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        showToast('success', `Rich Push disparado com sucesso via ${data.target || 'FCM'}!`);
+        showToast('success', `Rich Push disparado com sucesso para ${targetInfo.appName} (${data.target || 'FCM'})!`);
         setPushModalItem(null);
       } else {
         showToast('error', data.error || data.message || 'Falha ao disparar Rich Push.');
@@ -792,8 +971,11 @@ export default function NewsPublisherAgentPage() {
                 <div className="p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-slate-300 space-y-1">
                   <div className="flex items-center gap-1.5 text-indigo-300 font-bold">
                     <Check className="w-3.5 h-3.5" />
-                    Deep Linking Configurado:
+                    Destino do Rich Push & Deep Linking:
                   </div>
+                  <p className="text-slate-300">
+                    App Alvo: <span className="text-emerald-400 font-bold">{resolveLeagueInfo(modalPushLeagueId || (pushModalItem as any).league).appName}</span> {resolveLeagueInfo(modalPushLeagueId || (pushModalItem as any).league).appSlug ? <span className="text-indigo-400">({resolveLeagueInfo(modalPushLeagueId || (pushModalItem as any).league).appSlug})</span> : ''}
+                  </p>
                   <p className="text-slate-400">
                     Ao tocar na notificação, o app abrirá direto a notícia ID: <code className="text-white font-mono">{pushModalItem.id.slice(0, 8)}</code>.
                   </p>
@@ -809,7 +991,7 @@ export default function NewsPublisherAgentPage() {
                   title={modalPushTitle}
                   body={modalPushBody}
                   imageUrl={pushModalItem.imageUrl || undefined}
-                  appName={getAppNameForLeague(modalPushLeagueId)}
+                  appName={resolveLeagueInfo(modalPushLeagueId || (pushModalItem as any).league).appName}
                   timeAgo="Agora"
                 />
               </div>
