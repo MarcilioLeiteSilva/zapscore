@@ -99,7 +99,8 @@ export class LineupsService {
             l.isStart &&
             l.grid &&
             l.playerPhoto &&
-            !l.playerPhoto.includes('api.sofascore.app'),
+            !l.playerPhoto.includes('api.sofascore.app') &&
+            !l.playerPhoto.includes('imagecache.365scores.com'),
         ).length;
         const awayStarters = f.lineups.filter(
           (l) =>
@@ -107,7 +108,8 @@ export class LineupsService {
             l.isStart &&
             l.grid &&
             l.playerPhoto &&
-            !l.playerPhoto.includes('api.sofascore.app'),
+            !l.playerPhoto.includes('api.sofascore.app') &&
+            !l.playerPhoto.includes('imagecache.365scores.com'),
         ).length;
         return homeStarters < 11 || awayStarters < 11;
       });
@@ -185,7 +187,11 @@ export class LineupsService {
           result.homeTeam.starters.length >= 11 &&
           result.awayTeam.starters.length >= 11
         ) {
-          // Enriquece fotos de jogadores com a base oficial de plantéis (TeamSquad) do clube
+          // 1. Aplica cálculo de grid tático universal dinâmico e independente para cada clube
+          this.applyUniversalTacticalGrid(result.homeTeam.starters, result.formation?.home);
+          this.applyUniversalTacticalGrid(result.awayTeam.starters, result.formation?.away);
+
+          // 2. Enriquece fotos de jogadores com a base oficial de plantéis (TeamSquad) do clube
           await this.enrichPlayersWithSquadPhotos(f.homeTeam.externalId, result.homeTeam.starters);
           await this.enrichPlayersWithSquadPhotos(f.homeTeam.externalId, result.homeTeam.substitutes);
           await this.enrichPlayersWithSquadPhotos(f.awayTeam.externalId, result.awayTeam.starters);
@@ -473,6 +479,84 @@ export class LineupsService {
   }
 
   /**
+   * Calcula e normaliza as coordenadas de campo tático (grid: "row:col")
+   * dinamicamente para os 11 titulares a partir da formação de cada time (ex: "4-2-3-1", "3-5-2", "4-3-3").
+   * Identifica o goleiro de forma inteligente (1:1) e distribui defensores, meias e atacantes
+   * nas linhas e colunas táticas correspondentes, mesmo que a formação mude.
+   */
+  private applyUniversalTacticalGrid(starters: NormalizedPlayer[], formation?: string): void {
+    if (!Array.isArray(starters) || starters.length < 11) return;
+
+    // 1. Identifica o goleiro (pela posição 'G', 'Goleiro', 'Goalkeeper' ou camisa 1)
+    let gkIndex = starters.findIndex((p) => {
+      const pos = (p.pos || '').toUpperCase();
+      return pos === 'G' || pos.includes('GOL') || pos.includes('KEEP');
+    });
+
+    if (gkIndex === -1) {
+      gkIndex = starters.findIndex((p) => p.number === 1);
+    }
+    if (gkIndex === -1) {
+      gkIndex = 0; // Fallback seguro
+    }
+
+    const gk = starters[gkIndex];
+    gk.grid = '1:1';
+    gk.pos = gk.pos || 'G';
+
+    // 2. Separa os outros 10 jogadores de linha
+    const outfield = starters.filter((_, idx) => idx !== gkIndex);
+
+    // 3. Decompõe a formação tática (ex: "4-2-3-1" => [4, 2, 3, 1])
+    let lines = (formation || '')
+      .split('-')
+      .map(Number)
+      .filter((n) => !isNaN(n) && n > 0);
+
+    const sumLines = lines.reduce((a, b) => a + b, 0);
+    if (sumLines !== 10) {
+      const digits = (formation || '').replace(/[^0-9]/g, '').split('').map(Number);
+      if (digits.reduce((a, b) => a + b, 0) === 10) {
+        lines = digits;
+      } else {
+        lines = [4, 3, 3]; // Padrão clássico equilibrado
+      }
+    }
+
+    // 4. Ordena os jogadores de linha por hierarquia posicional (Defesa -> Meio -> Ataque)
+    // para garantir que zagueiros/laterais fiquem na linha 2, volantes/meias na linha 3/4 e atacantes na linha final
+    const posPriority = (p: NormalizedPlayer): number => {
+      const pos = (p.pos || '').toUpperCase();
+      if (pos === 'D' || pos.includes('DEF') || pos.includes('ZAG') || pos.includes('LAT') || pos.includes('BACK')) return 1;
+      if (pos === 'M' || pos.includes('MEI') || pos.includes('VOL') || pos.includes('MID')) return 2;
+      if (pos === 'F' || pos.includes('ATA') || pos.includes('PON') || pos.includes('CEN') || pos.includes('STRIK') || pos.includes('FORW')) return 3;
+      return 2; // neutro
+    };
+
+    outfield.sort((a, b) => posPriority(a) - posPriority(b));
+
+    // 5. Atribui row:col linha a linha conforme a formação tática
+    let playerIdx = 0;
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const row = lineIdx + 2; // Linha 1 é reservada ao goleiro
+      const playersInLine = lines[lineIdx];
+
+      for (let col = 1; col <= playersInLine; col++) {
+        if (playerIdx < outfield.length) {
+          outfield[playerIdx].grid = `${row}:${col}`;
+          playerIdx++;
+        }
+      }
+    }
+
+    // Qualquer excedente
+    while (playerIdx < outfield.length) {
+      outfield[playerIdx].grid = `${lines.length + 1}:1`;
+      playerIdx++;
+    }
+  }
+
+  /**
    * Enriquece fotos de jogadores cruzando com a tabela TeamSquad (plantel oficial do clube já existente no banco)
    */
   private async enrichPlayersWithSquadPhotos(
@@ -482,8 +566,22 @@ export class LineupsService {
     if (!teamExternalId || !Array.isArray(players) || players.length === 0) return;
 
     try {
-      const squadList: Array<{ name: string; number?: number | null; photo?: string; id?: number }> =
-        await this.teamsService.getSquad(teamExternalId);
+      let squadList: Array<{ name: string; number?: number | null; photo?: string; id?: number }> = [];
+
+      // 1. Tenta leitura direta na tabela TeamSquad (cache local em milissegundos)
+      try {
+        const teamSquad = await (this.prisma as any).teamSquad.findUnique({
+          where: { teamExternalId },
+        });
+        if (teamSquad && teamSquad.squadJson) {
+          squadList = JSON.parse(teamSquad.squadJson);
+        }
+      } catch (_) {}
+
+      // 2. Se não encontrou no banco, consulta via TeamsService
+      if (!Array.isArray(squadList) || squadList.length === 0) {
+        squadList = (await this.teamsService.getSquad(teamExternalId)) || [];
+      }
 
       if (!Array.isArray(squadList) || squadList.length === 0) return;
 
@@ -496,7 +594,13 @@ export class LineupsService {
           .trim();
 
       for (const p of players) {
-        if (p.playerPhoto) continue; // Já possui foto preenchida
+        // Se já possui foto oficial e válida do CDN oficial, preserva
+        if (
+          p.playerPhoto &&
+          (p.playerPhoto.includes('media.api-sports.io') || p.playerPhoto.includes('img.sofascore.com'))
+        ) {
+          continue;
+        }
 
         const pNorm = normalize(p.player);
 

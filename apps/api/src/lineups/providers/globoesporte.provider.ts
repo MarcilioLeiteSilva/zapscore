@@ -130,6 +130,16 @@ export class GloboesporteProvider implements ILineupProvider {
     return null;
   }
 
+  private mapPosition(posName?: string): string | undefined {
+    if (!posName) return undefined;
+    const p = posName.toLowerCase();
+    if (p.includes('gol') || p.includes('keep')) return 'G';
+    if (p.includes('def') || p.includes('zag') || p.includes('lat') || p.includes('back')) return 'D';
+    if (p.includes('mei') || p.includes('vol') || p.includes('mid')) return 'M';
+    if (p.includes('ata') || p.includes('pon') || p.includes('cen') || p.includes('forw') || p.includes('strik')) return 'F';
+    return undefined;
+  }
+
   /**
    * Converte membros da súmula em atletas normalizados
    */
@@ -144,21 +154,19 @@ export class GloboesporteProvider implements ILineupProvider {
       const meta = membersMetaMap.get(Number(m.id)) || {};
       const playerName = meta.name || meta.shortName || m.name || m.shortName || 'Jogador';
       const jerseyNumber = meta.jerseyNumber !== undefined ? Number(meta.jerseyNumber) : (m.jerseyNumber ? Number(m.jerseyNumber) : undefined);
-      const pos = m.position?.name || m.positionName || undefined;
-      const grid = m.formationOrder ? String(m.formationOrder) : (m.yardFormation?.order ? String(m.yardFormation.order) : undefined);
+      const pos = this.mapPosition(m.position?.name || m.positionName || m.formation?.name);
       const isStart = m.status === 1; // 1 = Starting no 365Scores
 
       const athleteId = meta.athleteId || meta.id || m.athleteId || m.id;
-      const playerPhoto = athleteId ? `https://imagecache.365scores.com/images/athletes/w_120,h_120,c_limit/${athleteId}.png` : undefined;
       const externalPlayerId = athleteId ? Number(athleteId) : undefined;
 
       const normalized: NormalizedPlayer = {
         player: playerName,
         number: jerseyNumber,
         pos,
-        grid,
+        grid: undefined, // Será calculado dinamicamente conforme a formação real de cada time
         isStart,
-        playerPhoto,
+        playerPhoto: undefined, // Enriquecido via base oficial de plantéis TeamSquad
         externalPlayerId,
       };
 
