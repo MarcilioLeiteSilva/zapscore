@@ -111,44 +111,62 @@ export class EspnProvider implements ILineupProvider {
   }
 
   /**
-   * Busca eventos agendados da ESPN por liga e data
+   * Busca eventos agendados da ESPN por liga e data (cobrindo datas em BRT e UTC)
    */
   private async getEventsForLeagueAndDate(leagueCode: string, date: Date | string): Promise<any[]> {
     const d = new Date(date);
-    const dateStr = !isNaN(d.getTime())
+    const utcDateStr = !isNaN(d.getTime())
       ? `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`
       : '';
 
-    const cacheKey = `${leagueCode}_${dateStr}`;
-    const cached = this.scoreboardCache.get(cacheKey);
+    // Data ajustada para o fuso brasileiro BRT (UTC-3)
+    const brtDate = new Date(d.getTime() - 3 * 60 * 60 * 1000);
+    const brtDateStr = !isNaN(brtDate.getTime())
+      ? `${brtDate.getUTCFullYear()}${String(brtDate.getUTCMonth() + 1).padStart(2, '0')}${String(brtDate.getUTCDate()).padStart(2, '0')}`
+      : '';
+
+    const dateCandidates = Array.from(new Set([brtDateStr, utcDateStr].filter(Boolean)));
+    const allEvents: any[] = [];
     const now = Date.now();
 
-    if (cached && now - cached.timestamp < 10 * 60 * 1000) {
-      return cached.events;
+    for (const dateStr of dateCandidates) {
+      const cacheKey = `${leagueCode}_${dateStr}`;
+      const cached = this.scoreboardCache.get(cacheKey);
+
+      if (cached && now - cached.timestamp < 10 * 60 * 1000) {
+        allEvents.push(...cached.events);
+        continue;
+      }
+
+      try {
+        const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard?dates=${dateStr}`;
+        const response = await axios.get(url, { headers: this.headers, timeout: 8000 });
+        const events = response.data?.events || [];
+        this.scoreboardCache.set(cacheKey, { timestamp: now, events });
+        allEvents.push(...events);
+      } catch (err: any) {
+        this.logger.warn(`[ESPN] Falha ao consultar scoreboard para ${leagueCode} (${dateStr}): ${err.message}`);
+      }
     }
 
-    try {
-      const url = dateStr
-        ? `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard?dates=${dateStr}`
-        : `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`;
-      const response = await axios.get(url, { headers: this.headers, timeout: 8000 });
-      let events = response.data?.events || [];
-
-      // Se não encontrou jogos na data exata, busca o scoreboard geral da rodada
-      if (events.length === 0) {
+    if (allEvents.length === 0) {
+      try {
         const fallbackRes = await axios.get(
           `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueCode}/scoreboard`,
           { headers: this.headers, timeout: 8000 },
         );
-        events = fallbackRes.data?.events || [];
-      }
-
-      this.scoreboardCache.set(cacheKey, { timestamp: now, events });
-      return events;
-    } catch (err: any) {
-      this.logger.warn(`[ESPN] Falha ao consultar scoreboard para ${leagueCode} (${dateStr}): ${err.message}`);
-      return cached ? cached.events : [];
+        allEvents.push(...(fallbackRes.data?.events || []));
+      } catch (_) {}
     }
+
+    const uniqueMap = new Map();
+    for (const ev of allEvents) {
+      if (ev?.id && !uniqueMap.has(ev.id)) {
+        uniqueMap.set(ev.id, ev);
+      }
+    }
+
+    return Array.from(uniqueMap.values());
   }
 
   /**
