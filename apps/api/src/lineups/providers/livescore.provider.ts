@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { ILineupProvider, NormalizedLineupResult, NormalizedPlayer } from '../interfaces/lineup-provider.interface';
+import { resolveMatchDates } from '../utils/date-resolver.util';
 
 @Injectable()
 export class LivescoreProvider implements ILineupProvider {
@@ -51,40 +52,65 @@ export class LivescoreProvider implements ILineupProvider {
 
   /**
    * Obtém a lista de eventos agendados da data no LiveScore
+   * Consulta datas canônicas (UTC e BRT) para garantir cobertura 100% resiliente a fusos.
    */
   private async getEventsForDate(date: Date): Promise<any[]> {
-    const d = new Date(date);
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const dateStr = `${year}${month}${day}`;
-
-    const cached = this.dateMatchesCache.get(dateStr);
+    const dates = resolveMatchDates(date);
     const now = Date.now();
+    const allEvents: any[] = [];
+    const seenEventIds = new Set<string>();
 
-    if (cached && now - cached.timestamp < 15 * 60 * 1000) {
-      return cached.events;
-    }
+    for (const dateStr of dates.allDatesCompact) {
+      const cached = this.dateMatchesCache.get(dateStr);
 
-    try {
-      this.logger.log(`[LiveScore] Consultando partidas para a data ${dateStr}...`);
-      const url = `https://prod-public-api.livescore.com/v1/api/app/date/soccer/${dateStr}/0`;
-      const response = await axios.get(url, { headers: this.headers, timeout: 10000 });
-
-      const events: any[] = [];
-      const stages = response.data?.Stages || [];
-      for (const stage of stages) {
-        if (Array.isArray(stage.Events)) {
-          events.push(...stage.Events);
+      if (cached && now - cached.timestamp < 15 * 60 * 1000) {
+        for (const ev of cached.events) {
+          const eid = String(ev.Eid || ev.eid || '');
+          if (!seenEventIds.has(eid)) {
+            seenEventIds.add(eid);
+            allEvents.push(ev);
+          }
         }
+        continue;
       }
 
-      this.dateMatchesCache.set(dateStr, { timestamp: now, events });
-      return events;
-    } catch (err: any) {
-      this.logger.warn(`[LiveScore] Falha ao consultar partidas do dia: ${err.message}`);
-      return cached ? cached.events : [];
+      try {
+        this.logger.log(`[LiveScore] Consultando partidas para a data ${dateStr}...`);
+        const url = `https://prod-public-api.livescore.com/v1/api/app/date/soccer/${dateStr}/0`;
+        const response = await axios.get(url, { headers: this.headers, timeout: 10000 });
+
+        const dayEvents: any[] = [];
+        const stages = response.data?.Stages || [];
+        for (const stage of stages) {
+          if (Array.isArray(stage.Events)) {
+            dayEvents.push(...stage.Events);
+          }
+        }
+
+        this.dateMatchesCache.set(dateStr, { timestamp: now, events: dayEvents });
+
+        for (const ev of dayEvents) {
+          const eid = String(ev.Eid || ev.eid || '');
+          if (!seenEventIds.has(eid)) {
+            seenEventIds.add(eid);
+            allEvents.push(ev);
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[LiveScore] Falha ao consultar partidas de ${dateStr}: ${err.message}`);
+        if (cached) {
+          for (const ev of cached.events) {
+            const eid = String(ev.Eid || ev.eid || '');
+            if (!seenEventIds.has(eid)) {
+              seenEventIds.add(eid);
+              allEvents.push(ev);
+            }
+          }
+        }
+      }
     }
+
+    return allEvents;
   }
 
   /**

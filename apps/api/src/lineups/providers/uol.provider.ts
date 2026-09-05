@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { ILineupProvider, NormalizedLineupResult, NormalizedPlayer } from '../interfaces/lineup-provider.interface';
+import { resolveMatchDates } from '../utils/date-resolver.util';
 
 @Injectable()
 export class UolProvider implements ILineupProvider {
@@ -57,21 +58,20 @@ export class UolProvider implements ILineupProvider {
   }): Promise<NormalizedLineupResult | null> {
     const leagueId = params.leagueExternalId;
     const compSlugs = (leagueId && this.competitionSlugMap[leagueId]) || ['serie-a', 'serie-b', 'copa-do-brasil'];
-
-    const d = new Date(params.matchDate);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const dates = resolveMatchDates(params.matchDate);
 
     const homeSlug = this.teamToSlug(params.homeTeamName);
     const awaySlug = this.teamToSlug(params.awayTeamName);
 
-    for (const compSlug of compSlugs) {
-      const url = `https://placar.uol.com.br/esporte/futebol/${compSlug}/${year}/${month}/${day}/${homeSlug}-x-${awaySlug}.htm`;
-      try {
-        const response = await axios.get(url, { headers: this.headers, timeout: 6000 });
-        const html = response.data;
-        if (!html || typeof html !== 'string') continue;
+    for (const dateIso of dates.allDatesIso) {
+      const [year, month, day] = dateIso.split('-');
+
+      for (const compSlug of compSlugs) {
+        const url = `https://placar.uol.com.br/esporte/futebol/${compSlug}/${year}/${month}/${day}/${homeSlug}-x-${awaySlug}.htm`;
+        try {
+          const response = await axios.get(url, { headers: this.headers, timeout: 6000 });
+          const html = response.data;
+          if (!html || typeof html !== 'string') continue;
 
         // Procura dados estruturados de escalação e formação no HTML renderizado
         if (html.includes('solar-lineup') || html.includes('escalacao') || html.includes('roster')) {
@@ -101,7 +101,8 @@ export class UolProvider implements ILineupProvider {
         }
       }
     }
-
-    return null;
   }
+
+  return null;
+}
 }

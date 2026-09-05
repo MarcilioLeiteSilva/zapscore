@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { ILineupProvider, NormalizedLineupResult, NormalizedPlayer } from '../interfaces/lineup-provider.interface';
+import { resolveMatchDates } from '../utils/date-resolver.util';
 
 @Injectable()
 export class GloboesporteProvider implements ILineupProvider {
@@ -30,43 +31,66 @@ export class GloboesporteProvider implements ILineupProvider {
 
   /**
    * Consulta a grade completa de partidas do dia (800+ jogos diários via /allscores/)
+   * Utiliza resolução canônica de datas (BRT + UTC) para garantir que partidas noturnas (21h/23h)
+   * ou internacionais sejam encontradas independentemente do fuso de agrupamento da fonte.
    */
   private async getGamesForDate(date: Date): Promise<any[]> {
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    const dateQuery = `${day}/${month}/${year}`;
-    const cacheKey = `${year}-${month}-${day}`;
-
-    const cached = this.gamesCache.get(cacheKey);
+    const dates = resolveMatchDates(date);
     const now = Date.now();
+    const allGames: any[] = [];
+    const seenGameIds = new Set<string>();
 
-    if (cached && now - cached.timestamp < 15 * 60 * 1000) {
-      return cached.games;
-    }
+    for (const dateQuery of dates.allDatesFormatted) {
+      const cacheKey = dateQuery;
+      const cached = this.gamesCache.get(cacheKey);
 
-    try {
-      this.logger.log(`[365Scores] Consultando grade abrangente do dia (${dateQuery})...`);
-      const url = `https://webws.365scores.com/web/games/allscores/?appTypeId=5&langId=31&timezoneName=America/Sao_Paulo&userCountryId=21&startDate=${dateQuery}&endDate=${dateQuery}`;
-      const response = await axios.get(url, { headers: this.headers, timeout: 10000 });
+      if (cached && now - cached.timestamp < 15 * 60 * 1000) {
+        for (const g of cached.games) {
+          if (!seenGameIds.has(String(g.id))) {
+            seenGameIds.add(String(g.id));
+            allGames.push(g);
+          }
+        }
+        continue;
+      }
 
-      let games: any[] = response.data?.games || [];
-      if (games.length === 0 && Array.isArray(response.data?.competitions)) {
-        for (const comp of response.data.competitions) {
-          if (Array.isArray(comp.games)) {
-            games.push(...comp.games);
+      try {
+        this.logger.log(`[365Scores] Consultando grade abrangente (${dateQuery})...`);
+        const url = `https://webws.365scores.com/web/games/allscores/?appTypeId=5&langId=31&timezoneName=America/Sao_Paulo&userCountryId=21&startDate=${dateQuery}&endDate=${dateQuery}`;
+        const response = await axios.get(url, { headers: this.headers, timeout: 10000 });
+
+        let dayGames: any[] = response.data?.games || [];
+        if (dayGames.length === 0 && Array.isArray(response.data?.competitions)) {
+          for (const comp of response.data.competitions) {
+            if (Array.isArray(comp.games)) {
+              dayGames.push(...comp.games);
+            }
+          }
+        }
+
+        this.logger.log(`[365Scores] ✅ ${dayGames.length} confrontos carregados para ${dateQuery}`);
+        this.gamesCache.set(cacheKey, { timestamp: now, games: dayGames });
+
+        for (const g of dayGames) {
+          if (!seenGameIds.has(String(g.id))) {
+            seenGameIds.add(String(g.id));
+            allGames.push(g);
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`[365Scores] Falha ao consultar grade para ${dateQuery}: ${err.message}`);
+        if (cached) {
+          for (const g of cached.games) {
+            if (!seenGameIds.has(String(g.id))) {
+              seenGameIds.add(String(g.id));
+              allGames.push(g);
+            }
           }
         }
       }
-
-      this.logger.log(`[365Scores] ✅ ${games.length} confrontos carregados para ${dateQuery}`);
-      this.gamesCache.set(cacheKey, { timestamp: now, games });
-      return games;
-    } catch (err: any) {
-      this.logger.warn(`[365Scores] Falha ao consultar grade diária: ${err.message}`);
-      return cached ? cached.games : [];
     }
+
+    return allGames;
   }
 
   /**

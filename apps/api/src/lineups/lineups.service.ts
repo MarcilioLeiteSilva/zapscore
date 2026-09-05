@@ -146,34 +146,36 @@ export class LineupsService {
         // 1ª Tentativa: PocketBase Buffer (Se já estiver validado como RESOLVED na collection)
         let result = (await this.pocketbaseProvider.getLineup(params)) as any;
 
-        // 2ª Tentativa: UOL Placar (Foco Futebol Brasileiro, Séries A/B e Estaduais)
-        if (!result || !result.confirmed) {
-          result = await this.uolProvider.getLineup(params);
+        // Se o buffer não possuir a escalação completa, executa busca paralela/concorrente
+        // entre os provedores abertos (UOL, ESPN, 365Scores, LiveScore, BeSoccer)
+        if (
+          !result ||
+          !result.confirmed ||
+          result.homeTeam?.starters?.length < 11 ||
+          result.awayTeam?.starters?.length < 11
+        ) {
+          const openProviderTasks = [
+            this.uolProvider.getLineup(params).catch(() => null),
+            this.espnProvider.getLineup(params).catch(() => null),
+            this.globoesporteProvider.getLineup(params).catch(() => null),
+            this.livescoreProvider.getLineup(params).catch(() => null),
+            this.besoccerProvider.getLineup(params).catch(() => null),
+          ];
+
+          const openResults = await Promise.all(openProviderTasks);
+
+          result = openResults.find(
+            (r) =>
+              r &&
+              r.confirmed &&
+              r.homeTeam?.starters?.length >= 11 &&
+              r.awayTeam?.starters?.length >= 11,
+          );
         }
 
-        // 3ª Tentativa: ESPN (Grandes Ligas Europeias e Séries A/B sem WAF)
+        // Fallback de contingência final caso os provedores abertos ainda não tenham os dados
         if (!result || !result.confirmed) {
-          result = await this.espnProvider.getLineup(params);
-        }
-
-        // 4ª Tentativa: 365Scores (Grade Global e Nacional Aberta)
-        if (!result || !result.confirmed) {
-          result = await this.globoesporteProvider.getLineup(params);
-        }
-
-        // 5ª Tentativa: LiveScore (Internacional Aberto / 255 Ligas sem Cloudflare)
-        if (!result || !result.confirmed) {
-          result = await this.livescoreProvider.getLineup(params);
-        }
-
-        // 6ª Tentativa: BeSoccer (Contingência Aberta)
-        if (!result || !result.confirmed) {
-          result = await this.besoccerProvider.getLineup(params);
-        }
-
-        // 7ª Tentativa: Sofascore (Fallback de contingência final)
-        if (!result || !result.confirmed) {
-          result = await this.sofascoreProvider.getLineup(params);
+          result = await this.sofascoreProvider.getLineup(params).catch(() => null);
         }
 
         // Se uma das fontes entregou a escalação com os 22 titulares
@@ -368,6 +370,88 @@ export class LineupsService {
         'LiveScore (Mundial Aberto / 255 Ligas)',
         'BeSoccer (Contingência Aberta)',
         'Sofascore (Fallback Final)',
+      ],
+      sourcesHealth: [
+        {
+          id: 'pocketbase',
+          name: 'PocketBase Buffer',
+          badge: 'BUFFER SSOT',
+          status: 'ONLINE',
+          statusLabel: 'Online',
+          description: 'Ingestão e cache local em tempo real (match_lineups)',
+          color: 'purple',
+          successCount: this.telemetry.pocketbaseSuccessCount,
+        },
+        {
+          id: 'uol',
+          name: 'UOL Placar',
+          badge: 'NACIONAL',
+          status: 'ONLINE',
+          statusLabel: 'Online',
+          description: 'Foco Brasil (Séries A/B, Estaduais e Copas)',
+          color: 'amber',
+          successCount: this.telemetry.uolSuccessCount,
+        },
+        {
+          id: 'espn',
+          name: 'ESPN Core API',
+          badge: 'INTERNACIONAL',
+          status: 'ONLINE',
+          statusLabel: 'Online',
+          description: 'API pública sem WAF com fotos e escalações oficiais',
+          color: 'cyan',
+          successCount: this.telemetry.espnSuccessCount,
+        },
+        {
+          id: 'globoesporte',
+          name: '365Scores',
+          badge: 'MULTI-LIGA ABERTO',
+          status: 'ONLINE',
+          statusLabel: 'Online',
+          description: '800+ jogos/dia, titulares com grid tático e escalações confirmadas',
+          color: 'emerald',
+          successCount: this.telemetry.globoesporteSuccessCount,
+        },
+        {
+          id: 'livescore',
+          name: 'LiveScore API',
+          badge: 'MUNDIAL ABERTO',
+          status: 'ONLINE',
+          statusLabel: 'Online',
+          description: '255 competições mundiais abertas, posições e reservas',
+          color: 'blue',
+          successCount: this.telemetry.livescoreSuccessCount,
+        },
+        {
+          id: 'besoccer',
+          name: 'BeSoccer Global',
+          badge: 'CONTINGÊNCIA',
+          status: 'ONLINE',
+          statusLabel: 'Online',
+          description: 'API pública global para contingência',
+          color: 'indigo',
+          successCount: this.telemetry.besoccerSuccessCount,
+        },
+        {
+          id: 'sofascore',
+          name: 'Sofascore API',
+          badge: 'WAF CLOUDFLARE',
+          status: 'BLOCKED',
+          statusLabel: 'Bloqueado (403)',
+          description: 'Bloqueado por desafio Cloudflare WAF (403 Forbidden)',
+          color: 'red',
+          successCount: this.telemetry.sofascoreSuccessCount,
+        },
+        {
+          id: 'fotmob',
+          name: 'FotMob API',
+          badge: 'INOPERANTE 404',
+          status: 'DEPRECATED',
+          statusLabel: 'Inoperante (404)',
+          description: 'Endpoints legados descontinuados pelo provedor',
+          color: 'rose',
+          successCount: this.telemetry.fotmobSuccessCount,
+        },
       ],
       telemetry: this.telemetry,
     };

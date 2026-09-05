@@ -92,12 +92,26 @@ interface DashboardResponse {
 
 interface AgentTelemetry {
   pocketbaseSuccessCount: number;
+  uolSuccessCount?: number;
   espnSuccessCount: number;
+  globoesporteSuccessCount: number;
+  livescoreSuccessCount?: number;
+  besoccerSuccessCount?: number;
   sofascoreSuccessCount: number;
   fotmobSuccessCount: number;
-  globoesporteSuccessCount: number;
   lastRunAt: string | null;
   totalLineupsDispatched: number;
+}
+
+interface SourceHealthItem {
+  id: string;
+  name: string;
+  badge: string;
+  status: 'ONLINE' | 'BLOCKED' | 'DEPRECATED';
+  statusLabel: string;
+  description: string;
+  color: string;
+  successCount?: number;
 }
 
 interface AgentStatusResponse {
@@ -105,6 +119,7 @@ interface AgentStatusResponse {
   agent: string;
   strategy: string;
   sources: string[];
+  sourcesHealth?: SourceHealthItem[];
   telemetry: AgentTelemetry;
 }
 
@@ -462,53 +477,235 @@ export default function LineupAgentPage() {
         </div>
       </div>
 
-      {/* Fontes de Dados em Cascata */}
+      {/* Fontes de Dados em Monitoramento Concorrente */}
       <div className="card p-6 border border-cyan-500/20 bg-gradient-to-r from-cyan-950/20 via-slate-900/40 to-transparent">
-        <div className="flex items-center gap-3 mb-3">
-          <ShieldCheck size={20} className="text-cyan-400" />
-          <h2 className="text-sm font-black text-white uppercase tracking-wider">
-            Esteira em Cascata Multiprovedor (Zero Cota API-Sports)
-          </h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-3">
+            <Radio size={20} className="text-cyan-400 animate-pulse" />
+            <h2 className="text-sm font-black text-white uppercase tracking-wider">
+              Monitoramento Concorrente de Fontes (Zero Cota API-Football)
+            </h2>
+          </div>
+          <span className="text-[11px] text-slate-400">
+            Varredura paralela multicanal • Sincronização UTC/BRT automática
+          </span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-            <div className="font-bold text-purple-300 flex items-center justify-between">
-              <span>0. Buffer PocketBase</span>
-              <span className="text-[10px] bg-purple-500/20 px-1.5 py-0.5 rounded text-purple-200">BUFFER</span>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Card 0: PocketBase */}
+          <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 flex flex-col justify-between">
+            <div>
+              <div className="font-bold text-purple-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                  0. Buffer PocketBase
+                </span>
+                <span className="text-[10px] bg-purple-500/20 px-1.5 py-0.5 rounded text-purple-200 font-bold">
+                  BUFFER SSOT
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                Ingestão prioritária e cache local em tempo real (match_lineups).
+              </p>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Ingestão prioritária via collection match_lineups quando aprovado.
-            </p>
+            <div className="mt-3 pt-2 border-t border-purple-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.pocketbaseSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
-            <div className="font-bold text-cyan-300 flex items-center justify-between">
-              <span>1. ESPN Core API</span>
-              <span className="text-[10px] bg-cyan-500/20 px-1.5 py-0.5 rounded text-cyan-200">PRINCIPAL</span>
+          {/* Card 1: UOL Placar */}
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col justify-between">
+            <div>
+              <div className="font-bold text-amber-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  1. UOL Placar
+                </span>
+                <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-200 font-bold">
+                  NACIONAL
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                Cobertura especializada Brasil (Séries A/B, Estaduais e Copas).
+              </p>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              API aberta sem desafios WAF. Titulares, reservas e fotos oficiais.
-            </p>
+            <div className="mt-3 pt-2 border-t border-amber-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.uolSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <div className="font-bold text-amber-300 flex items-center justify-between">
-              <span>2. Sofascore API</span>
-              <span className="text-[10px] bg-amber-500/20 px-1.5 py-0.5 rounded text-amber-200">FALLBACK 1</span>
+          {/* Card 2: ESPN Core API */}
+          <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex flex-col justify-between">
+            <div>
+              <div className="font-bold text-cyan-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  2. ESPN Core API
+                </span>
+                <span className="text-[10px] bg-cyan-500/20 px-1.5 py-0.5 rounded text-cyan-200 font-bold">
+                  INTERNACIONAL
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                API pública sem WAF com fotos e escalações oficiais.
+              </p>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Contingência internacional com captação a 50m do jogo.
-            </p>
+            <div className="mt-3 pt-2 border-t border-cyan-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.espnSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <div className="font-bold text-emerald-300 flex items-center justify-between">
-              <span>3. FotMob / 365</span>
-              <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200">FALLBACK 2</span>
+          {/* Card 3: 365Scores */}
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col justify-between">
+            <div>
+              <div className="font-bold text-emerald-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  3. 365Scores
+                </span>
+                <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-200 font-bold">
+                  MULTI-LIGA
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                800+ jogos/dia, titulares com grid tático e escalações confirmadas.
+              </p>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Cobertura auxiliar para estaduais e jogos com cobertura regional.
-            </p>
+            <div className="mt-3 pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.globoesporteSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
+          </div>
+
+          {/* Card 4: LiveScore API */}
+          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 flex flex-col justify-between">
+            <div>
+              <div className="font-bold text-blue-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  4. LiveScore API
+                </span>
+                <span className="text-[10px] bg-blue-500/20 px-1.5 py-0.5 rounded text-blue-200 font-bold">
+                  MUNDIAL ABERTO
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                255 competições mundiais abertas, posições e reservas.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-blue-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.livescoreSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
+          </div>
+
+          {/* Card 5: BeSoccer Global */}
+          <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex flex-col justify-between">
+            <div>
+              <div className="font-bold text-indigo-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                  5. BeSoccer Global
+                </span>
+                <span className="text-[10px] bg-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-200 font-bold">
+                  CONTINGÊNCIA
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                API pública global aberta como contingência suplementar.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-indigo-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Online
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.besoccerSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
+          </div>
+
+          {/* Card 6: Sofascore API */}
+          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/25 flex flex-col justify-between opacity-80 hover:opacity-100 transition-opacity">
+            <div>
+              <div className="font-bold text-red-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                  6. Sofascore API
+                </span>
+                <span className="text-[10px] bg-red-500/20 px-1.5 py-0.5 rounded text-red-200 font-bold">
+                  WAF CLOUDFLARE
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                Desafio Cloudflare ativo (403 Forbidden). Mantido como fallback contingencial.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-red-500/20 flex items-center justify-between text-[11px]">
+              <span className="text-amber-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Bloqueando (WAF)
+              </span>
+              <span className="text-slate-400 font-mono">
+                {agentStatus?.telemetry?.sofascoreSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
+          </div>
+
+          {/* Card 7: FotMob API */}
+          <div className="p-3.5 rounded-xl bg-rose-950/20 border border-rose-900/30 flex flex-col justify-between opacity-70 hover:opacity-100 transition-opacity">
+            <div>
+              <div className="font-bold text-rose-300/80 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                  7. FotMob API
+                </span>
+                <span className="text-[10px] bg-rose-500/20 px-1.5 py-0.5 rounded text-rose-300 font-bold">
+                  INOPERANTE 404
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                Endpoints legados descontinuados pelo provedor (substituído por 365Scores e LiveScore).
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-rose-900/30 flex items-center justify-between text-[11px]">
+              <span className="text-red-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                Inoperante (404)
+              </span>
+              <span className="text-slate-500 font-mono">
+                {agentStatus?.telemetry?.fotmobSuccessCount ?? 0} sincronizados
+              </span>
+            </div>
           </div>
         </div>
       </div>
