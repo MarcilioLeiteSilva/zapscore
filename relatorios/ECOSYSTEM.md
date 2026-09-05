@@ -1849,63 +1849,68 @@ flowchart TD
 * **1. EspnProvider (`apps/api/src/lineups/providers/espn.provider.ts`):**
   - **Endpoint:** `GET https://site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/summary?event={id}`
   - **Destaque:** Fonte primária 100% aberta, imune a bloqueios Cloudflare WAF, com entrega de 22 titulares, reservas, formações táticas completas e fotos oficiais CDN (`a.espncdn.com`).
-* **2. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
+* **1. PocketbaseProvider (`apps/api/src/lineups/providers/pocketbase.provider.ts`):**
+  - **Endpoint:** `GET/POST https://zapscore-pocketbase-multiapkagent.gtalg3.easypanel.host/api/collections/match_lineups/records`
+  - **Destaque:** Buffer central e Single Source of Truth (SSOT). Recebe escalações estruturadas de APKs e crawlers, persistindo os dados em JSON com status `RESOLVED` / `SYNCED`.
+* **2. EspnProvider (`apps/api/src/lineups/providers/espn.provider.ts`):**
+  - **Endpoint:** `GET https://site.api.espn.com/apis/site/v2/sports/soccer/{leagueCode}/summary?event={id}`
+  - **Destaque:** Motor principal aberto, imune a bloqueios Cloudflare WAF, com emulação de User-Agent mobile (`ESPN/5.0`), busca de datas multi-fuso (BRT UTC-3 e UTC para jogos noturnos) e entrega de 22 titulares, reservas e esquemas táticos.
+* **3. SofascoreProvider (`apps/api/src/lineups/providers/sofascore.provider.ts`):**
   - **Endpoint:** `GET https://api.sofascore.com/api/v1/event/{sofascore_id}/lineups`
   - **Destaque:** Fonte de contingência mundial.
-* **3. FotmobProvider (`apps/api/src/lineups/providers/fotmob.provider.ts`):**
+* **4. FotmobProvider (`apps/api/src/lineups/providers/fotmob.provider.ts`):**
   - **Endpoint:** `GET https://www.fotmob.com/api/matchDetails?matchId={fotmob_id}`
   - **Destaque:** Contingência com API REST leve.
-* **4. GloboesporteProvider (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
-  - **Endpoint:** Feed de tempo real / 365Scores (`https://webws.365scores.com/web/game/?gameId={id}`)
-  - **Destaque:** Contingência especializada para torneios regionais e estaduais brasileiros.
+* **5. GloboesporteProvider / UOL (`apps/api/src/lineups/providers/globoesporte.provider.ts`):**
+  - **Endpoint:** Feeds de tempo real nacionais (*ge.globo*, *365Scores* e *UOL Central de Jogos*).
+  - **Destaque:** Contingência ultra-rápida especializada para o futebol brasileiro e torneios regionais.
 
 ### 18.4 Mecanismo de Pareamento Fuzzy em Memória (Zero Impacto no Schema Prisma)
 Em estrita conformidade com as regras de governança e prevenção de regressões de banco de dados no Easypanel (Capítulo 16.8):
 * **Fuzzy Matching de Clubes:** O agente normaliza os nomes dos times (remoção de acentos, pontuação, sufixos como FC, EC, CR, etc.) e cruza com os eventos do dia (`scheduled-events`) com tolerância de até 90 minutos de horário.
-* **Cache em Memória:** Os mapeamentos `externalFixtureId ➔ sofascoreEventId / fotmobMatchId` são persistidos em mapas em memória (`fixtureToSofaEventMap`, `fixtureToFotmobIdMap`) com TTL dinâmico.
+* **Cache em Memória:** Os mapeamentos `externalFixtureId ➔ espnEventId / sofascoreEventId` são persistidos em mapas em memória com TTL dinâmico.
 * **Zero Alterações no PostgreSQL:** Nenhuma coluna nova foi criada na tabela `Fixture`, garantindo 100% de estabilidade nas migrações do Prisma.
 
-### 18.5 Integração em Cadeia com o Push Agent e Emissão WebSocket
-1. **Gravação Atômica:** Ao capturar os 22 titulares, o `LineupsService` executa uma transação Prisma que limpa registros provisórios e insere todos os titulares (`isStart = true`) e reservas (`isStart = false`) com posições e números.
-2. **WebSocket em Tempo Real:** Dispara `FixturesGateway.emitFixtureUpdate` e `emitLeagueUpdate`, atualizando a tela do app mobile instantaneamente sem exigir recarregamento.
-3. **Disparo Push Autônomo:** O worker `handleAutoLineupsDispatch` do Push Agent (que executa a cada 1 minuto) detecta automaticamente os 22 titulares confirmados e despacha o push nos **10 minutos que antecedem a partida**, sem que nenhum operador precise monitorar ou clicar em botões.
+### 18.5 Disparo Imediato de Push e Trava de Cutoff (10 Minutos)
+1. **Disparo Imediato sem Represamento:** Ao detectar e salvar os 22 titulares confirmados (seja 50m, 45m ou 30m antes da bola rolar), o worker `processPendingLineupDispatches` aciona o envio **instantaneamente**, garantindo entrega da notificação antes de qualquer concorrente.
+2. **Trava de Cutoff de Segurança (10 Minutos):**
+   - O push só é enviado se ainda restarem **pelo menos 10 minutos para o apito inicial** (`minutesUntilKickoff >= 10`).
+   - Se a súmula sair a menos de 10 minutos ou com a partida em andamento, o disparo de escalação é automaticamente ignorado para não colidir com os alertas de início de jogo ou gols.
+3. **WebSocket em Tempo Real:** Dispara `FixturesGateway.emitFixtureUpdate` e `emitLeagueUpdate`, atualizando as telas dos apps móveis instantaneamente.
 
 ### 18.6 Observabilidade, Telemetria e Endpoints de Diagnóstico
 O módulo disponibiliza endpoints para monitoramento e auditoria em `apps/api/src/lineups/lineups.controller.ts`:
 * `GET /lineups/status` — Retorna telemetria detalhada de taxa de sucesso por provedor, último ciclo executado e status de saúde do agente.
-* `POST /lineups/sync-now` — Permite forçar uma varredura instantânea da janela de 4 horas sob demanda para homologação.
+* `POST /lineups/sync-now` — Permite forçar uma varredura instantânea da janela sob demanda para homologação.
+* `GET /notifications/lineups-dashboard` — Retorna o painel diário com status de gravação (`RECORDED`, `MONITORING`, `UPCOMING`), fontes de dados e métricas consolidadas.
 
-### 18.7 Arquitetura com PocketBase Buffer e Ingestão Automática (Cron 2 Horas)
-Para garantir isolamento absoluto contra bloqueios WAF externos e desacoplar o monitoramento das partidas:
+### 18.7 Persistência Centralizada no PocketBase (SSOT)
+Para garantir isolamento absoluto, histórico centralizado e observabilidade total:
 * **Coleções no PocketBase (`https://zapscore-pocketbase-multiapkagent.gtalg3.easypanel.host`):**
   - `active_fixtures`: Contém as partidas do dia com IDs canônicos do Zapscore, datas e status.
   - `team_aliases`: Mapeamento tolerante a acentos e apelidos para pareamento imediato de clubes.
-  - `match_lineups`: Buffer de ingestão de escalações completas em JSON (com status `PENDING`, `RESOLVED`, `UNRESOLVED_ALIAS`, `SYNCED`).
-* **Ingestão Automática de Grade (Cron de 2 Horas - `@Cron('0 */2 * * *')`):**
-  - O worker `handleSyncPocketBaseFixtures()` em `sync-jobs.service.ts` (e no boot da aplicação) consulta as partidas de hoje no ZapScore e cadastra automaticamente na collection `active_fixtures` do PocketBase, sem duplicidades.
-* **Consumo Prioritário (Lineup Agent ➔ PocketBase):**
-  - A cada 2 minutos, o Lineup Agent verifica primeiramente o PocketBase por registros com status `RESOLVED`.
-  - Ao identificar uma partida com os 22 titulares, persiste atomicamente no PostgreSQL (`FixtureLineup`), emite WebSocket para os apps móveis e atualiza o status no PocketBase para `SYNCED`.
-  - Em seguida, o Agente Push detecta os 22 titulares confirmados e inicia a contagem regressiva para envio das notificações.
+  - `match_lineups`: Buffer e SSOT de escalações completas em JSON (`home_players`, `away_players`, `formation_home`, `formation_away`, `status='RESOLVED'`).
+* **Dual Write / Sincronização Contínua:**
+  - O `LineupsService` persiste as escalações confirmadas primeiramente no PocketBase (`saveLineupToPocketBase`) e replica atomicamente para o PostgreSQL (`FixtureLineup`) para viabilizar consultas em alta velocidade pelos apps móveis.
 
 ### 18.8 Interface de Gestão e Operação no AdminPanel (`/adminpanel/agents/lineups`)
 Desenvolvida sob o stack Next.js App Router (`apps/web/app/(main)/adminpanel/agents/lineups/page.tsx`), a página centraliza a governança operacional do Lineup Agent:
-1. **Radar de Partidas Monitoradas:** Consome `GET /notifications/lineups-dashboard` e lista os confrontos do dia na janela de 4 horas com módulos, escudos, status da escalação e status do push.
-2. **Visualização Tática de Titulares:** Modal interativo que consome `GET /fixtures/:id/lineups`, renderizando a lista completa dos 11 titulares do mandante e 11 do visitante com camisa, nome e posição em campo.
-3. **Telemetria de Redundância:** Consome `GET /lineups/status`, exibindo o status operacional (`ONLINE`), data/hora da última checagem e contadores em tempo real para PocketBase Buffer, Sofascore Scraper e Notificações Push disparadas.
-4. **Controles Operacionais:**
-   - **Forçar Varredura Agora:** Dispara `POST /lineups/sync-now` sob demanda para testes ou homologação imediata.
-   - **Disparo Manual de Push:** Dispara `POST /notifications/lineups/:fixtureId/dispatch` com trava de segurança para 22 titulares.
-   - **Descarte de Alerta:** Dispara `POST /notifications/lineups/:fixtureId/dismiss` para partidas que não devem notificar.
-5. **Integração no Hub Central:** O card `Lineup Agent` na página principal `/adminpanel/agents` direciona diretamente para este dashboard.
+1. **Radar Diário de Partidas (00:00 às 23:59 BRT):** Exibe 100% dos confrontos do dia com módulos, escudos, status da escalação e status do push.
+2. **Badges de Gravação em Tempo Real:**
+   - `🟢 GRAVADO NO POSTGRESQL (22/22)`: Partidas com 11 titulares confirmados de cada lado e fotos oficiais.
+   - `🟡 MONITORANDO (A CADA 2M)`: Partidas na janela crítica de 60 minutos antes do início ou ao vivo.
+   - `⚪ A FAZER (SÚMULA ~50M ANTES)`: Jogos futuros agendados para o dia.
+3. **Barra de Progresso e Filtros por Abas:** Contadores de partidas gravadas, monitorando, a fazer e push disparado.
+4. **Modal Tático com Fotos Oficiais:** Renderiza os 22 atletas com posições, número da camisa e fotos de alta resolução vindas do banco de dados do clube.
 
-### 18.9 Padronização de Fotos CDN e Grid Tático Automático
-Para garantir que as aplicações clientes (Flutter) renderizem perfeitamente as escalações tanto no campo tático (`CardLineup`) quanto com as fotos dos atletas:
-1. **CDN Oficial de Imagens Sofascore:**
-   - As fotos de jogadores utilizam o CDN oficial de alta performance `https://img.sofascore.com/api/v1/player/{id}/image`.
-   - Assegura compatibilidade nativa com o `CachedNetworkImage` do Flutter e `proxyImage`, entregando imagens WebP sem restrições de CORS/User-Agent.
-2. **Cálculo de Grid Tático Dinâmico:**
-   - A partir da formação tática dos clubes (ex: `4-3-3`, `4-2-3-1`, `3-5-2`), o motor calcula automaticamente as coordenadas de linha e coluna (`grid: "row:col"`, como `1:1` para o goleiro, `2:1` a `2:4` para defensores, etc.).
-   - O `CardLineup` nos apps Flutter consome as coordenadas e agrupa os atletas por linha sobre o gramado, eliminando a dependência de layouts genéricos em `Wrap`.
+### 18.9 Enriquecimento de Fotos Oficiais via Plantéis (`TeamSquad` / `media.api-sports.io`)
+Para garantir qualidade visual máxima em 100% dos atletas titulares e reservas:
+1. **Cruzamento Inteligente com `TeamSquad`:**
+   - Quando uma fonte externa não entrega a foto do atleta (comum em divisões inferiores ou torneios regionais), o método `enrichPlayersWithSquadPhotos` consulta a base oficial de elencos dos clubes (`TeamsService.getSquad` / `TeamSquad`).
+   - Faz o cruzamento por número da camisa ou nome normalizado do jogador.
+   - Injeta a foto oficial em alta resolução (`https://media.api-sports.io/football/players/...`).
+2. **Eliminação de Links Fictícios:** Elimina fallbacks com IDs incompatíveis, garantindo que apenas imagens reais e acessíveis sejam salvas no PocketBase e no PostgreSQL.
+3. **Cálculo de Grid Tático Dinâmico:**
+   - A partir da formação tática dos clubes (ex: `4-3-3`, `4-2-3-1`, `3-4-2-1`), o motor calcula automaticamente as coordenadas de linha e coluna (`grid: "row:col"`), consumidas pelos componentes de campo dos aplicativos Flutter.
 
 
