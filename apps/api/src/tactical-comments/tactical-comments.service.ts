@@ -246,18 +246,26 @@ ${context.externalContext ? `CONTEXTO EXTERNO COLETADO:\n${context.externalConte
 DIRETRIZES DA FASE:
 ${phaseInstructions[context.phase]}
 
-REGRAS OBRIGATÓRIAS:
-1. Responda ESTRITAMENTE em formato JSON.
-2. Não inclua blocos markdown fora do JSON.
-3. Idioma: Português do Brasil (pt-BR), tom jornalístico e analítico.
-4. Título ("title"): Manchete de impacto tático, máximo 10 palavras.
-5. Comentário ("comment"): Análise tática rica e fluida (1 a 2 parágrafos objetivos).
-6. Sentimento ("sentiment"): Escolha uma das opções: "DOMINANT", "BALANCED", "CRITICAL", "SURPRISE".
+REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
+1. IDIOMA 100% PORTUGUÊS DO BRASIL (pt-BR): O texto deve ser redigido inteiramente em português natural, culto e jornalístico.
+2. ZERO EXPRESSÕES EM INGLÊS / ZERO ESTRANGEIRISMOS: É TERMINANTEMENTE PROIBIDO usar palavras ou jargões em inglês no texto em português.
+   - NÃO use "clean sheet" (use "sem sofrer gols" ou "baliza zerada").
+   - NÃO use "pressing" ou "press" (use "pressão alta", "marcação agressiva" ou "pressão pós-perda").
+   - NÃO use "box-to-box" (use "volante de área a área" ou "meio-campista dinâmico").
+   - NÃO use "turnover" (use "perda de posse" ou "recuperação de bola").
+   - NÃO use "build-up" (use "construção de jogada" ou "saída de bola").
+   - NÃO use "lineup" (use "escalação" ou "time titular").
+   - NÃO use "winger" ou "striker" (use "ponta", "extremo", "centroavante" ou "atacante").
+   - NÃO use "half-time" ou "full-time" no texto do comentário (use "intervalo", "fim de jogo" ou "apito final").
+3. Responda ESTRITAMENTE em formato JSON, sem blocos markdown fora do JSON.
+4. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português.
+5. Comentário ("comment"): Análise tática rica e fluida (1 a 2 parágrafos analíticos objetivos), 100% em português.
+6. Sentimento ("sentiment"): Escolha uma das opções técnicas em maiúsculo: "DOMINANT", "BALANCED", "CRITICAL", "SURPRISE".
 
 FORMATO JSON ESPERADO:
 {
-  "title": "<manchete curta>",
-  "comment": "<parágrafo analítico detalhado>",
+  "title": "<manchete curta em português puro>",
+  "comment": "<parágrafo analítico detalhado em português puro>",
   "sentiment": "DOMINANT" | "BALANCED" | "CRITICAL" | "SURPRISE"
 }
 `;
@@ -270,12 +278,13 @@ FORMATO JSON ESPERADO:
           messages: [
             {
               role: 'system',
-              content: 'Você é um comentarista tático especializado em futebol brasileiro. Responda estritamente em JSON.',
+              content:
+                'Você é um jornalista e comentarista tático especializado em futebol brasileiro. Redija análises táticas puramente em português brasileiro (pt-BR), sem nenhuma expressão ou termo em inglês. Responda estritamente em JSON.',
             },
             { role: 'user', content: prompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.5,
+          temperature: 0.4,
         });
 
         const rawText = completion.choices[0].message.content || '{}';
