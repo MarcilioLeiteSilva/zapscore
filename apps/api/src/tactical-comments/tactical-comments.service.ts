@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { PocketbaseCommentsClient } from './providers/pocketbase-comments.client';
 import { Crawl4aiClient } from './providers/crawl4ai.client';
+import { MultiSourceCommentsAgentService } from './crawler/multi-source-comments-agent.service';
 import {
   CommentPhase,
   CommentSentiment,
@@ -46,6 +47,7 @@ export class TacticalCommentsService {
     private readonly configService: ConfigService,
     private readonly pbCommentsClient: PocketbaseCommentsClient,
     private readonly crawl4aiClient: Crawl4aiClient,
+    private readonly multiSourceAgent: MultiSourceCommentsAgentService,
   ) {
     this.initializeAiClients();
   }
@@ -137,7 +139,24 @@ export class TacticalCommentsService {
         }
       }
 
-      // 2. Extrai lances em tempo real do jogo com o Crawl4AI
+      // 2. Extrai lances em tempo real via Agente Multifontes de Comentários (ESPN, Gazeta, GE, Lance!, UOL)
+      let multiSourceContext: string | null = null;
+      try {
+        const delta = await this.multiSourceAgent.getMatchLiveDelta(
+          fixtureExternalId,
+          homeTeam,
+          awayTeam,
+          45,
+          0,
+        );
+        if (delta && delta.rawSummary) {
+          multiSourceContext = delta.rawSummary;
+        }
+      } catch (agentErr: any) {
+        this.logger.debug(`[PrewarmLive] Falha no Agente Multifontes: ${agentErr.message}`);
+      }
+
+      // 3. Extrai lances em tempo real do jogo com o Crawl4AI como complemento
       let cleanLances: string | null = null;
       if (liveUrl) {
         const markdown = await this.crawl4aiClient.crawlSync(liveUrl, {
@@ -149,7 +168,7 @@ export class TacticalCommentsService {
         }
       }
 
-      // 3. Coleta radar multi-fontes da imprensa (Lance!, UOL, GE, Gazeta, ESPN)
+      // 4. Coleta radar multi-fontes da imprensa (Lance!, UOL, GE, Gazeta, ESPN)
       const pressRadar = await this.crawl4aiClient.fetchMultiSourcePressRadar(
         homeTeam,
         awayTeam,
@@ -157,6 +176,9 @@ export class TacticalCommentsService {
       );
 
       const combinedContext = [
+        multiSourceContext
+          ? `--- CONTEXTO DO AGENTE MULTIFONTES DE COMENTÁRIOS (LANCES AO VIVO) ---\n${multiSourceContext}`
+          : '',
         pressRadar
           ? `--- NOTÍCIAS E DESTAQUES DA IMPRENSA ESPORTIVA (MULTI-FONTES) ---\n${pressRadar}`
           : '',
@@ -225,7 +247,13 @@ export class TacticalCommentsService {
       const minute = dto.minute ?? (fixture.elapsed || this.getDefaultMinuteForPhase(phase));
       const isLivePhase = ['FIRST_HALF', 'SECOND_HALF', 'HALF_TIME'].includes(phase);
 
-      // 3. Busca contexto externo via Crawl4AI com estratégias assertivas por fase
+      // 3. Busca histórico de comentários e contexto via Agente Multifontes de Comentários
+      const existingComments = await this.pbCommentsClient.getCommentsByFixture(fixtureExternalId);
+      const lastRecordedMinute =
+        existingComments.length > 0
+          ? Math.max(...existingComments.map((c) => c.minute || 0))
+          : 0;
+
       const config = await this.pbCommentsClient.getPromptConfig();
       let externalContext: string | null = null;
 
@@ -239,11 +267,29 @@ export class TacticalCommentsService {
             externalContext = this.crawl4aiClient.extractLiveNarrativeSnippets(rawMd);
           }
         } else if (isLivePhase) {
-          externalContext = await this.prewarmLiveExternalContext(
-            fixtureExternalId,
-            fixture.homeTeam.name,
-            fixture.awayTeam.name,
-          );
+          // Coleta prioritária via Agente Multifontes de Comentários (ESPN + Gazeta + GE + Lance + UOL)
+          try {
+            const delta = await this.multiSourceAgent.getMatchLiveDelta(
+              fixtureExternalId,
+              fixture.homeTeam.name,
+              fixture.awayTeam.name,
+              minute,
+              lastRecordedMinute,
+            );
+            if (delta && delta.rawSummary) {
+              externalContext = delta.rawSummary;
+            }
+          } catch (agentErr: any) {
+            this.logger.warn(`[MultiSourceAgent] Falha na coleta: ${agentErr.message}`);
+          }
+
+          if (!externalContext) {
+            externalContext = await this.prewarmLiveExternalContext(
+              fixtureExternalId,
+              fixture.homeTeam.name,
+              fixture.awayTeam.name,
+            );
+          }
         } else {
           // Fase Pré-Jogo ou Pós-Jogo (artigo analítico, escalações ou balanço final)
           const now = Date.now();
@@ -323,7 +369,6 @@ export class TacticalCommentsService {
         );
 
       // 6. Memória Narrativa: Histórico completo de comentários anteriores para continuidade do arco
-      const existingComments = await this.pbCommentsClient.getCommentsByFixture(fixtureExternalId);
       const previousTheses = existingComments.map(
         (c) =>
           `[${c.phase} ${c.minute !== undefined ? `${c.minute}'` : ''}]: Título: "${c.title}" | Resumo: "${c.comment.substring(0, 110)}..."`,
