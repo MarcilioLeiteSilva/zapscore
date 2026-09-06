@@ -173,30 +173,21 @@ export class TacticalCommentsSchedulerService {
       return;
     }
 
-    // 4. CASO 1º TEMPO (1H): Dois momentos bem definidos (Início e Meio)
+    // 4. CASO 1º TEMPO (1H): Comentários no ritmo dinâmico de 5 em 5 minutos
     if (status === '1H') {
-      // 4.1 Início do 1º Tempo (Janela dos 5' aos 18')
-      const has1HStart = existingComments.some(
-        (c) => c.phase === 'FIRST_HALF' && (c.minute || 0) <= 20,
-      );
-      if (!has1HStart && elapsed >= 5 && elapsed <= 20) {
-        this.logger.log(
-          `[TacticalScheduler] ⏱️ Gerando Início do 1º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
-        );
-        await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
-          phase: 'FIRST_HALF',
-          minute: elapsed,
-        });
-        return;
-      }
+      const firstHalfComments = existingComments.filter((c) => c.phase === 'FIRST_HALF');
+      const lastMinute =
+        firstHalfComments.length > 0
+          ? Math.max(...firstHalfComments.map((c) => c.minute ?? 0))
+          : 0;
 
-      // 4.2 Durante o 1º Tempo (Janela dos 25' aos 40')
-      const has1HMid = existingComments.some(
-        (c) => c.phase === 'FIRST_HALF' && (c.minute || 0) > 20 && (c.minute || 0) < 45,
-      );
-      if (!has1HMid && elapsed >= 25 && elapsed <= 42) {
+      // Inicia aos 5' e roda a cada 5 minutos (5', 10', 15', 20', 25', 30', 35', 40')
+      if (
+        (lastMinute === 0 && elapsed >= 5 && elapsed <= 42) ||
+        (lastMinute > 0 && elapsed >= lastMinute + 5 && elapsed <= 42)
+      ) {
         this.logger.log(
-          `[TacticalScheduler] ⚽ Gerando Meio do 1º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+          `[TacticalScheduler] ⏱️ Gerando Comentário de 5m do 1º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name} (último foi aos ${lastMinute}')`,
         );
         await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
           phase: 'FIRST_HALF',
@@ -209,15 +200,21 @@ export class TacticalCommentsSchedulerService {
       return;
     }
 
-    // 5. CASO 2º TEMPO (2H): Só roda quando detectar que começou o 2º tempo (status == '2H')
+    // 5. CASO 2º TEMPO (2H): Comentários no ritmo dinâmico de 5 em 5 minutos
     if (status === '2H' || (status === 'LIVE' && elapsed > 45)) {
-      // 5.1 Início do 2º Tempo (Janela dos 47' aos 60')
-      const has2HStart = existingComments.some(
-        (c) => c.phase === 'SECOND_HALF' && (c.minute || 0) <= 60,
-      );
-      if (!has2HStart && elapsed >= 47 && elapsed <= 62) {
+      const secondHalfComments = existingComments.filter((c) => c.phase === 'SECOND_HALF');
+      const lastMinute =
+        secondHalfComments.length > 0
+          ? Math.max(...secondHalfComments.map((c) => c.minute ?? 0))
+          : 45;
+
+      // Começa a partir dos 47' e roda a cada 5 minutos até os 88'
+      if (
+        (lastMinute <= 45 && elapsed >= 47 && elapsed <= 88) ||
+        (lastMinute > 45 && elapsed >= lastMinute + 5 && elapsed <= 88)
+      ) {
         this.logger.log(
-          `[TacticalScheduler] 🔄 Gerando Início do 2º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+          `[TacticalScheduler] 🔄 Gerando Comentário de 5m do 2º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name} (último foi aos ${lastMinute}')`,
         );
         await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
           phase: 'SECOND_HALF',
@@ -226,22 +223,7 @@ export class TacticalCommentsSchedulerService {
         return;
       }
 
-      // 5.2 Durante o 2º Tempo (Janela dos 68' aos 82')
-      const has2HMid = existingComments.some(
-        (c) => c.phase === 'SECOND_HALF' && (c.minute || 0) > 60 && (c.minute || 0) < 88,
-      );
-      if (!has2HMid && elapsed >= 68 && elapsed <= 84) {
-        this.logger.log(
-          `[TacticalScheduler] ⚡ Gerando Meio/Reta Final do 2º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
-        );
-        await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
-          phase: 'SECOND_HALF',
-          minute: elapsed,
-        });
-        return;
-      }
-
-      // Após os 85', aguarda o apito final (FT) para gerar o resumo completo
+      // Após os 88', aguarda o apito final (FT) para gerar o resumo completo
       return;
     }
   }

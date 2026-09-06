@@ -90,77 +90,182 @@ export class Crawl4aiClient {
   }
 
   /**
-   * Busca e descobre automaticamente a URL de cobertura da partida nos portais cadastrados
-   * Diferencia a busca entre Pré-Jogo (notícia/escalações) e Ao Vivo (tempo real lance a lance)
+   * Coleta o panorama da imprensa esportiva em múltiplas fontes (GE, Lance!, UOL, Gazeta, ESPN)
+   * Agrega manchetes, escalações e reportagens táticas recentes para enriquecer o contexto da IA
+   */
+  async fetchMultiSourcePressRadar(
+    homeTeam: string,
+    awayTeam: string,
+    sources: string[] = ['ge.globo.com', 'lance.com.br', 'uol.com.br', 'gazetaesportiva.com', 'espn.com.br'],
+  ): Promise<string> {
+    const cleanHome = homeTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim();
+    const cleanAway = awayTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim();
+    const results: string[] = [];
+
+    const candidateSources = sources.length > 0 ? sources : ['ge.globo.com', 'lance.com.br', 'uol.com.br'];
+
+    for (const source of candidateSources) {
+      try {
+        const query = `"${cleanHome}" "${cleanAway}" site:${source}`;
+        const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+        const res = await axios.get(rssUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+          timeout: 4000,
+        });
+
+        const xml = res.data || '';
+        const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+
+        for (const item of items.slice(0, 3)) {
+          const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+          const title = titleMatch ? titleMatch[1].replace(/ - [^-]+$/, '').trim() : '';
+          if (
+            title &&
+            (title.toLowerCase().includes(cleanHome.toLowerCase()) ||
+              title.toLowerCase().includes(cleanAway.toLowerCase()))
+          ) {
+            const portalLabel = source.replace('.com.br', '').replace('.globo', '').toUpperCase();
+            results.push(`• [${portalLabel}] ${title}`);
+          }
+        }
+      } catch (err: any) {
+        this.logger.debug(`[PressRadar] Falha ao coletar radar de ${source}: ${err.message}`);
+      }
+    }
+
+    if (results.length > 0) {
+      this.logger.log(
+        `[PressRadar] 📰 Radar multi-fontes coletado para ${homeTeam} x ${awayTeam} (${results.length} destaques)`,
+      );
+    }
+
+    return results.slice(0, 8).join('\n');
+  }
+
+  /**
+   * Busca e descobre automaticamente a URL de cobertura da partida em múltiplas fontes
+   * Itera pelas fontes configuradas (ge.globo.com, lance.com.br, uol.com.br, etc.)
    */
   async discoverMatchLiveUrl(
     homeTeam: string,
     awayTeam: string,
-    sources: string[] = ['ge.globo.com'],
+    sources: string[] = ['ge.globo.com', 'lance.com.br', 'uol.com.br'],
     isLive = false,
   ): Promise<string | null> {
     try {
       const cleanHome = homeTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim();
       const cleanAway = awayTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim();
 
-      const sourceSite = sources[0] || 'ge.globo.com';
-      const liveKeyword = isLive ? 'tempo real lance a lance' : 'onde assistir escalações';
-      const query = `"${cleanHome}" "${cleanAway}" ${liveKeyword} site:${sourceSite}`;
-      const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+      const candidateSources = sources.length > 0 ? sources : ['ge.globo.com', 'lance.com.br', 'uol.com.br'];
 
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-        timeout: 5000,
-      });
+      for (const sourceSite of candidateSources) {
+        try {
+          const liveKeyword = isLive ? 'tempo real' : 'onde assistir escalações';
+          const query = `"${cleanHome}" "${cleanAway}" ${liveKeyword} site:${sourceSite}`;
+          const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
 
-      const html = response.data || '';
-      const uddgMatches = (html.match(/uddg=([^&"]+)/g) || []) as string[];
-      const links = uddgMatches.map((m: string) => decodeURIComponent(m.replace('uddg=', '')));
+          const response = await axios.get(url, {
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+            timeout: 5000,
+          });
 
-      // Se a partida está AO VIVO, prioriza estritamente páginas de tempo-real / ao-vivo
-      if (isLive) {
-        const liveMatchUrl = links.find(
-          (l: string) =>
-            sources.some((s) => l.includes(s)) &&
-            (l.includes('tempo-real') || l.includes('ao-vivo')),
-        );
-        if (liveMatchUrl) {
-          this.logger.log(
-            `[Crawl4AI Discovery] ⚡ URL de TEMPO REAL encontrada para ${homeTeam} x ${awayTeam}: ${liveMatchUrl}`,
+          const html = response.data || '';
+          const uddgMatches = (html.match(/uddg=([^&"]+)/g) || []) as string[];
+          const links = uddgMatches
+            .map((m: string) => decodeURIComponent(m.replace('uddg=', '')))
+            .filter((l: string) => l.includes(sourceSite));
+
+          if (isLive) {
+            // Prioriza estritamente páginas de tempo real (/jogo/, temporeal, tempo-real, ao-vivo)
+            const liveMatchUrl = links.find(
+              (l: string) =>
+                l.includes('/jogo/') ||
+                l.includes('temporeal') ||
+                l.includes('tempo-real') ||
+                l.includes('ao-vivo'),
+            );
+            if (liveMatchUrl) {
+              this.logger.log(
+                `[Crawl4AI Discovery] ⚡ URL de TEMPO REAL encontrada em ${sourceSite} para ${homeTeam} x ${awayTeam}: ${liveMatchUrl}`,
+              );
+              return liveMatchUrl;
+            }
+          }
+
+          // Busca geral em notícias ou cobertura do portal
+          const matchUrl = links.find(
+            (l: string) =>
+              l.includes('/jogo/') ||
+              l.includes('temporeal') ||
+              l.includes('tempo-real') ||
+              l.includes('ao-vivo') ||
+              l.includes('/noticia/'),
           );
-          return liveMatchUrl;
+
+          if (matchUrl) {
+            this.logger.log(
+              `[Crawl4AI Discovery] 🎯 URL de cobertura encontrada em ${sourceSite} para ${homeTeam} x ${awayTeam}: ${matchUrl}`,
+            );
+            return matchUrl;
+          }
+        } catch (sourceErr: any) {
+          this.logger.debug(
+            `[Crawl4AI Discovery] Falha ao consultar fonte ${sourceSite}: ${sourceErr.message}`,
+          );
         }
-      }
-
-      // Prioriza links de jogo, tempo-real ou notícia do portal
-      const matchUrl = links.find(
-        (l: string) =>
-          sources.some((s) => l.includes(s)) &&
-          (l.includes('/jogo/') || l.includes('tempo-real') || l.includes('ao-vivo') || l.includes('/noticia/')),
-      );
-
-      if (matchUrl) {
-        this.logger.log(
-          `[Crawl4AI Discovery] 🎯 URL de cobertura encontrada para ${homeTeam} x ${awayTeam}: ${matchUrl}`,
-        );
-        return matchUrl;
-      }
-
-      // Fallback para qualquer link relevante das fontes
-      const anyPortalUrl = links.find((l: string) => sources.some((s) => l.includes(s)));
-      if (anyPortalUrl) {
-        this.logger.log(`[Crawl4AI Discovery] 🔎 URL de apoio encontrada: ${anyPortalUrl}`);
-        return anyPortalUrl;
       }
 
       return null;
     } catch (err: any) {
-      this.logger.warn(`[Crawl4AI Discovery] Falha na busca automática: ${err.message}`);
+      this.logger.warn(`[Crawl4AI Discovery] Falha na busca automática multi-fontes: ${err.message}`);
       return null;
     }
+  }
+
+  /**
+   * Extrai e sintetiza os lances narrados em tempo real a partir do Markdown bruto
+   */
+  extractLiveNarrativeSnippets(markdown: string, maxSnippets = 8): string {
+    if (!markdown) return '';
+    const lines = markdown.split('\n').map((l) => l.trim()).filter(Boolean);
+    const snippets: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      // Reconhece minutos (# 40' 1T, 35', etc) ou termos narrativos de jogo
+      const isLance =
+        l.match(/^\#?\s*\d+['’]/) ||
+        l.match(/GOL|CARTÃO|AMARELO|VERMELHO|IMPEDIMENTO|SUBSTITUIÇÃO|PÊNALTI|DEFESA|FALTA|VAR/i);
+
+      if (isLance) {
+        const block = lines.slice(i, i + 3).join(' ').trim();
+        // Filtra ruídos de código javascript ou menus
+        if (
+          block.length > 25 &&
+          !block.includes('function(') &&
+          !block.includes('<!DOCTYPE') &&
+          !block.includes('menu')
+        ) {
+          snippets.push(block);
+          i += 2;
+        }
+      }
+
+      if (snippets.length >= maxSnippets) break;
+    }
+
+    if (snippets.length === 0) {
+      // Fallback para os primeiros parágrafos legíveis
+      return markdown.slice(0, 1500);
+    }
+
+    return snippets.join('\n\n');
   }
 
   /**

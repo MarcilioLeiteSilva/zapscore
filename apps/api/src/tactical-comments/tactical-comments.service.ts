@@ -98,6 +98,7 @@ export class TacticalCommentsService {
 
   /**
    * Pre-aquece e atualiza o contexto do Crawl4AI em background a cada 5 minutos durante partidas ao vivo
+   * Coleta lances da partida e o radar jornalístico em múltiplas fontes (GE, Lance!, UOL, Gazeta, ESPN)
    */
   async prewarmLiveExternalContext(
     fixtureExternalId: number,
@@ -115,16 +116,17 @@ export class TacticalCommentsService {
         return state.lastCrawledLances;
       }
 
+      const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br,gazetaesportiva.com,espn.com.br')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       // 1. Obtém ou descobre URL de tempo real ao vivo
       let liveUrl: string | null = null;
       const cached = this.fixtureUrlCache.get(fixtureExternalId);
       if (cached && cached.isLiveUrl && now - cached.discoveredAt < 3 * 3600 * 1000) {
         liveUrl = cached.url;
       } else {
-        const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br')
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean);
         liveUrl = await this.crawl4aiClient.discoverMatchLiveUrl(homeTeam, awayTeam, sources, true);
         if (liveUrl) {
           this.fixtureUrlCache.set(fixtureExternalId, {
@@ -135,30 +137,49 @@ export class TacticalCommentsService {
         }
       }
 
-      if (!liveUrl) return null;
+      // 2. Extrai lances em tempo real do jogo com o Crawl4AI
+      let cleanLances: string | null = null;
+      if (liveUrl) {
+        const markdown = await this.crawl4aiClient.crawlSync(liveUrl, {
+          timeoutMs: 15000,
+          sessionId: `match_${fixtureExternalId}`,
+        });
+        if (markdown && markdown.length > 50) {
+          cleanLances = this.crawl4aiClient.extractLiveNarrativeSnippets(markdown);
+        }
+      }
 
-      // 2. Extrai lances com sessão persistente e seletor cirúrgico
-      const markdown = await this.crawl4aiClient.crawlSync(liveUrl, {
-        timeoutMs: 12000,
-        sessionId: `match_${fixtureExternalId}`,
-        cssSelector: '.transmissao-live, article, .feed-post-body, .m-transmissao',
-        waitFor: 'css:article, .transmissao-live, .feed-post-body',
-      });
+      // 3. Coleta radar multi-fontes da imprensa (Lance!, UOL, GE, Gazeta, ESPN)
+      const pressRadar = await this.crawl4aiClient.fetchMultiSourcePressRadar(
+        homeTeam,
+        awayTeam,
+        sources,
+      );
 
-      if (markdown && markdown.length > 50) {
-        const cleanLances = markdown.slice(0, 3200);
+      const combinedContext = [
+        pressRadar
+          ? `--- NOTÍCIAS E DESTAQUES DA IMPRENSA ESPORTIVA (MULTI-FONTES) ---\n${pressRadar}`
+          : '',
+        cleanLances
+          ? `--- LANCES E NARRATIVA EM TEMPO REAL DO JOGO (CRAWL4AI) ---\n${cleanLances}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      if (combinedContext) {
         this.matchStateCache.set(fixtureExternalId, {
           ...state,
-          lastCrawledLances: cleanLances,
+          lastCrawledLances: combinedContext,
           lastCrawledAt: now,
         });
-        return cleanLances;
+        return combinedContext;
       }
 
       return null;
     } catch (err: any) {
       this.logger.warn(
-        `[PrewarmLive] Falha ao pré-aquecer lances para fixture ${fixtureExternalId}: ${err.message}`,
+        `[PrewarmLive] Falha ao pré-aquecer lances e radar para fixture ${fixtureExternalId}: ${err.message}`,
       );
       return null;
     }
@@ -210,11 +231,13 @@ export class TacticalCommentsService {
 
       if (config.enable_crawl4ai !== false) {
         if (dto.externalContextUrl) {
-          externalContext = await this.crawl4aiClient.crawlSync(dto.externalContextUrl, {
-            timeoutMs: 10000,
+          const rawMd = await this.crawl4aiClient.crawlSync(dto.externalContextUrl, {
+            timeoutMs: 12000,
             sessionId: `match_${fixtureExternalId}`,
-            cssSelector: '.transmissao-live, article, .feed-post-body',
           });
+          if (rawMd) {
+            externalContext = this.crawl4aiClient.extractLiveNarrativeSnippets(rawMd);
+          }
         } else if (isLivePhase) {
           externalContext = await this.prewarmLiveExternalContext(
             fixtureExternalId,
@@ -222,17 +245,24 @@ export class TacticalCommentsService {
             fixture.awayTeam.name,
           );
         } else {
-          // Fase Pré-Jogo ou Pós-Jogo (artigo analítico ou escalações)
+          // Fase Pré-Jogo ou Pós-Jogo (artigo analítico, escalações ou balanço final)
           const now = Date.now();
+          const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br,gazetaesportiva.com,espn.com.br')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+          const pressRadar = await this.crawl4aiClient.fetchMultiSourcePressRadar(
+            fixture.homeTeam.name,
+            fixture.awayTeam.name,
+            sources,
+          );
+
           let previewUrl: string | null = null;
           const cached = this.fixtureUrlCache.get(fixtureExternalId);
           if (cached && !cached.isLiveUrl && now - cached.discoveredAt < 4 * 3600 * 1000) {
             previewUrl = cached.url;
           } else {
-            const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br')
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean);
             previewUrl = await this.crawl4aiClient.discoverMatchLiveUrl(
               fixture.homeTeam.name,
               fixture.awayTeam.name,
@@ -248,34 +278,48 @@ export class TacticalCommentsService {
             }
           }
 
+          let articleSnippet: string | null = null;
           if (previewUrl) {
             const rawPreview = await this.crawl4aiClient.crawlSync(previewUrl, {
-              timeoutMs: 10000,
+              timeoutMs: 12000,
               sessionId: `match_${fixtureExternalId}`,
-              cssSelector: 'article, main, .feed-post-body, .m-materia',
             });
             if (rawPreview) {
-              externalContext = rawPreview.slice(0, 2500);
+              articleSnippet = this.crawl4aiClient.extractLiveNarrativeSnippets(rawPreview);
             }
           }
+
+          externalContext = [
+            pressRadar
+              ? `--- NOTÍCIAS E DESTAQUES DA IMPRENSA ESPORTIVA (MULTI-FONTES) ---\n${pressRadar}`
+              : '',
+            articleSnippet
+              ? `--- ARTIGO / COBERTURA DA PARTIDA ---\n${articleSnippet}`
+              : '',
+          ]
+            .filter(Boolean)
+            .join('\n\n') || null;
         }
       }
 
       // 4. Monta o snapshot estatístico
       const statsSnapshot = this.buildStatsSnapshot(fixture.stats, fixture.homeTeamId, fixture.awayTeamId);
 
-      // 5. Memória Factual Acumulada: Linha do tempo de eventos críticos
+      // 5. Memória Factual Acumulada: Linha do tempo de eventos críticos (gols, cartões, VAR, substituições)
       const criticalEvents = (fixture.events || [])
         .filter(
           (e: any) =>
+            ['Goal', 'Card', 'Var', 'subst'].includes(e.type?.toLowerCase()) ||
             ['Goal', 'Card', 'Var'].includes(e.type) ||
+            e.detail?.toLowerCase().includes('card') ||
+            e.detail?.toLowerCase().includes('yellow') ||
             e.detail?.toLowerCase().includes('red') ||
             e.detail?.toLowerCase().includes('gol') ||
             e.detail?.toLowerCase().includes('penalty'),
         )
         .map(
           (e: any) =>
-            `${e.time?.elapsed || 0}' [${(e.type || '').toUpperCase()}] ${e.player?.name || ''} (${e.team?.name || ''}) - ${e.detail || ''}`,
+            `${e.time?.elapsed || 0}' [${(e.detail || e.type || '').toUpperCase()}] ${e.player?.name || ''} (${e.team?.name || ''})`,
         );
 
       // 6. Memória Narrativa: Histórico completo de comentários anteriores para continuidade do arco
@@ -522,9 +566,8 @@ ${context.criticalEvents && context.criticalEvents.length > 0 ? context.critical
 
 ARCO NARRATIVO E CONTINUIDADE (ANÁLISES ANTERIORES DA IA NESTA PARTIDA):
 ${context.previousTheses && context.previousTheses.length > 0 ? context.previousTheses.join('\n') : 'Primeira leitura da partida.'}
-(DIRETRIZ DE CONTINUIDADE: Conecte sua análise com o que foi apontado anteriormente, mostrando evolução do jogo sem jamais repetir o mesmo texto ou tese!)
 
-LANCES RECENTES NARRADOS EM CAMPO (COLETADOS PELO CRAWL4AI):
+CONTEXTO EXTERNO E MULTI-FONTES (LANCES AO VIVO CRAWL4AI + RADAR DE IMPRENSA ESPORTIVA):
 ${context.externalContext ? context.externalContext : 'Sem contexto externo adicional no momento.'}
 
 ESTATÍSTICAS ATUAIS:
@@ -535,6 +578,12 @@ ${JSON.stringify(context.events, null, 2)}
 
 DIRETRIZ DA FASE ATUAL:
 ${phaseInstruction}
+
+DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
+- É TERMINANTEMENTE PROIBIDO repetir termos, frases ou diagnósticos já feitos nos comentários anteriores desta mesma partida.
+- Como os comentários acontecem no ritmo dinâmico de 5 em 5 minutos, foque no que ACONTECEU E MUDOU nos últimos minutos (cartões aplicados, defesas difíceis, finalizações, faltas duras, substituições e alteração nas linhas).
+- Se houver cartões amarelos/vermelhos, substituições ou defesas difíceis nos eventos/lances, cite nominalmente os jogadores envolvidos.
+- Traga a resenha autêntica do futebol brasileiro com base nos fatos reais de campo e na repercussão da imprensa!
 `;
 
     const normalizeSentiment = (raw?: string): CommentSentiment => {
