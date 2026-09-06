@@ -18,7 +18,8 @@ import {
   Trophy,
   Brain,
   Smartphone,
-  Users
+  Users,
+  MessageSquare
 } from 'lucide-react';
 
 export default function AgentsHubPage() {
@@ -76,6 +77,24 @@ export default function AgentsHubPage() {
         { label: 'Cota API-Sports', value: '0 Consumo' },
       ],
       actionText: 'Abrir Lineup Agent'
+    },
+    {
+      id: 'tactical-comments',
+      title: 'Comentários Táticos ao Vivo',
+      subtitle: 'IA Tática & Coleta Multi-Fontes (Crawl4AI)',
+      description: 'Gera leituras táticas cronológicas (Pré-Jogo, 1º Tempo, Intervalo, 2º Tempo e Resumo Final) para os jogos do Brasileirão Série A e B, gravando diretamente no PocketBase Comentários dedicado.',
+      icon: MessageSquare,
+      iconColor: 'text-violet-400',
+      iconBg: 'bg-violet-500/10 border-violet-500/20',
+      badge: 'CRAWL4AI • GEMINI 1.5 • BRASILEIRÃO A & B',
+      badgeColor: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+      href: '/adminpanel/agents/tactical-comments',
+      stats: [
+        { label: 'Instância PB', value: 'Dedicada' },
+        { label: 'Motor IA', value: 'Gemini 1.5' },
+        { label: 'Timeline', value: 'Cronológica' },
+      ],
+      actionText: 'Abrir Comentários Táticos'
     },
     {
       id: 'ia-monitor',

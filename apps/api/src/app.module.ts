@@ -21,6 +21,7 @@ import { PlayersModule } from './players/players.module';
 import { SentinelModule } from './sentinel/sentinel.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { LineupsModule } from './lineups/lineups.module';
+import { TacticalCommentsModule } from './tactical-comments/tactical-comments.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { LineupsModule } from './lineups/lineups.module';
     SentinelModule,
     NotificationsModule,
     LineupsModule,
+    TacticalCommentsModule,
   ],
   controllers: [AppController],
   providers: [
