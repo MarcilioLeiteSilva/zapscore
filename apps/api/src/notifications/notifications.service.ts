@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
@@ -19,6 +20,26 @@ export class NotificationsService {
   private readonly PB_BRASIL = 'https://zapscore-pocketbase-brasil.gtalg3.easypanel.host';
   private readonly PB_ESTADUAIS = 'https://zapscore-pocketbase-estaduais.gtalg3.easypanel.host';
   private readonly PB_EUROPA = 'https://zapscore-pocketbase-europa.gtalg3.easypanel.host';
+
+  // Armazenamento em memória para PushQueue sem dependência de schema no PostgreSQL
+  private inMemoryPushQueue: Array<{
+    id: string;
+    leagueId: number;
+    appSlug: string;
+    round: string;
+    title: string;
+    body: string;
+    imageUrl?: string | null;
+    status: string;
+    detectedAt: Date;
+    scheduledAutoDispatchAt: Date;
+    dispatchedAt?: Date | null;
+    sentCount?: number;
+    target?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = [];
+  private hasPushQueueTable = true;
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -235,6 +256,10 @@ export class NotificationsService {
    * Enfileira o resumo de placares de uma rodada finalizada para aprovação do operador
    * e agenda o disparo automático de fallback para +60 minutos.
    */
+  /**
+   * Enfileira o resumo de placares de uma rodada finalizada para aprovação do operador
+   * e agenda o disparo automático de fallback para +60 minutos.
+   */
   async enqueueRoundSummary(leagueId: number, season: number = 2026) {
     try {
       const summary = await this.getRoundSummary(leagueId, season);
@@ -244,16 +269,36 @@ export class NotificationsService {
 
       const target = this.resolvePocketBaseTarget(leagueId);
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const scheduledAutoDispatchAt = new Date(Date.now() + 60 * 60 * 1000);
 
-      // Verificação de Idempotência: não enfileira se já existir notificação recente para esta rodada
-      const existing = await this.prisma.pushQueue.findFirst({
-        where: {
-          leagueId: Number(leagueId),
-          round: summary.round,
-          createdAt: { gte: twentyFourHoursAgo },
-          status: { in: ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO'] },
-        },
-      });
+      // 1. Verificação de Idempotência: não enfileira se já existir notificação recente para esta rodada
+      let existing: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          existing = await this.prisma.pushQueue.findFirst({
+            where: {
+              leagueId: Number(leagueId),
+              round: summary.round,
+              createdAt: { gte: twentyFourHoursAgo },
+              status: { in: ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO'] },
+            },
+          });
+        } catch (dbErr: any) {
+          if (dbErr.message?.includes('does not exist')) {
+            this.hasPushQueueTable = false;
+          }
+        }
+      }
+
+      if (!this.hasPushQueueTable) {
+        existing = this.inMemoryPushQueue.find(
+          (q) =>
+            q.leagueId === Number(leagueId) &&
+            q.round === summary.round &&
+            q.createdAt >= twentyFourHoursAgo &&
+            ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO'].includes(q.status)
+        );
+      }
 
       if (existing) {
         return {
@@ -263,21 +308,49 @@ export class NotificationsService {
         };
       }
 
-      // Janela estrita de 60 minutos para ação do operador
-      const scheduledAutoDispatchAt = new Date(Date.now() + 60 * 60 * 1000);
+      let queueItem: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          queueItem = await this.prisma.pushQueue.create({
+            data: {
+              leagueId: Number(leagueId),
+              appSlug: target.slug,
+              round: summary.round,
+              title: summary.suggestedTitle || `🏁 Fim da ${summary.round}`,
+              body: summary.suggestedBody || 'Confira os resultados completos no app!',
+              status: 'PENDING_APPROVAL',
+              scheduledAutoDispatchAt,
+              target: target.name,
+            },
+          });
+        } catch (createErr: any) {
+          if (createErr.message?.includes('does not exist')) {
+            this.hasPushQueueTable = false;
+          }
+        }
+      }
 
-      const queueItem = await this.prisma.pushQueue.create({
-        data: {
+      if (!this.hasPushQueueTable) {
+        const now = new Date();
+        queueItem = {
+          id: randomUUID(),
           leagueId: Number(leagueId),
           appSlug: target.slug,
           round: summary.round,
           title: summary.suggestedTitle || `🏁 Fim da ${summary.round}`,
           body: summary.suggestedBody || 'Confira os resultados completos no app!',
+          imageUrl: null,
           status: 'PENDING_APPROVAL',
+          detectedAt: now,
           scheduledAutoDispatchAt,
+          dispatchedAt: null,
+          sentCount: 0,
           target: target.name,
-        },
-      });
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.inMemoryPushQueue.unshift(queueItem);
+      }
 
       this.logger.log(`[Push Queue] 📥 Resumo enfileirado para [${target.name}] (${summary.round}). Disparo automático agendado para ${scheduledAutoDispatchAt.toISOString()}`);
 
@@ -297,20 +370,45 @@ export class NotificationsService {
    */
   async getQueue(status?: string) {
     try {
-      const whereClause = status ? { status } : {};
-      const items = await this.prisma.pushQueue.findMany({
-        where: whereClause,
-        orderBy: [
-          { status: 'asc' },
-          { scheduledAutoDispatchAt: 'asc' },
-        ],
-        take: 50,
+      if (this.hasPushQueueTable) {
+        try {
+          const whereClause = status ? { status } : {};
+          const items = await this.prisma.pushQueue.findMany({
+            where: whereClause,
+            orderBy: [
+              { status: 'asc' },
+              { scheduledAutoDispatchAt: 'asc' },
+            ],
+            take: 50,
+          });
+
+          return {
+            success: true,
+            count: items.length,
+            items,
+          };
+        } catch (dbErr: any) {
+          if (dbErr.message?.includes('does not exist')) {
+            this.hasPushQueueTable = false;
+          }
+        }
+      }
+
+      // Fallback transparente em memória
+      let filtered = [...this.inMemoryPushQueue];
+      if (status) {
+        filtered = filtered.filter((i) => i.status === status);
+      }
+      filtered.sort((a, b) => {
+        if (a.status === 'PENDING_APPROVAL' && b.status !== 'PENDING_APPROVAL') return -1;
+        if (a.status !== 'PENDING_APPROVAL' && b.status === 'PENDING_APPROVAL') return 1;
+        return a.scheduledAutoDispatchAt.getTime() - b.scheduledAutoDispatchAt.getTime();
       });
 
       return {
         success: true,
-        count: items.length,
-        items,
+        count: filtered.length,
+        items: filtered.slice(0, 50),
       };
     } catch (e: any) {
       this.logger.warn(`PushQueue not available: ${e.message}`);
@@ -323,7 +421,18 @@ export class NotificationsService {
    */
   async dispatchQueueItem(id: string, operatorOverride?: { title?: string; body?: string; imageUrl?: string }) {
     try {
-      const item = await this.prisma.pushQueue.findUnique({ where: { id } });
+      let item: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          item = await this.prisma.pushQueue.findUnique({ where: { id } });
+        } catch (e: any) {
+          if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+      if (!this.hasPushQueueTable) {
+        item = this.inMemoryPushQueue.find((q) => q.id === id);
+      }
+
       if (!item) {
         return { success: false, message: 'Item da fila não encontrado.' };
       }
@@ -350,18 +459,36 @@ export class NotificationsService {
         },
       });
 
-      const updated = await this.prisma.pushQueue.update({
-        where: { id },
-        data: {
-          title: finalTitle,
-          body: finalBody,
-          imageUrl: finalImage,
-          status: 'DISPATCHED_OPERATOR',
-          dispatchedAt: new Date(),
-          sentCount: broadcastResult.details?.sentCount || 0,
-          target: broadcastResult.target || item.target,
-        },
-      });
+      let updated: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          updated = await this.prisma.pushQueue.update({
+            where: { id },
+            data: {
+              title: finalTitle,
+              body: finalBody,
+              imageUrl: finalImage,
+              status: 'DISPATCHED_OPERATOR',
+              dispatchedAt: new Date(),
+              sentCount: broadcastResult.details?.sentCount || 0,
+              target: broadcastResult.target || item.target,
+            },
+          });
+        } catch (e: any) {
+          if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+      if (!this.hasPushQueueTable) {
+        item.title = finalTitle;
+        item.body = finalBody;
+        item.imageUrl = finalImage;
+        item.status = 'DISPATCHED_OPERATOR';
+        item.dispatchedAt = new Date();
+        item.sentCount = broadcastResult.details?.sentCount || 0;
+        item.target = broadcastResult.target || item.target;
+        item.updatedAt = new Date();
+        updated = item;
+      }
 
       this.logger.log(`[Push Queue] 👤 Item ${id} disparado manualmente pelo operador via ${broadcastResult.target}`);
 
@@ -381,15 +508,38 @@ export class NotificationsService {
    */
   async cancelQueueItem(id: string) {
     try {
-      const item = await this.prisma.pushQueue.findUnique({ where: { id } });
+      let item: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          item = await this.prisma.pushQueue.findUnique({ where: { id } });
+        } catch (e: any) {
+          if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+      if (!this.hasPushQueueTable) {
+        item = this.inMemoryPushQueue.find((q) => q.id === id);
+      }
+
       if (!item) {
         return { success: false, message: 'Item não encontrado.' };
       }
 
-      const updated = await this.prisma.pushQueue.update({
-        where: { id },
-        data: { status: 'CANCELLED' },
-      });
+      let updated: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          updated = await this.prisma.pushQueue.update({
+            where: { id },
+            data: { status: 'CANCELLED' },
+          });
+        } catch (e: any) {
+          if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+      if (!this.hasPushQueueTable) {
+        item.status = 'CANCELLED';
+        item.updatedAt = new Date();
+        updated = item;
+      }
 
       this.logger.log(`[Push Queue] ❌ Item ${id} cancelado pelo operador.`);
       return { success: true, queueItem: updated };
@@ -404,19 +554,44 @@ export class NotificationsService {
    */
   async updateQueueItem(id: string, dto: { title?: string; body?: string; imageUrl?: string }) {
     try {
-      const item = await this.prisma.pushQueue.findUnique({ where: { id } });
+      let item: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          item = await this.prisma.pushQueue.findUnique({ where: { id } });
+        } catch (e: any) {
+          if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+      if (!this.hasPushQueueTable) {
+        item = this.inMemoryPushQueue.find((q) => q.id === id);
+      }
+
       if (!item || item.status !== 'PENDING_APPROVAL') {
         return { success: false, message: 'Item não encontrado ou não está pendente de aprovação.' };
       }
 
-      const updated = await this.prisma.pushQueue.update({
-        where: { id },
-        data: {
-          title: dto.title !== undefined ? dto.title : item.title,
-          body: dto.body !== undefined ? dto.body : item.body,
-          imageUrl: dto.imageUrl !== undefined ? dto.imageUrl : item.imageUrl,
-        },
-      });
+      let updated: any = null;
+      if (this.hasPushQueueTable) {
+        try {
+          updated = await this.prisma.pushQueue.update({
+            where: { id },
+            data: {
+              title: dto.title !== undefined ? dto.title : item.title,
+              body: dto.body !== undefined ? dto.body : item.body,
+              imageUrl: dto.imageUrl !== undefined ? dto.imageUrl : item.imageUrl,
+            },
+          });
+        } catch (e: any) {
+          if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+      if (!this.hasPushQueueTable) {
+        if (dto.title !== undefined) item.title = dto.title;
+        if (dto.body !== undefined) item.body = dto.body;
+        if (dto.imageUrl !== undefined) item.imageUrl = dto.imageUrl;
+        item.updatedAt = new Date();
+        updated = item;
+      }
 
       return { success: true, queueItem: updated };
     } catch (e: any) {
@@ -432,12 +607,27 @@ export class NotificationsService {
   async processPendingAutoDispatches() {
     const now = new Date();
     try {
-      const expiredItems = await this.prisma.pushQueue.findMany({
-        where: {
-          status: 'PENDING_APPROVAL',
-          scheduledAutoDispatchAt: { lte: now },
-        },
-      });
+      let expiredItems: any[] = [];
+      if (this.hasPushQueueTable) {
+        try {
+          expiredItems = await this.prisma.pushQueue.findMany({
+            where: {
+              status: 'PENDING_APPROVAL',
+              scheduledAutoDispatchAt: { lte: now },
+            },
+          });
+        } catch (dbErr: any) {
+          if (dbErr.message?.includes('does not exist')) {
+            this.hasPushQueueTable = false;
+          }
+        }
+      }
+
+      if (!this.hasPushQueueTable) {
+        expiredItems = this.inMemoryPushQueue.filter(
+          (i) => i.status === 'PENDING_APPROVAL' && i.scheduledAutoDispatchAt <= now
+        );
+      }
 
       if (!expiredItems || expiredItems.length === 0) {
         return { processedCount: 0 };
@@ -463,15 +653,32 @@ export class NotificationsService {
             },
           });
 
-          await this.prisma.pushQueue.update({
-            where: { id: item.id },
-            data: {
-              status: 'DISPATCHED_AUTO',
-              dispatchedAt: new Date(),
-              sentCount: broadcastResult.details?.sentCount || 0,
-              target: broadcastResult.target || item.target,
-            },
-          });
+          if (this.hasPushQueueTable) {
+            try {
+              await this.prisma.pushQueue.update({
+                where: { id: item.id },
+                data: {
+                  status: 'DISPATCHED_AUTO',
+                  dispatchedAt: new Date(),
+                  sentCount: broadcastResult.details?.sentCount || 0,
+                  target: broadcastResult.target || item.target,
+                },
+              });
+            } catch (e: any) {
+              if (e.message?.includes('does not exist')) this.hasPushQueueTable = false;
+            }
+          }
+
+          if (!this.hasPushQueueTable) {
+            const memoryTarget = this.inMemoryPushQueue.find((q) => q.id === item.id);
+            if (memoryTarget) {
+              memoryTarget.status = 'DISPATCHED_AUTO';
+              memoryTarget.dispatchedAt = new Date();
+              memoryTarget.sentCount = broadcastResult.details?.sentCount || 0;
+              memoryTarget.target = broadcastResult.target || item.target;
+              memoryTarget.updatedAt = new Date();
+            }
+          }
 
           this.logger.log(`[AutoDispatch Worker] 🚀 Auto-disparo executado com sucesso para ${item.round} (Liga ${item.leagueId}). Entregues: ${broadcastResult.details?.sentCount || 0}`);
           processedCount++;
@@ -774,15 +981,21 @@ export class NotificationsService {
       }
 
       let queueItems: any[] = [];
-      try {
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        queueItems = await this.prisma.pushQueue.findMany({
-          where: {
-            createdAt: { gte: twentyFourHoursAgo },
-          },
-        });
-      } catch (qErr) {
-        queueItems = [];
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (this.hasPushQueueTable) {
+        try {
+          queueItems = await this.prisma.pushQueue.findMany({
+            where: {
+              createdAt: { gte: twentyFourHoursAgo },
+            },
+          });
+        } catch (qErr: any) {
+          if (qErr.message?.includes('does not exist')) this.hasPushQueueTable = false;
+        }
+      }
+
+      if (!this.hasPushQueueTable) {
+        queueItems = this.inMemoryPushQueue.filter((q) => q.createdAt >= twentyFourHoursAgo);
       }
 
       const completedLeagues: any[] = [];
