@@ -227,7 +227,7 @@ export default function TacticalCommentsAgentPage() {
     setLoadingFeed(true);
     try {
       const res = await fetch(
-        `${PB_COMMENTS_URL}/api/collections/fixture_comments/records?filter=(fixture_id=${fixtureId})&sort=minute,created`,
+        `${PB_COMMENTS_URL}/api/collections/fixture_comments/records?filter=(fixture_id=${fixtureId})&sort=minute,id`,
         { cache: 'no-store' }
       );
       if (res.ok) {

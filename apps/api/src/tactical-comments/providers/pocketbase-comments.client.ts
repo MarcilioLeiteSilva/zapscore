@@ -73,7 +73,7 @@ export class PocketbaseCommentsClient {
       const response = await axios.get(url, {
         params: {
           filter: `fixture_id=${fixtureId}`,
-          sort: 'minute,created',
+          sort: 'minute,id',
           perPage: 50,
         },
         timeout: 6000,
@@ -129,7 +129,7 @@ export class PocketbaseCommentsClient {
           phase: comment.phase,
           title: comment.title,
           comment: comment.comment,
-          sentiment: comment.sentiment || 'BALANCED',
+          sentiment: comment.sentiment || 'EQUILIBRADO',
           stats_snapshot: comment.stats_snapshot || null,
         },
         {
