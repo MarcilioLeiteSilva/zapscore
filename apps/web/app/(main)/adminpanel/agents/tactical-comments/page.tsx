@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   MessageSquare,
   ArrowLeft,
@@ -12,16 +13,37 @@ import {
   Database,
   Cpu,
   Bot,
-  Layers,
   Send,
   Loader2,
   Clock,
-  ShieldCheck,
+  Radio,
+  Sliders,
+  Eye,
+  Calendar,
+  Layers,
+  ChevronRight,
 } from 'lucide-react';
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 const PB_COMMENTS_URL = "https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host";
 const CRAWL4AI_URL = "https://zapscore-crwal4ai.gtalg3.easypanel.host";
+
+interface TeamInfo {
+  name: string;
+  logo?: string;
+}
+
+interface FixtureCardData {
+  externalId: number;
+  homeTeam: TeamInfo;
+  awayTeam: TeamInfo;
+  homeGoals: number | null;
+  awayGoals: number | null;
+  statusShort: string | null;
+  elapsed: number | null;
+  date: string;
+  round?: string | null;
+}
 
 interface CommentItem {
   id: string;
@@ -35,29 +57,95 @@ interface CommentItem {
   created: string;
 }
 
+interface CompetitionTab {
+  id: number;
+  name: string;
+  shortName: string;
+  flag: string;
+}
+
+interface RegionModule {
+  id: string;
+  name: string;
+  competitions: CompetitionTab[];
+}
+
+const REGION_MODULES: RegionModule[] = [
+  {
+    id: 'brasil',
+    name: 'Brasil',
+    competitions: [
+      { id: 71, name: 'Brasileirão Série A', shortName: 'Série A', flag: '🇧🇷' },
+      { id: 72, name: 'Brasileirão Série B', shortName: 'Série B', flag: '🇧🇷' },
+      { id: 73, name: 'Copa do Brasil', shortName: 'Copa do Brasil', flag: '🏆' },
+    ],
+  },
+  {
+    id: 'europa',
+    name: 'Europa',
+    competitions: [
+      { id: 2, name: 'Champions League', shortName: 'Champions', flag: '⭐' },
+      { id: 39, name: 'Premier League', shortName: 'Premier', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+      { id: 140, name: 'La Liga', shortName: 'La Liga', flag: '🇪🇸' },
+      { id: 78, name: 'Bundesliga', shortName: 'Bundesliga', flag: '🇩🇪' },
+      { id: 135, name: 'Serie A Itália', shortName: 'Serie A ITA', flag: '🇮🇹' },
+      { id: 61, name: 'Ligue 1', shortName: 'Ligue 1', flag: '🇫🇷' },
+    ],
+  },
+  {
+    id: 'copas',
+    name: 'Copas',
+    competitions: [
+      { id: 13, name: 'Copa Libertadores', shortName: 'Libertadores', flag: '🏆' },
+      { id: 612, name: 'Copa do Nordeste', shortName: 'Nordestão', flag: '☀️' },
+    ],
+  },
+  {
+    id: 'estaduais',
+    name: 'Estaduais',
+    competitions: [
+      { id: 475, name: 'Paulista A1', shortName: 'Paulistão', flag: '🏙️' },
+      { id: 624, name: 'Carioca Série A', shortName: 'Carioca', flag: '🌊' },
+      { id: 477, name: 'Gaúcho Série A', shortName: 'Gauchão', flag: '🧉' },
+      { id: 629, name: 'Mineiro Módulo 1', shortName: 'Mineiro', flag: '🔺' },
+    ],
+  },
+];
+
 export default function TacticalCommentsAgentPage() {
-  // Status de Infraestrutura
+  // Infraestrutura & Saúde
   const [pbStatus, setPbStatus] = useState<'checking' | 'healthy' | 'offline'>('checking');
   const [crawlStatus, setCrawlStatus] = useState<'checking' | 'healthy' | 'offline'>('checking');
   const [crawlStats, setCrawlStats] = useState<{ memory?: number; cpu?: number } | null>(null);
 
-  // Feed de Comentários Recentes
-  const [recentComments, setRecentComments] = useState<CommentItem[]>([]);
-  const [loadingFeed, setLoadingFeed] = useState(true);
+  // Navegação de Módulos e Competições
+  const [selectedRegion, setSelectedRegion] = useState<string>('brasil');
+  const [selectedLeagueId, setSelectedLeagueId] = useState<number>(71);
 
-  // Form de Teste / Disparo Manual
-  const [targetFixtureId, setTargetFixtureId] = useState<string>('');
-  const [targetPhase, setTargetPhase] = useState<string>('FIRST_HALF');
-  const [targetMinute, setTargetMinute] = useState<string>('35');
+  // Lista de Partidas do Dia / Competição
+  const [fixtures, setFixtures] = useState<FixtureCardData[]>([]);
+  const [loadingFixtures, setLoadingFixtures] = useState<boolean>(true);
+  const [selectedFixture, setSelectedFixture] = useState<FixtureCardData | null>(null);
+
+  // Modo Operacional: 'manual' ou 'automatico'
+  const [operationTab, setOperationTab] = useState<'manual' | 'automatico'>('manual');
+
+  // Feed de Comentários da Partida Selecionada
+  const [fixtureComments, setFixtureComments] = useState<CommentItem[]>([]);
+  const [loadingFeed, setLoadingFeed] = useState<boolean>(false);
+  const [autoRefreshFeed, setAutoRefreshFeed] = useState<boolean>(true);
+
+  // Formulário da Aba Manual
+  const [targetPhase, setTargetPhase] = useState<string>('PRE_MATCH');
+  const [targetMinute, setTargetMinute] = useState<string>('0');
   const [externalUrl, setExternalUrl] = useState<string>('');
-  const [adminApiKey, setAdminApiKey] = useState<string>('7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=');
-  const [generating, setGenerating] = useState(false);
+  const [adminApiKey] = useState<string>('7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=');
+  const [generating, setGenerating] = useState<boolean>(false);
   const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string; data?: any } | null>(null);
 
   // Verifica a saúde dos serviços
   const checkHealthServices = async () => {
     try {
-      // 1. PocketBase Health
       const pbRes = await fetch(`${PB_COMMENTS_URL}/api/health`, { cache: 'no-store' });
       setPbStatus(pbRes.ok ? 'healthy' : 'offline');
     } catch {
@@ -65,7 +153,6 @@ export default function TacticalCommentsAgentPage() {
     }
 
     try {
-      // 2. Crawl4AI Health
       const crawlRes = await fetch(`${CRAWL4AI_URL}/health`, { cache: 'no-store' });
       if (crawlRes.ok) {
         const data = await crawlRes.json();
@@ -79,35 +166,131 @@ export default function TacticalCommentsAgentPage() {
     }
   };
 
-  // Carrega feed de comentários recentes direto do PocketBase
-  const loadRecentComments = async () => {
+  // Carrega as partidas do dia para a liga selecionada
+  const loadFixturesForLeague = useCallback(async (leagueId: number) => {
+    setLoadingFixtures(true);
+    try {
+      // 1. Tenta carregar as partidas do dia na liga
+      const todayRes = await fetch(`${API_URL}/fixtures/today?leagueId=${leagueId}`, { cache: 'no-store' });
+      let list: any[] = [];
+
+      if (todayRes.ok) {
+        const todayData = await todayRes.json();
+        list = Array.isArray(todayData) ? todayData : todayData.data || [];
+      }
+
+      // 2. Se hoje não tiver jogos marcados, busca as partidas recentes/próximas da competição
+      if (list.length === 0) {
+        const fallbackRes = await fetch(`${API_URL}/fixtures?leagueId=${leagueId}&limit=12`, { cache: 'no-store' });
+        if (fallbackRes.ok) {
+          const fbData = await fallbackRes.json();
+          list = Array.isArray(fbData) ? fbData : fbData.data || [];
+        }
+      }
+
+      const formatted: FixtureCardData[] = list.map((f: any) => ({
+        externalId: f.externalId,
+        homeTeam: { name: f.homeTeam?.name || 'Mandante', logo: f.homeTeam?.logo },
+        awayTeam: { name: f.awayTeam?.name || 'Visitante', logo: f.awayTeam?.logo },
+        homeGoals: f.homeGoals,
+        awayGoals: f.awayGoals,
+        statusShort: f.statusShort,
+        elapsed: f.elapsed,
+        date: f.date,
+        round: f.round,
+      }));
+
+      setFixtures(formatted);
+
+      // Se não tiver partida selecionada ou a selecionada não estiver na lista, seleciona a primeira
+      if (formatted.length > 0) {
+        setSelectedFixture((prev) => {
+          if (!prev || !formatted.some((m) => m.externalId === prev.externalId)) {
+            return formatted[0];
+          }
+          return prev;
+        });
+      } else {
+        setSelectedFixture(null);
+      }
+    } catch (e) {
+      console.error('Falha ao carregar partidas da competição', e);
+      setFixtures([]);
+      setSelectedFixture(null);
+    } finally {
+      setLoadingFixtures(false);
+    }
+  }, []);
+
+  // Carrega o feed de comentários da partida selecionada
+  const loadCommentsForSelectedFixture = useCallback(async (fixtureId: number) => {
     setLoadingFeed(true);
     try {
       const res = await fetch(
-        `${PB_COMMENTS_URL}/api/collections/fixture_comments/records?sort=-created&perPage=15`,
+        `${PB_COMMENTS_URL}/api/collections/fixture_comments/records?filter=(fixture_id=${fixtureId})&sort=minute,created`,
         { cache: 'no-store' }
       );
       if (res.ok) {
         const data = await res.json();
-        setRecentComments(data.items || []);
+        setFixtureComments(data.items || []);
       }
     } catch (e) {
-      console.error("Falha ao carregar comentários do PocketBase", e);
+      console.error('Erro ao buscar comentários da partida no PocketBase', e);
     } finally {
       setLoadingFeed(false);
     }
-  };
-
-  useEffect(() => {
-    checkHealthServices();
-    loadRecentComments();
   }, []);
 
-  // Executa o disparo manual via API ZapScore
+  // Efeito inicial: healthcheck e primeira carga
+  useEffect(() => {
+    checkHealthServices();
+  }, []);
+
+  // Efeito ao trocar liga selecionada
+  useEffect(() => {
+    loadFixturesForLeague(selectedLeagueId);
+  }, [selectedLeagueId, loadFixturesForLeague]);
+
+  // Efeito ao trocar partida selecionada: busca os comentários dela
+  useEffect(() => {
+    if (selectedFixture) {
+      loadCommentsForSelectedFixture(selectedFixture.externalId);
+      // Ajusta minuto e fase recomendada
+      if (selectedFixture.statusShort === '1H') {
+        setTargetPhase('FIRST_HALF');
+        setTargetMinute(String(selectedFixture.elapsed || 25));
+      } else if (selectedFixture.statusShort === 'HT') {
+        setTargetPhase('HALF_TIME');
+        setTargetMinute('45');
+      } else if (selectedFixture.statusShort === '2H') {
+        setTargetPhase('SECOND_HALF');
+        setTargetMinute(String(selectedFixture.elapsed || 70));
+      } else if (['FT', 'AET', 'PEN'].includes(selectedFixture.statusShort || '')) {
+        setTargetPhase('FULL_TIME');
+        setTargetMinute('90');
+      } else {
+        setTargetPhase('PRE_MATCH');
+        setTargetMinute('0');
+      }
+    } else {
+      setFixtureComments([]);
+    }
+  }, [selectedFixture, loadCommentsForSelectedFixture]);
+
+  // Polling automático para a aba Automático (se ativado)
+  useEffect(() => {
+    if (!autoRefreshFeed || operationTab !== 'automatico' || !selectedFixture) return;
+    const interval = setInterval(() => {
+      loadCommentsForSelectedFixture(selectedFixture.externalId);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [autoRefreshFeed, operationTab, selectedFixture, loadCommentsForSelectedFixture]);
+
+  // Handler de Geração Manual
   const handleGenerateComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!targetFixtureId.trim()) {
-      setActionResult({ type: 'error', message: 'Informe o ID da partida (fixture_id).' });
+    if (!selectedFixture) {
+      setActionResult({ type: 'error', message: 'Por favor, selecione uma partida acima.' });
       return;
     }
 
@@ -121,7 +304,7 @@ export default function TacticalCommentsAgentPage() {
       if (targetMinute) payload.minute = parseInt(targetMinute, 10);
       if (externalUrl.trim()) payload.externalContextUrl = externalUrl.trim();
 
-      const res = await fetch(`${API_URL}/fixtures/${targetFixtureId.trim()}/comments/generate`, {
+      const res = await fetch(`${API_URL}/fixtures/${selectedFixture.externalId}/comments/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,11 +318,13 @@ export default function TacticalCommentsAgentPage() {
       if (res.ok && data.success) {
         setActionResult({
           type: 'success',
-          message: 'Comentário tático gerado com sucesso e persistido no PocketBase!',
+          message: `Comentário [${targetPhase}] gerado e gravado no PocketBase com sucesso!`,
           data: data.data,
         });
-        // Atualiza a lista recente
-        setTimeout(loadRecentComments, 800);
+        // Atualiza a timeline da partida
+        setTimeout(() => {
+          loadCommentsForSelectedFixture(selectedFixture.externalId);
+        }, 600);
       } else {
         setActionResult({
           type: 'error',
@@ -156,11 +341,13 @@ export default function TacticalCommentsAgentPage() {
     }
   };
 
+  const currentRegion = REGION_MODULES.find((r) => r.id === selectedRegion) || REGION_MODULES[0];
+
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-100 p-4 sm:p-6 lg:p-8 font-sans">
-      {/* Header & Breadcrumbs */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
+      {/* Top Header & Breadcrumbs */}
+      <div className="max-w-7xl mx-auto mb-6">
+        <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
           <Link href="/adminpanel" className="hover:text-white transition-colors">AdminPanel</Link>
           <span>/</span>
           <Link href="/adminpanel/agents" className="hover:text-white transition-colors">Central de Agentes</Link>
@@ -168,20 +355,20 @@ export default function TacticalCommentsAgentPage() {
           <span className="text-violet-400 font-medium">Comentários Táticos ao Vivo</span>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
-              <MessageSquare size={26} />
+            <div className="w-11 h-11 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+              <MessageSquare size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                 Agente de Comentários Táticos ao Vivo
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-400 font-semibold tracking-wide">
-                  BRASILEIRÃO A & B
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/30 text-violet-300 font-semibold tracking-wide">
+                  IA MULTI-FONTES
                 </span>
               </h1>
-              <p className="text-sm text-slate-400 mt-0.5">
-                Timeline cronológica (Pré-Jogo, Tempo Real e Resumo Final) via Gemini 1.5 Flash + Crawl4AI + PocketBase dedicado.
+              <p className="text-xs text-slate-400">
+                Geração cronológica de comentários para a aba de Detalhes da Partida via Gemini 1.5 & PocketBase dedicado.
               </p>
             </div>
           </div>
@@ -190,298 +377,510 @@ export default function TacticalCommentsAgentPage() {
             <button
               onClick={() => {
                 checkHealthServices();
-                loadRecentComments();
+                if (selectedFixture) loadCommentsForSelectedFixture(selectedFixture.externalId);
+                loadFixturesForLeague(selectedLeagueId);
               }}
-              className="px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white flex items-center gap-2 transition-all shadow-sm"
+              className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm"
             >
-              <RefreshCw size={14} className={loadingFeed ? 'animate-spin text-violet-400' : ''} />
-              Atualizar Status
+              <RefreshCw size={13} className={loadingFixtures || loadingFeed ? 'animate-spin text-violet-400' : ''} />
+              Atualizar
             </button>
             <Link
               href="/adminpanel/agents"
-              className="px-3.5 py-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-all"
+              className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1.5 transition-all"
             >
-              <ArrowLeft size={14} />
-              Voltar aos Agentes
+              <ArrowLeft size={13} />
+              Voltar
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Grid de Infraestrutura & Saúde */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Card PocketBase */}
-          <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Database size={14} className="text-violet-400" />
-                PocketBase Comentários
-              </span>
-              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                pbStatus === 'healthy'
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : pbStatus === 'checking'
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  pbStatus === 'healthy' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
-                }`} />
-                {pbStatus === 'healthy' ? 'Conectado' : pbStatus === 'checking' ? 'Testando...' : 'Offline'}
-              </span>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Status Bar Compacto dos Serviços */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="px-3.5 py-2.5 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs">
+              <Database size={15} className="text-violet-400" />
+              <span className="text-slate-300 font-medium">PocketBase Comentários</span>
             </div>
-            <p className="text-xs text-slate-400 break-all mb-2 font-mono">
-              zapscore-pocketbase-comentarios...
-            </p>
-            <div className="text-[11px] text-slate-500 flex items-center justify-between pt-2 border-t border-slate-800/60">
-              <span>Collection: <strong className="text-slate-300">fixture_comments</strong></span>
-              <span>Risco Postgres: <strong className="text-emerald-400">Zero (Isolado)</strong></span>
-            </div>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+              pbStatus === 'healthy' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${pbStatus === 'healthy' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+              {pbStatus === 'healthy' ? 'Conectado' : 'Offline'}
+            </span>
           </div>
 
-          {/* Card Crawl4AI */}
-          <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Cpu size={14} className="text-cyan-400" />
-                Microserviço Crawl4AI
-              </span>
-              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                crawlStatus === 'healthy'
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : crawlStatus === 'checking'
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  crawlStatus === 'healthy' ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
-                }`} />
-                {crawlStatus === 'healthy' ? 'Online' : crawlStatus === 'checking' ? 'Testando...' : 'Offline'}
-              </span>
+          <div className="px-3.5 py-2.5 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs">
+              <Cpu size={15} className="text-cyan-400" />
+              <span className="text-slate-300 font-medium">Crawl4AI Microservice</span>
             </div>
-            <p className="text-xs text-slate-400 mb-2 font-mono">
-              Porta 11235 • basic-amd64 • Token 256b
-            </p>
-            <div className="text-[11px] text-slate-500 flex items-center justify-between pt-2 border-t border-slate-800/60">
-              <span>RAM Host: <strong className="text-slate-300">{crawlStats?.memory ? `${crawlStats.memory}%` : '~65%'}</strong></span>
-              <span>Limite: <strong className="text-slate-300">1024 MB (Blindado)</strong></span>
-            </div>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+              crawlStatus === 'healthy' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${crawlStatus === 'healthy' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+              {crawlStatus === 'healthy' ? `Online (${crawlStats?.memory ? `${crawlStats.memory}%` : '65%'})` : 'Offline'}
+            </span>
           </div>
 
-          {/* Card Motor de IA */}
-          <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Bot size={14} className="text-orange-400" />
-                Motor IA & Ligas
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                Gemini 1.5 Flash
-              </span>
+          <div className="px-3.5 py-2.5 rounded-xl bg-slate-900/50 border border-slate-800/80 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs">
+              <Bot size={15} className="text-orange-400" />
+              <span className="text-slate-300 font-medium">Motor LLM</span>
             </div>
-            <p className="text-xs text-slate-400 mb-2">
-              Ligas: <strong className="text-white">Brasileirão Série A (71) e Série B (72)</strong>
-            </p>
-            <div className="text-[11px] text-slate-500 flex items-center justify-between pt-2 border-t border-slate-800/60">
-              <span>Fallback: <strong className="text-slate-300">Stats Nativo</strong></span>
-              <span>Push Notifications: <strong className="text-slate-300">Zero (Aba App)</strong></span>
-            </div>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400">
+              Gemini 1.5 Flash
+            </span>
           </div>
         </div>
 
-        {/* Bloco Principal: Simulador / Disparo e Feed */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Coluna Esquerda: Disparador Manual */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl">
-              <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2">
-                <Sparkles size={18} className="text-violet-400" />
-                Gerador de Comentário Tático
+        {/* 1. SELEÇÃO DE REGIÕES & COMPETIÇÕES */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          {/* Abas de Regiões Principais (Brasil, Europa, Copas, Estaduais) */}
+          <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto">
+            <span className="text-xs font-semibold text-slate-400 mr-2 flex items-center gap-1.5 shrink-0">
+              <Layers size={14} className="text-violet-400" />
+              Módulos:
+            </span>
+            {REGION_MODULES.map((reg) => (
+              <button
+                key={reg.id}
+                onClick={() => {
+                  setSelectedRegion(reg.id);
+                  if (reg.competitions.length > 0) {
+                    setSelectedLeagueId(reg.competitions[0].id);
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                  selectedRegion === reg.id
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/20'
+                    : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-850'
+                }`}
+              >
+                {reg.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Sub-Abas das Competições da Região Ativa */}
+          <div className="flex items-center gap-2 pt-1 overflow-x-auto">
+            <span className="text-[11px] font-medium text-slate-400 mr-2 shrink-0">
+              Competições em {currentRegion.name}:
+            </span>
+            {currentRegion.competitions.map((comp) => (
+              <button
+                key={comp.id}
+                onClick={() => setSelectedLeagueId(comp.id)}
+                className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
+                  selectedLeagueId === comp.id
+                    ? 'bg-slate-800 text-violet-300 border border-violet-500/30'
+                    : 'bg-slate-950/70 text-slate-400 hover:text-slate-200 border border-slate-800/60'
+                }`}
+              >
+                <span>{comp.flag}</span>
+                <span>{comp.name}</span>
+                <span className="text-[10px] opacity-60 font-mono">({comp.id})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. GRADE VISUAL DE PARTIDAS DO DIA */}
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar size={16} className="text-violet-400" />
+              <h2 className="text-xs font-semibold text-white uppercase tracking-wider">
+                Partidas Disponíveis • Clique na partida para compor ou monitorar
               </h2>
-              <p className="text-xs text-slate-400 mb-5">
-                Simule ou gere sob demanda um insight tático para uma partida no Brasileirão.
-              </p>
+            </div>
+            <span className="text-[11px] text-slate-500">
+              {fixtures.length} partida(s) encontrada(s)
+            </span>
+          </div>
 
-              <form onSubmit={handleGenerateComment} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">
-                    ID da Partida (fixtureExternalId) <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={targetFixtureId}
-                    onChange={(e) => setTargetFixtureId(e.target.value)}
-                    placeholder="Ex: 1208620 (ou qualquer ID da fixture)"
-                    className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all placeholder:text-slate-600 font-mono"
-                  />
-                </div>
+          {loadingFixtures ? (
+            <div className="py-8 flex items-center justify-center text-slate-500 gap-2">
+              <Loader2 size={18} className="animate-spin text-violet-400" />
+              <span className="text-xs">Buscando grade de partidas...</span>
+            </div>
+          ) : fixtures.length === 0 ? (
+            <div className="py-6 text-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+              Nenhuma partida encontrada nesta competição no momento.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {fixtures.map((match) => {
+                const isSelected = selectedFixture?.externalId === match.externalId;
+                const isLive = ['1H', '2H', 'HT', 'ET', 'P', 'LIVE'].includes(match.statusShort || '');
+                const isFinished = ['FT', 'AET', 'PEN'].includes(match.statusShort || '');
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1.5">
-                      Fase do Jogo
-                    </label>
-                    <select
-                      value={targetPhase}
-                      onChange={(e) => setTargetPhase(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all"
-                    >
-                      <option value="PRE_MATCH">Pré-Jogo</option>
-                      <option value="FIRST_HALF">1º Tempo</option>
-                      <option value="HALF_TIME">Intervalo</option>
-                      <option value="SECOND_HALF">2º Tempo</option>
-                      <option value="FULL_TIME">Fim de Jogo (Resumo)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-300 font-medium mb-1.5">
-                      Minuto do Jogo
-                    </label>
-                    <input
-                      type="number"
-                      value={targetMinute}
-                      onChange={(e) => setTargetMinute(e.target.value)}
-                      placeholder="Ex: 35"
-                      className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all placeholder:text-slate-600 font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1.5">
-                    URL Externa para Crawl4AI (Opcional)
-                  </label>
-                  <input
-                    type="url"
-                    value={externalUrl}
-                    onChange={(e) => setExternalUrl(e.target.value)}
-                    placeholder="https://ge.globo.com/futebol/... (opcional)"
-                    className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all placeholder:text-slate-600"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={generating}
-                    className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20 transition-all cursor-pointer"
+                return (
+                  <div
+                    key={match.externalId}
+                    onClick={() => setSelectedFixture(match)}
+                    className={`p-3 rounded-xl border transition-all cursor-pointer select-none relative ${
+                      isSelected
+                        ? 'bg-violet-950/30 border-violet-500 shadow-md shadow-violet-600/20 ring-1 ring-violet-500'
+                        : 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/60'
+                    }`}
                   >
-                    {generating ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Processando IA & Salvando no PocketBase...
-                      </>
-                    ) : (
-                      <>
-                        <Send size={15} />
-                        Gerar e Persistir no PocketBase
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-
-              {/* Feedback de Ação */}
-              {actionResult && (
-                <div className={`mt-4 p-3.5 rounded-xl border text-xs ${
-                  actionResult.type === 'success'
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
-                }`}>
-                  <div className="flex items-center gap-2 font-semibold mb-1">
-                    {actionResult.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                    {actionResult.message}
-                  </div>
-                  {actionResult.data && (
-                    <div className="mt-2 pt-2 border-t border-emerald-500/20 space-y-1">
-                      <div><strong>Título:</strong> {actionResult.data.title}</div>
-                      <div><strong>Sentimento:</strong> {actionResult.data.sentiment}</div>
-                      <div><strong>ID PB:</strong> <span className="font-mono">{actionResult.data.id}</span></div>
-                      <div className="text-[11px] text-emerald-200/80 italic mt-1">&ldquo;{actionResult.data.comment}&rdquo;</div>
+                    {/* Header do card: status e horário */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2">
+                      <span className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-[9px] ${
+                        isLive
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse'
+                          : isFinished
+                          ? 'bg-slate-800 text-slate-400'
+                          : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      }`}>
+                        {isLive ? `AO VIVO • ${match.elapsed}'` : isFinished ? 'ENCERRADO' : 'AGENDADO'}
+                      </span>
+                      <span className="font-mono">
+                        {new Date(match.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                  )}
+
+                    {/* Confronto */}
+                    <div className="space-y-1.5">
+                      {/* Mandante */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {match.homeTeam.logo ? (
+                            <img
+                              src={match.homeTeam.logo}
+                              alt={match.homeTeam.name}
+                              className="w-4 h-4 object-contain shrink-0"
+                            />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full bg-slate-800 text-[9px] flex items-center justify-center font-bold">
+                              {match.homeTeam.name.slice(0, 1)}
+                            </div>
+                          )}
+                          <span className={`text-xs truncate ${isSelected ? 'text-white font-semibold' : 'text-slate-200'}`}>
+                            {match.homeTeam.name}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold font-mono ml-2">
+                          {match.homeGoals !== null ? match.homeGoals : '-'}
+                        </span>
+                      </div>
+
+                      {/* Visitante */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {match.awayTeam.logo ? (
+                            <img
+                              src={match.awayTeam.logo}
+                              alt={match.awayTeam.name}
+                              className="w-4 h-4 object-contain shrink-0"
+                            />
+                          ) : (
+                            <div className="w-4 h-4 rounded-full bg-slate-800 text-[9px] flex items-center justify-center font-bold">
+                              {match.awayTeam.name.slice(0, 1)}
+                            </div>
+                          )}
+                          <span className={`text-xs truncate ${isSelected ? 'text-white font-semibold' : 'text-slate-200'}`}>
+                            {match.awayTeam.name}
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold font-mono ml-2">
+                          {match.awayGoals !== null ? match.awayGoals : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer com ID */}
+                    <div className="mt-2.5 pt-1.5 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span>ID: {match.externalId}</span>
+                      {isSelected && (
+                        <span className="text-violet-400 font-semibold flex items-center gap-0.5">
+                          Ativa <CheckCircle2 size={11} />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 3. PAINEL DE OPERAÇÃO: DUAS ABAS (MANUAL vs AUTOMÁTICO) */}
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-5">
+          {/* Header com a partida selecionada e as duas abas */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                Partida Selecionada:
+              </div>
+              {selectedFixture ? (
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  <span className="text-violet-400">{selectedFixture.homeTeam.name}</span>
+                  <span className="font-mono bg-slate-800 px-2 py-0.5 rounded text-xs">
+                    {selectedFixture.homeGoals ?? 0} x {selectedFixture.awayGoals ?? 0}
+                  </span>
+                  <span className="text-violet-400">{selectedFixture.awayTeam.name}</span>
+                  <span className="text-xs text-slate-500 font-mono font-normal">
+                    (ID: {selectedFixture.externalId})
+                  </span>
+                </div>
+              ) : (
+                <div className="text-xs text-amber-400 italic">
+                  Nenhuma partida selecionada. Escolha uma partida acima para continuar.
                 </div>
               )}
             </div>
+
+            {/* Alternador de Abas: Manual vs Automático */}
+            <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 shrink-0">
+              <button
+                onClick={() => setOperationTab('manual')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  operationTab === 'manual'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sliders size={14} />
+                Aba Manual (Compor)
+              </button>
+              <button
+                onClick={() => setOperationTab('automatico')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  operationTab === 'automatico'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Radio size={14} className={operationTab === 'automatico' ? 'animate-pulse text-violet-200' : ''} />
+                Aba Automático (Feed ao Vivo)
+              </button>
+            </div>
           </div>
 
-          {/* Coluna Direita: Feed de Comentários no PocketBase */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                    <Layers size={18} className="text-violet-400" />
-                    Feed de Comentários no PocketBase
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Registros da collection <strong className="text-slate-200 font-mono">fixture_comments</strong>.
+          {/* CONTEÚDO DA ABA MANUAL: FORMULÁRIO DE COMPOSIÇÃO */}
+          {operationTab === 'manual' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-6 space-y-4">
+                <form onSubmit={handleGenerateComment} className="space-y-4 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1.5">
+                        Fase Cronológica
+                      </label>
+                      <select
+                        value={targetPhase}
+                        onChange={(e) => setTargetPhase(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all cursor-pointer"
+                      >
+                        <option value="PRE_MATCH">Pré-Jogo (Expectativa & Desfalques)</option>
+                        <option value="FIRST_HALF">1º Tempo (Dinâmica Inicial)</option>
+                        <option value="HALF_TIME">Intervalo (Ajustes Táticos)</option>
+                        <option value="SECOND_HALF">2º Tempo (Substituições & Pressão)</option>
+                        <option value="FULL_TIME">Fim de Jogo (Balanço Final)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1.5">
+                        Minuto do Lance / Comentário
+                      </label>
+                      <input
+                        type="number"
+                        value={targetMinute}
+                        onChange={(e) => setTargetMinute(e.target.value)}
+                        placeholder="Ex: 35"
+                        className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all placeholder:text-slate-600 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1.5">
+                      URL de Apoio para o Crawl4AI (Opcional)
+                    </label>
+                    <input
+                      type="url"
+                      value={externalUrl}
+                      onChange={(e) => setExternalUrl(e.target.value)}
+                      placeholder="https://ge.globo.com/... ou link de transmissão externa"
+                      className="w-full px-3 py-2.5 rounded-lg bg-slate-950 border border-slate-800 focus:border-violet-500 text-slate-200 outline-none transition-all placeholder:text-slate-600"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-1 block">
+                      O Crawl4AI extrairá o markdown limpo desta URL para fornecer contexto rico ao Gemini. Se vazio, o agente usará as estatísticas nativas do jogo.
+                    </span>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={generating || !selectedFixture}
+                      className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20 transition-all cursor-pointer"
+                    >
+                      {generating ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Processando IA & Salvando no PocketBase...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={16} />
+                          Gerar Comentário Tático & Persistir no PocketBase
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Feedback de Ação */}
+                {actionResult && (
+                  <div className={`p-4 rounded-xl border text-xs ${
+                    actionResult.type === 'success'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                  }`}>
+                    <div className="flex items-center gap-2 font-semibold mb-1">
+                      {actionResult.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                      {actionResult.message}
+                    </div>
+                    {actionResult.data && (
+                      <div className="mt-2.5 pt-2.5 border-t border-emerald-500/20 space-y-1">
+                        <div><strong>Título:</strong> {actionResult.data.title}</div>
+                        <div><strong>Sentimento:</strong> {actionResult.data.sentiment}</div>
+                        <div><strong>ID PocketBase:</strong> <span className="font-mono">{actionResult.data.id}</span></div>
+                        <div className="text-[11px] text-emerald-200/90 italic mt-1">&ldquo;{actionResult.data.comment}&rdquo;</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Coluna Direita da Aba Manual: Preview e Dicas */}
+              <div className="lg:col-span-6 p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <Eye size={15} className="text-violet-400" />
+                  Diretrizes de Geração por Fase
+                </div>
+                <div className="space-y-2 text-[11px] text-slate-400 leading-relaxed">
+                  <p><strong className="text-slate-200">Pré-Jogo (0&apos;):</strong> O agente analisa escalações confirmadas, desfalques e proposta esperada de cada técnico.</p>
+                  <p><strong className="text-slate-200">1º Tempo & 2º Tempo:</strong> Destaca a postura em campo, mapa de calor, finalizações perigosas e encaixe de marcação.</p>
+                  <p><strong className="text-slate-200">Intervalo (45&apos;):</strong> Balanço dos primeiros 45 minutos e correções que os técnicos devem fazer.</p>
+                  <p><strong className="text-slate-200">Fim de Jogo (90&apos;):</strong> Resumo completo da partida, justiça no resultado e impacto na tabela.</p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-violet-500/5 border border-violet-500/20 text-[11px] text-violet-300 space-y-1">
+                  <div className="font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={13} /> Persistência Automática
+                  </div>
+                  <p>
+                    Assim que gerado, o comentário é persistido na collection <code className="font-mono text-white">fixture_comments</code> e fica disponível publicamente para exibição na aba de detalhes do app móvel.
                   </p>
                 </div>
-                <span className="text-xs text-slate-500 font-mono">
-                  {recentComments.length} registro(s)
-                </span>
+              </div>
+            </div>
+          )}
+
+          {/* CONTEÚDO DA ABA AUTOMÁTICO: FEED AO VIVO CRONOLÓGICO */}
+          {operationTab === 'automatico' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Radio size={16} className="text-violet-400" />
+                    Feed Cronológico da Partida Selecionada
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Linha do tempo tática completa (Pré-Jogo ➔ Tempo Real ➔ Resumo Final).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={autoRefreshFeed}
+                      onChange={(e) => setAutoRefreshFeed(e.target.checked)}
+                      className="rounded border-slate-700 text-violet-600 focus:ring-violet-500"
+                    />
+                    Auto-atualizar (10s)
+                  </label>
+                  <button
+                    onClick={() => {
+                      if (selectedFixture) loadCommentsForSelectedFixture(selectedFixture.externalId);
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white transition-all"
+                    title="Recarregar feed"
+                  >
+                    <RefreshCw size={13} className={loadingFeed ? 'animate-spin text-violet-400' : ''} />
+                  </button>
+                </div>
               </div>
 
               {loadingFeed ? (
                 <div className="py-12 flex flex-col items-center justify-center text-slate-500 gap-2">
-                  <Loader2 size={24} className="animate-spin text-violet-400" />
-                  <span className="text-xs">Consultando PocketBase Comentários...</span>
+                  <Loader2 size={22} className="animate-spin text-violet-400" />
+                  <span className="text-xs">Sincronizando timeline da partida...</span>
                 </div>
-              ) : recentComments.length === 0 ? (
+              ) : fixtureComments.length === 0 ? (
                 <div className="py-12 px-4 rounded-xl border border-dashed border-slate-800 text-center text-slate-500 space-y-2">
                   <MessageSquare size={32} className="mx-auto text-slate-600 stroke-[1.5]" />
-                  <p className="text-xs text-slate-400">Nenhum comentário tático registrado ainda.</p>
-                  <p className="text-[11px] text-slate-600">Use o simulador ao lado para gerar o primeiro insight tático.</p>
+                  <p className="text-xs text-slate-300 font-medium">Nenhum comentário gerado para esta partida ainda.</p>
+                  <p className="text-[11px] text-slate-500">
+                    Alterne para a <strong>Aba Manual</strong> para compor o comentário inicial de Pré-Jogo ou disparar um lance.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                  {recentComments.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 hover:border-slate-700/80 transition-all space-y-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-500/10 border border-violet-500/30 text-violet-300 font-mono">
-                            {item.phase} • {item.minute}&apos;
-                          </span>
-                          <span className="text-xs font-semibold text-white">
-                            {item.title}
+                <div className="relative border-l-2 border-slate-800 ml-4 pl-5 space-y-5 my-2">
+                  {fixtureComments.map((comment) => (
+                    <div key={comment.id} className="relative group">
+                      {/* Ponto na linha do tempo */}
+                      <div className="absolute -left-[27px] top-1 w-3.5 h-3.5 rounded-full bg-slate-900 border-2 border-violet-500 group-hover:bg-violet-500 transition-all" />
+
+                      <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800/80 hover:border-slate-700 transition-all space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-500/10 border border-violet-500/30 text-violet-300 font-mono">
+                              {comment.phase} {comment.minute !== undefined ? `• ${comment.minute}'` : ''}
+                            </span>
+                            <h4 className="text-xs font-semibold text-white">
+                              {comment.title}
+                            </h4>
+                          </div>
+
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            comment.sentiment === 'DOMINANT'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : comment.sentiment === 'CRITICAL'
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                              : comment.sentiment === 'SURPRISE'
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {comment.sentiment}
                           </span>
                         </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                          item.sentiment === 'DOMINANT'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : item.sentiment === 'CRITICAL'
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                            : item.sentiment === 'SURPRISE'
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            : 'bg-slate-800 text-slate-400'
-                        }`}>
-                          {item.sentiment}
-                        </span>
-                      </div>
 
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        {item.comment}
-                      </p>
+                        <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
+                          {comment.comment}
+                        </p>
 
-                      <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-900 font-mono">
-                        <span>Fixture ID: <strong className="text-slate-400">{item.fixture_id}</strong> (Liga {item.league_id})</span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={11} />
-                          {new Date(item.created).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <div className="flex items-center justify-between text-[10px] text-slate-500 pt-2 border-t border-slate-900 font-mono">
+                          <span>Fixture: <strong className="text-slate-400">{comment.fixture_id}</strong></span>
+                          <span className="flex items-center gap-1">
+                            <Clock size={11} />
+                            {new Date(comment.created).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
