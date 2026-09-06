@@ -210,7 +210,7 @@ export class TacticalCommentsService {
       return {
         title: `${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}`,
         comment: `Partida movimentada na fase ${context.phase}. Análise tática aguardando ativação da IA.`,
-        sentiment: 'BALANCED',
+        sentiment: 'EQUILIBRADO',
       };
     }
 
@@ -247,28 +247,42 @@ DIRETRIZES DA FASE:
 ${phaseInstructions[context.phase]}
 
 REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
-1. IDIOMA 100% PORTUGUÊS DO BRASIL (pt-BR): O texto deve ser redigido inteiramente em português natural, culto e jornalístico.
-2. ZERO EXPRESSÕES EM INGLÊS / ZERO ESTRANGEIRISMOS: É TERMINANTEMENTE PROIBIDO usar palavras ou jargões em inglês no texto em português.
-   - NÃO use "clean sheet" (use "sem sofrer gols" ou "baliza zerada").
-   - NÃO use "pressing" ou "press" (use "pressão alta", "marcação agressiva" ou "pressão pós-perda").
-   - NÃO use "box-to-box" (use "volante de área a área" ou "meio-campista dinâmico").
-   - NÃO use "turnover" (use "perda de posse" ou "recuperação de bola").
-   - NÃO use "build-up" (use "construção de jogada" ou "saída de bola").
-   - NÃO use "lineup" (use "escalação" ou "time titular").
-   - NÃO use "winger" ou "striker" (use "ponta", "extremo", "centroavante" ou "atacante").
-   - NÃO use "half-time" ou "full-time" no texto do comentário (use "intervalo", "fim de jogo" ou "apito final").
-3. Responda ESTRITAMENTE em formato JSON, sem blocos markdown fora do JSON.
-4. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português.
-5. Comentário ("comment"): Análise tática rica e fluida (1 a 2 parágrafos analíticos objetivos), 100% em português.
-6. Sentimento ("sentiment"): Escolha uma das opções técnicas em maiúsculo: "DOMINANT", "BALANCED", "CRITICAL", "SURPRISE".
+1. OBEDEÇA RIGOROSAMENTE AO IDIOMA (SEM MISTURA DE LÍNGUAS):
+   - Sem expressões em inglês no texto em português, e vice-versa para outros idiomas (a tradução tratará cada idioma específico).
+   - O texto em português deve ser 100% natural, culto e jornalístico, com ZERO estrangeirismos.
+   - NÃO use termos em inglês como:
+     * "clean sheet" (use "sem sofrer gols" ou "baliza zerada")
+     * "pressing" ou "press" (use "pressão alta", "marcação agressiva" ou "pressão pós-perda")
+     * "box-to-box" (use "volante de área a área" ou "meio-campista dinâmico")
+     * "turnover" (use "perda de posse" ou "recuperação de bola")
+     * "build-up" (use "construção de jogada" ou "saída de bola")
+     * "lineup" (use "escalação" ou "time titular")
+     * "winger" ou "striker" (use "ponta", "extremo", "centroavante" ou "atacante")
+     * "half-time" ou "full-time" (use "intervalo", "fim de jogo" ou "apito final")
+2. Responda ESTRITAMENTE em formato JSON, sem blocos markdown fora do JSON.
+3. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% no idioma correto sem misturar termos.
+4. Comentário ("comment"): Análise tática rica e fluida (1 a 2 parágrafos analíticos objetivos), 100% no idioma sem estrangeirismos.
+5. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo), sem termos em inglês:
+   - "EQUILIBRADO" (para jogos parelhos e disputa tática equilibrada)
+   - "DOMINANTE" (para amplo controle de jogo, pressão e superioridade)
+   - "CRITICO" (para expulsão, pênalti decisivo, momento de alta tensão)
+   - "SURPRESA" (para zebra, resultado inesperado ou virada improvável)
 
 FORMATO JSON ESPERADO:
 {
-  "title": "<manchete curta em português puro>",
-  "comment": "<parágrafo analítico detalhado em português puro>",
-  "sentiment": "DOMINANT" | "BALANCED" | "CRITICAL" | "SURPRISE"
+  "title": "<manchete curta pura no idioma>",
+  "comment": "<parágrafo analítico detalhado puro no idioma>",
+  "sentiment": "EQUILIBRADO" | "DOMINANTE" | "CRITICO" | "SURPRESA"
 }
 `;
+
+    const normalizeSentiment = (raw?: string): CommentSentiment => {
+      const s = (raw || '').toUpperCase().trim();
+      if (s === 'SURPRISE' || s === 'SURPRESA') return 'SURPRESA';
+      if (s === 'DOMINANT' || s === 'DOMINANTE') return 'DOMINANTE';
+      if (s === 'CRITICAL' || s === 'CRITICO' || s === 'CRÍTICO') return 'CRITICO';
+      return 'EQUILIBRADO';
+    };
 
     // 1. Tenta com OpenAI se for o provider selecionado ou se disponível
     if ((provider === 'OPENAI' || !this.genAI) && this.openai) {
@@ -279,7 +293,7 @@ FORMATO JSON ESPERADO:
             {
               role: 'system',
               content:
-                'Você é um jornalista e comentarista tático especializado em futebol brasileiro. Redija análises táticas puramente em português brasileiro (pt-BR), sem nenhuma expressão ou termo em inglês. Responda estritamente em JSON.',
+                'Você é um analista e comentarista tático esportivo. Obedeça estritamente ao idioma: sem expressões em inglês no texto em português, e vice-versa para outros idiomas (zero mistura linguística). Responda estritamente em JSON com sentiment em português puro (EQUILIBRADO, DOMINANTE, CRITICO, SURPRESA).',
             },
             { role: 'user', content: prompt },
           ],
@@ -293,9 +307,7 @@ FORMATO JSON ESPERADO:
         return {
           title: parsed.title || `${context.homeTeam} x ${context.awayTeam}`,
           comment: parsed.comment || 'Análise tática em andamento.',
-          sentiment: ['DOMINANT', 'BALANCED', 'CRITICAL', 'SURPRISE'].includes(parsed.sentiment)
-            ? parsed.sentiment
-            : 'BALANCED',
+          sentiment: normalizeSentiment(parsed.sentiment),
         };
       } catch (openAiErr: any) {
         this.logger.warn(`Erro na chamada OpenAI: ${openAiErr.message}. Tentando Gemini como fallback se disponível.`);
@@ -324,9 +336,7 @@ FORMATO JSON ESPERADO:
         return {
           title: parsed.title || `${context.homeTeam} x ${context.awayTeam}`,
           comment: parsed.comment || 'Análise tática em andamento.',
-          sentiment: ['DOMINANT', 'BALANCED', 'CRITICAL', 'SURPRISE'].includes(parsed.sentiment)
-            ? parsed.sentiment
-            : 'BALANCED',
+          sentiment: normalizeSentiment(parsed.sentiment),
         };
       } catch (geminiErr: any) {
         this.logger.warn(`Erro na chamada Gemini: ${geminiErr.message}.`);
@@ -337,7 +347,7 @@ FORMATO JSON ESPERADO:
     return {
       title: `${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}`,
       comment: `Duelo equilibrado entre ${context.homeTeam} e ${context.awayTeam}. As equipes disputam o controle da partida na fase ${context.phase}.`,
-      sentiment: 'BALANCED',
+      sentiment: 'EQUILIBRADO',
     };
   }
 }

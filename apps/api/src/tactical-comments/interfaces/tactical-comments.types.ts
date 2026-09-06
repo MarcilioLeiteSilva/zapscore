@@ -1,6 +1,14 @@
 export type CommentPhase = 'PRE_MATCH' | 'FIRST_HALF' | 'HALF_TIME' | 'SECOND_HALF' | 'FULL_TIME';
 
-export type CommentSentiment = 'DOMINANT' | 'BALANCED' | 'CRITICAL' | 'SURPRISE';
+export type CommentSentiment =
+  | 'EQUILIBRADO'
+  | 'DOMINANTE'
+  | 'CRITICO'
+  | 'SURPRESA'
+  | 'BALANCED'
+  | 'DOMINANT'
+  | 'CRITICAL'
+  | 'SURPRISE';
 
 export interface FixtureCommentRecord {
   id?: string;
