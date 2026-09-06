@@ -44,6 +44,7 @@ import '../../logic/models/news.dart';
 import '../../logic/models/standing.dart';
 import '../../logic/models/scorer.dart';
 import '../../logic/models/ai_performance_stats.dart';
+import '../../logic/models/tactical_comment.dart';
 import '../../logic/models/competition.dart';
 import '../../logic/models/competition_phase.dart';
 import '../../logic/models/tie.dart';
@@ -83,6 +84,7 @@ part 'fixture/lienups.dart';
 part 'fixture/table.dart';
 part 'fixture/h2h.dart';
 part 'fixture/ai_analysis.dart';
+part 'fixture/tactical_comments.dart';
 part 'fixture/ai_performance.dart';
 part 'fixture/top_scorers.dart';
 

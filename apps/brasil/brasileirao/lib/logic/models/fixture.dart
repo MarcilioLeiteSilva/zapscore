@@ -25,6 +25,8 @@ class Fixture {
   final String awayTeamId;
   final int? homeGoals;
   final int? awayGoals;
+  final int? homePenalty;
+  final int? awayPenalty;
   
   final Team? homeTeam;
   final Team? awayTeam;
@@ -55,6 +57,8 @@ class Fixture {
     required this.awayTeamId,
     this.homeGoals,
     this.awayGoals,
+    this.homePenalty,
+    this.awayPenalty,
     this.homeTeam,
     this.awayTeam,
     this.league,
@@ -97,6 +101,8 @@ class Fixture {
       awayTeamId: json['awayTeamId']?.toString() ?? '',
       homeGoals: json['homeGoals'] != null ? toInt(json['homeGoals']) : null,
       awayGoals: json['awayGoals'] != null ? toInt(json['awayGoals']) : null,
+      homePenalty: json['homePenalty'] != null ? toInt(json['homePenalty']) : null,
+      awayPenalty: json['awayPenalty'] != null ? toInt(json['awayPenalty']) : null,
       homeTeam: json['homeTeam'] != null ? Team.fromJson(json['homeTeam']) : null,
       awayTeam: json['awayTeam'] != null ? Team.fromJson(json['awayTeam']) : null,
       league: json['league'] != null ? League.fromJson(json['league']) : null,

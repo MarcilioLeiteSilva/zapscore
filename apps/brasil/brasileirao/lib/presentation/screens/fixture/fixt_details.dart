@@ -15,6 +15,7 @@ class _FixtureDetailsState extends State<FixtureDetails> {
   List<String> tabs = [
     "info",
     "summary",
+    "tactical_comments",
     "ai_analysis",
     "report",
     "stats",
@@ -117,6 +118,7 @@ class _FixtureDetailsState extends State<FixtureDetails> {
                     : [
                         const InfoFixPage(),
                         const SummaryFixPage(),
+                        TacticalCommentsFixPage(fixture: currentFixture),
                         AiAnalysisFixPage(fixture: currentFixture),
                         ReportFixPage(
                           leagueId: currentFixture.leagueId,

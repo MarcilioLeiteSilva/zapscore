@@ -11,11 +11,34 @@ import {
 } from '@nestjs/common';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
 import { TacticalCommentsService } from './tactical-comments.service';
-import { GenerateCommentDto, TacticalAgentResponse } from './interfaces/tactical-comments.types';
+import {
+  GenerateCommentDto,
+  TacticalAgentResponse,
+  TacticalPromptConfig,
+} from './interfaces/tactical-comments.types';
 
 @Controller('fixtures')
 export class TacticalCommentsController {
   constructor(private readonly tacticalCommentsService: TacticalCommentsService) {}
+
+  /**
+   * Obtém a calibração do prompt de comentários táticos
+   */
+  @Get('comments/config')
+  async getPromptConfig() {
+    return this.tacticalCommentsService.getPromptConfig();
+  }
+
+  /**
+   * Atualiza a calibração do prompt de comentários táticos
+   * Protegido por ADMIN_API_KEY (header: x-api-key)
+   */
+  @Post('comments/config')
+  @UseGuards(ApiKeyGuard)
+  @HttpCode(HttpStatus.OK)
+  async savePromptConfig(@Body() config: Partial<TacticalPromptConfig>) {
+    return this.tacticalCommentsService.savePromptConfig(config);
+  }
 
   /**
    * Retorna a timeline cronológica de comentários táticos da partida
@@ -40,3 +63,4 @@ export class TacticalCommentsController {
     return this.tacticalCommentsService.generateTacticalComment(fixtureId, dto);
   }
 }
+

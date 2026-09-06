@@ -18,6 +18,11 @@ import {
   Clock,
   Radio,
   Sliders,
+  SlidersHorizontal,
+  Save,
+  Check,
+  Settings2,
+  Info,
   Eye,
   Calendar,
   Layers,
@@ -55,6 +60,19 @@ interface CommentItem {
   comment: string;
   sentiment: string;
   created: string;
+}
+
+interface TacticalPromptConfigState {
+  coach_vs_fan: number;
+  casualness: number;
+  live_length: 'FLASH' | 'SHORT' | 'NORMAL';
+  pause_length: 'SUMMARY' | 'DEEP';
+  focus_highlights: boolean;
+  focus_table_impact: boolean;
+  focus_substitutions: boolean;
+  enable_crawl4ai: boolean;
+  crawl_sources: string;
+  custom_rules: string;
 }
 
 interface CompetitionTab {
@@ -127,8 +145,25 @@ export default function TacticalCommentsAgentPage() {
   const [loadingFixtures, setLoadingFixtures] = useState<boolean>(true);
   const [selectedFixture, setSelectedFixture] = useState<FixtureCardData | null>(null);
 
-  // Modo Operacional: 'manual' ou 'automatico'
-  const [operationTab, setOperationTab] = useState<'manual' | 'automatico'>('manual');
+  // Modo Operacional: 'manual' | 'automatico' | 'configuracoes'
+  const [operationTab, setOperationTab] = useState<'manual' | 'automatico' | 'configuracoes'>('manual');
+
+  // Calibração do Prompt
+  const [promptConfig, setPromptConfig] = useState<TacticalPromptConfigState>({
+    coach_vs_fan: 50,
+    casualness: 60,
+    live_length: 'SHORT',
+    pause_length: 'DEEP',
+    focus_highlights: true,
+    focus_table_impact: true,
+    focus_substitutions: true,
+    enable_crawl4ai: true,
+    crawl_sources: 'ge.globo.com,lance.com.br,uol.com.br',
+    custom_rules: 'Obedecer rigorosamente ao idioma sem estrangeirismos em inglês. Usar expressões naturais do futebol brasileiro.',
+  });
+  const [loadingConfig, setLoadingConfig] = useState<boolean>(false);
+  const [savingConfig, setSavingConfig] = useState<boolean>(false);
+  const [configSaveSuccess, setConfigSaveSuccess] = useState<string | null>(null);
 
   // Feed de Comentários da Partida Selecionada
   const [fixtureComments, setFixtureComments] = useState<CommentItem[]>([]);
@@ -142,6 +177,63 @@ export default function TacticalCommentsAgentPage() {
   const [adminApiKey] = useState<string>('7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=');
   const [generating, setGenerating] = useState<boolean>(false);
   const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string; data?: any } | null>(null);
+
+  // Carrega configuração de calibração do prompt do PocketBase
+  const loadPromptConfig = useCallback(async () => {
+    try {
+      setLoadingConfig(true);
+      const res = await fetch(`${API_URL}/fixtures/comments/config`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          setPromptConfig({
+            coach_vs_fan: data.coach_vs_fan ?? 50,
+            casualness: data.casualness ?? 60,
+            live_length: data.live_length || 'SHORT',
+            pause_length: data.pause_length || 'DEEP',
+            focus_highlights: data.focus_highlights !== undefined ? data.focus_highlights : true,
+            focus_table_impact: data.focus_table_impact !== undefined ? data.focus_table_impact : true,
+            focus_substitutions: data.focus_substitutions !== undefined ? data.focus_substitutions : true,
+            enable_crawl4ai: data.enable_crawl4ai !== undefined ? data.enable_crawl4ai : true,
+            crawl_sources: data.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br',
+            custom_rules: data.custom_rules ?? '',
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error('Erro ao carregar prompt config:', err);
+    } finally {
+      setLoadingConfig(false);
+    }
+  }, []);
+
+  // Salva calibração no PocketBase
+  const handleSavePromptConfig = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    try {
+      setSavingConfig(true);
+      setConfigSaveSuccess(null);
+      const res = await fetch(`${API_URL}/fixtures/comments/config`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': adminApiKey.trim(),
+        },
+        body: JSON.stringify(promptConfig),
+      });
+
+      if (res.ok) {
+        setConfigSaveSuccess('Calibração salva com sucesso no PocketBase! As próximas análises da IA já seguirão estas diretrizes.');
+        setTimeout(() => setConfigSaveSuccess(null), 5000);
+      } else {
+        alert('Erro ao salvar configuração.');
+      }
+    } catch (err: any) {
+      alert(`Falha ao salvar configuração: ${err.message}`);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   // Verifica a saúde dos serviços
   const checkHealthServices = async () => {
@@ -244,7 +336,8 @@ export default function TacticalCommentsAgentPage() {
   // Efeito inicial: healthcheck e primeira carga
   useEffect(() => {
     checkHealthServices();
-  }, []);
+    loadPromptConfig();
+  }, [loadPromptConfig]);
 
   // Efeito ao trocar liga selecionada
   useEffect(() => {
@@ -658,6 +751,17 @@ export default function TacticalCommentsAgentPage() {
                 <Radio size={14} className={operationTab === 'automatico' ? 'animate-pulse text-violet-200' : ''} />
                 Aba Automático (Feed ao Vivo)
               </button>
+              <button
+                onClick={() => setOperationTab('configuracoes')}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+                  operationTab === 'configuracoes'
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-600/25'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <SlidersHorizontal size={14} />
+                Configurações do Prompt
+              </button>
             </div>
           </div>
 
@@ -879,6 +983,495 @@ export default function TacticalCommentsAgentPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* CONTEÚDO DA ABA CONFIGURAÇÕES: CALIBRAÇÃO DO PROMPT DA IA */}
+          {operationTab === 'configuracoes' && (
+            <div className="space-y-6">
+              {/* Header da Aba de Configuração */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <SlidersHorizontal size={16} className="text-violet-400" />
+                    Calibração Dinâmica do Prompt de Comentários Táticos
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Ajuste o tom, a visão (técnico vs torcedor), nível de resenha e tamanho dos comentários sem necessidade de novo deploy.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={loadPromptConfig}
+                    disabled={loadingConfig}
+                    className="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  >
+                    <RefreshCw size={13} className={loadingConfig ? 'animate-spin text-violet-400' : ''} />
+                    Recarregar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSavePromptConfig()}
+                    disabled={savingConfig}
+                    className="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-violet-600/25"
+                  >
+                    {savingConfig ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={13} />
+                        Salvar Alterações
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Banner de Sucesso */}
+              {configSaveSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 size={16} className="shrink-0 text-emerald-400" />
+                  <span>{configSaveSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSavePromptConfig} className="space-y-6">
+                {/* 1. SLIDERS: TOM E PERSPECTIVA */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Slider 1: Visão do Técnico vs Visão do Torcedor */}
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-white flex items-center gap-2">
+                        <span>👔 Visão do Técnico</span>
+                        <span className="text-slate-500 text-[10px]">vs</span>
+                        <span>🗣️ Visão do Torcedor</span>
+                      </label>
+                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                        {100 - promptConfig.coach_vs_fan}% / {promptConfig.coach_vs_fan}%
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 pt-1">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={promptConfig.coach_vs_fan}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({
+                            ...prev,
+                            coach_vs_fan: parseInt(e.target.value, 10),
+                          }))
+                        }
+                        className="w-full accent-violet-500 cursor-pointer h-2 bg-slate-800 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                        <span>👔 100% Prancheta Tática</span>
+                        <span>50% Equilíbrio</span>
+                        <span>🗣️ 100% Arquibancada</span>
+                      </div>
+                    </div>
+
+                    {/* Badge Explicativo do Estado do Slider */}
+                    <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 text-[11px] text-slate-300 flex items-start gap-2">
+                      <Info size={14} className="text-violet-400 shrink-0 mt-0.5" />
+                      <div>
+                        {promptConfig.coach_vs_fan <= 25 && (
+                          <span>
+                            <strong>Foco Tático Rígido:</strong> Análise analítica fria, prancheta tática, compactação de linhas e transições posicionais.
+                          </span>
+                        )}
+                        {promptConfig.coach_vs_fan > 25 && promptConfig.coach_vs_fan <= 70 && (
+                          <span>
+                            <strong>Equilíbrio Recomendado:</strong> Mescla perfeita entre leitura tática profunda e a vibração/calor do jogo.
+                          </span>
+                        )}
+                        {promptConfig.coach_vs_fan > 70 && (
+                          <span>
+                            <strong>Foco Emocional de Bancada:</strong> Comentários mais apaixonados, valorizando a raça, pressão da torcida e sentimento do jogo.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slider 2: Grau de Casualidade / Resenha */}
+                  <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-white flex items-center gap-2">
+                        <span>💬 Grau de Casualidade / Resenha</span>
+                      </label>
+                      <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                        {promptConfig.casualness}%
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 pt-1">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={promptConfig.casualness}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({
+                            ...prev,
+                            casualness: parseInt(e.target.value, 10),
+                          }))
+                        }
+                        className="w-full accent-cyan-500 cursor-pointer h-2 bg-slate-800 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                        <span>0% Sóbrio/Jornalístico</span>
+                        <span>50% Dinâmico</span>
+                        <span>100% Resenha Pura</span>
+                      </div>
+                    </div>
+
+                    {/* Badge Explicativo da Casualidade */}
+                    <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 text-[11px] text-slate-300 flex items-start gap-2">
+                      <Info size={14} className="text-cyan-400 shrink-0 mt-0.5" />
+                      <div>
+                        {promptConfig.casualness <= 25 && (
+                          <span>
+                            <strong>Tom Formal & Sóbrio:</strong> Jornalismo clássico tradicional, vocabulário sóbrio sem gírias do futebol.
+                          </span>
+                        )}
+                        {promptConfig.casualness > 25 && promptConfig.casualness <= 60 && (
+                          <span>
+                            <strong>Equilibrado & Dinâmico:</strong> Linguagem moderna de transmissão esportiva, fluida e direta.
+                          </span>
+                        )}
+                        {promptConfig.casualness > 60 && promptConfig.casualness <= 85 && (
+                          <span>
+                            <strong>Casual & Resenha de Boleiro:</strong> Autêntico futebol brasileiro, leve e inteligente (sem estrangeirismos).
+                          </span>
+                        )}
+                        {promptConfig.casualness > 85 && (
+                          <span>
+                            <strong>Ultra Casual & Arquibancada:</strong> Clima de pura resenha de torcedor e bate-papo de barbearia esportiva.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. CONTROLE DE EXTENSÃO / TAMANHO POR FASE */}
+                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                    <Clock size={15} className="text-violet-400" />
+                    Controle de Extensão do Texto por Fase da Partida
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Durante o Jogo: 1º e 2º Tempo */}
+                    <div className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-200">
+                          ⏱️ Durante o Jogo (1º e 2º Tempo)
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">
+                          Bola Rolando
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Define a concisão dos comentários durante os 90 minutos para não poluir a tela.
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {[
+                          { value: 'FLASH', label: 'Flash', sub: '~30 palavras', desc: '2 frases diretas' },
+                          { value: 'SHORT', label: 'Curto (Metade)', sub: '~45 palavras', desc: '1 parágrafo enxuto', rec: true },
+                          { value: 'NORMAL', label: 'Padrão', sub: '~80 palavras', desc: '1 a 2 parágrafos' },
+                        ].map((opt) => {
+                          const isSelected = promptConfig.live_length === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() =>
+                                setPromptConfig((prev) => ({
+                                  ...prev,
+                                  live_length: opt.value as any,
+                                }))
+                              }
+                              className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer relative ${
+                                isSelected
+                                  ? 'bg-violet-600/15 border-violet-500 text-white shadow-sm'
+                                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                              }`}
+                            >
+                              {opt.rec && (
+                                <span className="absolute -top-1.5 -right-1 text-[8px] font-bold px-1.5 py-0.2 bg-violet-600 text-white rounded-full">
+                                  Ideal
+                                </span>
+                              )}
+                              <div className="text-xs font-semibold">{opt.label}</div>
+                              <div className="text-[10px] font-mono text-violet-400">{opt.sub}</div>
+                              <div className="text-[9px] text-slate-500 mt-0.5">{opt.desc}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Pausas e Conclusão: Pré-Jogo, Intervalo e Fim */}
+                    <div className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-200">
+                          🏁 Pré-Jogo, Intervalo & Fim de Jogo
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono">
+                          Pausas
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Define a profundidade da leitura antes do jogo, no intervalo e no apito final.
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        {[
+                          { value: 'SUMMARY', label: 'Síntese', sub: '~55 palavras', desc: '1 parágrafo direto' },
+                          { value: 'DEEP', label: 'Completo / Denso', sub: '~100 palavras', desc: '1 a 2 parágrafos aprofundados', rec: true },
+                        ].map((opt) => {
+                          const isSelected = promptConfig.pause_length === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() =>
+                                setPromptConfig((prev) => ({
+                                  ...prev,
+                                  pause_length: opt.value as any,
+                                }))
+                              }
+                              className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer relative ${
+                                isSelected
+                                  ? 'bg-violet-600/15 border-violet-500 text-white shadow-sm'
+                                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                              }`}
+                            >
+                              {opt.rec && (
+                                <span className="absolute -top-1.5 -right-1 text-[8px] font-bold px-1.5 py-0.2 bg-violet-600 text-white rounded-full">
+                                  Ideal
+                                </span>
+                              )}
+                              <div className="text-xs font-semibold">{opt.label}</div>
+                              <div className="text-[10px] font-mono text-violet-400">{opt.sub}</div>
+                              <div className="text-[9px] text-slate-500 mt-0.5">{opt.desc}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. FOCOS ADICIONAIS & TOGGLES */}
+                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+                  <div className="text-xs font-semibold text-white flex items-center gap-2">
+                    <Sparkles size={15} className="text-violet-400" />
+                    Focos Temáticos Dinâmicos da IA
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <label className={`p-3 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
+                      promptConfig.focus_highlights
+                        ? 'bg-violet-500/10 border-violet-500/40 text-slate-200'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={promptConfig.focus_highlights}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({ ...prev, focus_highlights: e.target.checked }))
+                        }
+                        className="rounded border-slate-700 text-violet-600 focus:ring-violet-500 mt-0.5"
+                      />
+                      <div>
+                        <div className="text-xs font-semibold text-white">Destaques Individuais</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                          Citar os melhores e piores jogadores em campo, atuações decisivas e lances capitais.
+                        </div>
+                      </div>
+                    </label>
+
+                    <label className={`p-3 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
+                      promptConfig.focus_table_impact
+                        ? 'bg-violet-500/10 border-violet-500/40 text-slate-200'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={promptConfig.focus_table_impact}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({ ...prev, focus_table_impact: e.target.checked }))
+                        }
+                        className="rounded border-slate-700 text-violet-600 focus:ring-violet-500 mt-0.5"
+                      />
+                      <div>
+                        <div className="text-xs font-semibold text-white">Impacto na Tabela</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                          Contextualizar a pontuação na classificação (liderança, vaga no G4 ou fuga do Z4).
+                        </div>
+                      </div>
+                    </label>
+
+                    <label className={`p-3 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
+                      promptConfig.focus_substitutions
+                        ? 'bg-violet-500/10 border-violet-500/40 text-slate-200'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={promptConfig.focus_substitutions}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({ ...prev, focus_substitutions: e.target.checked }))
+                        }
+                        className="rounded border-slate-700 text-violet-600 focus:ring-violet-500 mt-0.5"
+                      />
+                      <div>
+                        <div className="text-xs font-semibold text-white">Leitura de Substituições</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                          Avaliar como as mexidas dos treinadores alteraram o ritmo e o desenho do jogo.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 4. INTEGRAÇÃO CRAWL4AI & FONTES EXTERNAS AO VIVO */}
+                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold text-white flex items-center gap-2">
+                      <Cpu size={15} className="text-cyan-400" />
+                      Crawl4AI: Alimentação Automática de Cobertura & Fontes
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                      Microserviço Ativo
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Quando ativado, o agente descobre automaticamente a URL de cobertura da partida nos portais cadastrados e extrai os lances narrados por jornalistas em campo, eliminando comentários repetitivos de posse de bola.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
+                    <label className={`md:col-span-6 p-3 rounded-lg border flex items-start gap-2.5 cursor-pointer transition-all ${
+                      promptConfig.enable_crawl4ai
+                        ? 'bg-cyan-500/10 border-cyan-500/40 text-slate-200'
+                        : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={promptConfig.enable_crawl4ai}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({ ...prev, enable_crawl4ai: e.target.checked }))
+                        }
+                        className="rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 mt-0.5"
+                      />
+                      <div>
+                        <div className="text-xs font-semibold text-white">Ativar Crawl4AI no Modo Automático</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                          Descobrir e raspar automaticamente o tempo real da partida no início do jogo.
+                        </div>
+                      </div>
+                    </label>
+
+                    <div className="md:col-span-6 p-3 rounded-lg bg-slate-900/80 border border-slate-800 space-y-1.5">
+                      <label className="block text-xs font-semibold text-white">
+                        Fontes Externas Permitidas (separadas por vírgula)
+                      </label>
+                      <input
+                        type="text"
+                        value={promptConfig.crawl_sources}
+                        onChange={(e) =>
+                          setPromptConfig((prev) => ({ ...prev, crawl_sources: e.target.value }))
+                        }
+                        placeholder="ge.globo.com,lance.com.br,uol.com.br"
+                        className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 focus:border-cyan-500 text-slate-200 text-xs font-mono outline-none"
+                      />
+                      <div className="flex gap-1.5 pt-1 text-[9px] text-slate-400">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">ge.globo.com</span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">lance.com.br</span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800">uol.com.br</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. REGRAS PERSONALIZADAS DO USUÁRIO */}
+                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-white flex items-center gap-2">
+                      <Settings2 size={15} className="text-violet-400" />
+                      Regras Personalizadas do Prompt (Instruções Livres)
+                    </label>
+                    <span className="text-[10px] text-slate-500">Injetado diretamente na IA</span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={promptConfig.custom_rules}
+                    onChange={(e) =>
+                      setPromptConfig((prev) => ({ ...prev, custom_rules: e.target.value }))
+                    }
+                    placeholder="Ex: Obedecer rigorosamente ao idioma sem estrangeirismos em inglês. Usar expressões naturais do futebol brasileiro..."
+                    className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-violet-500 text-slate-200 text-xs outline-none transition-all placeholder:text-slate-600 leading-relaxed resize-y"
+                  />
+                  <span className="text-[10px] text-slate-500 block">
+                    Dica: Qualquer regra escrita aqui tem prioridade máxima na geração dos comentários táticos.
+                  </span>
+                </div>
+
+                {/* 6. FOOTER DE AÇÃO */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPromptConfig({
+                        coach_vs_fan: 50,
+                        casualness: 60,
+                        live_length: 'SHORT',
+                        pause_length: 'DEEP',
+                        focus_highlights: true,
+                        focus_table_impact: true,
+                        focus_substitutions: true,
+                        enable_crawl4ai: true,
+                        crawl_sources: 'ge.globo.com,lance.com.br,uol.com.br',
+                        custom_rules: 'Obedecer rigorosamente ao idioma sem estrangeirismos em inglês. Usar expressões naturais do futebol brasileiro.',
+                      });
+                    }}
+                    className="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs transition-all cursor-pointer"
+                  >
+                    Restaurar Padrão Recomendado
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={savingConfig}
+                    className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-violet-600/25"
+                  >
+                    {savingConfig ? (
+                      <>
+                        <Loader2 size={15} className="animate-spin" />
+                        Salvando Calibração...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={15} />
+                        Salvar e Aplicar Calibração
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
         </div>

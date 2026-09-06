@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { FixtureCommentRecord } from '../interfaces/tactical-comments.types';
+import { FixtureCommentRecord, TacticalPromptConfig } from '../interfaces/tactical-comments.types';
 
 @Injectable()
 export class PocketbaseCommentsClient {
@@ -16,6 +16,7 @@ export class PocketbaseCommentsClient {
 
   // Cache em memória simples para leituras repetidas da mesma partida (TTL: 15 segundos)
   private readonly readCache = new Map<number, { data: FixtureCommentRecord[]; expiresAt: number }>();
+  private cachedConfig: { data: TacticalPromptConfig; expiresAt: number } | null = null;
 
   constructor(private readonly configService: ConfigService) {
     this.baseUrl =
@@ -165,6 +166,110 @@ export class PocketbaseCommentsClient {
       this.logger.error(
         `[PocketBase Comentários] Erro ao gravar comentário para fixture ${comment.fixture_id}: ${err.message}`,
       );
+      return null;
+    }
+  }
+
+  /**
+   * Obtém a configuração ativa de calibração do prompt (com cache de 60s)
+   */
+  async getPromptConfig(): Promise<TacticalPromptConfig> {
+    const now = Date.now();
+    if (this.cachedConfig && now < this.cachedConfig.expiresAt) {
+      return this.cachedConfig.data;
+    }
+
+    const defaultConfig: TacticalPromptConfig = {
+      coach_vs_fan: 50,
+      casualness: 60,
+      live_length: 'SHORT',
+      pause_length: 'DEEP',
+      focus_highlights: true,
+      focus_table_impact: true,
+      focus_substitutions: true,
+      enable_crawl4ai: true,
+      crawl_sources: 'ge.globo.com,lance.com.br,uol.com.br',
+      custom_rules: 'Obedecer rigorosamente ao idioma sem estrangeirismos em inglês. Usar expressões naturais do futebol brasileiro.',
+    };
+
+    try {
+      const url = `${this.baseUrl}/api/collections/tactical_prompt_config/records?limit=1`;
+      const response = await axios.get(url, { timeout: 6000 });
+      const item = response.data?.items?.[0];
+      if (item) {
+        const config: TacticalPromptConfig = {
+          id: item.id,
+          coach_vs_fan: item.coach_vs_fan ?? 50,
+          casualness: item.casualness ?? 60,
+          live_length: item.live_length || 'SHORT',
+          pause_length: item.pause_length || 'DEEP',
+          focus_highlights: item.focus_highlights ?? true,
+          focus_table_impact: item.focus_table_impact ?? true,
+          focus_substitutions: item.focus_substitutions ?? true,
+          enable_crawl4ai: item.enable_crawl4ai ?? true,
+          crawl_sources: item.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br',
+          custom_rules: item.custom_rules || '',
+        };
+        this.cachedConfig = { data: config, expiresAt: now + 60000 };
+        return config;
+      }
+    } catch (err: any) {
+      this.logger.warn(`[PocketBase Comentários] Falha ao carregar prompt config: ${err.message}. Usando padrão.`);
+    }
+
+    return defaultConfig;
+  }
+
+  /**
+   * Atualiza a configuração de calibração do prompt
+   */
+  async savePromptConfig(config: Partial<TacticalPromptConfig>): Promise<TacticalPromptConfig | null> {
+    const token = await this.getAuthToken();
+    if (!token) {
+      this.logger.error('[PocketBase Comentários] Sem token para salvar prompt config.');
+      return null;
+    }
+
+    try {
+      const existing = await this.getPromptConfig();
+      const payload = {
+        coach_vs_fan: config.coach_vs_fan ?? existing.coach_vs_fan,
+        casualness: config.casualness ?? existing.casualness,
+        live_length: config.live_length || existing.live_length,
+        pause_length: config.pause_length || existing.pause_length,
+        focus_highlights: config.focus_highlights !== undefined ? config.focus_highlights : existing.focus_highlights,
+        focus_table_impact: config.focus_table_impact !== undefined ? config.focus_table_impact : existing.focus_table_impact,
+        focus_substitutions: config.focus_substitutions !== undefined ? config.focus_substitutions : existing.focus_substitutions,
+        enable_crawl4ai: config.enable_crawl4ai !== undefined ? config.enable_crawl4ai : existing.enable_crawl4ai,
+        crawl_sources: config.crawl_sources !== undefined ? config.crawl_sources : existing.crawl_sources,
+        custom_rules: config.custom_rules !== undefined ? config.custom_rules : existing.custom_rules,
+      };
+
+      let res: any;
+      if (existing.id) {
+        const url = `${this.baseUrl}/api/collections/tactical_prompt_config/records/${existing.id}`;
+        res = await axios.patch(url, payload, {
+          headers: { 'Content-Type': 'application/json', Authorization: token },
+          timeout: 8000,
+        });
+      } else {
+        const url = `${this.baseUrl}/api/collections/tactical_prompt_config/records`;
+        res = await axios.post(url, payload, {
+          headers: { 'Content-Type': 'application/json', Authorization: token },
+          timeout: 8000,
+        });
+      }
+
+      const updated: TacticalPromptConfig = {
+        id: res.data?.id,
+        ...payload,
+      };
+
+      this.cachedConfig = { data: updated, expiresAt: Date.now() + 60000 };
+      this.logger.log('[PocketBase Comentários] ✅ Calibração do prompt salva com sucesso.');
+      return updated;
+    } catch (err: any) {
+      this.logger.error(`[PocketBase Comentários] Erro ao salvar prompt config: ${err.message}`);
       return null;
     }
   }

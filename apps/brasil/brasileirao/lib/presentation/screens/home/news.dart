@@ -111,70 +111,90 @@ class _NewsPageState extends State<NewsPage> {
               final carouselNews = filteredNews.take(5).toList();
               final listNews = filteredNews.skip(5).toList();
 
-              return ListView(
-                children: [
-                  _buildCompetitionFilters(),
+              final displayList = listNews.isNotEmpty ? listNews : carouselNews;
+              final itemCount = displayList.length;
+
+              return CustomScrollView(
+                slivers: [
+                  // Filter bar
+                  SliverToBoxAdapter(child: _buildCompetitionFilters()),
+
                   if (filteredNews.isEmpty)
-                    const SizedBox(
-                      height: 300,
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text(
-                            'Nenhuma notícia encontrada para o filtro selecionado',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 300,
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              'Nenhuma notícia encontrada para o filtro selecionado',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white70, fontSize: 14),
+                            ),
                           ),
                         ),
                       ),
                     )
                   else ...[
-                    const Gap(10),
+                    // Top spacing
+                    const SliverToBoxAdapter(child: Gap(10)),
+
+                    // Carousel (top 5)
                     if (carouselNews.isNotEmpty)
-                      SizedBox(
-                        width: context.width,
-                        height: context.height * .35,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          itemBuilder: (_, i) {
-                            return CardNewsCarouselItem(news: carouselNews[i]);
-                          },
-                          separatorBuilder: (_, i) => const Gap(10),
-                          itemCount: carouselNews.length,
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          width: context.width,
+                          height: context.height * .35,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            itemBuilder: (_, i) => CardNewsCarouselItem(news: carouselNews[i]),
+                            separatorBuilder: (_, i) => const Gap(10),
+                            itemCount: carouselNews.length,
+                          ),
                         ),
                       ),
-                    const Gap(20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        'trending_news'.tr(context),
-                        style: context.textTheme.bodyMedium,
+
+                    // Trending title
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 20, 10, 20),
+                        child: Text(
+                          'trending_news'.tr(context),
+                          style: context.textTheme.bodyMedium,
+                        ),
                       ),
                     ),
-                    const Gap(20),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const ScrollPhysics(),
+
+                    // News list — lazy: only visible items are built
+                    SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      itemBuilder: (_, i) {
-                        final item = listNews.isNotEmpty ? listNews[i] : carouselNews[i];
-                        if (i > 0 && i % 6 == 0) {
-                          return Column(
-                            children: [
-                              const AppNativeAdWidget(variant: NativeAdVariant.newsOrVideo),
-                              const Gap(15),
-                              CardNewsItem(news: item),
-                            ],
-                          );
-                        }
-                        return CardNewsItem(news: item);
-                      },
-                      separatorBuilder: (_, i) => const Gap(15),
-                      itemCount: listNews.isNotEmpty ? listNews.length : carouselNews.length,
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, i) {
+                            final item = displayList[i];
+                            final showAd = i > 0 && i % 6 == 0;
+                            return Padding(
+                              padding: EdgeInsets.only(bottom: i < itemCount - 1 ? 15 : 0),
+                              child: showAd
+                                  ? Column(
+                                      children: [
+                                        const AppNativeAdWidget(variant: NativeAdVariant.newsOrVideo),
+                                        const Gap(15),
+                                        CardNewsItem(news: item),
+                                      ],
+                                    )
+                                  : CardNewsItem(news: item),
+                            );
+                          },
+                          childCount: itemCount,
+                        ),
+                      ),
                     ),
                   ],
-                  const Gap(80),
+
+                  // Bottom spacing
+                  const SliverToBoxAdapter(child: Gap(80)),
                 ],
               );
             }

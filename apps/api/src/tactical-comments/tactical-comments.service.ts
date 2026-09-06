@@ -11,6 +11,7 @@ import {
   FixtureCommentRecord,
   GenerateCommentDto,
   TacticalAgentResponse,
+  TacticalPromptConfig,
 } from './interfaces/tactical-comments.types';
 
 @Injectable()
@@ -19,6 +20,9 @@ export class TacticalCommentsService {
 
   // Ligas homologadas inicialmente: Brasileirão Série A (71) e Série B (72)
   private readonly SUPPORTED_LEAGUES = [71, 72];
+
+  // Cache em memória de URLs de cobertura descobertas para cada partida
+  private readonly fixtureUrlCache = new Map<number, { url: string; discoveredAt: number }>();
 
   private genAI: GoogleGenerativeAI | null = null;
   private openai: OpenAI | null = null;
@@ -65,6 +69,20 @@ export class TacticalCommentsService {
   }
 
   /**
+   * Obtém a configuração de calibração do prompt tático
+   */
+  async getPromptConfig(): Promise<TacticalPromptConfig> {
+    return this.pbCommentsClient.getPromptConfig();
+  }
+
+  /**
+   * Atualiza a configuração de calibração do prompt tático
+   */
+  async savePromptConfig(config: Partial<TacticalPromptConfig>): Promise<TacticalPromptConfig | null> {
+    return this.pbCommentsClient.savePromptConfig(config);
+  }
+
+  /**
    * Dispara a geração de um comentário tático para a partida
    */
   async generateTacticalComment(
@@ -103,16 +121,44 @@ export class TacticalCommentsService {
       const phase = dto.phase || this.determineMatchPhase(fixture.statusShort);
       const minute = dto.minute ?? (fixture.elapsed || this.getDefaultMinuteForPhase(phase));
 
-      // 3. Busca contexto externo via Crawl4AI se fornecido
+      // 3. Busca contexto externo via Crawl4AI (automático com descoberta inteligente ou manual)
+      const config = await this.pbCommentsClient.getPromptConfig();
+      let externalContextUrl = dto.externalContextUrl;
+
+      if (!externalContextUrl && config.enable_crawl4ai !== false) {
+        const cached = this.fixtureUrlCache.get(fixtureExternalId);
+        if (cached && Date.now() - cached.discoveredAt < 4 * 3600 * 1000) {
+          externalContextUrl = cached.url;
+        } else {
+          const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const discovered = await this.crawl4aiClient.discoverMatchLiveUrl(
+            fixture.homeTeam.name,
+            fixture.awayTeam.name,
+            sources,
+          );
+          if (discovered) {
+            externalContextUrl = discovered;
+            this.fixtureUrlCache.set(fixtureExternalId, { url: discovered, discoveredAt: Date.now() });
+          }
+        }
+      }
+
       let externalContext: string | null = null;
-      if (dto.externalContextUrl) {
-        externalContext = await this.crawl4aiClient.crawlSync(dto.externalContextUrl, 6000);
+      if (externalContextUrl) {
+        externalContext = await this.crawl4aiClient.crawlSync(externalContextUrl, 6000);
       }
 
       // 4. Monta o snapshot estatístico
       const statsSnapshot = this.buildStatsSnapshot(fixture.stats, fixture.homeTeamId, fixture.awayTeamId);
 
-      // 5. Gera a leitura tática via LLM (OpenAI ou Gemini)
+      // 5. Busca histórico dos últimos comentários para regra anti-repetição
+      const existingComments = await this.pbCommentsClient.getCommentsByFixture(fixtureExternalId);
+      const recentComments = existingComments.slice(-3);
+
+      // 6. Gera a leitura tática via LLM (OpenAI ou Gemini)
       const insight = await this.generateInsight({
         homeTeam: fixture.homeTeam.name,
         awayTeam: fixture.awayTeam.name,
@@ -123,7 +169,8 @@ export class TacticalCommentsService {
         phase,
         events: fixture.events.slice(-8), // últimos 8 eventos
         stats: statsSnapshot,
-        externalContext: externalContext ? externalContext.slice(0, 1500) : null,
+        externalContext: externalContext ? externalContext.slice(0, 1800) : null,
+        recentComments,
       });
 
       // 6. Grava no PocketBase Comentários dedicado
@@ -203,6 +250,7 @@ export class TacticalCommentsService {
     events: any[];
     stats: any;
     externalContext: string | null;
+    recentComments?: FixtureCommentRecord[];
   }): Promise<{ title: string; comment: string; sentiment: CommentSentiment }> {
     const provider = (this.configService.get<string>('AI_PROVIDER') || 'OPENAI').toUpperCase();
 
@@ -212,6 +260,53 @@ export class TacticalCommentsService {
         comment: `Partida movimentada na fase ${context.phase}. Análise tática aguardando ativação da IA.`,
         sentiment: 'EQUILIBRADO',
       };
+    }
+
+    // Carrega a configuração dinâmica calibrada pelo AdminPanel
+    const config = await this.pbCommentsClient.getPromptConfig();
+
+    const coachPct = 100 - config.coach_vs_fan;
+    const fanPct = config.coach_vs_fan;
+
+    let toneDescription = 'Tom equilibrado e dinâmico, resenha esportiva moderna.';
+    if (config.casualness <= 25) {
+      toneDescription = 'Tom formal, sóbrio e estritamente analítico/jornalístico.';
+    } else if (config.casualness <= 60) {
+      toneDescription = 'Tom equilibrado, dinâmico e direto, como um bom debate esportivo moderno.';
+    } else if (config.casualness <= 85) {
+      toneDescription = 'Tom bem casual, resenha de boleiro inteligente, vocabulário autêntico do futebol brasileiro, sem academicismo excessivo.';
+    } else {
+      toneDescription = 'Tom ultra casual de pura resenha de torcedor e bate-papo de arquibancada, vibrante e bem humorado.';
+    }
+
+    // Controle de tamanho do texto por fase
+    let lengthInstruction = '';
+    const isLive = context.phase === 'FIRST_HALF' || context.phase === 'SECOND_HALF';
+    if (isLive) {
+      if (config.live_length === 'FLASH') {
+        lengthInstruction = 'TAMANHO ULTRA-CURTO / FLASH: No máximo 2 frases diretas e objetivas (cerca de 25 a 35 palavras). Vá direto ao ponto sem rodeios.';
+      } else if (config.live_length === 'SHORT') {
+        lengthInstruction = 'TAMANHO CURTO (METADE DO PADRÃO): Exatamente 1 parágrafo enxuto, ágil e direto (cerca de 40 a 50 palavras). Leitura rápida do momento atual em campo.';
+      } else {
+        lengthInstruction = 'TAMANHO PADRÃO: 1 a 2 parágrafos objetivos (cerca de 70 a 90 palavras).';
+      }
+    } else {
+      if (config.pause_length === 'SUMMARY') {
+        lengthInstruction = 'TAMANHO SÍNTESE: 1 parágrafo bem consolidado com os pontos capitais (cerca de 50 a 60 palavras).';
+      } else {
+        lengthInstruction = 'TAMANHO COMPLETO E APROFUNDADO: 1 a 2 parágrafos densos e analíticos (cerca de 80 a 120 palavras), dissecando o panorama da partida.';
+      }
+    }
+
+    const focusPoints: string[] = [];
+    if (config.focus_highlights) {
+      focusPoints.push('- Destaque atuações individuais e jogadores decisivos (melhor/pior em campo, jogadas de destaque).');
+    }
+    if (config.focus_table_impact) {
+      focusPoints.push('- Contextualize a pontuação e o impacto na tabela (briga por G4, liderança ou fuga do Z4).');
+    }
+    if (config.focus_substitutions) {
+      focusPoints.push('- Avalie as substituições feitas pelos técnicos e a mudança de desenho tático.');
     }
 
     const phaseInstructions: Record<CommentPhase, string> = {
@@ -227,13 +322,37 @@ export class TacticalCommentsService {
         'Foco no Pós-Jogo / Resumo: Balanço tático completo dos 90 minutos, mérito no resultado, destaques individuais e impacto na competição.',
     };
 
+    const historyPrompt =
+      context.recentComments && context.recentComments.length > 0
+        ? `\nHISTÓRICO DOS ÚLTIMOS COMENTÁRIOS DESTA PARTIDA (ATENÇÃO: É TERMINANTEMENTE PROIBIDO REPETIR!):
+${context.recentComments
+  .map(
+    (c, i) =>
+      `[Comentário ${i + 1} - ${c.phase} ${c.minute !== undefined ? `${c.minute}'` : ''}]: Título: "${c.title}" | Texto: "${c.comment}"`,
+  )
+  .join('\n')}
+
+DIRETRIZ CRÍTICA ANTI-REPETIÇÃO:
+- É expressamente proibido repetir a mesma tese, o mesmo título ou a mesma estrutura dos comentários anteriores.
+- NÃO repita porcentagens cumulativas de posse de bola se elas já foram citadas anteriormente.
+- Foque no que ACABOU DE ACONTECER no gramado ou nos fatos e lances narrados pelo contexto externo do Crawl4AI.
+`
+        : '';
+
     const prompt = `
 Você é um comentarista e analista tático especializado no futebol brasileiro (Brasileirão Série A e B).
-Gere uma leitura tática de alto nível e tom profissional para a partida:
+Gere uma leitura tática de alto nível para a partida com as seguintes diretrizes de estilo:
 
 CONFRONTO: ${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}
 FASE ATUAL: ${context.phase} (Minuto: ${context.elapsed}')
 STATUS: ${context.statusShort}
+
+CALIBRAÇÃO DE TOM E PERSPECTIVA:
+- PERSPECTIVA: ${coachPct}% Visão do Técnico (prancheta, esquema, linhas e leitura tática) e ${fanPct}% Visão do Torcedor (emoção, vibração, leitura apaixonada de arquibancada).
+- GRAU DE CASUALIDADE / RESENHA: ${config.casualness}% (${toneDescription}).
+- DIRETRIZ DE EXTENSÃO DO COMENTÁRIO: ${lengthInstruction}
+${focusPoints.length > 0 ? `\nFOCOS ADICIONAIS:\n${focusPoints.join('\n')}` : ''}
+${config.custom_rules ? `\nREGRAS PERSONALIZADAS DO USUÁRIO:\n${config.custom_rules}\n` : ''}
 
 ESTATÍSTICAS ATUAIS:
 ${JSON.stringify(context.stats, null, 2)}
@@ -241,15 +360,15 @@ ${JSON.stringify(context.stats, null, 2)}
 ÚLTIMOS EVENTOS (GOLS / CARTÕES / SUBSTITUIÇÕES):
 ${JSON.stringify(context.events, null, 2)}
 
-${context.externalContext ? `CONTEXTO EXTERNO COLETADO:\n${context.externalContext}\n` : ''}
-
+${context.externalContext ? `CONTEXTO EXTERNO COLETADO PELO CRAWL4AI (NARRATIVA DOS JORNALISTAS EM CAMPO):\n${context.externalContext}\n(Utilize os fatos, lances e bastidores narrados acima para enriquecer a leitura com o calor do jogo!)\n` : ''}
+${historyPrompt}
 DIRETRIZES DA FASE:
 ${phaseInstructions[context.phase]}
 
 REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
 1. OBEDEÇA RIGOROSAMENTE AO IDIOMA (SEM MISTURA DE LÍNGUAS):
    - Sem expressões em inglês no texto em português, e vice-versa para outros idiomas (a tradução tratará cada idioma específico).
-   - O texto em português deve ser 100% natural, culto e jornalístico, com ZERO estrangeirismos.
+   - O texto em português deve ser 100% natural, com ZERO estrangeirismos.
    - NÃO use termos em inglês como:
      * "clean sheet" (use "sem sofrer gols" ou "baliza zerada")
      * "pressing" ou "press" (use "pressão alta", "marcação agressiva" ou "pressão pós-perda")
@@ -261,7 +380,7 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
      * "half-time" ou "full-time" (use "intervalo", "fim de jogo" ou "apito final")
 2. Responda ESTRITAMENTE em formato JSON, sem blocos markdown fora do JSON.
 3. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% no idioma correto sem misturar termos.
-4. Comentário ("comment"): Análise tática rica e fluida (1 a 2 parágrafos analíticos objetivos), 100% no idioma sem estrangeirismos.
+4. Comentário ("comment"): Respeite estritamente a extensão solicitada (${lengthInstruction}), 100% no idioma sem estrangeirismos.
 5. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo), sem termos em inglês:
    - "EQUILIBRADO" (para jogos parelhos e disputa tática equilibrada)
    - "DOMINANTE" (para amplo controle de jogo, pressão e superioridade)
@@ -271,7 +390,7 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
 FORMATO JSON ESPERADO:
 {
   "title": "<manchete curta pura no idioma>",
-  "comment": "<parágrafo analítico detalhado puro no idioma>",
+  "comment": "<texto de acordo com a extensão solicitada>",
   "sentiment": "EQUILIBRADO" | "DOMINANTE" | "CRITICO" | "SURPRESA"
 }
 `;
