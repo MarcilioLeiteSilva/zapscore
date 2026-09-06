@@ -2,6 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
+export interface CrawlSyncOptions {
+  timeoutMs?: number;
+  sessionId?: string;
+  cssSelector?: string;
+  waitFor?: string;
+}
+
 @Injectable()
 export class Crawl4aiClient {
   private readonly logger = new Logger(Crawl4aiClient.name);
@@ -21,18 +28,37 @@ export class Crawl4aiClient {
   /**
    * Executa extração síncrona de uma URL retornando Markdown limpo
    */
-  async crawlSync(url: string, timeoutMs = 8000): Promise<string | null> {
+  async crawlSync(
+    url: string,
+    options?: CrawlSyncOptions | number,
+  ): Promise<string | null> {
     if (!url || !url.startsWith('http')) {
       return null;
+    }
+
+    const opts: CrawlSyncOptions =
+      typeof options === 'number' ? { timeoutMs: options } : options || {};
+    const timeoutMs = opts.timeoutMs || 10000;
+
+    const payload: Record<string, any> = {
+      urls: url,
+      priority: 10,
+    };
+
+    if (opts.sessionId) {
+      payload.session_id = opts.sessionId;
+    }
+    if (opts.cssSelector) {
+      payload.css_selector = opts.cssSelector;
+    }
+    if (opts.waitFor) {
+      payload.wait_for = opts.waitFor;
     }
 
     try {
       const response = await axios.post(
         `${this.baseUrl}/crawl_sync`,
-        {
-          urls: url,
-          priority: 10,
-        },
+        payload,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -45,7 +71,7 @@ export class Crawl4aiClient {
       const result = response.data?.result;
       if (result?.markdown) {
         this.logger.log(
-          `[Crawl4AI] ✅ Extração com sucesso de ${url} (${result.markdown.length} caracteres)`,
+          `[Crawl4AI] ✅ Extração com sucesso de ${url} (${result.markdown.length} caracteres)${opts.sessionId ? ` [Session: ${opts.sessionId}]` : ''}`,
         );
         return result.markdown;
       }
@@ -65,18 +91,21 @@ export class Crawl4aiClient {
 
   /**
    * Busca e descobre automaticamente a URL de cobertura da partida nos portais cadastrados
+   * Diferencia a busca entre Pré-Jogo (notícia/escalações) e Ao Vivo (tempo real lance a lance)
    */
   async discoverMatchLiveUrl(
     homeTeam: string,
     awayTeam: string,
     sources: string[] = ['ge.globo.com'],
+    isLive = false,
   ): Promise<string | null> {
     try {
       const cleanHome = homeTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim();
       const cleanAway = awayTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim();
 
       const sourceSite = sources[0] || 'ge.globo.com';
-      const query = `"${cleanHome}" "${cleanAway}" site:${sourceSite}`;
+      const liveKeyword = isLive ? 'tempo real lance a lance' : 'onde assistir escalações';
+      const query = `"${cleanHome}" "${cleanAway}" ${liveKeyword} site:${sourceSite}`;
       const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
 
       const response = await axios.get(url, {
@@ -90,6 +119,21 @@ export class Crawl4aiClient {
       const html = response.data || '';
       const uddgMatches = (html.match(/uddg=([^&"]+)/g) || []) as string[];
       const links = uddgMatches.map((m: string) => decodeURIComponent(m.replace('uddg=', '')));
+
+      // Se a partida está AO VIVO, prioriza estritamente páginas de tempo-real / ao-vivo
+      if (isLive) {
+        const liveMatchUrl = links.find(
+          (l: string) =>
+            sources.some((s) => l.includes(s)) &&
+            (l.includes('tempo-real') || l.includes('ao-vivo')),
+        );
+        if (liveMatchUrl) {
+          this.logger.log(
+            `[Crawl4AI Discovery] ⚡ URL de TEMPO REAL encontrada para ${homeTeam} x ${awayTeam}: ${liveMatchUrl}`,
+          );
+          return liveMatchUrl;
+        }
+      }
 
       // Prioriza links de jogo, tempo-real ou notícia do portal
       const matchUrl = links.find(

@@ -114,6 +114,13 @@ export class TacticalCommentsSchedulerService {
     // Busca os comentários já gravados no PocketBase para esta partida
     const existingComments = await this.pbCommentsClient.getCommentsByFixture(fixtureId);
 
+    // Pré-aquece em background a coleta do Crawl4AI a cada 5 minutos para jogos ao vivo
+    if (['1H', '2H'].includes(status)) {
+      this.tacticalCommentsService
+        .prewarmLiveExternalContext(fixtureId, fixture.homeTeam.name, fixture.awayTeam.name)
+        .catch(() => {});
+    }
+
     // 1. CASO PRÉ-JOGO: Partida agendada para os próximos 45 minutos
     if (['NS', 'TBD'].includes(status)) {
       const matchTime = new Date(fixture.date).getTime();

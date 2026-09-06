@@ -14,6 +14,17 @@ import {
   TacticalPromptConfig,
 } from './interfaces/tactical-comments.types';
 
+interface FixtureUrlCacheEntry {
+  url: string;
+  isLiveUrl: boolean;
+  discoveredAt: number;
+}
+
+interface MatchStateCacheEntry {
+  lastCrawledLances?: string;
+  lastCrawledAt?: number;
+}
+
 @Injectable()
 export class TacticalCommentsService {
   private readonly logger = new Logger(TacticalCommentsService.name);
@@ -22,7 +33,10 @@ export class TacticalCommentsService {
   private readonly SUPPORTED_LEAGUES = [71, 72];
 
   // Cache em memória de URLs de cobertura descobertas para cada partida
-  private readonly fixtureUrlCache = new Map<number, { url: string; discoveredAt: number }>();
+  private readonly fixtureUrlCache = new Map<number, FixtureUrlCacheEntry>();
+
+  // Cache em memória de estado e lances da partida (evita chamadas redundantes ao Crawl4AI)
+  private readonly matchStateCache = new Map<number, MatchStateCacheEntry>();
 
   private genAI: GoogleGenerativeAI | null = null;
   private openai: OpenAI | null = null;
@@ -83,6 +97,74 @@ export class TacticalCommentsService {
   }
 
   /**
+   * Pre-aquece e atualiza o contexto do Crawl4AI em background a cada 5 minutos durante partidas ao vivo
+   */
+  async prewarmLiveExternalContext(
+    fixtureExternalId: number,
+    homeTeam: string,
+    awayTeam: string,
+  ): Promise<string | null> {
+    try {
+      const config = await this.pbCommentsClient.getPromptConfig();
+      if (config.enable_crawl4ai === false) return null;
+
+      const now = Date.now();
+      const state = this.matchStateCache.get(fixtureExternalId) || {};
+      // Se foi coletado há menos de 4 minutos, retorna o que já está em cache
+      if (state.lastCrawledAt && now - state.lastCrawledAt < 4 * 60 * 1000 && state.lastCrawledLances) {
+        return state.lastCrawledLances;
+      }
+
+      // 1. Obtém ou descobre URL de tempo real ao vivo
+      let liveUrl: string | null = null;
+      const cached = this.fixtureUrlCache.get(fixtureExternalId);
+      if (cached && cached.isLiveUrl && now - cached.discoveredAt < 3 * 3600 * 1000) {
+        liveUrl = cached.url;
+      } else {
+        const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        liveUrl = await this.crawl4aiClient.discoverMatchLiveUrl(homeTeam, awayTeam, sources, true);
+        if (liveUrl) {
+          this.fixtureUrlCache.set(fixtureExternalId, {
+            url: liveUrl,
+            isLiveUrl: true,
+            discoveredAt: now,
+          });
+        }
+      }
+
+      if (!liveUrl) return null;
+
+      // 2. Extrai lances com sessão persistente e seletor cirúrgico
+      const markdown = await this.crawl4aiClient.crawlSync(liveUrl, {
+        timeoutMs: 12000,
+        sessionId: `match_${fixtureExternalId}`,
+        cssSelector: '.transmissao-live, article, .feed-post-body, .m-transmissao',
+        waitFor: 'css:article, .transmissao-live, .feed-post-body',
+      });
+
+      if (markdown && markdown.length > 50) {
+        const cleanLances = markdown.slice(0, 3200);
+        this.matchStateCache.set(fixtureExternalId, {
+          ...state,
+          lastCrawledLances: cleanLances,
+          lastCrawledAt: now,
+        });
+        return cleanLances;
+      }
+
+      return null;
+    } catch (err: any) {
+      this.logger.warn(
+        `[PrewarmLive] Falha ao pré-aquecer lances para fixture ${fixtureExternalId}: ${err.message}`,
+      );
+      return null;
+    }
+  }
+
+  /**
    * Dispara a geração de um comentário tático para a partida
    */
   async generateTacticalComment(
@@ -120,45 +202,91 @@ export class TacticalCommentsService {
       // 2. Determina a fase e o minuto da partida
       const phase = dto.phase || this.determineMatchPhase(fixture.statusShort);
       const minute = dto.minute ?? (fixture.elapsed || this.getDefaultMinuteForPhase(phase));
+      const isLivePhase = ['FIRST_HALF', 'SECOND_HALF', 'HALF_TIME'].includes(phase);
 
-      // 3. Busca contexto externo via Crawl4AI (automático com descoberta inteligente ou manual)
+      // 3. Busca contexto externo via Crawl4AI com estratégias assertivas por fase
       const config = await this.pbCommentsClient.getPromptConfig();
-      let externalContextUrl = dto.externalContextUrl;
+      let externalContext: string | null = null;
 
-      if (!externalContextUrl && config.enable_crawl4ai !== false) {
-        const cached = this.fixtureUrlCache.get(fixtureExternalId);
-        if (cached && Date.now() - cached.discoveredAt < 4 * 3600 * 1000) {
-          externalContextUrl = cached.url;
-        } else {
-          const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean);
-          const discovered = await this.crawl4aiClient.discoverMatchLiveUrl(
+      if (config.enable_crawl4ai !== false) {
+        if (dto.externalContextUrl) {
+          externalContext = await this.crawl4aiClient.crawlSync(dto.externalContextUrl, {
+            timeoutMs: 10000,
+            sessionId: `match_${fixtureExternalId}`,
+            cssSelector: '.transmissao-live, article, .feed-post-body',
+          });
+        } else if (isLivePhase) {
+          externalContext = await this.prewarmLiveExternalContext(
+            fixtureExternalId,
             fixture.homeTeam.name,
             fixture.awayTeam.name,
-            sources,
           );
-          if (discovered) {
-            externalContextUrl = discovered;
-            this.fixtureUrlCache.set(fixtureExternalId, { url: discovered, discoveredAt: Date.now() });
+        } else {
+          // Fase Pré-Jogo ou Pós-Jogo (artigo analítico ou escalações)
+          const now = Date.now();
+          let previewUrl: string | null = null;
+          const cached = this.fixtureUrlCache.get(fixtureExternalId);
+          if (cached && !cached.isLiveUrl && now - cached.discoveredAt < 4 * 3600 * 1000) {
+            previewUrl = cached.url;
+          } else {
+            const sources = (config.crawl_sources || 'ge.globo.com,lance.com.br,uol.com.br')
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+            previewUrl = await this.crawl4aiClient.discoverMatchLiveUrl(
+              fixture.homeTeam.name,
+              fixture.awayTeam.name,
+              sources,
+              false,
+            );
+            if (previewUrl) {
+              this.fixtureUrlCache.set(fixtureExternalId, {
+                url: previewUrl,
+                isLiveUrl: false,
+                discoveredAt: now,
+              });
+            }
+          }
+
+          if (previewUrl) {
+            const rawPreview = await this.crawl4aiClient.crawlSync(previewUrl, {
+              timeoutMs: 10000,
+              sessionId: `match_${fixtureExternalId}`,
+              cssSelector: 'article, main, .feed-post-body, .m-materia',
+            });
+            if (rawPreview) {
+              externalContext = rawPreview.slice(0, 2500);
+            }
           }
         }
-      }
-
-      let externalContext: string | null = null;
-      if (externalContextUrl) {
-        externalContext = await this.crawl4aiClient.crawlSync(externalContextUrl, 6000);
       }
 
       // 4. Monta o snapshot estatístico
       const statsSnapshot = this.buildStatsSnapshot(fixture.stats, fixture.homeTeamId, fixture.awayTeamId);
 
-      // 5. Busca histórico dos últimos comentários para regra anti-repetição
+      // 5. Memória Factual Acumulada: Linha do tempo de eventos críticos
+      const criticalEvents = (fixture.events || [])
+        .filter(
+          (e: any) =>
+            ['Goal', 'Card', 'Var'].includes(e.type) ||
+            e.detail?.toLowerCase().includes('red') ||
+            e.detail?.toLowerCase().includes('gol') ||
+            e.detail?.toLowerCase().includes('penalty'),
+        )
+        .map(
+          (e: any) =>
+            `${e.time?.elapsed || 0}' [${(e.type || '').toUpperCase()}] ${e.player?.name || ''} (${e.team?.name || ''}) - ${e.detail || ''}`,
+        );
+
+      // 6. Memória Narrativa: Histórico completo de comentários anteriores para continuidade do arco
       const existingComments = await this.pbCommentsClient.getCommentsByFixture(fixtureExternalId);
+      const previousTheses = existingComments.map(
+        (c) =>
+          `[${c.phase} ${c.minute !== undefined ? `${c.minute}'` : ''}]: Título: "${c.title}" | Resumo: "${c.comment.substring(0, 110)}..."`,
+      );
       const recentComments = existingComments.slice(-3);
 
-      // 6. Gera a leitura tática via LLM (OpenAI ou Gemini)
+      // 7. Gera a leitura tática via LLM com Prompt Caching nativo
       const insight = await this.generateInsight({
         homeTeam: fixture.homeTeam.name,
         awayTeam: fixture.awayTeam.name,
@@ -167,9 +295,11 @@ export class TacticalCommentsService {
         statusShort: fixture.statusShort || 'NS',
         elapsed: minute,
         phase,
-        events: fixture.events.slice(-8), // últimos 8 eventos
+        events: fixture.events.slice(-8), // últimos 8 eventos detalhados
+        criticalEvents,
+        previousTheses,
         stats: statsSnapshot,
-        externalContext: externalContext ? externalContext.slice(0, 1800) : null,
+        externalContext,
         recentComments,
       });
 
@@ -248,6 +378,8 @@ export class TacticalCommentsService {
     elapsed: number;
     phase: CommentPhase;
     events: any[];
+    criticalEvents?: string[];
+    previousTheses?: string[];
     stats: any;
     externalContext: string | null;
     recentComments?: FixtureCommentRecord[];
@@ -341,52 +473,11 @@ export class TacticalCommentsService {
       }
     }
 
-    const historyPrompt =
-      context.recentComments && context.recentComments.length > 0
-        ? `\nHISTÓRICO DOS ÚLTIMOS COMENTÁRIOS DESTA PARTIDA (ATENÇÃO: É TERMINANTEMENTE PROIBIDO REPETIR!):
-${context.recentComments
-  .map(
-    (c, i) =>
-      `[Comentário ${i + 1} - ${c.phase} ${c.minute !== undefined ? `${c.minute}'` : ''}]: Título: "${c.title}" | Texto: "${c.comment}"`,
-  )
-  .join('\n')}
+    const systemPrompt = `Você é um comentarista e analista tático especializado no futebol brasileiro (Brasileirão Série A e B).
+Sua missão é produzir leituras táticas de alto nível, autênticas, perspicazes e dinâmicas, no formato de resenha esportiva inteligente.
 
-DIRETRIZ CRÍTICA ANTI-REPETIÇÃO:
-- É expressamente proibido repetir a mesma tese, o mesmo título ou a mesma estrutura dos comentários anteriores.
-- NÃO repita porcentagens cumulativas de posse de bola se elas já foram citadas anteriormente.
-- Foque no que ACABOU DE ACONTECER no gramado ou nos fatos e lances narrados pelo contexto externo do Crawl4AI.
-`
-        : '';
-
-    const prompt = `
-Você é um comentarista e analista tático especializado no futebol brasileiro (Brasileirão Série A e B).
-Gere uma leitura tática de alto nível para a partida com as seguintes diretrizes de estilo:
-
-CONFRONTO: ${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}
-FASE ATUAL: ${context.phase} (Minuto: ${context.elapsed}')
-STATUS: ${context.statusShort}
-
-CALIBRAÇÃO DE TOM E PERSPECTIVA:
-- PERSPECTIVA: ${coachPct}% Visão do Técnico (prancheta, esquema, linhas e leitura tática) e ${fanPct}% Visão do Torcedor (emoção, vibração, leitura apaixonada de arquibancada).
-- GRAU DE CASUALIDADE / RESENHA: ${config.casualness}% (${toneDescription}).
-- DIRETRIZ DE EXTENSÃO DO COMENTÁRIO: ${lengthInstruction}
-${focusPoints.length > 0 ? `\nFOCOS ADICIONAIS:\n${focusPoints.join('\n')}` : ''}
-${config.custom_rules ? `\nREGRAS PERSONALIZADAS DO USUÁRIO:\n${config.custom_rules}\n` : ''}
-
-ESTATÍSTICAS ATUAIS:
-${JSON.stringify(context.stats, null, 2)}
-
-ÚLTIMOS EVENTOS (GOLS / CARTÕES / SUBSTITUIÇÕES):
-${JSON.stringify(context.events, null, 2)}
-
-${context.externalContext ? `CONTEXTO EXTERNO COLETADO PELO CRAWL4AI (NARRATIVA DOS JORNALISTAS EM CAMPO):\n${context.externalContext}\n(Utilize os fatos, lances e bastidores narrados acima para enriquecer a leitura com o calor do jogo!)\n` : ''}
-${historyPrompt}
-DIRETRIZES DA FASE:
-${phaseInstruction}
-
-REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
+REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
 1. OBEDEÇA RIGOROSAMENTE AO IDIOMA (SEM MISTURA DE LÍNGUAS):
-   - Sem expressões em inglês no texto em português, e vice-versa para outros idiomas (a tradução tratará cada idioma específico).
    - O texto em português deve ser 100% natural, com ZERO estrangeirismos.
    - NÃO use termos em inglês como:
      * "clean sheet" (use "sem sofrer gols" ou "baliza zerada")
@@ -397,21 +488,53 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
      * "lineup" (use "escalação" ou "time titular")
      * "winger" ou "striker" (use "ponta", "extremo", "centroavante" ou "atacante")
      * "half-time" ou "full-time" (use "intervalo", "fim de jogo" ou "apito final")
-2. Responda ESTRITAMENTE em formato JSON, sem blocos markdown fora do JSON.
-3. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% no idioma correto sem misturar termos.
-4. Comentário ("comment"): Respeite estritamente a extensão solicitada (${lengthInstruction}), 100% no idioma sem estrangeirismos.
-5. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo), sem termos em inglês:
-   - "EQUILIBRADO" (para jogos parelhos e disputa tática equilibrada)
-   - "DOMINANTE" (para amplo controle de jogo, pressão e superioridade)
-   - "CRITICO" (para expulsão, pênalti decisivo, momento de alta tensão)
-   - "SURPRESA" (para zebra, resultado inesperado ou virada improvável)
+2. Responda ESTRITAMENTE em formato JSON puro, sem blocos markdown adicionais.
+3. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português puro sem jargões em inglês.
+4. Comentário ("comment"): Respeite estritamente a extensão solicitada pelo usuário no prompt.
+5. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo):
+   - "EQUILIBRADO" (jogos parelhos e disputa tática equilibrada)
+   - "DOMINANTE" (amplo controle de jogo, pressão e superioridade)
+   - "CRITICO" (expulsão, pênalti decisivo, momento de alta tensão)
+   - "SURPRESA" (zebra, resultado inesperado ou virada improvável)
 
 FORMATO JSON ESPERADO:
 {
-  "title": "<manchete curta pura no idioma>",
-  "comment": "<texto de acordo com a extensão solicitada>",
+  "title": "<manchete curta pura em português>",
+  "comment": "<análise tática respeitando o tamanho solicitado>",
   "sentiment": "EQUILIBRADO" | "DOMINANTE" | "CRITICO" | "SURPRESA"
-}
+}`;
+
+    const userPrompt = `
+LEITURA TÁTICA DA PARTIDA:
+CONFRONTO: ${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}
+FASE ATUAL: ${context.phase} (Minuto: ${context.elapsed}')
+STATUS: ${context.statusShort}
+
+CALIBRAÇÃO DE ESTILO E TOM:
+- PERSPECTIVA: ${coachPct}% Visão do Técnico (prancheta, linhas) e ${fanPct}% Visão do Torcedor (emoção, vibração).
+- GRAU DE CASUALIDADE / RESENHA: ${config.casualness}% (${toneDescription}).
+- DIRETRIZ DE EXTENSÃO DO COMENTÁRIO: ${lengthInstruction}
+${focusPoints.length > 0 ? `\nFOCOS ADICIONAIS:\n${focusPoints.join('\n')}` : ''}
+${config.custom_rules ? `\nREGRAS PERSONALIZADAS DO USUÁRIO:\n${config.custom_rules}\n` : ''}
+
+MEMÓRIA FACTUAL DA PARTIDA (LINHA DO TEMPO CRÍTICA ACUMULADA):
+${context.criticalEvents && context.criticalEvents.length > 0 ? context.criticalEvents.join('\n') : 'Nenhum evento crítico acumulado até o momento.'}
+
+ARCO NARRATIVO E CONTINUIDADE (ANÁLISES ANTERIORES DA IA NESTA PARTIDA):
+${context.previousTheses && context.previousTheses.length > 0 ? context.previousTheses.join('\n') : 'Primeira leitura da partida.'}
+(DIRETRIZ DE CONTINUIDADE: Conecte sua análise com o que foi apontado anteriormente, mostrando evolução do jogo sem jamais repetir o mesmo texto ou tese!)
+
+LANCES RECENTES NARRADOS EM CAMPO (COLETADOS PELO CRAWL4AI):
+${context.externalContext ? context.externalContext : 'Sem contexto externo adicional no momento.'}
+
+ESTATÍSTICAS ATUAIS:
+${JSON.stringify(context.stats, null, 2)}
+
+ÚLTIMOS EVENTOS DETALHADOS:
+${JSON.stringify(context.events, null, 2)}
+
+DIRETRIZ DA FASE ATUAL:
+${phaseInstruction}
 `;
 
     const normalizeSentiment = (raw?: string): CommentSentiment => {
@@ -422,7 +545,7 @@ FORMATO JSON ESPERADO:
       return 'EQUILIBRADO';
     };
 
-    // 1. Tenta com OpenAI se for o provider selecionado ou se disponível
+    // 1. Tenta com OpenAI se for o provider selecionado ou se disponível (com Prompt Caching no system message)
     if ((provider === 'OPENAI' || !this.genAI) && this.openai) {
       try {
         const completion = await this.openai.chat.completions.create({
@@ -430,10 +553,9 @@ FORMATO JSON ESPERADO:
           messages: [
             {
               role: 'system',
-              content:
-                'Você é um analista e comentarista tático esportivo. Obedeça estritamente ao idioma: sem expressões em inglês no texto em português, e vice-versa para outros idiomas (zero mistura linguística). Responda estritamente em JSON com sentiment em português puro (EQUILIBRADO, DOMINANTE, CRITICO, SURPRESA).',
+              content: systemPrompt,
             },
-            { role: 'user', content: prompt },
+            { role: 'user', content: userPrompt },
           ],
           response_format: { type: 'json_object' },
           temperature: 0.4,
@@ -452,18 +574,19 @@ FORMATO JSON ESPERADO:
       }
     }
 
-    // 2. Tenta com Gemini se OpenAI não rodou ou se for o provider selecionado
+    // 2. Tenta com Gemini se OpenAI não rodou ou se for o provider selecionado (com systemInstruction)
     if (this.genAI) {
       try {
         const model = this.genAI.getGenerativeModel({
           model: 'gemini-1.5-flash',
+          systemInstruction: systemPrompt,
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.4,
           },
         });
 
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent(userPrompt);
         let text = result.response.text().trim();
 
         if (text.startsWith('```')) {
