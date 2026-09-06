@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { PocketbaseCommentsClient } from './providers/pocketbase-comments.client';
 import { Crawl4aiClient } from './providers/crawl4ai.client';
@@ -20,6 +21,7 @@ export class TacticalCommentsService {
   private readonly SUPPORTED_LEAGUES = [71, 72];
 
   private genAI: GoogleGenerativeAI | null = null;
+  private openai: OpenAI | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -27,12 +29,22 @@ export class TacticalCommentsService {
     private readonly pbCommentsClient: PocketbaseCommentsClient,
     private readonly crawl4aiClient: Crawl4aiClient,
   ) {
+    this.initializeAiClients();
+  }
+
+  private initializeAiClients() {
+    // 1. Inicializa OpenAI se configurado
+    const openaiKey = this.configService.get<string>('OPENAI_API_KEY');
+    if (openaiKey) {
+      this.openai = new OpenAI({ apiKey: openaiKey });
+      this.logger.log('OpenAI Client inicializado com sucesso para Comentários Táticos (gpt-4o-mini).');
+    }
+
+    // 2. Inicializa Gemini se configurado
     const geminiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (geminiKey) {
       this.genAI = new GoogleGenerativeAI(geminiKey);
-      this.logger.log('Gemini AI Client inicializado para o Agente de Comentários Táticos.');
-    } else {
-      this.logger.warn('GEMINI_API_KEY não encontrada nas variáveis de ambiente.');
+      this.logger.log('Gemini AI Client inicializado com sucesso para Comentários Táticos (gemini-1.5-flash).');
     }
   }
 
@@ -100,8 +112,8 @@ export class TacticalCommentsService {
       // 4. Monta o snapshot estatístico
       const statsSnapshot = this.buildStatsSnapshot(fixture.stats, fixture.homeTeamId, fixture.awayTeamId);
 
-      // 5. Gera a leitura tática via Gemini
-      const insight = await this.generateInsightWithGemini({
+      // 5. Gera a leitura tática via LLM (OpenAI ou Gemini)
+      const insight = await this.generateInsight({
         homeTeam: fixture.homeTeam.name,
         awayTeam: fixture.awayTeam.name,
         homeScore: fixture.homeGoals ?? 0,
@@ -180,7 +192,7 @@ export class TacticalCommentsService {
     return summary;
   }
 
-  private async generateInsightWithGemini(context: {
+  private async generateInsight(context: {
     homeTeam: string;
     awayTeam: string;
     homeScore: number;
@@ -192,7 +204,9 @@ export class TacticalCommentsService {
     stats: any;
     externalContext: string | null;
   }): Promise<{ title: string; comment: string; sentiment: CommentSentiment }> {
-    if (!this.genAI) {
+    const provider = (this.configService.get<string>('AI_PROVIDER') || 'OPENAI').toUpperCase();
+
+    if (!this.openai && !this.genAI) {
       return {
         title: `${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}`,
         comment: `Partida movimentada na fase ${context.phase}. Análise tática aguardando ativação da IA.`,
@@ -202,7 +216,7 @@ export class TacticalCommentsService {
 
     const phaseInstructions: Record<CommentPhase, string> = {
       PRE_MATCH:
-        'Foco no Pré-Jogo: Expectativas táticas, desfalques, postura esperada das equipes (propositiva vs reativa) e disputa setorial.',
+        'Foco no Pré-Jogo: Expectativas táticas, postura esperada das equipes (propositiva vs reativa), disputa setorial e escalações.',
       FIRST_HALF:
         'Foco no 1º Tempo: Ritmo inicial, encaixe de marcação, aproveitamento das transições e momentos de perigo.',
       HALF_TIME:
@@ -248,37 +262,73 @@ FORMATO JSON ESPERADO:
 }
 `;
 
-    try {
-      const model = this.genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.4,
-        },
-      });
+    // 1. Tenta com OpenAI se for o provider selecionado ou se disponível
+    if ((provider === 'OPENAI' || !this.genAI) && this.openai) {
+      try {
+        const completion = await this.openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'Você é um comentarista tático especializado em futebol brasileiro. Responda estritamente em JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.5,
+        });
 
-      const result = await model.generateContent(prompt);
-      let text = result.response.text().trim();
+        const rawText = completion.choices[0].message.content || '{}';
+        const parsed = JSON.parse(rawText);
 
-      if (text.startsWith('```')) {
-        text = text.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+        return {
+          title: parsed.title || `${context.homeTeam} x ${context.awayTeam}`,
+          comment: parsed.comment || 'Análise tática em andamento.',
+          sentiment: ['DOMINANT', 'BALANCED', 'CRITICAL', 'SURPRISE'].includes(parsed.sentiment)
+            ? parsed.sentiment
+            : 'BALANCED',
+        };
+      } catch (openAiErr: any) {
+        this.logger.warn(`Erro na chamada OpenAI: ${openAiErr.message}. Tentando Gemini como fallback se disponível.`);
       }
-
-      const parsed = JSON.parse(text);
-      return {
-        title: parsed.title || `${context.homeTeam} x ${context.awayTeam}`,
-        comment: parsed.comment || 'Análise tática em andamento.',
-        sentiment: ['DOMINANT', 'BALANCED', 'CRITICAL', 'SURPRISE'].includes(parsed.sentiment)
-          ? parsed.sentiment
-          : 'BALANCED',
-      };
-    } catch (err: any) {
-      this.logger.warn(`Erro na chamada do Gemini: ${err.message}. Aplicando fallback.`);
-      return {
-        title: `${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}`,
-        comment: `Duelo intenso entre ${context.homeTeam} e ${context.awayTeam}. As equipes disputam o controle do meio de campo na fase ${context.phase}.`,
-        sentiment: 'BALANCED',
-      };
     }
+
+    // 2. Tenta com Gemini se OpenAI não rodou ou se for o provider selecionado
+    if (this.genAI) {
+      try {
+        const model = this.genAI.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.4,
+          },
+        });
+
+        const result = await model.generateContent(prompt);
+        let text = result.response.text().trim();
+
+        if (text.startsWith('```')) {
+          text = text.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+        }
+
+        const parsed = JSON.parse(text);
+        return {
+          title: parsed.title || `${context.homeTeam} x ${context.awayTeam}`,
+          comment: parsed.comment || 'Análise tática em andamento.',
+          sentiment: ['DOMINANT', 'BALANCED', 'CRITICAL', 'SURPRISE'].includes(parsed.sentiment)
+            ? parsed.sentiment
+            : 'BALANCED',
+        };
+      } catch (geminiErr: any) {
+        this.logger.warn(`Erro na chamada Gemini: ${geminiErr.message}.`);
+      }
+    }
+
+    // 3. Fallback gracioso caso ambos falhem
+    return {
+      title: `${context.homeTeam} ${context.homeScore} x ${context.awayScore} ${context.awayTeam}`,
+      comment: `Duelo equilibrado entre ${context.homeTeam} e ${context.awayTeam}. As equipes disputam o controle da partida na fase ${context.phase}.`,
+      sentiment: 'BALANCED',
+    };
   }
 }
