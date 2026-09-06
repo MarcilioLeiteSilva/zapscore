@@ -136,6 +136,7 @@ export class TacticalCommentsSchedulerService {
     }
 
     // 2. CASO INTERVALO: Status HT
+    // TRAVA ABSOLUTA: gera exatamente 1 comentário de balanço no intervalo. Enquanto status for HT, nada mais é gerado.
     if (status === 'HT') {
       const hasHalfTime = existingComments.some((c) => c.phase === 'HALF_TIME');
       if (!hasHalfTime) {
@@ -150,7 +151,7 @@ export class TacticalCommentsSchedulerService {
       return;
     }
 
-    // 3. CASO FIM DE JOGO: Status FT
+    // 3. CASO FIM DE JOGO: Status FT / AET / PEN
     if (['FT', 'AET', 'PEN'].includes(status)) {
       const hasFullTime = existingComments.some((c) => c.phase === 'FULL_TIME');
       if (!hasFullTime) {
@@ -165,39 +166,76 @@ export class TacticalCommentsSchedulerService {
       return;
     }
 
-    // 4. CASO AO VIVO: 1º Tempo (1H) ou 2º Tempo (2H)
-    if (['1H', '2H', 'LIVE'].includes(status)) {
-      const livePhase = status === '1H' ? 'FIRST_HALF' : 'SECOND_HALF';
-
-      // Filtra comentários já feitos durante a partida ao vivo
-      const liveComments = existingComments.filter((c) =>
-        ['FIRST_HALF', 'SECOND_HALF'].includes(c.phase),
+    // 4. CASO 1º TEMPO (1H): Dois momentos bem definidos (Início e Meio)
+    if (status === '1H') {
+      // 4.1 Início do 1º Tempo (Janela dos 5' aos 18')
+      const has1HStart = existingComments.some(
+        (c) => c.phase === 'FIRST_HALF' && (c.minute || 0) <= 20,
       );
-
-      // Encontra o minuto do último comentário gerado
-      let lastCommentMinute = 0;
-      for (const c of liveComments) {
-        if (c.minute && c.minute > lastCommentMinute) {
-          lastCommentMinute = c.minute;
-        }
-      }
-
-      // Regra dos 5 minutos:
-      // Se não houver nenhum comentário ao vivo e o jogo já passou dos 10min, gera o primeiro.
-      // Ou se já passaram pelo menos 5 minutos desde o último comentário.
-      const shouldGenerate =
-        (lastCommentMinute === 0 && elapsed >= 10) ||
-        (elapsed >= lastCommentMinute + 5 && elapsed <= 95);
-
-      if (shouldGenerate) {
+      if (!has1HStart && elapsed >= 5 && elapsed <= 20) {
         this.logger.log(
-          `[TacticalScheduler] ⚡ Gerando Leitura Tática ao Vivo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+          `[TacticalScheduler] ⏱️ Gerando Início do 1º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
         );
         await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
-          phase: livePhase,
+          phase: 'FIRST_HALF',
           minute: elapsed,
         });
+        return;
       }
+
+      // 4.2 Durante o 1º Tempo (Janela dos 25' aos 40')
+      const has1HMid = existingComments.some(
+        (c) => c.phase === 'FIRST_HALF' && (c.minute || 0) > 20 && (c.minute || 0) < 45,
+      );
+      if (!has1HMid && elapsed >= 25 && elapsed <= 42) {
+        this.logger.log(
+          `[TacticalScheduler] ⚽ Gerando Meio do 1º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+        );
+        await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
+          phase: 'FIRST_HALF',
+          minute: elapsed,
+        });
+        return;
+      }
+
+      // Trava de segurança: entre 43' e acréscimos do 1º tempo, não gera comentário para esperar o HT
+      return;
+    }
+
+    // 5. CASO 2º TEMPO (2H): Só roda quando detectar que começou o 2º tempo (status == '2H')
+    if (status === '2H' || (status === 'LIVE' && elapsed > 45)) {
+      // 5.1 Início do 2º Tempo (Janela dos 47' aos 60')
+      const has2HStart = existingComments.some(
+        (c) => c.phase === 'SECOND_HALF' && (c.minute || 0) <= 60,
+      );
+      if (!has2HStart && elapsed >= 47 && elapsed <= 62) {
+        this.logger.log(
+          `[TacticalScheduler] 🔄 Gerando Início do 2º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+        );
+        await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
+          phase: 'SECOND_HALF',
+          minute: elapsed,
+        });
+        return;
+      }
+
+      // 5.2 Durante o 2º Tempo (Janela dos 68' aos 82')
+      const has2HMid = existingComments.some(
+        (c) => c.phase === 'SECOND_HALF' && (c.minute || 0) > 60 && (c.minute || 0) < 88,
+      );
+      if (!has2HMid && elapsed >= 68 && elapsed <= 84) {
+        this.logger.log(
+          `[TacticalScheduler] ⚡ Gerando Meio/Reta Final do 2º Tempo (${elapsed}') para ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+        );
+        await this.tacticalCommentsService.generateTacticalComment(fixtureId, {
+          phase: 'SECOND_HALF',
+          minute: elapsed,
+        });
+        return;
+      }
+
+      // Após os 85', aguarda o apito final (FT) para gerar o resumo completo
+      return;
     }
   }
 }

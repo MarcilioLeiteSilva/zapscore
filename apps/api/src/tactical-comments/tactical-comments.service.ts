@@ -322,6 +322,25 @@ export class TacticalCommentsService {
         'Foco no Pós-Jogo / Resumo: Balanço tático completo dos 90 minutos, mérito no resultado, destaques individuais e impacto na competição.',
     };
 
+    let phaseInstruction = phaseInstructions[context.phase];
+    if (context.phase === 'FIRST_HALF') {
+      if (context.elapsed <= 20) {
+        phaseInstruction =
+          'Foco no Início do 1º Tempo (Janela inicial): Ritmo inicial, encaixe de marcação, disposição em campo e estudo mútuo entre as equipes.';
+      } else {
+        phaseInstruction =
+          'Foco durante o 1º Tempo (Andamento consolidado): Como as equipes se assentaram no gramado, criação de chances, posse efetiva e controle tático.';
+      }
+    } else if (context.phase === 'SECOND_HALF') {
+      if (context.elapsed <= 62) {
+        phaseInstruction =
+          'Foco no Início do 2º Tempo (Retorno do intervalo): Mudanças de postura após a conversa de vestiário, substituições feitas no intervalo e novo ímpeto em campo.';
+      } else {
+        phaseInstruction =
+          'Foco durante o 2º Tempo (Reta final e desfecho): Desgaste físico, alterações táticas dos técnicos, pressão em busca do placar e organização sob tensão.';
+      }
+    }
+
     const historyPrompt =
       context.recentComments && context.recentComments.length > 0
         ? `\nHISTÓRICO DOS ÚLTIMOS COMENTÁRIOS DESTA PARTIDA (ATENÇÃO: É TERMINANTEMENTE PROIBIDO REPETIR!):
@@ -363,7 +382,7 @@ ${JSON.stringify(context.events, null, 2)}
 ${context.externalContext ? `CONTEXTO EXTERNO COLETADO PELO CRAWL4AI (NARRATIVA DOS JORNALISTAS EM CAMPO):\n${context.externalContext}\n(Utilize os fatos, lances e bastidores narrados acima para enriquecer a leitura com o calor do jogo!)\n` : ''}
 ${historyPrompt}
 DIRETRIZES DA FASE:
-${phaseInstructions[context.phase]}
+${phaseInstruction}
 
 REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO:
 1. OBEDEÇA RIGOROSAMENTE AO IDIOMA (SEM MISTURA DE LÍNGUAS):
