@@ -123,6 +123,11 @@
   - [19.4 Ancoragem Factual com Tabela Oficial (`StandingsService`) e Sanitização de Memória](#194-ancoragem-factual-com-tabela-oficial-standingsservice-e-sanitização-de-memória)
   - [19.5 Interface Operacional no AdminPanel (`/adminpanel/agents/multi-source`)](#195-interface-operacional-no-adminpanel-adminpanelagentsmulti-source)
   - [19.6 Catálogo de Ajustes a Serem Feitos e Itens Pendentes `[A FAZER]`](#196-catálogo-de-ajustes-a-serem-feitos-e-itens-pendentes-a-fazer)
+    - [19.6.5 [CONCLUÍDO] Reestruturação dos Agentes em 3 Marcos Canônicos & Regra da Expressão Pura do Jogo](#1965-concluído-reestruturação-dos-agentes-em-3-marcos-canônicos--regra-da-expressão-pura-do-jogo-)
+    - [19.6.6 [CONCLUÍDO] Infraestrutura Dinâmica de "Onde Assistir" no PocketBase (`fixture_broadcasts`) & AdMob Nativo Médio](#1966-concluído-infraestrutura-dinâmica-de-onde-assistir-no-pocketbase-fixture_broadcasts--admob-nativo-médio-)
+    - [19.6.7 [A FAZER] Rotina de Varredura Antecipada de "Onde Assistir" no Dia do Jogo](#1967-a-fazer-rotina-de-varredura-antecipada-de-onde-assistir-no-dia-do-jogo-)
+    - [19.6.8 [A FAZER] Coleção de Detentores Padrão por Liga no PocketBase (`league_broadcast_defaults`)](#1968-a-fazer-coleção-de-detentores-padrão-por-liga-no-pocketbase-league_broadcast_defaults-)
+    - [19.6.9 [A FAZER - NA MEMÓRIA] Cálculo Dinâmico do "Form" (Últimos Jogos / Momento das Equipes)](#1969-a-fazer---na-memória-cálculo-dinâmico-do-form-últimos-jogos--momento-das-equipes-)
 
 ---
 
@@ -2106,6 +2111,57 @@ Abaixo está o registro formal das melhorias e ajustes identificados para contin
 - **Cenário Atual:** Partidas gravadas antes da ativação do `FactAuditorService` (como as primeiras rodadas ou jogos de teste) podem conter frases com menções incorretas a G4 ou Z4 no PocketBase.
 - **Ajuste Necessário:**
   - Criar script de manutenção `tools/sanitize_historical_comments.ts` que itere por todos os registros da coleção `fixture_comments` no PocketBase, execute o `FactAuditorService` com a tabela correspondente e execute `PATCH` nas frases que contiverem inconsistências.
+
+#### 19.6.5 [CONCLUÍDO] Reestruturação dos Agentes em 3 Marcos Canônicos & Regra da Expressão Pura do Jogo ✅
+- **Motivação e Diagnóstico:** O ciclo dinâmico minuto a minuto (disparos contínuos a cada 5 minutos durante a bola rolando em `1H` e `2H`) causava alucinações de IA, comentários repetitivos e frustração com informações inventadas devido à lentidão ou falta de atualização minuto a minuto dos portais esportivos.
+- **Implementação Cirúrgica no Scheduler (`tactical-comments-scheduler.service.ts`):**
+  - Removidos completamente os blocos 4 (`1H`) e 5 (`2H`).
+  - Restrição estrita e consolidada aos **3 marcos canônicos de alto valor analítico**:
+    1. **Pré-Jogo (`PRE_MATCH`)**: Expectativas táticas, postura das equipes (propositiva vs reativa), disputa setorial e impacto na tabela (disparado uma única vez até 45 minutos antes do apito inicial).
+    2. **Intervalo (`HALF_TIME`)**: Balanço factual e tático consolidado dos primeiros 45 minutos com números auditados e correções necessárias dos técnicos para o 2º tempo (disparado uma única vez quando o status da partida vira `HT`).
+    3. **Fim de Jogo (`FULL_TIME`)**: Resenha final consolidada dos 90 minutos, auditoria final do placar, mérito no resultado, destaques individuais e impacto direto na tabela da competição (disparado uma única vez nos status `FT`, `AET`, `PEN`).
+- **Regra de Ouro no Prompt do Sistema (`tactical-comments.service.ts`):**
+  - Inserida diretriz mandatória proibindo explicitamente que os comentários mencionem emissoras de TV, plataformas de streaming ou expressões de "onde assistir". O comentário tático pertence estritamente ao que acontece dentro das quatro linhas, enquanto as informações de transmissão possuem um card isolado no aplicativo.
+
+#### 19.6.6 [CONCLUÍDO] Infraestrutura Dinâmica de "Onde Assistir" no PocketBase (`fixture_broadcasts`) & AdMob Nativo Médio ✅
+- **Coleção no PocketBase Comentários (`fixture_broadcasts`):**
+  - Criada na instância `https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host` com regras públicas de leitura (`listRule: ""` e `viewRule: ""`) e indexada em `fixture_id`.
+  - Schema de campos: `fixture_id` (number), `league_id` (number), `match_title` (text), `tv_open` (text), `tv_closed` (text), `streaming` (text), `details` (text), `source_url` (text).
+- **Extrator Inteligente de Transmissão (`TacticalCommentsService.extractAndSaveBroadcastInfo`):**
+  - Durante o pré-jogo, analisa o conteúdo textual dos artigos de imprensa (GE, Lance!, UOL, Gazeta, ESPN) capturados pelo Crawl4AI.
+  - Identifica canais e plataformas: TV Aberta (Globo, SBT, Band, Record), TV Fechada (SporTV, Premiere, TNT, ESPN, Space, BandSports) e Streaming (Max, CazéTV, Globoplay, Disney+, Prime Video, Paramount+).
+  - Salva de forma desacoplada e assíncrona na collection `fixture_broadcasts`.
+- **Endpoints Expostos na ZapScore API (`TacticalCommentsController`):**
+  - `GET /fixtures/:id/broadcast` (público com cache de memória).
+  - `POST /fixtures/:id/broadcast` (protegido por `ApiKeyGuard` para inserção ou correção manual pelo AdminPanel).
+- **Cliente Flutter (`apps/europa/champions`):**
+  - `ApiClient.getMatchBroadcast(int fixtureId)`: consulta de alta velocidade (com timeout de 3s) ao PocketBase com fallback para a API.
+  - `CardWhereToWatch` (`presentation/widgets/fixture.dart`): transformado em `StatefulWidget` reativo que carrega os dados dinâmicos da partida, mantendo fallback gracioso dos canais oficiais da competição (`SBT`, `TNT Sports / Space`, `Max (HBO Max)`).
+  - AdMob Nativo Médio (`AppNativeAdMediumWidget`): layout retangular nativo de 330dp posicionado logo abaixo do card "Onde Assistir", com `NativeAdFactoryMedium.kt` com binding condicional e `clipChildren/clipToPadding` corrigidos, eliminando qualquer erro de asset boundaries overflow do Google AdMob Validator.
+
+#### 19.6.7 [A FAZER] Rotina de Varredura Antecipada de "Onde Assistir" no Dia do Jogo 🚀
+- **Cenário Atual:** A extração automática de transmissão pelo scheduler está atrelada à janela do pré-jogo (45 min antes do apito inicial). No entanto, matérias de guia de TV costumam ser publicadas pelos portais esportivos pela manhã ou até 24h antes do jogo.
+- **Ajuste Necessário:**
+  - Criar um cron job diário (ex: às 08:00 e às 14:00) em `tactical-comments-scheduler.service.ts` que faça a varredura das partidas do dia e registre antecipadamente as informações na collection `fixture_broadcasts`.
+  - Isso garante que qualquer usuário abrindo o app pela manhã já visualize os canais específicos sem precisar esperar os 45 minutos finais.
+
+#### 19.6.8 [A FAZER] Coleção de Detentores Padrão por Liga no PocketBase (`league_broadcast_defaults`) 🚀
+- **Cenário Atual:** Quando uma partida ainda não foi raspada pelo agente (por exemplo, jogos futuros da semana que vem ou campeonatos estaduais recém-iniciados), o app precisa de um fallback de canais detentores confiável baseado no `league_id`.
+- **Ajuste Necessário:**
+  - Criar a coleção `league_broadcast_defaults` no PocketBase Comentários contendo os direitos oficiais de cada liga/competição:
+    - Ex: Brasileirão Série A (`71`) ➔ TV Globo / SporTV, Premiere / Premiere, Globoplay, CazéTV.
+    - Ex: Brasileirão Série B (`72`) ➔ Band, TV Brasil / Premiere / Canal GOAT.
+    - Ex: Copa do Brasil (`73`) ➔ TV Globo / SporTV, Premiere / Prime Video.
+    - Ex: Paulistão (`475`) ➔ Record / TNT / Max, CazéTV, PlayPlus.
+    - Ex: UEFA Champions League (`2`) ➔ SBT / TNT Sports, Space / Max.
+  - O método `getMatchBroadcast` ou o widget Flutter consulta primeiro a partida em `fixture_broadcasts`; se não encontrar registro específico, consulta `league_broadcast_defaults` pelo ID da liga, garantindo precisão imediata em todos os aplicativos white-label do ecossistema sem necessitar de compilações futuras.
+
+#### 19.6.9 [A FAZER - NA MEMÓRIA] Cálculo Dinâmico do "Form" (Últimos Jogos / Momento das Equipes) 🧠
+- **Cenário Atual:** O retrospecto recente das equipes nos confrontos ("Form" / Últimos Jogos no formato `V - E - D - V - V`) precisa ser exibido de maneira dinâmica e fidedigna na tela de detalhes da partida.
+- **Ajuste Necessário:**
+  - Implementar no endpoint `/fixtures/:id` ou `/fixtures/:id/h2h` o cálculo retroativo das últimas 5 partidas disputadas por cada time na mesma temporada e competição, retornando o vetor ordenado de resultados (`W`, `D`, `L`) com links para os confrontos correspondentes.
+  - No cliente Flutter, renderizar os crachás circulares estilizados de vitória (verde), empate (cinza) e derrota (vermelho) no card de detalhes da partida.
+
 
 
 
