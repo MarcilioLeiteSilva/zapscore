@@ -2083,16 +2083,18 @@ Abaixo está o registro formal das melhorias e ajustes identificados para contin
   2. Adicionar o Webhook no repositório GitHub (`Settings > Webhooks`) com evento de `push` na branch `main`.
   3. Validar se a reconstrução automática é disparada em menos de 3 minutos a cada commit.
 
-#### 19.6.2 [A FAZER] Expansão do Mapeamento ESPN para Novas Competições
-- **Cenário Atual:** O adaptador `EspnLiveAdapter` utiliza por padrão a liga `bra.1` (Série A).
-- **Ajuste Necessário:**
-  - Adicionar dicionário dinâmico de slugs ESPN no `espn.adapter.ts`:
-    - Série A: `bra.1`
-    - Série B: `bra.2`
-    - Copa do Brasil: `bra.copa_do_brasil`
-    - Champions League: `uefa.champions`
-    - Copa Libertadores: `conmebol.libertadores`
-  - Utilizar o `leagueExternalId` da partida para selecionar automaticamente o slug correto na URL da ESPN.
+#### 19.6.2 [CONCLUÍDO] Expansão do Mapeamento ESPN para Novas Competições ✅
+- **Implementação (Commit `apps/api`):** O adaptador `EspnLiveAdapter` (`apps/api/src/tactical-comments/crawler/adapters/espn.adapter.ts`) foi expandido para varrer dinamicamente os scoreboards de múltiplas ligas:
+  - `bra.1` (Brasileirão Série A)
+  - `bra.2` (Brasileirão Série B)
+  - `bra.copa_do_brasil` (Copa do Brasil)
+  - `conmebol.libertadores` (Libertadores)
+  - `conmebol.sudamericana` (Sul-Americana)
+  - `uefa.champions` (UEFA Champions League)
+  - `eng.1` (Premier League)
+  - `esp.1` (La Liga)
+  - `ita.1` (Serie A Itália)
+- **Roteamento Dinâmico de Summary:** Ao localizar a partida, armazena a chave da liga correspondente (`matchedLeague`) e a injeta diretamente na rota de resumo (`/soccer/${matchedLeague}/summary?event=${eventId}`), eliminando o bug de partidas da Série B ou internacionais tentarem ser consultadas via `bra.1`.
 
 #### 19.6.3 [A FAZER] Telemetria Visual de Sanitização no AdminPanel
 - **Cenário Atual:** Quando o `FactAuditorService` intercepta uma alucinação e a corrige, a advertência é registrada apenas nos logs do NestJS (`[FactAuditor] ⚠️ Inconsistências auditadas...`).

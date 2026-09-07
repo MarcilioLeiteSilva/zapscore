@@ -17,9 +17,20 @@ export class EspnLiveAdapter implements IMatchLiveSourceAdapter {
     const cleanAway = awayTeam.replace(/(EC|FC|SC|CR|SE|AC)$/i, '').trim().toLowerCase();
 
     try {
-      // 1. Consulta o scoreboard da Série A (bra.1) e Série B (bra.2) na API pública da ESPN
-      const leagues = ['bra.1', 'bra.2'];
+      // 1. Consulta o scoreboard das ligas suportadas na API pública da ESPN
+      const leagues = [
+        'bra.1',
+        'bra.2',
+        'bra.copa_do_brasil',
+        'conmebol.libertadores',
+        'conmebol.sudamericana',
+        'uefa.champions',
+        'eng.1',
+        'esp.1',
+        'ita.1',
+      ];
       let targetEvent: any = null;
+      let matchedLeague = 'bra.1';
 
       for (const league of leagues) {
         try {
@@ -39,7 +50,10 @@ export class EspnLiveAdapter implements IMatchLiveSourceAdapter {
             );
           });
 
-          if (targetEvent) break;
+          if (targetEvent) {
+            matchedLeague = league;
+            break;
+          }
         } catch (e: any) {
           this.logger.debug(`[EspnAdapter] Falha ao consultar scoreboard ${league}: ${e.message}`);
         }
@@ -56,8 +70,8 @@ export class EspnLiveAdapter implements IMatchLiveSourceAdapter {
       }
 
       const eventId = targetEvent.id;
-      // 2. Consulta o summary detalhado com os comentários e plays do jogo
-      const summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/summary?event=${eventId}`;
+      // 2. Consulta o summary detalhado com os comentários e plays do jogo usando o slug da liga encontrada
+      const summaryUrl = `https://site.api.espn.com/apis/site/v2/sports/soccer/${matchedLeague}/summary?event=${eventId}`;
       const summaryRes = await axios.get(summaryUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
         timeout: 4000,
