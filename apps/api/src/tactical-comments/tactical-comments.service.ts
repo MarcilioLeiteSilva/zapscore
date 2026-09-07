@@ -414,13 +414,41 @@ export class TacticalCommentsService {
             awayPoints = awayEntry.points;
           }
 
+          const tableWarnings: string[] = [];
+          if (homeRank && homeRank > 6) {
+            tableWarnings.push(`• AVISO: O ${fixture.homeTeam.name} está em ${homeRank}º lugar: NÃO DISPUTA O G4 NEM O TÍTULO! Jamais mencione que busca ou disputa G4/título.`);
+          }
+          if (awayRank && awayRank > 6) {
+            tableWarnings.push(`• AVISO: O ${fixture.awayTeam.name} está em ${awayRank}º lugar: NÃO DISPUTA O G4 NEM O TÍTULO! Jamais mencione que busca ou disputa G4/título.`);
+          }
+          if (homeRank && homeRank > 6 && awayRank && awayRank > 6) {
+            tableWarnings.push(`• ATENÇÃO MÁXIMA: NENHUM DOS DOIS CLUBES ESTÁ NO G4. É TERMINANTEMENTE PROIBIDO QUALQUER CITAÇÃO A G4 NESTE COMENTÁRIO!`);
+          }
+
           standingsText = `CLASSIFICAÇÃO REAL NO CAMPEONATO (STANDINGS OFICIAIS):
 • ${fixture.homeTeam.name}: ${homeRank ? `${homeRank}º lugar (${homePoints} pts)` : 'Posição não catalogada'}
-• ${fixture.awayTeam.name}: ${awayRank ? `${awayRank}º lugar (${awayPoints} pts)` : 'Posição não catalogada'}`;
+• ${fixture.awayTeam.name}: ${awayRank ? `${awayRank}º lugar (${awayPoints} pts)` : 'Posição não catalogada'}${tableWarnings.length > 0 ? `\n${tableWarnings.join('\n')}` : ''}`;
         }
       } catch (stErr: any) {
         this.logger.debug(`[Standings] Falha ao carregar tabela para liga ${leagueExternalId}: ${stErr.message}`);
       }
+
+      // Sanitiza recentComments antes de passar para o prompt para evitar contaminação por alucinações de minutos anteriores
+      const sanitizedRecentComments = recentComments.map((rc) => {
+        const audited = this.factAuditor.auditComment(rc.title, rc.comment, {
+          homeTeam: fixture.homeTeam.name,
+          awayTeam: fixture.awayTeam.name,
+          homeScore: fixture.homeGoals ?? 0,
+          awayScore: fixture.awayGoals ?? 0,
+          homeRank,
+          awayRank,
+        });
+        return {
+          ...rc,
+          title: audited.sanitizedTitle,
+          comment: audited.sanitizedComment,
+        };
+      });
 
       // 8. Gera a leitura tática via LLM com Prompt Caching nativo
       const insight = await this.generateInsight({
@@ -436,7 +464,7 @@ export class TacticalCommentsService {
         previousTheses,
         stats: statsSnapshot,
         externalContext,
-        recentComments,
+        recentComments: sanitizedRecentComments,
         standingsText,
       });
 

@@ -83,42 +83,71 @@ export class FactAuditorService {
     const homeRank = ctx.homeRank || 0;
     const awayRank = ctx.awayRank || 0;
 
-    // Regra G4: Se algum clube estiver fora do top 6, não pode dizer que "ambos brigam pelo G4"
-    const ambosG4Regex = /(?:ambos|os dois|as duas equipes).*?(?:briga|luta|disputa).*?(?:g-?4|g4)/i;
-    if (ambosG4Regex.test(sanitized) && (homeRank > 6 || awayRank > 6)) {
-      warnings.push(
-        `Alucinação de tabela detectada: Menção a 'ambos no G4', mas ${
-          homeRank > 6 ? `${ctx.homeTeam} (${homeRank}º)` : ''
-        } ${awayRank > 6 ? `${ctx.awayTeam} (${awayRank}º)` : ''} está fora do topo. Corrigindo frase.`,
-      );
-      sanitized = sanitized.replace(
-        /(?:o\s+empate\s+mantém\s+)?(?:ambos|os dois|as duas equipes).*?(?:briga|luta|disputa).*?(?:pelo|por)\s+(?:g-?4|g4)/gi,
-        (match) => {
-          if (homeRank > 0 && awayRank > 0) {
-            const topTeam = homeRank < awayRank ? ctx.homeTeam : ctx.awayTeam;
-            const topRank = Math.min(homeRank, awayRank);
-            const midTeam = homeRank < awayRank ? ctx.awayTeam : ctx.homeTeam;
-            const midRank = Math.max(homeRank, awayRank);
-            return `o resultado reflete momentos distintos na tabela, com o ${topTeam} (${topRank}º) no pelotão de frente e o ${midTeam} (${midRank}º) na zona intermediária`;
-          }
-          return `as duas equipes buscando seus objetivos na competição`;
-        },
-      );
-    }
-
-    // Regra individual G4
-    if (homeRank > 6) {
-      const homeG4Regex = new RegExp(`(${ctx.homeTeam}.*?(?:briga|luta|disputa).*?(?:pelo|por)\\s+(?:g-?4|g4))`, 'i');
-      if (homeG4Regex.test(sanitized)) {
-        warnings.push(`Alucinação de G4: ${ctx.homeTeam} está em ${homeRank}º e não disputa G4.`);
-        sanitized = sanitized.replace(homeG4Regex, `${ctx.homeTeam} buscando recuperação na tabela`);
+    // 1. CASO CRÍTICO: AMBOS OS CLUBES FORA DO G4/G6 (Ex: Corinthians 11º x Chapecoense 20º, Botafogo 12º x Vasco 10º)
+    if (homeRank > 6 && awayRank > 6) {
+      if (/(?:g-?4|g4)/i.test(sanitized)) {
+        warnings.push(
+          `Alucinação de tabela detectada: Menção a G4 em partida onde ${ctx.homeTeam} (${homeRank}º) e ${ctx.awayTeam} (${awayRank}º) estão ambos fora do topo. Sanitizando.`,
+        );
+        sanitized = sanitized.replace(
+          /[,;.]?\s*(?:que\s+)?(?:busca|mira|almeja|sonha|briga|luta|disputa|quer|tentando|de olho|alcançar|entrar).*?(?:ao|o|no|pelo|por|com)?\s*g-?4/gi,
+          ', que tenta melhorar sua posição na tabela',
+        );
+        sanitized = sanitized.replace(/\b(?:o\s+)?g-?4\b/gi, 'meio da tabela');
       }
     }
-    if (awayRank > 6) {
-      const awayG4Regex = new RegExp(`(${ctx.awayTeam}.*?(?:briga|luta|disputa).*?(?:pelo|por)\\s+(?:g-?4|g4))`, 'i');
-      if (awayG4Regex.test(sanitized)) {
-        warnings.push(`Alucinação de G4: ${ctx.awayTeam} está em ${awayRank}º e não disputa G4.`);
-        sanitized = sanitized.replace(awayG4Regex, `${ctx.awayTeam} buscando recuperação na tabela`);
+
+    // 2. UM DOS CLUBES ESTÁ FORA DO G4/G6 (Ex: Botafogo 12º x Palmeiras 2º)
+    if (homeRank > 6 || awayRank > 6) {
+      // Menção a 'ambos' ou 'as duas equipes' disputando G4
+      const ambosG4Regex = /(?:ambos|os dois|as duas equipes|os clubes).*?(?:g-?4|g4)/i;
+      if (ambosG4Regex.test(sanitized)) {
+        warnings.push(
+          `Alucinação de tabela detectada: Menção a 'ambos no G4', mas ${
+            homeRank > 6 ? `${ctx.homeTeam} (${homeRank}º)` : ''
+          } ${awayRank > 6 ? `${ctx.awayTeam} (${awayRank}º)` : ''} está fora do topo. Corrigindo frase.`,
+        );
+        sanitized = sanitized.replace(
+          /(?:o\s+empate\s+mantém\s+)?(?:ambos|os dois|as duas equipes|os clubes).*?(?:briga|luta|disputa|busca|mira|almeja|sonha).*?(?:pelo|por|o|ao)\s+(?:g-?4|g4)/gi,
+          (match) => {
+            if (homeRank > 0 && awayRank > 0) {
+              const topTeam = homeRank < awayRank ? ctx.homeTeam : ctx.awayTeam;
+              const topRank = Math.min(homeRank, awayRank);
+              const midTeam = homeRank < awayRank ? ctx.awayTeam : ctx.homeTeam;
+              const midRank = Math.max(homeRank, awayRank);
+              return `o resultado reflete momentos distintos na tabela, com o ${topTeam} (${topRank}º) no pelotão de frente e o ${midTeam} (${midRank}º) na zona intermediária`;
+            }
+            return `as duas equipes buscando seus objetivos na competição`;
+          },
+        );
+      }
+
+      // Menção específica ao clube que está fora do top 6 buscando G4
+      if (homeRank > 6) {
+        const homePattern = new RegExp(
+          `(${ctx.homeTeam}|time da casa|mandante|equipe da casa).*?(?:busca|mira|almeja|sonha|briga|luta|disputa|quer|olho|tentando).*?(?:ao|o|no|pelo|por|com)?\\s*g-?4`,
+          'i',
+        );
+        if (homePattern.test(sanitized)) {
+          warnings.push(`Alucinação de G4: ${ctx.homeTeam} está em ${homeRank}º e não disputa G4.`);
+          sanitized = sanitized.replace(
+            homePattern,
+            `${ctx.homeTeam} buscando estabilidade e recuperação na tabela`,
+          );
+        }
+      }
+      if (awayRank > 6) {
+        const awayPattern = new RegExp(
+          `(${ctx.awayTeam}|time visitante|visitante|equipe visitante).*?(?:busca|mira|almeja|sonha|briga|luta|disputa|quer|olho|tentando).*?(?:ao|o|no|pelo|por|com)?\\s*g-?4`,
+          'i',
+        );
+        if (awayPattern.test(sanitized)) {
+          warnings.push(`Alucinação de G4: ${ctx.awayTeam} está em ${awayRank}º e não disputa G4.`);
+          sanitized = sanitized.replace(
+            awayPattern,
+            `${ctx.awayTeam} buscando estabilidade e recuperação na tabela`,
+          );
+        }
       }
     }
 
@@ -127,10 +156,18 @@ export class FactAuditorService {
       warnings.push(`Alucinação de título: ${ctx.homeTeam} está em ${homeRank}º e não disputa título diretamente.`);
       sanitized = sanitized.replace(new RegExp(`disputa o título`, 'gi'), 'busca subir na tabela');
     }
+    if (awayRank > 4 && new RegExp(`${ctx.awayTeam}.*disputa.*título`, 'i').test(sanitized)) {
+      warnings.push(`Alucinação de título: ${ctx.awayTeam} está em ${awayRank}º e não disputa título diretamente.`);
+      sanitized = sanitized.replace(new RegExp(`disputa o título`, 'gi'), 'busca subir na tabela');
+    }
 
     // Regra Z4: Time fora dos 4 últimos não pode ser citado como "lutando contra o Z4"
     if (homeRank < 16 && new RegExp(`${ctx.homeTeam}.*(no|contra o)\\s+z-?4`, 'i').test(sanitized)) {
       warnings.push(`Alucinação de Z4: ${ctx.homeTeam} está em ${homeRank}º e não está na zona de rebaixamento.`);
+      sanitized = sanitized.replace(new RegExp(`(no|contra o)\\s+z-?4`, 'gi'), 'na parte intermediária');
+    }
+    if (awayRank < 16 && new RegExp(`${ctx.awayTeam}.*(no|contra o)\\s+z-?4`, 'i').test(sanitized)) {
+      warnings.push(`Alucinação de Z4: ${ctx.awayTeam} está em ${awayRank}º e não está na zona de rebaixamento.`);
       sanitized = sanitized.replace(new RegExp(`(no|contra o)\\s+z-?4`, 'gi'), 'na parte intermediária');
     }
 
