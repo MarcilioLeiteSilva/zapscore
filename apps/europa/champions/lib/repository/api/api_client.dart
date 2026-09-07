@@ -385,5 +385,36 @@ class ApiClient {
     }
     throw Exception('Failed to load AI performance stats');
   }
+
+  Future<Map<String, dynamic>?> getMatchBroadcast(int fixtureId) async {
+    try {
+      final pbUrl =
+          'https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host/api/collections/fixture_broadcasts/records?filter=(fixture_id=$fixtureId)&limit=1';
+      final pbRes =
+          await http.get(Uri.parse(pbUrl)).timeout(const Duration(seconds: 3));
+      if (pbRes.statusCode == 200) {
+        final data = json.decode(pbRes.body);
+        if (data != null &&
+            data['items'] != null &&
+            (data['items'] as List).isNotEmpty) {
+          return data['items'][0] as Map<String, dynamic>;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      final apiRes = await http
+          .get(Uri.parse('$baseUrl/fixtures/$fixtureId/broadcast'))
+          .timeout(const Duration(seconds: 3));
+      if (apiRes.statusCode == 200) {
+        final data = _decodeResponse(apiRes);
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
 }
 

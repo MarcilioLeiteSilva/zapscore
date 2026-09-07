@@ -36,11 +36,11 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
           final currentLeagueId = state is LeagueLoaded ? state.selectedLeagueId : widget.league.externalId;
           final competition = state is LeagueLoaded ? state.competition : null;
           final phases = competition?.phases ?? [];
-          final selectedPhaseId = state is LeagueLoaded ? state.selectedPhaseId : 'primeira_fase_a1';
+          final selectedPhaseId = state is LeagueLoaded ? state.selectedPhaseId : 'champions_league_stage';
 
           return Scaffold(
             appBar: AppBar(
-              title: const Text('UEFA Champions League'),
+              title: const Text('Liga dos Campeões'),
               actions: [
                 BlocBuilder<FavoriteCubit, FavoriteState>(
                   builder: (context, favState) {

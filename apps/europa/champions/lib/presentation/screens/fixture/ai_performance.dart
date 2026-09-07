@@ -37,7 +37,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       bool hasChampions = filtered.any((l) => AppConfig.supportedLeagueIds.contains(l.externalId) || l.name.toLowerCase().contains('champions'));
 
       if (!hasChampions) {
-        filtered.insert(0, League(id: '2', externalId: 2, name: 'UEFA Champions League', country: 'World'));
+        filtered.insert(0, League(id: '2', externalId: 2, name: 'Liga dos Campeões', country: 'World'));
       }
 
       setState(() {
@@ -47,7 +47,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       print('Error loading leagues for filter: $e');
       setState(() {
         _leagues = [
-          League(id: '2', externalId: 2, name: 'UEFA Champions League', country: 'World'),
+          League(id: '2', externalId: 2, name: 'Liga dos Campeões', country: 'World'),
         ];
       });
     }

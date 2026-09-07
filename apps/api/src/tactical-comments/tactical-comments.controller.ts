@@ -16,6 +16,7 @@ import {
   TacticalAgentResponse,
   TacticalPromptConfig,
 } from './interfaces/tactical-comments.types';
+import { FixtureBroadcastRecord } from './crawler/crawler.types';
 
 @Controller('fixtures')
 export class TacticalCommentsController {
@@ -47,6 +48,38 @@ export class TacticalCommentsController {
   @Get(':id/comments')
   async getFixtureComments(@Param('id', ParseIntPipe) fixtureId: number) {
     return this.tacticalCommentsService.getComments(fixtureId);
+  }
+
+  /**
+   * Retorna as informações de transmissão ("Onde Assistir") da partida
+   * Endpoint público
+   */
+  @Get(':id/broadcast')
+  async getFixtureBroadcast(@Param('id', ParseIntPipe) fixtureId: number) {
+    return this.tacticalCommentsService.getBroadcast(fixtureId);
+  }
+
+  /**
+   * Atualiza ou cadastra manualmente a transmissão ("Onde Assistir") de uma partida
+   * Protegido por ADMIN_API_KEY (header: x-api-key)
+   */
+  @Post(':id/broadcast')
+  @UseGuards(ApiKeyGuard)
+  @HttpCode(HttpStatus.OK)
+  async saveFixtureBroadcast(
+    @Param('id', ParseIntPipe) fixtureId: number,
+    @Body() body: Partial<FixtureBroadcastRecord>,
+  ) {
+    return this.tacticalCommentsService.saveBroadcast({
+      fixture_id: fixtureId,
+      league_id: body.league_id || 0,
+      match_title: body.match_title,
+      tv_open: body.tv_open,
+      tv_closed: body.tv_closed,
+      streaming: body.streaming,
+      details: body.details,
+      source_url: body.source_url,
+    });
   }
 
   /**

@@ -123,8 +123,37 @@ class TeamOverview extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 margin: const EdgeInsets.symmetric(horizontal: 10),
-                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-                child: Center(child: Text('coming_soon'.tr(context))),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                child: state.teamScorers.isNotEmpty
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(
+                          state.teamScorers.length > 5 ? 5 : state.teamScorers.length,
+                          (idx) {
+                            final scorer = state.teamScorers[idx];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: idx < (state.teamScorers.length > 5 ? 4 : state.teamScorers.length - 1) ? 10 : 0,
+                              ),
+                              child: CardTopScores(
+                                scorer: scorer,
+                                rank: idx + 1,
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Nenhum gol registrado nesta edição',
+                            style: context.textTheme.bodySmall?.copyWith(
+                              color: Colors.white60,
+                            ),
+                          ),
+                        ),
+                      ),
               ),
               const Gap(50),
             ],

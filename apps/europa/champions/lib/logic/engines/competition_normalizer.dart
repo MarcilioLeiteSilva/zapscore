@@ -71,19 +71,39 @@ class CompetitionNormalizer {
       }
     }
 
+    // Agrupar partidas da Fase de Liga por rodada oficial
+    final Map<String, List<Fixture>> stageRoundsMap = {};
+    for (var f in leagueStageFixtures) {
+      final rName = f.round ?? 'League Stage - 1';
+      stageRoundsMap.putIfAbsent(rName, () => []).add(f);
+    }
+
+    final List<PhaseRound> stagePhaseRounds = [];
+    int roundCounter = 1;
+    stageRoundsMap.forEach((rName, fList) {
+      stagePhaseRounds.add(PhaseRound(
+        id: 'round_$roundCounter',
+        number: roundCounter,
+        name: rName,
+        fixtures: fList,
+      ));
+      roundCounter++;
+    });
+
     // 3. Fase 1: Fase de Liga (Tabela Única de 36 clubes)
     phases.add(CompetitionPhase(
       id: 'champions_league_stage',
-      name: 'Fase de Liga (36 Clubes)',
+      name: 'Fase de Liga',
       type: PhaseType.league,
       standings: leagueStandings,
       fixtures: leagueStageFixtures,
+      rounds: stagePhaseRounds,
     ));
 
-    // 4. Filtrar partidas de Mata-Mata
+    // 4. Filtrar partidas de Mata-Mata pós Fase de Liga
     final playoffFixtures = rawFixtures.where((f) {
       final r = f.round?.toLowerCase() ?? '';
-      return r.contains('play-off') || r.contains('playoff') || r.contains('knockout round play-offs');
+      return r.contains('knockout round play-off') || r.contains('knockout play-off');
     }).toList();
 
     final r16Fixtures = rawFixtures.where((f) {
@@ -122,7 +142,6 @@ class CompetitionNormalizer {
       allKnockoutTies.addAll(sfTies);
       allKnockoutTies.addAll(finalTies);
     } else {
-      // Estrutura prévia do mata-mata 2026/27 oficial
       allKnockoutTies.addAll(ChampionsLeague2026Data.getKnockoutTies());
     }
 
@@ -134,34 +153,48 @@ class CompetitionNormalizer {
       ...finalFixtures,
     ];
 
-    phases.add(CompetitionPhase(
-      id: 'champions_knockout',
-      name: 'Mata-Mata / Chaveamento',
-      type: PhaseType.knockout,
-      ties: allKnockoutTies,
-      fixtures: allKnockoutFixtures,
-    ));
-
     // 6. Fases de Qualificação Preliminar (se houver partidas na temporada)
     final qualFixtures = rawFixtures.where((f) {
       final r = f.round?.toLowerCase() ?? '';
-      return r.contains('qualifying') || r.contains('preliminary') || r.contains('qualificação') || r.contains('eliminatória');
+      return r.contains('qualifying') ||
+          r.contains('preliminary') ||
+          r.contains('qualificação') ||
+          r.contains('eliminatória') ||
+          (r.contains('play-off') && !r.contains('knockout'));
     }).toList();
 
     if (qualFixtures.isNotEmpty) {
+      final Map<String, List<Fixture>> qualRoundsMap = {};
+      for (var f in qualFixtures) {
+        final rName = f.round ?? 'Qualificação';
+        qualRoundsMap.putIfAbsent(rName, () => []).add(f);
+      }
+      final List<PhaseRound> qualPhaseRounds = [];
+      int qCounter = 1;
+      qualRoundsMap.forEach((rName, fList) {
+        qualPhaseRounds.add(PhaseRound(
+          id: 'qual_round_$qCounter',
+          number: qCounter,
+          name: rName,
+          fixtures: fList,
+        ));
+        qCounter++;
+      });
+
       phases.add(CompetitionPhase(
         id: 'champions_qualifying',
         name: 'Fase de Qualificação',
         type: PhaseType.knockout,
         ties: BracketEngine.buildTiesFromFixtures('champions_qualifying', qualFixtures, isTwoLegged: true),
         fixtures: qualFixtures,
+        rounds: qualPhaseRounds,
       ));
     }
 
     return Competition(
       id: leagueId.toString(),
       externalId: leagueId,
-      name: leagueName.isNotEmpty ? leagueName : 'UEFA Champions League',
+      name: leagueName.isNotEmpty ? leagueName : 'Liga dos Campeões',
       logo: leagueLogo ?? 'https://media.api-sports.io/football/leagues/2.png',
       country: 'World',
       season: season,

@@ -15,7 +15,7 @@
         <FrameLayout
             android:layout_width="120dp"
             android:layout_height="90dp"
-            android:background="#161B22"
+            android:background="@android:color/transparent"
             android:layout_gravity="center_vertical">
 
             <ImageView

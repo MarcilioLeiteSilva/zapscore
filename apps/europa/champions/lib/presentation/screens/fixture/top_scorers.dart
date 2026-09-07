@@ -15,7 +15,7 @@ class _TopScorersScreenState extends State<TopScorersScreen> {
   final Map<int, String?> _errorMap = {};
 
   final List<Map<String, dynamic>> _leagues = [
-    {'id': AppConfig.championsLeagueId, 'name': 'UEFA Champions League'},
+    {'id': AppConfig.championsLeagueId, 'name': 'Liga dos Campeões'},
   ];
 
   @override

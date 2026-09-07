@@ -28,7 +28,11 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => TeamCubit(context.read<HomeCubit>().apiClient)
-        ..fetchTeamData(widget.team.externalId, preferredLeagueId: widget.leagueId),
+        ..fetchTeamData(
+          widget.team.externalId,
+          preferredLeagueId: widget.leagueId,
+          teamName: widget.team.name,
+        ),
       child: Scaffold(
         appBar: AppBar(
           title: Row(

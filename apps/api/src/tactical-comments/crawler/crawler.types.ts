@@ -37,3 +37,18 @@ export interface MultiSourceLiveDelta {
   pressHighlights: string[];
   rawSummary: string;
 }
+
+export interface FixtureBroadcastRecord {
+  id?: string;
+  fixture_id: number;
+  league_id: number;
+  match_title?: string;
+  tv_open?: string;
+  tv_closed?: string;
+  streaming?: string;
+  details?: string;
+  source_url?: string;
+  created?: string;
+  updated?: string;
+}
+

@@ -29,7 +29,7 @@ class LeagueCubit extends Cubit<LeagueState> {
       final scorers = results[2] as List<Scorer>;
 
       // Obter nome da competição
-      String compName = 'UEFA Champions League';
+      String compName = 'Liga dos Campeões';
 
       // Normalizar via Motor de Competições
       final competition = CompetitionNormalizer.normalize(
@@ -68,13 +68,21 @@ class LeagueCubit extends Cubit<LeagueState> {
         return a.compareTo(b);
       });
 
-      // Rodada atual: primeira rodada com jogo hoje ou no futuro
-      final now = DateTime.now();
-      final futureFixture = fixtures.firstWhere(
-        (f) => f.date.isAfter(now.subtract(const Duration(hours: 4))),
-        orElse: () => fixtures.isNotEmpty ? fixtures.last : Fixture.dummy(),
+      // Rodada atual: primeira rodada com jogo hoje ou no futuro na fase ativa
+      final activePhase = competition.phases.firstWhere(
+        (p) => p.id == defaultPhaseId,
+        orElse: () => competition.phases.first,
       );
-      final currentRound = futureFixture.round ?? (rounds.isNotEmpty ? rounds.first : 'N/A');
+      final phaseFixtures = activePhase.fixtures.isNotEmpty ? activePhase.fixtures : fixtures;
+      final now = DateTime.now();
+      final futureFixture = phaseFixtures.firstWhere(
+        (f) => f.date.isAfter(now.subtract(const Duration(hours: 4))),
+        orElse: () => phaseFixtures.isNotEmpty ? phaseFixtures.first : Fixture.dummy(),
+      );
+      final currentRound = futureFixture.round ??
+          (activePhase.rounds.isNotEmpty
+              ? activePhase.rounds.first.name
+              : (rounds.isNotEmpty ? rounds.first : 'N/A'));
 
       emit(LeagueLoaded(
         fixtures: fixtures,

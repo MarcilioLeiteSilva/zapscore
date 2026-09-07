@@ -531,8 +531,60 @@ class NewsLeaguePage extends StatelessWidget {
   }
 }
 
-class RoundLeaguePage extends StatelessWidget {
+class RoundLeaguePage extends StatefulWidget {
   const RoundLeaguePage({super.key});
+
+  @override
+  State<RoundLeaguePage> createState() => _RoundLeaguePageState();
+}
+
+class _RoundLeaguePageState extends State<RoundLeaguePage> {
+  int _selectedStageIndex = 0;
+
+  static const List<String> _stages = [
+    'Primeira Fase',
+    'Play-offs',
+    'Oitavas',
+    'Quartas',
+    'Semifinais',
+    'Final',
+  ];
+
+  List<Fixture> _getStageFixtures(int stageIdx, List<Fixture> allFixtures) {
+    switch (stageIdx) {
+      case 1:
+        return allFixtures.where((f) {
+          final r = f.round?.toLowerCase() ?? '';
+          return (r.contains('knockout') && r.contains('play-off')) || r.contains('knockout round play-offs');
+        }).toList();
+      case 2:
+        return allFixtures.where((f) {
+          final r = f.round?.toLowerCase() ?? '';
+          return r.contains('round of 16') || r.contains('oitavas') || r.contains('1/8');
+        }).toList();
+      case 3:
+        return allFixtures.where((f) {
+          final r = f.round?.toLowerCase() ?? '';
+          return r.contains('quarter') || r.contains('quartas') || r.contains('1/4');
+        }).toList();
+      case 4:
+        return allFixtures.where((f) {
+          final r = f.round?.toLowerCase() ?? '';
+          return r.contains('semi') || r.contains('1/2');
+        }).toList();
+      case 5:
+        return allFixtures.where((f) {
+          final r = f.round?.toLowerCase() ?? '';
+          return r.contains('final') &&
+              !r.contains('semi') &&
+              !r.contains('quarter') &&
+              !r.contains('play-off') &&
+              !r.contains('1/8');
+        }).toList();
+      default:
+        return [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -545,8 +597,8 @@ class RoundLeaguePage extends StatelessWidget {
           final cubit = context.read<LeagueCubit>();
           final activePhase = state.activePhase;
 
-          // Se for fase eliminatória sem rodadas numeradas (ex: Quartas, Semis, Final, Taça Rio)
-          if (activePhase != null && activePhase.isKnockout) {
+          // Se for fase eliminatória sem rodadas numeradas (ex: chaveamento geral)
+          if (activePhase != null && activePhase.isKnockout && activePhase.id != 'champions_qualifying') {
             final fixtures = activePhase.fixtures;
             if (fixtures.isEmpty) {
               return Center(
@@ -564,7 +616,9 @@ class RoundLeaguePage extends StatelessWidget {
             );
           }
 
-          // Para fases com rodadas (Taça Guanabara, Quadrangular, Taça Santos Dumont)
+          final isLeagueStage = activePhase == null || activePhase.id == 'champions_league_stage';
+
+          // Fases com rodadas (Primeira Fase / Fase de Liga ou Fase de Qualificação)
           final availableFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
               ? activePhase.fixtures
               : state.fixtures;
@@ -584,72 +638,179 @@ class RoundLeaguePage extends StatelessWidget {
 
           return Column(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: hasPrev ? cubit.prevRound : null,
-                      icon: Icon(
-                        Icons.arrow_back_ios,
-                        size: 18,
-                        color: hasPrev ? null : Colors.white24,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        formatRound(state.selectedRound, context),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.urbanist(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: hasNext ? cubit.nextRound : null,
-                      icon: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 18,
-                        color: hasNext ? null : Colors.white24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: displayFixtures.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Nenhum jogo nesta rodada.',
-                          style: GoogleFonts.urbanist(color: Colors.white70),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
-                        itemBuilder: (_, i) {
-                          final fix = displayFixtures[i];
-                          if (i > 0 && i % 4 == 0) {
-                            return Column(
-                              children: [
-                                const AppNativeAdWidget(variant: NativeAdVariant.fixture),
-                                const Gap(10),
-                                CardFixtureLeagueItem(fixture: fix),
-                              ],
-                            );
-                          }
-                          return CardFixtureLeagueItem(fixture: fix);
+              // Card fino seletor de andamento das fases (Primeira Fase, Play-offs, Oitavas, Quartas, Semifinais, Final)
+              if (isLeagueStage) ...[
+                Container(
+                  width: context.width,
+                  height: 36,
+                  margin: const EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 2),
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _stages.length,
+                    separatorBuilder: (_, __) => const Gap(6),
+                    itemBuilder: (context, idx) {
+                      final isSelected = _selectedStageIndex == idx;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedStageIndex = idx;
+                          });
                         },
-                        separatorBuilder: (_, i) => const Gap(10),
-                        itemCount: displayFixtures.length,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColor.accent
+                                : Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColor.accent
+                                  : Theme.of(context).dividerColor.withOpacity(0.1),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _stages[idx],
+                              style: GoogleFonts.urbanist(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              // Exibição de acordo com o estágio selecionado
+              if (!isLeagueStage || _selectedStageIndex == 0) ...[
+                // Seletor de Rodadas (1ª Rodada até 8ª Rodada)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: hasPrev ? cubit.prevRound : null,
+                        icon: Icon(
+                          Icons.arrow_back_ios,
+                          size: 18,
+                          color: hasPrev ? null : Colors.white24,
+                        ),
                       ),
-              ),
+                      Expanded(
+                        child: Text(
+                          formatRound(state.selectedRound, context),
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.urbanist(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: hasNext ? cubit.nextRound : null,
+                        icon: Icon(
+                          Icons.arrow_forward_ios,
+                          size: 18,
+                          color: hasNext ? null : Colors.white24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: displayFixtures.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Nenhum jogo nesta rodada.',
+                            style: GoogleFonts.urbanist(color: Colors.white70),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
+                          itemBuilder: (_, i) {
+                            final fix = displayFixtures[i];
+                            if (i > 0 && i % 4 == 0) {
+                              return Column(
+                                children: [
+                                  const AppNativeAdWidget(variant: NativeAdVariant.fixture),
+                                  const Gap(10),
+                                  CardFixtureLeagueItem(fixture: fix),
+                                ],
+                              );
+                            }
+                            return CardFixtureLeagueItem(fixture: fix);
+                          },
+                          separatorBuilder: (_, i) => const Gap(10),
+                          itemCount: displayFixtures.length,
+                        ),
+                ),
+              ] else ...[
+                // Estágios de Mata-Mata (Play-offs até Final)
+                Builder(
+                  builder: (context) {
+                    final stageFixtures = _getStageFixtures(_selectedStageIndex, state.fixtures);
+                    if (stageFixtures.isNotEmpty) {
+                      return Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
+                          itemBuilder: (_, i) => CardFixtureLeagueItem(fixture: stageFixtures[i]),
+                          separatorBuilder: (_, i) => const Gap(10),
+                          itemCount: stageFixtures.length,
+                        ),
+                      );
+                    }
+                    return Expanded(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.event_note_outlined,
+                                size: 44,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                              ),
+                              const Gap(12),
+                              Text(
+                                'Confrontos a definir',
+                                style: GoogleFonts.urbanist(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              const Gap(6),
+                              Text(
+                                'Vai depender da classificação nas rodadas da primeira fase.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.urbanist(
+                                  fontSize: 13,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           );
         }

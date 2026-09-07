@@ -42,7 +42,7 @@ class AppTranslation {
       'overview': 'Resumo',
       'team_stats': 'Estatísticas',
       'recent_match': 'Partida Recente',
-      'form': 'Forma',
+      'form': 'Últimos Jogos',
       'top_scorers': 'Artilheiros',
       'coming_soon': 'Em breve',
       'last_5': 'Últimos 5',
@@ -131,7 +131,7 @@ class AppTranslation {
       'rate': 'Avaliar',
       'privacy_policy': 'Política de Privacidade',
       'lgpd': 'LGPD (Proteção de Dados)',
-      'about_desc': 'O UEFA Champions League é o seu aplicativo definitivo para acompanhar o UEFA Champions League em tempo real. Receba alertas ao vivo de partidas, gols, estatísticas detalhadas, escalações, classificação e notícias dos seus clubes favoritos.',
+      'about_desc': 'A Liga dos Campeões é o seu aplicativo definitivo para acompanhar a Liga dos Campeões em tempo real. Receba alertas ao vivo de partidas, gols, estatísticas detalhadas, escalações, classificação e notícias dos seus clubes favoritos.',
       'no_table_available': 'Tabela não disponível para este time no momento',
       'failed_load_news': 'Falha ao carregar notícias',
       'failed_load_videos': 'Falha ao carregar vídeos',
@@ -168,7 +168,7 @@ class AppTranslation {
       'rounds': 'Rodadas',
       'videos': 'Vídeos',
       'ai_predictions': 'Palpites da IA',
-      'theme_default_name': 'Padrão (Champions League)',
+      'theme_default_name': 'Padrão (Liga dos Campeões)',
       'theme_default_desc': 'Tema escuro de alta visibilidade e contraste',
       'theme_dark_name': 'Escuro',
       'theme_dark_desc': 'Tons escuros e alta visibilidade noturna',
@@ -343,7 +343,7 @@ class AppTranslation {
       'rate': 'Rate App',
       'privacy_policy': 'Privacy Policy',
       'lgpd': 'GDPR & Data Protection',
-      'about_desc': 'ZapScore UEFA Champions League is your ultimate app for following the Champions League Championship in real time. Get live match alerts, goals, detailed stats, lineups, standings, and news from your favorite clubs.',
+      'about_desc': 'ZapScore Liga dos Campeões is your ultimate app for following the championship in real time. Get live match alerts, goals, detailed stats, lineups, standings, and news from your favorite clubs.',
       'no_table_available': 'Table not available for this team at the moment',
       'failed_load_news': 'Failed to load news',
       'failed_load_videos': 'Failed to load videos',
@@ -380,7 +380,7 @@ class AppTranslation {
       'rounds': 'Matchdays',
       'videos': 'Videos',
       'ai_predictions': 'AI Predictions',
-      'theme_default_name': 'Default (Champions League)',
+      'theme_default_name': 'Default (Liga dos Campeões)',
       'theme_default_desc': 'Standard dark mode with high contrast accents',
       'theme_dark_name': 'Dark',
       'theme_dark_desc': 'Dark tones and high night visibility',
@@ -447,7 +447,7 @@ String formatRound(String? round, [BuildContext? context]) {
   final roundWord = context != null ? 'round_label'.tr(context) : 'Rodada';
 
   final generalNumMatch = RegExp(
-    r'(?:Regular Season|Relegation Group|1st Phase|Matchday|Round)\s*-\s*(\d+)|(?:Matchday|Round)\s*(\d+)',
+    r'(?:League Stage|Regular Season|Relegation Group|1st Phase|Matchday|Round)\s*-\s*(\d+)|(?:Matchday|Round)\s*(\d+)',
     caseSensitive: false,
   ).firstMatch(trimmed);
 
@@ -457,6 +457,10 @@ String formatRound(String? round, [BuildContext? context]) {
   }
 
   final lower = trimmed.toLowerCase();
+  if (lower.contains('1st qualifying round')) return '1ª Fase Qualificatória';
+  if (lower.contains('2nd qualifying round')) return '2ª Fase Qualificatória';
+  if (lower.contains('3rd qualifying round')) return '3ª Fase Qualificatória';
+  if (lower.contains('qualifying')) return 'Fase Qualificatória';
   if (lower.contains('group stage')) return context != null ? 'group_stage'.tr(context) : 'Fase de Grupos';
   if (lower.contains('quarter-final') || lower.contains('quarter final') || lower.contains('quarterfinals')) return context != null ? 'quarter_finals'.tr(context) : 'Quartas de Final';
   if (lower.contains('semi-final') || lower.contains('semi final') || lower.contains('semifinals')) return context != null ? 'semi_finals'.tr(context) : 'Semifinais';

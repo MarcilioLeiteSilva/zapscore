@@ -167,7 +167,7 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
   final Map<int, bool> _loadingMap = {};
 
   final List<Map<String, dynamic>> _leagues = [
-    {'id': AppConfig.championsLeagueId, 'name': 'UEFA Champions League'},
+    {'id': AppConfig.championsLeagueId, 'name': 'Liga dos Campeões'},
   ];
 
   @override
@@ -1108,6 +1108,180 @@ class CardBasicInfo extends StatelessWidget {
               label: formatRound(fixture!.round, context),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class CardWhereToWatch extends StatefulWidget {
+  const CardWhereToWatch({super.key, this.fixture});
+  final Fixture? fixture;
+
+  @override
+  State<CardWhereToWatch> createState() => _CardWhereToWatchState();
+}
+
+class _CardWhereToWatchState extends State<CardWhereToWatch> {
+  String _tvOpen = 'SBT';
+  String _tvClosed = 'TNT Sports / Space';
+  String _streaming = 'Max (HBO Max)';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBroadcast();
+  }
+
+  @override
+  void didUpdateWidget(covariant CardWhereToWatch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fixture?.externalId != widget.fixture?.externalId) {
+      _loadBroadcast();
+    }
+  }
+
+  Future<void> _loadBroadcast() async {
+    final fixtureId = widget.fixture?.externalId;
+    if (fixtureId == null || fixtureId == 0) return;
+
+    final data = await ApiClient().getMatchBroadcast(fixtureId);
+    if (data != null && mounted) {
+      setState(() {
+        if (data['tv_open'] != null &&
+            (data['tv_open'] as String).trim().isNotEmpty) {
+          _tvOpen = (data['tv_open'] as String).trim();
+        }
+        if (data['tv_closed'] != null &&
+            (data['tv_closed'] as String).trim().isNotEmpty) {
+          _tvClosed = (data['tv_closed'] as String).trim();
+        }
+        if (data['streaming'] != null &&
+            (data['streaming'] as String).trim().isNotEmpty) {
+          _streaming = (data['streaming'] as String).trim();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: context.width,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: const Color(0xFF1B3765),
+        border: Border.all(color: const Color(0xFF264C87), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.live_tv_rounded,
+                color: Color(0xFF38BDF8),
+                size: 20,
+              ),
+              const Gap(8),
+              Text(
+                'Onde Assistir',
+                style: context.textTheme.headlineSmall!.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF22C55E).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF22C55E), width: 0.8),
+                ),
+                child: const Text(
+                  'Transmissão Brasil',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4ADE80),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(14),
+          _buildBroadcastItem(
+            context,
+            type: 'TV Aberta',
+            channels: _tvOpen,
+            icon: Icons.tv_rounded,
+            badgeColor: const Color(0xFF0284C7),
+          ),
+          const Gap(10),
+          _buildBroadcastItem(
+            context,
+            type: 'TV por Assinatura',
+            channels: _tvClosed,
+            icon: Icons.connected_tv_rounded,
+            badgeColor: const Color(0xFF8B5CF6),
+          ),
+          const Gap(10),
+          _buildBroadcastItem(
+            context,
+            type: 'Streaming Online',
+            channels: _streaming,
+            icon: Icons.play_circle_filled_rounded,
+            badgeColor: const Color(0xFFEC4899),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBroadcastItem(
+    BuildContext context, {
+    required String type,
+    required String channels,
+    required IconData icon,
+    required Color badgeColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: badgeColor),
+          const Gap(10),
+          Text(
+            type,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              channels,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );

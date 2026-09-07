@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { FixtureCommentRecord, TacticalPromptConfig } from '../interfaces/tactical-comments.types';
+import { FixtureBroadcastRecord } from '../crawler/crawler.types';
 
 @Injectable()
 export class PocketbaseCommentsClient {
@@ -16,6 +17,7 @@ export class PocketbaseCommentsClient {
 
   // Cache em memória simples para leituras repetidas da mesma partida (TTL: 15 segundos)
   private readonly readCache = new Map<number, { data: FixtureCommentRecord[]; expiresAt: number }>();
+  private readonly broadcastCache = new Map<number, { data: FixtureBroadcastRecord | null; expiresAt: number }>();
   private cachedConfig: { data: TacticalPromptConfig; expiresAt: number } | null = null;
 
   constructor(private readonly configService: ConfigService) {
@@ -270,6 +272,117 @@ export class PocketbaseCommentsClient {
       return updated;
     } catch (err: any) {
       this.logger.error(`[PocketBase Comentários] Erro ao salvar prompt config: ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Busca dados de transmissão ("Onde Assistir") de uma partida (com cache de 60s)
+   */
+  async getBroadcastByFixture(fixtureId: number): Promise<FixtureBroadcastRecord | null> {
+    const now = Date.now();
+    const cached = this.broadcastCache.get(fixtureId);
+    if (cached && now < cached.expiresAt) {
+      return cached.data;
+    }
+
+    try {
+      const url = `${this.baseUrl}/api/collections/fixture_broadcasts/records`;
+      const response = await axios.get(url, {
+        params: {
+          filter: `fixture_id=${fixtureId}`,
+          limit: 1,
+        },
+        timeout: 6000,
+      });
+
+      const item = response.data?.items?.[0];
+      if (!item) {
+        this.broadcastCache.set(fixtureId, { data: null, expiresAt: now + 30000 });
+        return null;
+      }
+
+      const record: FixtureBroadcastRecord = {
+        id: item.id,
+        fixture_id: item.fixture_id,
+        league_id: item.league_id,
+        match_title: item.match_title,
+        tv_open: item.tv_open,
+        tv_closed: item.tv_closed,
+        streaming: item.streaming,
+        details: item.details,
+        source_url: item.source_url,
+        created: item.created,
+        updated: item.updated,
+      };
+
+      this.broadcastCache.set(fixtureId, { data: record, expiresAt: now + 60000 });
+      return record;
+    } catch (err: any) {
+      this.logger.warn(
+        `[PocketBase Comentários] Falha ao buscar transmissão para fixture ${fixtureId}: ${err.message}`,
+      );
+      return cached?.data || null;
+    }
+  }
+
+  /**
+   * Grava ou atualiza a informação de transmissão ("Onde Assistir") na collection `fixture_broadcasts`
+   */
+  async saveBroadcast(record: FixtureBroadcastRecord): Promise<FixtureBroadcastRecord | null> {
+    const token = await this.getAuthToken();
+    if (!token) {
+      this.logger.error('[PocketBase Comentários] Sem token para salvar dados de transmissão.');
+      return null;
+    }
+
+    try {
+      // Verifica se já existe registro para esta fixture
+      const existing = await this.getBroadcastByFixture(record.fixture_id);
+      const payload = {
+        fixture_id: record.fixture_id,
+        league_id: record.league_id,
+        match_title: record.match_title || '',
+        tv_open: record.tv_open || '',
+        tv_closed: record.tv_closed || '',
+        streaming: record.streaming || '',
+        details: record.details || '',
+        source_url: record.source_url || '',
+      };
+
+      let responseId = existing?.id;
+      if (existing?.id) {
+        const url = `${this.baseUrl}/api/collections/fixture_broadcasts/records/${existing.id}`;
+        const res = await axios.patch(url, payload, {
+          headers: { 'Content-Type': 'application/json', Authorization: token },
+          timeout: 8000,
+        });
+        responseId = res.data?.id;
+      } else {
+        const url = `${this.baseUrl}/api/collections/fixture_broadcasts/records`;
+        const res = await axios.post(url, payload, {
+          headers: { 'Content-Type': 'application/json', Authorization: token },
+          timeout: 8000,
+        });
+        responseId = res.data?.id;
+      }
+
+      const savedRecord: FixtureBroadcastRecord = {
+        ...payload,
+        id: responseId,
+      };
+
+      // Invalida cache
+      this.broadcastCache.delete(record.fixture_id);
+      this.logger.log(
+        `[PocketBase Comentários] 📺 Transmissão "Onde Assistir" gravada para fixture ${record.fixture_id} (${record.match_title || 'N/A'})`,
+      );
+
+      return savedRecord;
+    } catch (err: any) {
+      this.logger.error(
+        `[PocketBase Comentários] Erro ao gravar transmissão para fixture ${record.fixture_id}: ${err.message}`,
+      );
       return null;
     }
   }

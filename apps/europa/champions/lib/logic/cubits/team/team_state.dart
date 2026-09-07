@@ -12,6 +12,7 @@ class TeamLoaded extends TeamState {
   final Map<String, dynamic>? stats;
   final String? leagueName;
   final List<SquadPlayer> squad;
+  final List<Scorer> teamScorers;
 
   TeamLoaded({
     required this.fixtures,
@@ -19,6 +20,7 @@ class TeamLoaded extends TeamState {
     this.stats,
     this.leagueName,
     this.squad = const [],
+    this.teamScorers = const [],
   });
 }
 

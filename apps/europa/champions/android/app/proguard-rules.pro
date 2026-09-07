@@ -22,3 +22,7 @@
 -keepattributes SourceFile,LineNumberTable
 -keep public class * extends java.lang.Exception
 -dontwarn java.lang.invoke.**
+
+# Champions League Native Ad Factory
+-keep class com.zapscore.championsleague.NativeAdFactorySmall { *; }
+-keep class com.zapscore.championsleague.NativeAdFactoryMedium { *; }

@@ -16,6 +16,7 @@ import {
   TacticalAgentResponse,
   TacticalPromptConfig,
 } from './interfaces/tactical-comments.types';
+import { FixtureBroadcastRecord } from './crawler/crawler.types';
 
 interface FixtureUrlCacheEntry {
   url: string;
@@ -100,6 +101,20 @@ export class TacticalCommentsService {
    */
   async savePromptConfig(config: Partial<TacticalPromptConfig>): Promise<TacticalPromptConfig | null> {
     return this.pbCommentsClient.savePromptConfig(config);
+  }
+
+  /**
+   * Obtém as informações de transmissão ("Onde Assistir") da partida
+   */
+  async getBroadcast(fixtureExternalId: number): Promise<FixtureBroadcastRecord | null> {
+    return this.pbCommentsClient.getBroadcastByFixture(fixtureExternalId);
+  }
+
+  /**
+   * Grava ou atualiza a informação de transmissão ("Onde Assistir")
+   */
+  async saveBroadcast(record: FixtureBroadcastRecord): Promise<FixtureBroadcastRecord | null> {
+    return this.pbCommentsClient.saveBroadcast(record);
   }
 
   /**
@@ -374,7 +389,28 @@ export class TacticalCommentsService {
             });
             if (rawPreview) {
               articleSnippet = this.crawl4aiClient.extractLiveNarrativeSnippets(rawPreview);
+              if (phase === 'PRE_MATCH') {
+                await this.extractAndSaveBroadcastInfo(
+                  fixtureExternalId,
+                  fixture.league.externalId,
+                  fixture.homeTeam.name,
+                  fixture.awayTeam.name,
+                  rawPreview,
+                  previewUrl,
+                );
+              }
             }
+          }
+
+          if (phase === 'PRE_MATCH' && pressRadar) {
+            await this.extractAndSaveBroadcastInfo(
+              fixtureExternalId,
+              fixture.league.externalId,
+              fixture.homeTeam.name,
+              fixture.awayTeam.name,
+              pressRadar,
+              previewUrl || '',
+            );
           }
 
           externalContext = [
@@ -701,10 +737,13 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
    - Você DEVE respeitar estritamente a classificação oficial fornecida no prompt.
    - É TERMINANTEMENTE PROIBIDO inventar disputas de G4, título ou Z4 que não correspondam à posição oficial fornecida.
    - Exemplo: se um clube está em 12º lugar, ele está no meio da tabela/Sul-Americana; JAMAIS diga que ele disputa o G4 ou título!
-3. Responda ESTRITAMENTE em formato JSON puro, sem blocos markdown adicionais.
-4. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português puro sem jargões em inglês.
-5. Comentário ("comment"): Respeite estritamente a extensão solicitada pelo usuário no prompt.
-6. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo):
+3. O COMENTÁRIO É A EXPRESSÃO PURA DO JOGO (PROIBIDO CITAR TRANSMISSÃO / 'ONDE ASSISTIR'):
+   - O comentário tático pertence ESTRITAMENTE ao gramado: leitura de jogo, postura tática, dinâmica da bola e contexto esportivo.
+   - É TERMINANTEMENTE PROIBIDO citar canais de TV, emissoras (ex: Globo, SporTV, Premiere, ESPN, SBT), serviços de streaming (ex: Max, CazéTV, Prime Video) ou frases como 'onde assistir', 'transmissão ao vivo', 'será transmitido por'. As informações de transmissão possuem um card isolado no aplicativo e NÃO devem poluir o comentário tático.
+4. Responda ESTRITAMENTE em formato JSON puro, sem blocos markdown adicionais.
+5. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português puro sem jargões em inglês.
+6. Comentário ("comment"): Respeite estritamente a extensão solicitada pelo usuário no prompt.
+7. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo):
    - "EQUILIBRADO" (jogos parelhos e disputa tática equilibrada)
    - "DOMINANTE" (amplo controle de jogo, pressão e superioridade)
    - "CRITICO" (expulsão, pênalti decisivo, momento de alta tensão)
@@ -829,5 +868,84 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
       comment: `Duelo equilibrado entre ${context.homeTeam} e ${context.awayTeam}. As equipes disputam o controle da partida na fase ${context.phase}.`,
       sentiment: 'EQUILIBRADO',
     };
+  }
+
+  /**
+   * Extrai canais de transmissão de matérias pré-jogo e salva no PocketBase
+   */
+  private async extractAndSaveBroadcastInfo(
+    fixtureExternalId: number,
+    leagueExternalId: number,
+    homeTeam: string,
+    awayTeam: string,
+    rawContent: string,
+    sourceUrl?: string,
+  ): Promise<void> {
+    try {
+      if (!rawContent || rawContent.length < 50) return;
+
+      const lower = rawContent.toLowerCase();
+      // Verifica se há menção a transmissão ou onde assistir
+      if (
+        !lower.includes('onde assistir') &&
+        !lower.includes('transmissão') &&
+        !lower.includes('transmissao') &&
+        !lower.includes('onde passa') &&
+        !lower.includes('onde ver') &&
+        !lower.includes('ao vivo na tv')
+      ) {
+        return;
+      }
+
+      // Procura seção ou parágrafo de "Onde assistir"
+      let searchSection = rawContent;
+      const matchIndex = rawContent.search(/onde\s+assistir|transmiss[ãa]o/i);
+      if (matchIndex !== -1) {
+        searchSection = rawContent.substring(matchIndex, matchIndex + 600);
+      }
+
+      const secLower = searchSection.toLowerCase();
+
+      // Mapeamento de canais comuns no Brasil
+      const tvOpenMatches: string[] = [];
+      if (secLower.includes('globo') || secLower.includes('tv globo')) tvOpenMatches.push('TV Globo');
+      if (secLower.includes('sbt')) tvOpenMatches.push('SBT');
+      if (secLower.includes('band') || secLower.includes('rede bandeirantes')) tvOpenMatches.push('Band');
+      if (secLower.includes('record')) tvOpenMatches.push('Record');
+
+      const tvClosedMatches: string[] = [];
+      if (secLower.includes('sportv') || secLower.includes('spor tv')) tvClosedMatches.push('SporTV');
+      if (secLower.includes('premiere')) tvClosedMatches.push('Premiere');
+      if (secLower.includes('espn')) tvClosedMatches.push('ESPN');
+      if (secLower.includes('tnt') || secLower.includes('tnt sports')) tvClosedMatches.push('TNT');
+      if (secLower.includes('space')) tvClosedMatches.push('Space');
+      if (secLower.includes('bandsports')) tvClosedMatches.push('BandSports');
+
+      const streamingMatches: string[] = [];
+      if (secLower.includes('max') || secLower.includes('hbo max')) streamingMatches.push('Max');
+      if (secLower.includes('cazétv') || secLower.includes('caze tv') || secLower.includes('cazetv')) streamingMatches.push('CazéTV');
+      if (secLower.includes('globoplay') || secLower.includes('globo play')) streamingMatches.push('Globoplay');
+      if (secLower.includes('disney+') || secLower.includes('disney plus')) streamingMatches.push('Disney+');
+      if (secLower.includes('prime video') || secLower.includes('amazon prime')) streamingMatches.push('Prime Video');
+      if (secLower.includes('paramount+') || secLower.includes('paramount plus')) streamingMatches.push('Paramount+');
+      if (secLower.includes('premiere') && !tvClosedMatches.includes('Premiere')) streamingMatches.push('Premiere');
+
+      if (tvOpenMatches.length === 0 && tvClosedMatches.length === 0 && streamingMatches.length === 0) {
+        return;
+      }
+
+      await this.pbCommentsClient.saveBroadcast({
+        fixture_id: fixtureExternalId,
+        league_id: leagueExternalId,
+        match_title: `${homeTeam} x ${awayTeam}`,
+        tv_open: tvOpenMatches.join(', '),
+        tv_closed: tvClosedMatches.join(', '),
+        streaming: streamingMatches.join(', '),
+        details: 'Transmissão ao vivo sujeita a confirmação das emissoras.',
+        source_url: sourceUrl || '',
+      });
+    } catch (err: any) {
+      this.logger.warn(`[BroadcastExtractor] Erro ao extrair transmissão para fixture ${fixtureExternalId}: ${err.message}`);
+    }
   }
 }

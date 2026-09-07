@@ -13,7 +13,7 @@ class _NewsPageState extends State<NewsPage> {
 
   final List<Map<String, String?>> _categories = [
     {'name': 'Todas', 'filter': null},
-    {'name': 'Champions League', 'filter': 'champions'},
+    {'name': 'Liga dos Campeões', 'filter': 'champions'},
     {'name': 'Fase de Liga', 'filter': 'liga'},
     {'name': 'Mata-Mata', 'filter': 'mata-mata'},
   ];
