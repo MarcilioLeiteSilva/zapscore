@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
+import { StandingsModule } from '../standings/standings.module';
 import { TacticalCommentsController } from './tactical-comments.controller';
 import { TacticalCommentsService } from './tactical-comments.service';
 import { PocketbaseCommentsClient } from './providers/pocketbase-comments.client';
@@ -12,9 +13,10 @@ import { GazetaLiveAdapter } from './crawler/adapters/gazeta.adapter';
 import { GeGloboLiveAdapter } from './crawler/adapters/ge-globo.adapter';
 import { LanceLiveAdapter } from './crawler/adapters/lance.adapter';
 import { UolLiveAdapter } from './crawler/adapters/uol.adapter';
+import { FactAuditorService } from './auditor/fact-auditor.service';
 
 @Module({
-  imports: [PrismaModule, ConfigModule],
+  imports: [PrismaModule, ConfigModule, StandingsModule],
   controllers: [TacticalCommentsController],
   providers: [
     TacticalCommentsService,
@@ -22,13 +24,15 @@ import { UolLiveAdapter } from './crawler/adapters/uol.adapter';
     PocketbaseCommentsClient,
     Crawl4aiClient,
     MultiSourceCommentsAgentService,
+    FactAuditorService,
     EspnLiveAdapter,
     GazetaLiveAdapter,
     GeGloboLiveAdapter,
     LanceLiveAdapter,
     UolLiveAdapter,
   ],
-  exports: [TacticalCommentsService, MultiSourceCommentsAgentService],
+  exports: [TacticalCommentsService, MultiSourceCommentsAgentService, FactAuditorService],
 })
 export class TacticalCommentsModule {}
+
 

@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PocketbaseCommentsClient } from './providers/pocketbase-comments.client';
 import { Crawl4aiClient } from './providers/crawl4ai.client';
 import { MultiSourceCommentsAgentService } from './crawler/multi-source-comments-agent.service';
+import { StandingsService } from '../standings/standings.service';
+import { FactAuditorService } from './auditor/fact-auditor.service';
 import {
   CommentPhase,
   CommentSentiment,
@@ -48,6 +50,8 @@ export class TacticalCommentsService {
     private readonly pbCommentsClient: PocketbaseCommentsClient,
     private readonly crawl4aiClient: Crawl4aiClient,
     private readonly multiSourceAgent: MultiSourceCommentsAgentService,
+    private readonly standingsService: StandingsService,
+    private readonly factAuditor: FactAuditorService,
   ) {
     this.initializeAiClients();
   }
@@ -375,7 +379,50 @@ export class TacticalCommentsService {
       );
       const recentComments = existingComments.slice(-3);
 
-      // 7. Gera a leitura tática via LLM com Prompt Caching nativo
+      // 7. Contexto Factual Oficial da Tabela (Standings Snapshot)
+      let homeRank: number | undefined;
+      let awayRank: number | undefined;
+      let homePoints: number | undefined;
+      let awayPoints: number | undefined;
+      let standingsText = '';
+
+      try {
+        const standings = await this.standingsService.findMany({
+          leagueId: leagueExternalId,
+          season: 2026,
+        });
+        if (Array.isArray(standings) && standings.length > 0) {
+          const homeEntry = standings.find(
+            (s: any) =>
+              s.teamId === fixture.homeTeamId ||
+              s.team?.externalId === fixture.homeTeam?.externalId ||
+              s.team?.name === fixture.homeTeam?.name,
+          );
+          const awayEntry = standings.find(
+            (s: any) =>
+              s.teamId === fixture.awayTeamId ||
+              s.team?.externalId === fixture.awayTeam?.externalId ||
+              s.team?.name === fixture.awayTeam?.name,
+          );
+
+          if (homeEntry) {
+            homeRank = homeEntry.rank;
+            homePoints = homeEntry.points;
+          }
+          if (awayEntry) {
+            awayRank = awayEntry.rank;
+            awayPoints = awayEntry.points;
+          }
+
+          standingsText = `CLASSIFICAÇÃO REAL NO CAMPEONATO (STANDINGS OFICIAIS):
+• ${fixture.homeTeam.name}: ${homeRank ? `${homeRank}º lugar (${homePoints} pts)` : 'Posição não catalogada'}
+• ${fixture.awayTeam.name}: ${awayRank ? `${awayRank}º lugar (${awayPoints} pts)` : 'Posição não catalogada'}`;
+        }
+      } catch (stErr: any) {
+        this.logger.debug(`[Standings] Falha ao carregar tabela para liga ${leagueExternalId}: ${stErr.message}`);
+      }
+
+      // 8. Gera a leitura tática via LLM com Prompt Caching nativo
       const insight = await this.generateInsight({
         homeTeam: fixture.homeTeam.name,
         awayTeam: fixture.awayTeam.name,
@@ -390,16 +437,30 @@ export class TacticalCommentsService {
         stats: statsSnapshot,
         externalContext,
         recentComments,
+        standingsText,
       });
 
-      // 6. Grava no PocketBase Comentários dedicado
+      // 9. AGENTE AUDITOR DE FATOS: Inspeciona e sanitiza qualquer inconsistência antes de salvar
+      const audit = this.factAuditor.auditComment(insight.title, insight.comment, {
+        homeTeam: fixture.homeTeam.name,
+        awayTeam: fixture.awayTeam.name,
+        homeScore: fixture.homeGoals ?? 0,
+        awayScore: fixture.awayGoals ?? 0,
+        homeRank,
+        awayRank,
+        homePoints,
+        awayPoints,
+        liveLancesText: externalContext || '',
+      });
+
+      // 10. Grava no PocketBase Comentários dedicado (Comentário 100% Auditado e Aprovado)
       const savedRecord = await this.pbCommentsClient.saveComment({
         fixture_id: fixtureExternalId,
         league_id: leagueExternalId,
         minute,
         phase,
-        title: insight.title,
-        comment: insight.comment,
+        title: audit.sanitizedTitle,
+        comment: audit.sanitizedComment,
         sentiment: insight.sentiment,
         stats_snapshot: statsSnapshot,
       });
@@ -472,6 +533,7 @@ export class TacticalCommentsService {
     stats: any;
     externalContext: string | null;
     recentComments?: FixtureCommentRecord[];
+    standingsText?: string;
   }): Promise<{ title: string; comment: string; sentiment: CommentSentiment }> {
     const provider = (this.configService.get<string>('AI_PROVIDER') || 'OPENAI').toUpperCase();
 
@@ -568,19 +630,15 @@ Sua missão é produzir leituras táticas de alto nível, autênticas, perspicaz
 REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
 1. OBEDEÇA RIGOROSAMENTE AO IDIOMA (SEM MISTURA DE LÍNGUAS):
    - O texto em português deve ser 100% natural, com ZERO estrangeirismos.
-   - NÃO use termos em inglês como:
-     * "clean sheet" (use "sem sofrer gols" ou "baliza zerada")
-     * "pressing" ou "press" (use "pressão alta", "marcação agressiva" ou "pressão pós-perda")
-     * "box-to-box" (use "volante de área a área" ou "meio-campista dinâmico")
-     * "turnover" (use "perda de posse" ou "recuperação de bola")
-     * "build-up" (use "construção de jogada" ou "saída de bola")
-     * "lineup" (use "escalação" ou "time titular")
-     * "winger" ou "striker" (use "ponta", "extremo", "centroavante" ou "atacante")
-     * "half-time" ou "full-time" (use "intervalo", "fim de jogo" ou "apito final")
-2. Responda ESTRITAMENTE em formato JSON puro, sem blocos markdown adicionais.
-3. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português puro sem jargões em inglês.
-4. Comentário ("comment"): Respeite estritamente a extensão solicitada pelo usuário no prompt.
-5. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo):
+   - NÃO use termos em inglês (ex: clean sheet, turnover, pressing, winger, build-up, half-time, full-time).
+2. REGRAS MANDATÓRIAS DE TABELA E ANTI-ALUCINAÇÃO (RIGOROSO):
+   - Você DEVE respeitar estritamente a classificação oficial fornecida no prompt.
+   - É TERMINANTEMENTE PROIBIDO inventar disputas de G4, título ou Z4 que não correspondam à posição oficial fornecida.
+   - Exemplo: se um clube está em 12º lugar, ele está no meio da tabela/Sul-Americana; JAMAIS diga que ele disputa o G4 ou título!
+3. Responda ESTRITAMENTE em formato JSON puro, sem blocos markdown adicionais.
+4. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português puro sem jargões em inglês.
+5. Comentário ("comment"): Respeite estritamente a extensão solicitada pelo usuário no prompt.
+6. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo):
    - "EQUILIBRADO" (jogos parelhos e disputa tática equilibrada)
    - "DOMINANTE" (amplo controle de jogo, pressão e superioridade)
    - "CRITICO" (expulsão, pênalti decisivo, momento de alta tensão)
@@ -606,6 +664,7 @@ CALIBRAÇÃO DE ESTILO E TOM:
 ${focusPoints.length > 0 ? `\nFOCOS ADICIONAIS:\n${focusPoints.join('\n')}` : ''}
 ${config.custom_rules ? `\nREGRAS PERSONALIZADAS DO USUÁRIO:\n${config.custom_rules}\n` : ''}
 
+${context.standingsText ? `\n${context.standingsText}\n` : ''}
 MEMÓRIA FACTUAL DA PARTIDA (LINHA DO TEMPO CRÍTICA ACUMULADA):
 ${context.criticalEvents && context.criticalEvents.length > 0 ? context.criticalEvents.join('\n') : 'Nenhum evento crítico acumulado até o momento.'}
 
@@ -652,7 +711,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
             { role: 'user', content: userPrompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.4,
+          temperature: 0.2,
         });
 
         const rawText = completion.choices[0].message.content || '{}';
