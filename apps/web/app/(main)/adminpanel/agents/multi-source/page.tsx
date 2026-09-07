@@ -32,7 +32,6 @@ import {
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 const PB_COMMENTS_URL = "https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host";
-const DEFAULT_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || "7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=";
 
 interface TeamInfo {
   name: string;
@@ -163,7 +162,6 @@ export default function MultiSourceAgentPage() {
   const [testPhase, setTestPhase] = useState<'FIRST_HALF' | 'HALF_TIME' | 'SECOND_HALF' | 'FULL_TIME'>('SECOND_HALF');
   const [generatingComment, setGeneratingComment] = useState(false);
   const [generationFeedback, setGenerationFeedback] = useState<{ success: boolean; message: string } | null>(null);
-  const [adminApiKey, setAdminApiKey] = useState<string>(DEFAULT_API_KEY);
 
   // Aba ativa na coluna direita
   const [activeTab, setActiveTab] = useState<'timeline' | 'sources' | 'generate'>('timeline');
@@ -253,13 +251,14 @@ export default function MultiSourceAgentPage() {
     setGeneratingComment(true);
     setGenerationFeedback(null);
     try {
-      const res = await fetch(`${API_URL}/fixtures/${selectedFixture.externalId}/comments/generate`, {
+      // Chamada segura via Server Proxy do Next.js (a chave mestra fica 100% no servidor)
+      const res = await fetch(`/api/admin/tactical-comments/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': adminApiKey.trim(),
         },
         body: JSON.stringify({
+          fixtureId: selectedFixture.externalId,
           minute: Number(testMinute),
           phase: testPhase,
         }),
@@ -889,17 +888,14 @@ export default function MultiSourceAgentPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">
-                      Chave de Autenticação (ADMIN_API_KEY)
-                    </label>
-                    <input
-                      type="password"
-                      value={adminApiKey}
-                      onChange={(e) => setAdminApiKey(e.target.value)}
-                      placeholder="Chave de API do Admin..."
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-mono text-xs focus:outline-none focus:border-amber-500/50"
-                    />
+                  <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                      <span>Autenticação Segura via Server Proxy (Next.js)</span>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                      ZERO CHAVES NO NAVEGADOR
+                    </span>
                   </div>
 
                   {generationFeedback && (
