@@ -116,6 +116,13 @@
   - [18.6 Observabilidade, Telemetria e Endpoints de Diagnóstico](#186-observabilidade-telemetria-e-endpoints-de-diagnóstico)
   - [18.7 Arquitetura com PocketBase Buffer e Ingestão Automática (Cron 2 Horas)](#187-arquitetura-com-pocketbase-buffer-e-ingestão-automática-cron-2-horas)
   - [18.8 Interface de Gestão e Operação no AdminPanel (`/adminpanel/agents/lineups`)](#188-interface-de-gestão-e-operação-no-adminpanel-adminpanelagentslineups)
+- [Capítulo 19: Trio de Agentes para Comentários Táticos ao Vivo (Multifontes, Tático e Auditor de Fatos)](#-capítulo-19-trio-de-agentes-para-comentários-táticos-ao-vivo-multifontes-tático-e-auditor-de-fatos)
+  - [19.1 Visão Geral e Topologia em 3 Camadas](#191-visão-geral-e-topologia-em-3-camadas)
+  - [19.2 Arquitetura do Agente Multifontes de Comentários (5 Fontes & Delta Engine 5m)](#192-arquitetura-do-agente-multifontes-de-comentários-5-fontes--delta-engine-5m)
+  - [19.3 Mecanismo Anti-Alucinação e Agente Auditor de Fatos (`FactAuditorService`)](#193-mecanismo-anti-alucinação-e-agente-auditor-de-fatos-factauditorservice)
+  - [19.4 Ancoragem Factual com Tabela Oficial (`StandingsService`) e Sanitização de Memória](#194-ancoragem-factual-com-tabela-oficial-standingsservice-e-sanitização-de-memória)
+  - [19.5 Interface Operacional no AdminPanel (`/adminpanel/agents/multi-source`)](#195-interface-operacional-no-adminpanel-adminpanelagentsmulti-source)
+  - [19.6 Catálogo de Ajustes a Serem Feitos e Itens Pendentes `[A FAZER]`](#196-catálogo-de-ajustes-a-serem-feitos-e-itens-pendentes-a-fazer)
 
 ---
 
@@ -1916,5 +1923,187 @@ Para garantir qualidade visual máxima em 100% dos atletas titulares e reservas:
 2. **Eliminação de Links Fictícios:** Elimina fallbacks com IDs incompatíveis, garantindo que apenas imagens reais e acessíveis sejam salvas no PocketBase e no PostgreSQL.
 3. **Cálculo de Grid Tático Dinâmico:**
    - A partir da formação tática dos clubes (ex: `4-3-3`, `4-2-3-1`, `3-4-2-1`), o motor calcula automaticamente as coordenadas de linha e coluna (`grid: "row:col"`), consumidas pelos componentes de campo dos aplicativos Flutter.
+
+---
+
+## 🎙️ Capítulo 19: Trio de Agentes para Comentários Táticos ao Vivo (Multifontes, Tático e Auditor de Fatos)
+
+### 19.1 Visão Geral e Topologia em 3 Camadas
+O sistema de comentários táticos em tempo real do ZapScore opera através de uma arquitetura coordenada entre **três agentes especializados**, projetados para neutralizar 100% das alucinações de IA, eliminar a repetitividade de clichês e alimentar os aplicativos móveis com leituras táticas autênticas a cada 5 minutos:
+
+```
++---------------------------------------------------------------------------------------------------+
+|                                 ECOSSISTEMA DE COMENTÁRIOS TÁTICOS                                |
++---------------------------------------------------------------------------------------------------+
+|                                                                                                   |
+|  [ 1. CAMADA DE COLETA: AGENTE MULTIFONTES ]                                                      |
+|  ESPN REST API + GE Globo + Gazeta Esportiva + Lance! + UOL                                       |
+|  └── Promise.allSettled() ➔ Tolerância a Lag (Maior Minuto) ➔ Delta Engine (Últimos 5 Minutos)   |
+|                                                                                                   |
+|                                         ▼                                                         |
+|                                                                                                   |
+|  [ 2. CAMADA DE GERAÇÃO: AGENTE TÁTICO ]                                                          |
+|  OpenAI GPT-4o-mini (temp: 0.2)                                                                   |
+|  ├── Injeção Mandatória da Tabela Oficial (StandingsService: rank, pontos, saldo)                |
+|  ├── Histórico Narrativo Sanitizado (previne contaminação por alucinações passadas)              |
+|  └── Diretivas Severas Anti-Alucinação (proibição expressa de criar disputas de G4/Z4/Título)     |
+|                                                                                                   |
+|                                         ▼                                                         |
+|                                                                                                   |
+|  [ 3. CAMADA DE AUDITORIA: AGENTE AUDITOR DE FATOS ]                                              |
+|  FactAuditorService (3 Camadas de Validação Pré-Persistência)                                     |
+|  ├── 1. Auditoria de Tabela: Nulidade de G4 para clubes rank > 6 (busca, mira, sonha, etc.)       |
+|  ├── 2. Auditoria de Placar: Integridade de 0x0 vs vitórias vs derrotas                           |
+|  └── 3. Auditoria de Súmula: Validação de atletas titulares e reservas reais em campo             |
+|                                                                                                   |
+|                                         ▼                                                         |
+|                                                                                                   |
+|  [ 4. PERSISTÊNCIA & DISTRIBUIÇÃO ]                                                               |
+|  PocketBase Comentários Dedicado ➔ Sockets / REST ➔ Apps Mobile & AdminPanel                     |
++---------------------------------------------------------------------------------------------------+
+```
+
+---
+
+### 19.2 Arquitetura do Agente Multifontes de Comentários (5 Fontes & Delta Engine 5m)
+* **Diretório no Backend:** `apps/api/src/tactical-comments/crawler/`
+* **Serviço Central:** `MultiSourceCommentsAgentService` (`multi-source-comments-agent.service.ts`)
+
+#### 19.2.1 As 5 Fontes Esportivas Concorrentes
+1. **ESPN Brasil (`EspnLiveAdapter`):**
+   - **Mecanismo:** Consulta direta à API REST pública de placar e súmula (`https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/summary?event={id}`).
+   - **Vantagem Estratégica:** Imune aos bloqueios de bot Akamai que barram o scraping de páginas HTML. Retorna mais de 100 eventos de lance a lance em menos de 1,2 segundo com minutagem e tipo de lance estruturados.
+2. **GE Globo (`GeGloboLiveAdapter`):**
+   - **Mecanismo:** Coleta da crônica e lances narrativos do Tempo Real do Globo Esporte.
+   - **Vantagem Estratégica:** Riqueza narrativa sobre clima de torcida, reclamações de arbitragem e postura tática dos técnicos.
+3. **Gazeta Esportiva (`GazetaLiveAdapter`):**
+   - **Mecanismo:** Extração direta de lances minuto a minuto do portal paulista.
+   - **Vantagem Estratégica:** Foco apurado em clubes paulistas e do Sudeste.
+4. **Lance! (`LanceLiveAdapter`):**
+   - **Mecanismo:** Varredura do feed esportivo em tempo real e artigos de partida.
+   - **Vantagem Estratégica:** Destaques e declarações de beira de campo.
+5. **UOL Esporte (`UolLiveAdapter`):**
+   - **Mecanismo:** Placar ao vivo aberto, sem barreiras de captcha.
+   - **Vantagem Estratégica:** Leitura rápida de cartões e substituições com cronometragem confiável.
+
+#### 19.2.2 Algoritmo de Tolerância a Lag e Sincronização por Maior Minuto
+- **Problema Enfrentado:** Portais esportivos frequentemente congelam a atualização do tempo real em minutos passados (ex: UOL travado no minuto 32' enquanto a ESPN já catalogou o minuto 41').
+- **Solução de Engenharia:** O `MultiSourceCommentsAgentService` executa todas as 5 fontes via `Promise.allSettled`. Em seguida, aplica:
+  $$\text{latestMinute} = \max(\text{elapsedMinute}, \max_{s \in \text{fontes}}(\text{minute}_s))$$
+  O sistema sincroniza pelo portal mais adiantado, neutralizando páginas atrasadas ou desconectadas.
+
+#### 19.2.3 Delta Engine de 5 Minutos
+- Isola **estritamente os eventos ocorridos entre o último comentário gravado e o minuto atual**:
+  $$\text{Delta} = \{ e \in \text{Eventos} \mid \text{minuto}(e) > \text{lastRecordedMinute} \land \text{minuto}(e) \le \text{latestMinute} \}$$
+- Se o delta contiver lances relevantes (gols, defesas difíceis, cartões, mudanças táticas), o comentário tático é enriquecido. Se nenhuma fonte registrar alterações, a IA produz uma leitura da dinâmica tática e do controle de posse.
+
+---
+
+### 19.3 Mecanismo Anti-Alucinação e Agente Auditor de Fatos (`FactAuditorService`)
+* **Arquivo no Backend:** `apps/api/src/tactical-comments/auditor/fact-auditor.service.ts`
+
+#### 19.3.1 Diagnóstico dos Casos Reais de Alucinação
+1. **Caso Botafogo (12º) x Palmeiras (2º):**
+   - *Alucinação gerada pela IA:* *"O empate mantém ambos na briga acirrada pelo G4"*.
+   - *Erro Factual:* O Botafogo estava em 12º lugar, sem qualquer disputa por G4 ou título.
+2. **Caso Corinthians (11º) x Chapecoense (20º):**
+   - *Alucinação gerada pela IA:* *"A situação complica para o Corinthians, que busca o G4"*.
+   - *Erro Factual:* O Corinthians ocupava a 11ª posição (32 pontos, 13 pontos atrás do G4) e a Chapecoense a 20ª (14 pontos, lanterna). O comentário anterior de pré-jogo (minuto 0') havia sido gerado sem auditoria (*"Corinthians mirando o G4..."*) e contaminou o histórico entregue à IA no minuto 83'.
+
+#### 19.3.2 Regras Estritas de Sanitização no `FactAuditorService`
+1. **Regra de Nulidade Absoluta de G4:**
+   - Se **ambos os clubes da partida estiverem fora do Top 6** (`homeRank > 6 && awayRank > 6`), **qualquer citação a G4 em qualquer ponto do comentário é terminantemente proibida**.
+   - O auditor intercepta expressões variadas (`busca`, `mira`, `sonha`, `almeja`, `quer`, `tentando`, `de olho`, `vaga no G4`) e reescreve cirurgicamente para a realidade da tabela (ex: *"tenta melhorar sua posição na tabela"* ou *"busca estabilidade no meio da classificação"*).
+2. **Regra de Disputa Conjunta de G4:**
+   - Se apenas um dos clubes estiver no Top 6 (ex: Palmeiras 2º e Botafogo 12º), frases como *"ambos brigam pelo G4"* são reescritas:
+     > *"o resultado reflete momentos distintos na tabela, com o Palmeiras (2º) no pelotão de frente e o Botafogo (12º) na zona intermediária"*
+3. **Regra de Título:**
+   - Clubes abaixo da 4ª colocação (`rank > 4`) não podem ser citados como disputando o título diretamente. O auditor substitui por *"busca subir na tabela"*.
+4. **Regra de Z4 (Zona de Rebaixamento):**
+   - Clubes acima da 16ª colocação (`rank < 16`) não podem ser rotulados como *"no Z4"* ou *"lutando contra o rebaixamento"*. O auditor substitui por *"na parte intermediária"*.
+5. **Auditoria de Placar:**
+   - Em partidas com placar zerado (0x0), o auditor expurga menções a "vitória", "venceu" ou "derrota".
+   - Em empates com gols (ex: 1x1), o auditor expurga afirmações de "empate sem gols" ou "0 a 0".
+
+---
+
+### 19.4 Ancoragem Factual com Tabela Oficial (`StandingsService`) e Sanitização de Memória
+* **Arquivo no Backend:** `apps/api/src/tactical-comments/tactical-comments.service.ts`
+
+#### 19.4.1 Injeção da Tabela Oficial no Prompt
+Antes de acionar a OpenAI, o backend consulta o banco de dados oficial via `StandingsService.findMany({ leagueId, season: 2026 })`. O prompt do sistema recebe a seção estruturada:
+```text
+CLASSIFICAÇÃO REAL NO CAMPEONATO (STANDINGS OFICIAIS):
+• Corinthians: 11º lugar (32 pts)
+• Chapecoense-sc: 20º lugar (14 pts)
+• AVISO: O Corinthians está em 11º lugar: NÃO DISPUTA O G4 NEM O TÍTULO! Jamais mencione que busca ou disputa G4/título.
+• AVISO: O Chapecoense-sc está em 20º lugar: NÃO DISPUTA O G4 NEM O TÍTULO! Jamais mencione que busca ou disputa G4/título.
+• ATENÇÃO MÁXIMA: NENHUM DOS DOIS CLUBES ESTÁ NO G4. É TERMINANTEMENTE PROIBIDO QUALQUER CITAÇÃO A G4 NESTE COMENTÁRIO!
+```
+
+#### 19.4.2 Higienização Prévia da Memória Narrativa (`recentComments`)
+Para evitar que alucinações geradas em minutos passados (como o pré-jogo) se propaguem para os minutos seguintes, o array `recentComments` é submetido ao `FactAuditorService.auditComment(...)` **antes** de ser montado no contexto do prompt da IA.
+
+#### 19.4.3 Calibração de Temperatura
+A temperatura do modelo OpenAI (`gpt-4o-mini`) foi reduzida cirurgicamente de `0.4` para **`0.2`**, forçando comportamento determinístico e máxima aderência aos dados factuais recebidos.
+
+---
+
+### 19.5 Interface Operacional no AdminPanel (`/adminpanel/agents/multi-source`)
+* **Arquivo no Frontend:** `apps/web/app/(main)/adminpanel/agents/multi-source/page.tsx`
+* **Card no Hub Central:** Atualizado em `apps/web/app/(main)/adminpanel/agents/page.tsx`
+
+#### 19.5.1 Funcionalidades da Página
+1. **Painel de Jogos do Dia (Coluna Esquerda):**
+   - Listagem completa das partidas de hoje com placar ao vivo, escudos, status dinâmico (`AO VIVO 1H/2H`, `ENCERRADO FT`, `AGENDADO`) e minuto decorrido.
+   - Filtros rápidos por competição: **Todas**, **🇧🇷 Série A (71)**, **🇧🇷 Série B (72)** e campo de busca por nome de clube.
+   - Ao selecionar qualquer confronto, a coluna direita é atualizada instantaneamente.
+2. **Timeline de Comentários Minuto a Minuto:**
+   - Exibição cronológica de 100% dos comentários registrados no PocketBase para a partida selecionada.
+   - Badges de minuto (`0'`, `8'`, `15'`, `45'`, `83'`, `90'`), fase do jogo (`Pré-Jogo`, `1º Tempo`, `Intervalo`, `2º Tempo`, `Resumo Final`) e sentimento (`DOMINANTE`, `EQUILIBRADO`, `CRITICO`, `SURPRESA`).
+   - Selo de integridade: `🛡️ Auditado • Factual OK`.
+   - Snapshot estatístico no rodapé de cada comentário (posse de bola, finalizações totais).
+3. **Radar das 5 Fontes Esportivas (Dados Coletados):**
+   - Cards de status operacional para **ESPN**, **GE Globo**, **Gazeta Esportiva**, **Lance!** e **UOL Esporte** com indicação de latência e especialidade.
+   - Botão **"⚡ Disparar Varredura Multi-Fontes Agora"**: aciona o novo endpoint `GET /fixtures/:id/comments/multi-source-preview` para inspecionar os lances brutos extraídos das fontes em tempo real.
+4. **Laboratório de Testes com IA:**
+   - Seletor de minuto (0' a 105') e fase da partida para disparar comentários de teste sob demanda com 1 clique.
+   - Feedback visual imediato confirmando o modelo de IA, a auditoria de tabela e a persistência no PocketBase.
+
+---
+
+### 19.6 Catálogo de Ajustes a Serem Feitos e Itens Pendentes `[A FAZER]`
+
+Abaixo está o registro formal das melhorias e ajustes identificados para continuidade do ecossistema:
+
+#### 19.6.1 [A FAZER] Automação de Deploy no Easypanel via Webhook do GitHub 🚀
+- **Cenário Atual:** Quando um `git push origin main` é realizado, se o Easypanel não possuir webhook configurado, a imagem Docker do `zapscore-api` não reconstrói automaticamente, exigindo que o desenvolvedor clique manualmente em "Deploy" no painel.
+- **Ajuste Necessário:**
+  1. Copiar a URL de Webhook de Deploy no card do serviço `zapscore-api` no painel do Easypanel.
+  2. Adicionar o Webhook no repositório GitHub (`Settings > Webhooks`) com evento de `push` na branch `main`.
+  3. Validar se a reconstrução automática é disparada em menos de 3 minutos a cada commit.
+
+#### 19.6.2 [A FAZER] Expansão do Mapeamento ESPN para Novas Competições
+- **Cenário Atual:** O adaptador `EspnLiveAdapter` utiliza por padrão a liga `bra.1` (Série A).
+- **Ajuste Necessário:**
+  - Adicionar dicionário dinâmico de slugs ESPN no `espn.adapter.ts`:
+    - Série A: `bra.1`
+    - Série B: `bra.2`
+    - Copa do Brasil: `bra.copa_do_brasil`
+    - Champions League: `uefa.champions`
+    - Copa Libertadores: `conmebol.libertadores`
+  - Utilizar o `leagueExternalId` da partida para selecionar automaticamente o slug correto na URL da ESPN.
+
+#### 19.6.3 [A FAZER] Telemetria Visual de Sanitização no AdminPanel
+- **Cenário Atual:** Quando o `FactAuditorService` intercepta uma alucinação e a corrige, a advertência é registrada apenas nos logs do NestJS (`[FactAuditor] ⚠️ Inconsistências auditadas...`).
+- **Ajuste Necessário:**
+  - Salvar na coleção do PocketBase o campo booleano `was_sanitized` e a lista de `audit_warnings`.
+  - Exibir na timeline da página `/adminpanel/agents/multi-source` uma tag amarela de destaque quando a frase tiver sido reescrita pelo auditor (ex: `⚠️ Alucinação de G4 prevenida pelo Auditor`).
+
+#### 19.6.4 [A FAZER] Script de Higienização em Lote de Partidas Anteriores
+- **Cenário Atual:** Partidas gravadas antes da ativação do `FactAuditorService` (como as primeiras rodadas ou jogos de teste) podem conter frases com menções incorretas a G4 ou Z4 no PocketBase.
+- **Ajuste Necessário:**
+  - Criar script de manutenção `tools/sanitize_historical_comments.ts` que itere por todos os registros da coleção `fixture_comments` no PocketBase, execute o `FactAuditorService` com a tabela correspondente e execute `PATCH` nas frases que contiverem inconsistências.
+
 
 
