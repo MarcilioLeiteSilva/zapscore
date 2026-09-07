@@ -32,6 +32,7 @@ import {
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 const PB_COMMENTS_URL = "https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host";
+const DEFAULT_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || "7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=";
 
 interface TeamInfo {
   name: string;
@@ -162,6 +163,7 @@ export default function MultiSourceAgentPage() {
   const [testPhase, setTestPhase] = useState<'FIRST_HALF' | 'HALF_TIME' | 'SECOND_HALF' | 'FULL_TIME'>('SECOND_HALF');
   const [generatingComment, setGeneratingComment] = useState(false);
   const [generationFeedback, setGenerationFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [adminApiKey, setAdminApiKey] = useState<string>(DEFAULT_API_KEY);
 
   // Aba ativa na coluna direita
   const [activeTab, setActiveTab] = useState<'timeline' | 'sources' | 'generate'>('timeline');
@@ -255,7 +257,7 @@ export default function MultiSourceAgentPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': 'zapscore_admin_secret_key_2026',
+          'x-api-key': adminApiKey.trim(),
         },
         body: JSON.stringify({
           minute: Number(testMinute),
@@ -885,6 +887,19 @@ export default function MultiSourceAgentPage() {
                         <option value="FULL_TIME">Fim de Jogo (Resumo Final)</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                      Chave de Autenticação (ADMIN_API_KEY)
+                    </label>
+                    <input
+                      type="password"
+                      value={adminApiKey}
+                      onChange={(e) => setAdminApiKey(e.target.value)}
+                      placeholder="Chave de API do Admin..."
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-mono text-xs focus:outline-none focus:border-amber-500/50"
+                    />
                   </div>
 
                   {generationFeedback && (
