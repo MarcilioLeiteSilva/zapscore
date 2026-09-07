@@ -50,6 +50,14 @@ export class TacticalCommentsController {
   }
 
   /**
+   * Retorna prévia em tempo real da coleta de múltiplas fontes esportivas
+   */
+  @Get(':id/comments/multi-source-preview')
+  async previewMultiSourceDelta(@Param('id', ParseIntPipe) fixtureId: number) {
+    return this.tacticalCommentsService.previewMultiSourceDelta(fixtureId);
+  }
+
+  /**
    * Dispara a geração de um comentário tático para a partida
    * Protegido por ADMIN_API_KEY (header: x-api-key)
    */

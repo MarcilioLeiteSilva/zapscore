@@ -88,13 +88,13 @@ export default function AgentsHubPage() {
       iconBg: 'bg-amber-500/10 border-amber-500/20',
       badge: '5 FONTES • DELTA 5M • ZERO LAG',
       badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-      href: '/adminpanel/agents/tactical-comments',
+      href: '/adminpanel/agents/multi-source',
       stats: [
         { label: 'Fontes', value: '5 em Paralelo' },
         { label: 'Delta', value: '5 Minutos' },
         { label: 'Tolerância', value: 'Anti-Lag Ativo' },
       ],
-      actionText: 'Ver Configurações de Fontes'
+      actionText: 'Abrir Agente Multifontes'
     },
     {
       id: 'tactical-comments',

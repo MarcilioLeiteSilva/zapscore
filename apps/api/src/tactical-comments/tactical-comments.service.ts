@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
@@ -209,6 +209,44 @@ export class TacticalCommentsService {
       );
       return null;
     }
+  }
+
+  /**
+   * Executa varredura do Agente Multifontes em tempo real e retorna o delta bruto e métricas
+   */
+  async previewMultiSourceDelta(fixtureExternalId: number) {
+    const fixture = await this.prisma.fixture.findFirst({
+      where: { externalId: fixtureExternalId },
+      include: { homeTeam: true, awayTeam: true, league: true },
+    });
+    if (!fixture) {
+      throw new NotFoundException(`Partida ${fixtureExternalId} não encontrada.`);
+    }
+
+    const existingComments = await this.pbCommentsClient.getCommentsByFixture(fixtureExternalId);
+    const lastRecordedMinute =
+      existingComments.length > 0
+        ? Math.max(...existingComments.map((c) => c.minute || 0))
+        : 0;
+
+    const delta = await this.multiSourceAgent.getMatchLiveDelta(
+      fixtureExternalId,
+      fixture.homeTeam.name,
+      fixture.awayTeam.name,
+      fixture.elapsed || 90,
+      lastRecordedMinute,
+    );
+
+    return {
+      fixtureId: fixtureExternalId,
+      homeTeam: fixture.homeTeam.name,
+      awayTeam: fixture.awayTeam.name,
+      elapsed: fixture.elapsed || 0,
+      status: fixture.statusShort,
+      lastCommentMinute: lastRecordedMinute,
+      delta,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**
