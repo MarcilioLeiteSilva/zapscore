@@ -10,6 +10,7 @@ class TacticalCommentsFixPage extends StatefulWidget {
 
 class _TacticalCommentsFixPageState extends State<TacticalCommentsFixPage> {
   List<TacticalComment> _comments = [];
+  final Set<String> _expandedCommentIds = {};
   bool _loading = true;
   String? _error;
   Timer? _pollingTimer;
@@ -257,6 +258,8 @@ class _TacticalCommentsFixPageState extends State<TacticalCommentsFixPage> {
         itemBuilder: (context, index) {
           final item = _comments[index];
           final sentimentColor = _getSentimentColor(item.sentiment);
+          final itemId = item.id.isNotEmpty ? item.id : 'comment_$index';
+          final isExpanded = _expandedCommentIds.contains(itemId);
 
           return IntrinsicHeight(
             child: Row(
@@ -308,7 +311,7 @@ class _TacticalCommentsFixPageState extends State<TacticalCommentsFixPage> {
                   ),
                 ),
                 const Gap(8),
-                // 3. Card do Comentário com Faixa Lateral Colorida (Accent Strip)
+                // 3. Card do Comentário com Sanfona (Accordion)
                 Expanded(
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -316,108 +319,167 @@ class _TacticalCommentsFixPageState extends State<TacticalCommentsFixPage> {
                     decoration: BoxDecoration(
                       color: AppColor.card,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        width: 1,
+                      border: Border(
+                        left: BorderSide(color: sentimentColor, width: 3.5),
+                        top: BorderSide(
+                          color: isExpanded
+                              ? sentimentColor.withValues(alpha: 0.35)
+                              : Colors.white.withValues(alpha: 0.08),
+                          width: 1,
+                        ),
+                        right: BorderSide(
+                          color: isExpanded
+                              ? sentimentColor.withValues(alpha: 0.35)
+                              : Colors.white.withValues(alpha: 0.08),
+                          width: 1,
+                        ),
+                        bottom: BorderSide(
+                          color: isExpanded
+                              ? sentimentColor.withValues(alpha: 0.35)
+                              : Colors.white.withValues(alpha: 0.08),
+                          width: 1,
+                        ),
                       ),
                     ),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Faixa lateral colorida de sentimento
-                          Container(
-                            width: 3.5,
-                            color: sentimentColor,
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.all(13),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedCommentIds.remove(itemId);
+                            } else {
+                              _expandedCommentIds.add(itemId);
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Padding(
+                          padding: const EdgeInsets.all(13),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // 2. Cabeçalho com Pílula da Fase + Pílula do Sentimento + Seta de Sanfona
+                              Row(
                                 children: [
-                                  // 2. Cabeçalho com Ícone da Fase + Badge com Emoji do Sentimento
-                                  Row(
-                                    children: [
-                                      _buildPhaseBadge(item),
-                                      const Spacer(),
-                                      if (item.sentiment != null && item.sentiment!.isNotEmpty)
-                                        Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: sentimentColor.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
-                                ),
-                                child: Text(
-                                  _formatSentiment(item.sentiment),
+                                  _buildPhaseBadge(item),
+                                  const Gap(8),
+                                  if (item.sentiment != null && item.sentiment!.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: sentimentColor.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Text(
+                                        _formatSentiment(item.sentiment),
+                                        style: GoogleFonts.urbanist(
+                                          color: sentimentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  const Spacer(),
+                                  // Seta de Sanfona Animada
+                                  AnimatedRotation(
+                                    turns: isExpanded ? 0.5 : 0.0,
+                                    duration: const Duration(milliseconds: 250),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.06),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 20,
+                                        color: isExpanded
+                                            ? sentimentColor
+                                            : Colors.white.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Título (Sempre Visível)
+                              if (item.title.isNotEmpty) ...[
+                                const Gap(10),
+                                Text(
+                                  item.title,
                                   style: GoogleFonts.urbanist(
-                                    color: sentimentColor,
+                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 11,
+                                    fontSize: 15,
+                                    height: 1.3,
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                        const Gap(10),
-                        // Título
-                        if (item.title.isNotEmpty) ...[
-                          Text(
-                            item.title,
-                            style: GoogleFonts.urbanist(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              height: 1.3,
-                            ),
-                          ),
-                          const Gap(8),
-                        ],
-                        // Comentário
-                        Text(
-                          item.comment,
-                          style: GoogleFonts.urbanist(
-                            color: Colors.white.withValues(alpha: 0.85),
-                            fontSize: 13.5,
-                            height: 1.45,
-                          ),
-                        ),
-                        if (item.created != null) ...[
-                          const Gap(10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Icon(
-                                Icons.access_time,
-                                size: 12,
-                                color: Colors.white.withValues(alpha: 0.35),
-                              ),
-                              const Gap(4),
-                              Text(
-                                DateFormat('HH:mm').format(item.created!.toLocal()),
-                                style: GoogleFonts.urbanist(
-                                  color: Colors.white.withValues(alpha: 0.35),
-                                  fontSize: 11,
+                              ],
+                              // Conteúdo da Sanfona protegido contra overflow com ClipRect + AnimatedSize
+                              ClipRect(
+                                child: AnimatedSize(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeInOut,
+                                  alignment: Alignment.topCenter,
+                                  child: isExpanded
+                                      ? Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Gap(10),
+                                            Divider(
+                                              color: Colors.white.withValues(alpha: 0.08),
+                                              height: 1,
+                                            ),
+                                            const Gap(10),
+                                            Text(
+                                              item.comment,
+                                              style: GoogleFonts.urbanist(
+                                                color: Colors.white.withValues(alpha: 0.88),
+                                                fontSize: 13.5,
+                                                height: 1.5,
+                                              ),
+                                            ),
+                                            if (item.created != null) ...[
+                                              const Gap(10),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                children: [
+                                                  Icon(
+                                                    Icons.access_time,
+                                                    size: 12,
+                                                    color: Colors.white.withValues(alpha: 0.35),
+                                                  ),
+                                                  const Gap(4),
+                                                  Text(
+                                                    DateFormat('HH:mm').format(item.created!.toLocal()),
+                                                    style: GoogleFonts.urbanist(
+                                                      color: Colors.white.withValues(alpha: 0.35),
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
+                                        )
+                                      : const SizedBox(width: double.infinity, height: 0),
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
-    ],
-  ),
-);
-},
-),
-);
-}
+    );
+  }
 }
