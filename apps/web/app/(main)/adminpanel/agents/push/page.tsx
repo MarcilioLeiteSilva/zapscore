@@ -324,25 +324,15 @@ export default function PushAgentPage() {
 
   const pendingQueueItems = queueItems.filter(item => item.status === 'PENDING_APPROVAL');
 
-  // Formatação de contagem regressiva da régua de tempo: 10m operador + 20m worker
+  // Formatação de contagem regressiva da régua de tempo: 10m operador (auto-disparo ao zerar)
   const formatTimeRemaining = (targetDateStr: string, prefixText?: string) => {
     const diff = new Date(targetDateStr).getTime() - nowTime;
     if (diff <= 0) return "Disparando via worker...";
 
-    // Primeiros 10 minutos (restam mais de 20 min para os 30 min totais)
-    const twentyMinsMs = 20 * 60 * 1000;
-    if (diff > twentyMinsMs) {
-      const opDiff = diff - twentyMinsMs;
-      const mins = Math.floor(opDiff / (1000 * 60));
-      const secs = Math.floor((opDiff % (1000 * 60)) / 1000);
-      return `Operador: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min (depois +20m auto)`;
-    }
-
-    // Últimos 20 minutos de contagem para o auto-disparo
     const mins = Math.floor(diff / (1000 * 60));
     const secs = Math.floor((diff % (1000 * 60)) / 1000);
-    const label = prefixText || "Auto-Disparo em:";
-    return `${label} ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min`;
+    const label = prefixText || "Operador:";
+    return `${label} ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min (auto ao zerar)`;
   };
 
   return (
@@ -481,7 +471,7 @@ export default function PushAgentPage() {
               Resumo de Rodada Concluída Aguardando Operador ({pendingQueueItems.length})
             </h3>
             <span className="text-xs text-slate-400 font-mono">
-              Sentinel Watcher Ativo (Janela 10m operador + 20m auto)
+              Sentinel Watcher Ativo (Janela 10m operador)
             </span>
           </div>
 

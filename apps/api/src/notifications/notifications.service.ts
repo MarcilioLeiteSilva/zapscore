@@ -206,8 +206,8 @@ export class NotificationsService {
         .map((f) => {
           const hName = f.homeTeam?.name || 'Mandante';
           const aName = f.awayTeam?.name || 'Visitante';
-          const hScore = f.homeScore ?? 0;
-          const aScore = f.awayScore ?? 0;
+          const hScore = f.homeGoals ?? 0;
+          const aScore = f.awayGoals ?? 0;
           return `${hName} ${hScore}x${aScore} ${aName}`;
         })
         .join(' | ');
@@ -299,8 +299,8 @@ export class NotificationsService {
         };
       }
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      // Nova régua: 10m operador + 20m worker = 30m no total a partir da detecção do término
-      const scheduledAutoDispatchAt = new Date(Date.now() + 30 * 60 * 1000);
+      // Nova régua: 10m no total para operador agir; auto-disparo automático caso zere
+      const scheduledAutoDispatchAt = new Date(Date.now() + 10 * 60 * 1000);
 
       // 1. Verificação de Idempotência Estrita: não enfileira se já existir notificação recente (incluindo CANCELLED)
       let existing: any = null;
@@ -383,11 +383,11 @@ export class NotificationsService {
         this.inMemoryPushQueue.unshift(queueItem);
       }
 
-      this.logger.log(`[Push Queue] 📥 Resumo enfileirado para [${target.name}] (${summary.round}). Janela operador 10m + auto-disparo para ${scheduledAutoDispatchAt.toISOString()}`);
+      this.logger.log(`[Push Queue] 📥 Resumo enfileirado para [${target.name}] (${summary.round}). Janela operador 10m (auto-disparo ao zerar em ${scheduledAutoDispatchAt.toISOString()})`);
 
       return {
         success: true,
-        message: 'Resumo enfileirado com sucesso. Aguardando operador (10m) ou auto-disparo de fallback (+20m).',
+        message: 'Resumo enfileirado com sucesso. Aguardando operador (10m) ou auto-disparo ao zerar.',
         queueItem,
       };
     } catch (e: any) {
@@ -664,7 +664,7 @@ export class NotificationsService {
         return { processedCount: 0 };
       }
 
-      this.logger.log(`[AutoDispatch Worker] ⏰ Encontrados ${expiredItems.length} itens pendentes de auto-disparo (janela de 30m expirada: 10m operador + 20m worker).`);
+      this.logger.log(`[AutoDispatch Worker] ⏰ Encontrados ${expiredItems.length} itens pendentes de auto-disparo (janela de 10m expirada).`);
 
       let processedCount = 0;
       for (const item of expiredItems) {
