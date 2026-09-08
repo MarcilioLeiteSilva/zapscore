@@ -11,6 +11,7 @@ export interface AuditContext {
   awayPoints?: number;
   playersInMatch?: string[];
   liveLancesText?: string;
+  previousTitles?: string[];
 }
 
 export interface AuditResult {
@@ -49,6 +50,13 @@ export class FactAuditorService {
       warnings.push(...scoreAudit.warnings);
       sanitizedTitle = scoreAudit.sanitizedTitle;
       sanitizedComment = scoreAudit.sanitizedComment;
+    }
+
+    // 3. AUDITORIA DE TÍTULO (Não-Repetição e Banimento de Clichês Genéricos)
+    const titleAudit = this.auditTitleRepetition(sanitizedTitle, context);
+    if (!titleAudit.passed) {
+      warnings.push(...titleAudit.warnings);
+      sanitizedTitle = titleAudit.sanitizedTitle;
     }
 
     if (warnings.length > 0) {
@@ -221,6 +229,46 @@ export class FactAuditorService {
       passed: warnings.length === 0,
       sanitizedTitle: sTitle,
       sanitizedComment: sComment,
+      warnings,
+    };
+  }
+
+  /**
+   * Audita repetição de títulos e uso de clichês jornalísticos vazios
+   */
+  private auditTitleRepetition(
+    title: string,
+    ctx: AuditContext,
+  ): { passed: boolean; sanitizedTitle: string; warnings: string[] } {
+    const warnings: string[] = [];
+    let sTitle = title.trim();
+    const previous = (ctx.previousTitles || []).map((t) => t.trim().toLowerCase());
+
+    const isDuplicate = previous.includes(sTitle.toLowerCase());
+    const isGenericCliche =
+      /^(Expectativa (de um duelo|alta|para)|Empate sem (emoção|gols)|Confronto tático de gigantes|Duelo tático equilibrado|Partida equilibrada)/i.test(
+        sTitle,
+      );
+
+    if (isDuplicate || isGenericCliche) {
+      warnings.push(
+        `Título clichê ou duplicado detectado: "${sTitle}". Gerando manchete tática exclusiva.`,
+      );
+
+      if (ctx.homeScore !== ctx.awayScore) {
+        const leader = ctx.homeScore > ctx.awayScore ? ctx.homeTeam : ctx.awayTeam;
+        const trailer = ctx.homeScore > ctx.awayScore ? ctx.awayTeam : ctx.homeTeam;
+        sTitle = `${leader} supera ${trailer} em duelo tático no placar de ${Math.max(ctx.homeScore, ctx.awayScore)}x${Math.min(ctx.homeScore, ctx.awayScore)}`;
+      } else if (ctx.homeScore > 0) {
+        sTitle = `${ctx.homeTeam} e ${ctx.awayTeam} empatam em ${ctx.homeScore} a ${ctx.awayScore} em embate disputado`;
+      } else {
+        sTitle = `${ctx.homeTeam} e ${ctx.awayTeam}: Escalações e Desenho Tático em Campo`;
+      }
+    }
+
+    return {
+      passed: warnings.length === 0,
+      sanitizedTitle: sTitle,
       warnings,
     };
   }

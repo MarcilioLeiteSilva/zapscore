@@ -507,6 +507,34 @@ export class TacticalCommentsService {
         this.logger.debug(`[Standings] Falha ao carregar tabela para liga ${leagueExternalId}: ${stErr.message}`);
       }
 
+      // 7.5 Escalações Oficiais do Lineup Agent
+      let lineupsText = '';
+      if (fixture.lineups && fixture.lineups.length > 0) {
+        const homeLineups = fixture.lineups.filter(
+          (l: any) => l.teamId === fixture.homeTeam.externalId || l.teamId === Number(fixture.homeTeam.id),
+        );
+        const awayLineups = fixture.lineups.filter(
+          (l: any) => l.teamId === fixture.awayTeam.externalId || l.teamId === Number(fixture.awayTeam.id),
+        );
+
+        const homeStarters = homeLineups
+          .filter((l: any) => l.isStart)
+          .map((l: any) => `${l.player}${l.number ? ` (#${l.number})` : ''}${l.pos ? ` [${l.pos}]` : ''}`);
+        const homeBench = homeLineups.filter((l: any) => !l.isStart).map((l: any) => l.player);
+        const awayStarters = awayLineups
+          .filter((l: any) => l.isStart)
+          .map((l: any) => `${l.player}${l.number ? ` (#${l.number})` : ''}${l.pos ? ` [${l.pos}]` : ''}`);
+        const awayBench = awayLineups.filter((l: any) => !l.isStart).map((l: any) => l.player);
+
+        lineupsText = `ESCALAÇÕES OFICIAIS (FONTE: LINEUP AGENT / SÚMULA CONFIRMADA):
+• ${fixture.homeTeam.name} (Titulares): ${homeStarters.length > 0 ? homeStarters.join(', ') : 'Em apuração'}
+  ${fixture.homeTeam.name} (Reservas): ${homeBench.length > 0 ? homeBench.slice(0, 10).join(', ') : 'Não informado'}
+• ${fixture.awayTeam.name} (Titulares): ${awayStarters.length > 0 ? awayStarters.join(', ') : 'Em apuração'}
+  ${fixture.awayTeam.name} (Reservas): ${awayBench.length > 0 ? awayBench.slice(0, 10).join(', ') : 'Não informado'}`;
+      }
+
+      const previousTitles = existingComments.map((c) => c.title).filter(Boolean);
+
       // Sanitiza recentComments antes de passar para o prompt para evitar contaminação por alucinações de minutos anteriores
       const sanitizedRecentComments = recentComments.map((rc) => {
         const audited = this.factAuditor.auditComment(rc.title, rc.comment, {
@@ -516,6 +544,7 @@ export class TacticalCommentsService {
           awayScore: fixture.awayGoals ?? 0,
           homeRank,
           awayRank,
+          previousTitles,
         });
         return {
           ...rc,
@@ -536,6 +565,8 @@ export class TacticalCommentsService {
         events: fixture.events.slice(-8), // últimos 8 eventos detalhados
         criticalEvents,
         previousTheses,
+        previousTitles,
+        lineupsText,
         stats: statsSnapshot,
         externalContext,
         recentComments: sanitizedRecentComments,
@@ -553,6 +584,7 @@ export class TacticalCommentsService {
         homePoints,
         awayPoints,
         liveLancesText: externalContext || '',
+        previousTitles,
       });
 
       // 10. Grava no PocketBase Comentários dedicado (Comentário 100% Auditado e Aprovado)
@@ -632,6 +664,8 @@ export class TacticalCommentsService {
     events: any[];
     criticalEvents?: string[];
     previousTheses?: string[];
+    previousTitles?: string[];
+    lineupsText?: string;
     stats: any;
     externalContext: string | null;
     recentComments?: FixtureCommentRecord[];
@@ -696,7 +730,7 @@ export class TacticalCommentsService {
 
     const phaseInstructions: Record<CommentPhase, string> = {
       PRE_MATCH:
-        'Foco no Pré-Jogo: Expectativas táticas, postura esperada das equipes (propositiva vs reativa), disputa setorial e escalações.',
+        'Foco no Pré-Jogo: Análise profunda e factual do confronto. Destaque NOMINALMENTE os atletas titulares confirmados ou prováveis, os desfalques por lesão ou suspensão por cartões/pendurados (extraídos das notícias e escalações) e as escolhas dos técnicos. É TERMINANTEMENTE PROIBIDO usar clichês genéricos como "postura propositiva vs reativa" ou "duelo equilibrado".',
       FIRST_HALF:
         'Foco no 1º Tempo: Ritmo inicial, encaixe de marcação, aproveitamento das transições e momentos de perigo.',
       HALF_TIME:
@@ -748,6 +782,12 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
    - "DOMINANTE" (amplo controle de jogo, pressão e superioridade)
    - "CRITICO" (expulsão, pênalti decisivo, momento de alta tensão)
    - "SURPRESA" (zebra, resultado inesperado ou virada improvável)
+8. REGRA INEGOCIÁVEL DE TÍTULOS INÉDITOS E ANTI-CLICHÊ:
+   - É TERMINANTEMENTE PROIBIDO repetir qualquer título já utilizado em comentários anteriores desta partida.
+   - É PROIBIDO usar títulos clichês e vazios como "Expectativa de um duelo tático equilibrado", "Duelo equilibrado", "Empate sem emoção", "Estudo mútuo e ritmo morno".
+   - O título DEVE ser uma manchete viva, inédita e criativa, destacando os fatos concretos, os nomes dos atletas decisivos ou a estratégia pontual.
+9. FATOS NOMINAIS E DESFALQUES REAIS:
+   - Sempre que disponíveis nas notícias e escalações, cite nominalmente os jogadores (desfalques por lesão, suspensos por cartão, pendurados ou titulares de destaque). Nunca produza análises vagas ou genéricas.
 
 FORMATO JSON ESPERADO:
 {
@@ -770,6 +810,8 @@ ${focusPoints.length > 0 ? `\nFOCOS ADICIONAIS:\n${focusPoints.join('\n')}` : ''
 ${config.custom_rules ? `\nREGRAS PERSONALIZADAS DO USUÁRIO:\n${config.custom_rules}\n` : ''}
 
 ${context.standingsText ? `\n${context.standingsText}\n` : ''}
+${context.lineupsText ? `\n${context.lineupsText}\n` : ''}
+${context.previousTitles && context.previousTitles.length > 0 ? `\nTÍTULOS JÁ UTILIZADOS NESTA PARTIDA (É PROIBIDO REPETIR OU USAR VARIAÇÃO DESTES):\n${context.previousTitles.map((t) => `• "${t}"`).join('\n')}\n` : ''}
 MEMÓRIA FACTUAL DA PARTIDA (LINHA DO TEMPO CRÍTICA ACUMULADA):
 ${context.criticalEvents && context.criticalEvents.length > 0 ? context.criticalEvents.join('\n') : 'Nenhum evento crítico acumulado até o momento.'}
 
@@ -789,8 +831,9 @@ DIRETRIZ DA FASE ATUAL:
 ${phaseInstruction}
 
 DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
-- É TERMINANTEMENTE PROIBIDO repetir termos, frases ou diagnósticos já feitos nos comentários anteriores desta mesma partida.
-- Como os comentários acontecem no ritmo dinâmico de 5 em 5 minutos, foque no que ACONTECEU E MUDOU nos últimos minutos (cartões aplicados, defesas difíceis, finalizações, faltas duras, substituições e alteração nas linhas).
+- É TERMINANTEMENTE PROIBIDO repetir títulos ou diagnósticos já feitos nos comentários anteriores desta mesma partida. Crie títulos inéditos!
+- No Pré-Jogo, foque em desfalques reais, jogadores suspensos, novidades na escalação e impacto na tabela.
+- Durante o jogo ao vivo (de 5 em 5 minutos), foque no que ACONTECEU E MUDOU nos últimos minutos (cartões aplicados, defesas difíceis, finalizações, faltas duras, substituições e alteração nas linhas).
 - Se houver cartões amarelos/vermelhos, substituições ou defesas difíceis nos eventos/lances, cite nominalmente os jogadores envolvidos.
 - Traga a resenha autêntica do futebol brasileiro com base nos fatos reais de campo e na repercussão da imprensa!
 `;

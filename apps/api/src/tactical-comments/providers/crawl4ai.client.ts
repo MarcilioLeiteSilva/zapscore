@@ -106,7 +106,7 @@ export class Crawl4aiClient {
 
     for (const source of candidateSources) {
       try {
-        const query = `"${cleanHome}" "${cleanAway}" site:${source}`;
+        const query = `"${cleanHome}" "${cleanAway}" (desfalques OR suspensos OR escalação OR "onde assistir") site:${source}`;
         const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
         const res = await axios.get(rssUrl, {
           headers: {
@@ -121,14 +121,31 @@ export class Crawl4aiClient {
 
         for (const item of items.slice(0, 3)) {
           const titleMatch = item.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+          const descMatch = item.match(/<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/);
           const title = titleMatch ? titleMatch[1].replace(/ - [^-]+$/, '').trim() : '';
+
+          let snippet = '';
+          if (descMatch) {
+            snippet = descMatch[1]
+              .replace(/<[^>]*>/g, '')
+              .replace(/&nbsp;/g, ' ')
+              .replace(/&amp;/g, '&')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .trim();
+            if (title && snippet.startsWith(title)) {
+              snippet = snippet.substring(title.length).trim();
+            }
+          }
+
           if (
             title &&
             (title.toLowerCase().includes(cleanHome.toLowerCase()) ||
               title.toLowerCase().includes(cleanAway.toLowerCase()))
           ) {
             const portalLabel = source.replace('.com.br', '').replace('.globo', '').toUpperCase();
-            results.push(`• [${portalLabel}] ${title}`);
+            const detailText = snippet && snippet.length > 15 ? ` — Detalhes: ${snippet.substring(0, 180)}...` : '';
+            results.push(`• [${portalLabel}] ${title}${detailText}`);
           }
         }
       } catch (err: any) {
@@ -136,13 +153,39 @@ export class Crawl4aiClient {
       }
     }
 
+    // Busca direcionada para desfalques e pendurados dos dois clubes
+    for (const teamName of [cleanHome, cleanAway]) {
+      try {
+        const desfalqueQuery = `"${teamName}" (desfalques OR suspensos OR "3º amarelo" OR lesionados) site:ge.globo.com`;
+        const desfalqueUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(desfalqueQuery)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`;
+        const dRes = await axios.get(desfalqueUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+          timeout: 3500,
+        });
+
+        const dXml = dRes.data || '';
+        const dItems = dXml.match(/<item>[\s\S]*?<\/item>/g) || [];
+        if (dItems.length > 0) {
+          const first = dItems[0];
+          const dTitleMatch = first.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/);
+          const dTitle = dTitleMatch ? dTitleMatch[1].replace(/ - [^-]+$/, '').trim() : '';
+          if (dTitle && !results.some((r) => r.includes(dTitle))) {
+            results.push(`• [SITUAÇÃO DE ELENCO / DESFALQUES ${teamName.toUpperCase()}] ${dTitle}`);
+          }
+        }
+      } catch (_) {}
+    }
+
     if (results.length > 0) {
       this.logger.log(
-        `[PressRadar] 📰 Radar multi-fontes coletado para ${homeTeam} x ${awayTeam} (${results.length} destaques)`,
+        `[PressRadar] 📰 Radar multi-fontes coletado para ${homeTeam} x ${awayTeam} (${results.length} destaques com desfalques/escalações)`,
       );
     }
 
-    return results.slice(0, 8).join('\n');
+    return results.slice(0, 10).join('\n');
   }
 
   /**
