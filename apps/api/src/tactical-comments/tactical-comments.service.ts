@@ -533,6 +533,52 @@ export class TacticalCommentsService {
   ${fixture.awayTeam.name} (Reservas): ${awayBench.length > 0 ? awayBench.slice(0, 10).join(', ') : 'Não informado'}`;
       }
 
+      // 7.6 Retrospecto dos Últimos Jogos (Momentum Recente das Equipes)
+      let recentMatchesText = '';
+      if (phase === 'PRE_MATCH') {
+        try {
+          const [homeRecent, awayRecent] = await Promise.all([
+            this.prisma.fixture.findMany({
+              where: {
+                OR: [{ homeTeamId: fixture.homeTeamId }, { awayTeamId: fixture.homeTeamId }],
+                statusShort: { in: ['FT', 'AET', 'PEN'] },
+                date: { lt: fixture.date },
+              },
+              orderBy: { date: 'desc' },
+              take: 3,
+              include: { homeTeam: true, awayTeam: true },
+            }),
+            this.prisma.fixture.findMany({
+              where: {
+                OR: [{ homeTeamId: fixture.awayTeamId }, { awayTeamId: fixture.awayTeamId }],
+                statusShort: { in: ['FT', 'AET', 'PEN'] },
+                date: { lt: fixture.date },
+              },
+              orderBy: { date: 'desc' },
+              take: 3,
+              include: { homeTeam: true, awayTeam: true },
+            }),
+          ]);
+
+          const formatMatches = (matches: any[], teamId: string) =>
+            matches
+              .map((m) => {
+                const isHome = m.homeTeamId === teamId;
+                const goalsFor = isHome ? (m.homeGoals ?? 0) : (m.awayGoals ?? 0);
+                const goalsAgainst = isHome ? (m.awayGoals ?? 0) : (m.homeGoals ?? 0);
+                const res = goalsFor > goalsAgainst ? 'V' : goalsFor < goalsAgainst ? 'D' : 'E';
+                return `${m.homeTeam?.name || 'Time'} ${m.homeGoals ?? 0} x ${m.awayGoals ?? 0} ${m.awayTeam?.name || 'Time'} (${res})`;
+              })
+              .join(' | ');
+
+          recentMatchesText = `RETROSPECTO RECENTE (ÚLTIMOS JOGOS NO CAMPEONATO):
+• ${fixture.homeTeam.name}: ${homeRecent.length > 0 ? formatMatches(homeRecent, fixture.homeTeamId) : 'Sem dados recentes'}
+• ${fixture.awayTeam.name}: ${awayRecent.length > 0 ? formatMatches(awayRecent, fixture.awayTeamId) : 'Sem dados recentes'}`;
+        } catch (rErr: any) {
+          this.logger.debug(`[RecentMatches] Falha ao consultar jogos recentes: ${rErr.message}`);
+        }
+      }
+
       const previousTitles = existingComments.map((c) => c.title).filter(Boolean);
 
       // Sanitiza recentComments antes de passar para o prompt para evitar contaminação por alucinações de minutos anteriores
@@ -571,6 +617,7 @@ export class TacticalCommentsService {
         externalContext,
         recentComments: sanitizedRecentComments,
         standingsText,
+        recentMatchesText,
       });
 
       // 9. AGENTE AUDITOR DE FATOS: Inspeciona e sanitiza qualquer inconsistência antes de salvar
@@ -670,6 +717,7 @@ export class TacticalCommentsService {
     externalContext: string | null;
     recentComments?: FixtureCommentRecord[];
     standingsText?: string;
+    recentMatchesText?: string;
   }): Promise<{ title: string; comment: string; sentiment: CommentSentiment }> {
     const provider = (this.configService.get<string>('AI_PROVIDER') || 'OPENAI').toUpperCase();
 
@@ -701,7 +749,15 @@ export class TacticalCommentsService {
     // Controle de tamanho do texto por fase
     let lengthInstruction = '';
     const isLive = context.phase === 'FIRST_HALF' || context.phase === 'SECOND_HALF';
-    if (isLive) {
+    if (context.phase === 'PRE_MATCH') {
+      lengthInstruction = `FORMATO PRÉ-JOGO COMPLETO E APROFUNDADO EM SEÇÕES (250 A 400 PALAVRAS):
+É TERMINANTEMENTE PROIBIDO gerar parágrafos corridos curtos ou genéricos! Estruture o texto obrigatoriamente com quebras de linha duplas e as seguintes seções com emojis editoriais:
+
+🎙️ O MOMENTO DAS EQUIPES: Análise aprofundada da posição na tabela, necessidade de vitória e retrospecto recente de jogos de cada clube.
+⚔️ DESFALQUES, SUSPENSÕES E RETORNOS: Liste nominalmente cada jogador fora por lesão (departamento médico), os suspensos por cartões e os retornos/dúvidas, separando claramente por clube (com base nos dados apurados).
+📋 ESCALAÇÕES (PROVÁVEIS OU CONFIRMADAS): Apresente o time titular e principais opções de cada lado.
+🔎 LEITURA TÁTICA E TENDÊNCIA: Onde a partida será decidida, propostas de jogo, encaixe das linhas e a tendência do confronto.`;
+    } else if (isLive) {
       if (config.live_length === 'FLASH') {
         lengthInstruction = 'TAMANHO ULTRA-CURTO / FLASH: No máximo 2 frases diretas e objetivas (cerca de 25 a 35 palavras). Vá direto ao ponto sem rodeios.';
       } else if (config.live_length === 'SHORT') {
@@ -730,7 +786,7 @@ export class TacticalCommentsService {
 
     const phaseInstructions: Record<CommentPhase, string> = {
       PRE_MATCH:
-        'Foco no Pré-Jogo: Análise profunda e factual do confronto. Destaque NOMINALMENTE os atletas titulares confirmados ou prováveis, os desfalques por lesão ou suspensão por cartões/pendurados (extraídos das notícias e escalações) e as escolhas dos técnicos. É TERMINANTEMENTE PROIBIDO usar clichês genéricos como "postura propositiva vs reativa" ou "duelo equilibrado".',
+        'Foco no Pré-Jogo: Destaque os fatos reais, momentos recentes, lista nominal de desfalques, suspensos, prováveis escalações e a leitura tática de onde o confronto será definido.',
       FIRST_HALF:
         'Foco no 1º Tempo: Ritmo inicial, encaixe de marcação, aproveitamento das transições e momentos de perigo.',
       HALF_TIME:
@@ -776,7 +832,7 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
    - É TERMINANTEMENTE PROIBIDO citar canais de TV, emissoras (ex: Globo, SporTV, Premiere, ESPN, SBT), serviços de streaming (ex: Max, CazéTV, Prime Video) ou frases como 'onde assistir', 'transmissão ao vivo', 'será transmitido por'. As informações de transmissão possuem um card isolado no aplicativo e NÃO devem poluir o comentário tático.
 4. Responda ESTRITAMENTE em formato JSON puro, sem blocos markdown adicionais.
 5. Título ("title"): Manchete de impacto tático, máximo 10 palavras, 100% em português puro sem jargões em inglês.
-6. Comentário ("comment"): Respeite estritamente a extensão solicitada pelo usuário no prompt.
+6. Comentário ("comment"): Respeite estritamente a extensão e o formato solicitados pelo usuário no prompt.
 7. Sentimento ("sentiment"): Escolha uma das opções rigorosamente em português (em maiúsculo):
    - "EQUILIBRADO" (jogos parelhos e disputa tática equilibrada)
    - "DOMINANTE" (amplo controle de jogo, pressão e superioridade)
@@ -786,13 +842,15 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
    - É TERMINANTEMENTE PROIBIDO repetir qualquer título já utilizado em comentários anteriores desta partida.
    - É PROIBIDO usar títulos clichês e vazios como "Expectativa de um duelo tático equilibrado", "Duelo equilibrado", "Empate sem emoção", "Estudo mútuo e ritmo morno".
    - O título DEVE ser uma manchete viva, inédita e criativa, destacando os fatos concretos, os nomes dos atletas decisivos ou a estratégia pontual.
-9. FATOS NOMINAIS E DESFALQUES REAIS:
-   - Sempre que disponíveis nas notícias e escalações, cite nominalmente os jogadores (desfalques por lesão, suspensos por cartão, pendurados ou titulares de destaque). Nunca produza análises vagas ou genéricas.
+9. FATOS NOMINAIS, DESFALQUES E PROIBIÇÃO DE JORNALÊS PROTOCOLAR:
+   - É TERMINANTEMENTE PROIBIDO iniciar o comentário com "A partida promete ser um embate interessante", "O confronto promete ser disputado" ou qualquer variação de abertura genérica. Comece direto no fato, no momento do campeonato ou no impacto do jogo.
+   - No Pré-Jogo, NUNCA termine falando de "substituições dos treinadores" de forma genérica. Foque no duelo de início, nos esquemas táticos e nos desfalques.
+   - Cite nominalmente todos os jogadores em evidência (desfalques, suspensos, pendurados, retornos e titulares).
 
 FORMATO JSON ESPERADO:
 {
   "title": "<manchete curta pura em português>",
-  "comment": "<análise tática respeitando o tamanho solicitado>",
+  "comment": "<análise tática respeitando o tamanho e formato solicitados>",
   "sentiment": "EQUILIBRADO" | "DOMINANTE" | "CRITICO" | "SURPRESA"
 }`;
 
@@ -805,11 +863,13 @@ STATUS: ${context.statusShort}
 CALIBRAÇÃO DE ESTILO E TOM:
 - PERSPECTIVA: ${coachPct}% Visão do Técnico (prancheta, linhas) e ${fanPct}% Visão do Torcedor (emoção, vibração).
 - GRAU DE CASUALIDADE / RESENHA: ${config.casualness}% (${toneDescription}).
-- DIRETRIZ DE EXTENSÃO DO COMENTÁRIO: ${lengthInstruction}
+- DIRETRIZ DE EXTENSÃO E FORMATO:
+${lengthInstruction}
 ${focusPoints.length > 0 ? `\nFOCOS ADICIONAIS:\n${focusPoints.join('\n')}` : ''}
 ${config.custom_rules ? `\nREGRAS PERSONALIZADAS DO USUÁRIO:\n${config.custom_rules}\n` : ''}
 
 ${context.standingsText ? `\n${context.standingsText}\n` : ''}
+${context.recentMatchesText ? `\n${context.recentMatchesText}\n` : ''}
 ${context.lineupsText ? `\n${context.lineupsText}\n` : ''}
 ${context.previousTitles && context.previousTitles.length > 0 ? `\nTÍTULOS JÁ UTILIZADOS NESTA PARTIDA (É PROIBIDO REPETIR OU USAR VARIAÇÃO DESTES):\n${context.previousTitles.map((t) => `• "${t}"`).join('\n')}\n` : ''}
 MEMÓRIA FACTUAL DA PARTIDA (LINHA DO TEMPO CRÍTICA ACUMULADA):
@@ -832,7 +892,7 @@ ${phaseInstruction}
 
 DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
 - É TERMINANTEMENTE PROIBIDO repetir títulos ou diagnósticos já feitos nos comentários anteriores desta mesma partida. Crie títulos inéditos!
-- No Pré-Jogo, foque em desfalques reais, jogadores suspensos, novidades na escalação e impacto na tabela.
+- No Pré-Jogo, foque em desfalques reais, jogadores suspensos, novidades na escalação e impacto na tabela, divididos nas seções solicitadas.
 - Durante o jogo ao vivo (de 5 em 5 minutos), foque no que ACONTECEU E MUDOU nos últimos minutos (cartões aplicados, defesas difíceis, finalizações, faltas duras, substituições e alteração nas linhas).
 - Se houver cartões amarelos/vermelhos, substituições ou defesas difíceis nos eventos/lances, cite nominalmente os jogadores envolvidos.
 - Traga a resenha autêntica do futebol brasileiro com base nos fatos reais de campo e na repercussão da imprensa!
@@ -845,6 +905,8 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
       if (s === 'CRITICAL' || s === 'CRITICO' || s === 'CRÍTICO') return 'CRITICO';
       return 'EQUILIBRADO';
     };
+
+    const targetTemperature = context.phase === 'PRE_MATCH' ? 0.5 : 0.2;
 
     // 1. Tenta com OpenAI se for o provider selecionado ou se disponível (com Prompt Caching no system message)
     if ((provider === 'OPENAI' || !this.genAI) && this.openai) {
@@ -859,7 +921,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
             { role: 'user', content: userPrompt },
           ],
           response_format: { type: 'json_object' },
-          temperature: 0.2,
+          temperature: targetTemperature,
         });
 
         const rawText = completion.choices[0].message.content || '{}';
@@ -883,7 +945,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
           systemInstruction: systemPrompt,
           generationConfig: {
             responseMimeType: 'application/json',
-            temperature: 0.4,
+            temperature: context.phase === 'PRE_MATCH' ? 0.55 : 0.4,
           },
         });
 
