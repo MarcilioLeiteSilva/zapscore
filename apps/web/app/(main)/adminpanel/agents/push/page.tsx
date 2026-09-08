@@ -36,7 +36,6 @@ interface CompetitionOption {
 const COMPETITIONS: CompetitionOption[] = [
   { id: 71, name: "Brasileirão Série A", slug: "brasileirao", country: "Brasil", cluster: "Brasil" },
   { id: 72, name: "Brasileirão Série B", slug: "brasileirao", country: "Brasil", cluster: "Brasil" },
-  { id: 73, name: "Copa do Brasil", slug: "brasileirao", country: "Brasil", cluster: "Brasil" },
   { id: 475, name: "Campeonato Paulista A1", slug: "campeonato_paulista", country: "Brasil", cluster: "Estaduais" },
   { id: 476, name: "Campeonato Paulista A2", slug: "campeonato_paulista", country: "Brasil", cluster: "Estaduais" },
   { id: 624, name: "Campeonato Carioca", slug: "campeonato_carioca", country: "Brasil", cluster: "Estaduais" },
@@ -325,13 +324,25 @@ export default function PushAgentPage() {
 
   const pendingQueueItems = queueItems.filter(item => item.status === 'PENDING_APPROVAL');
 
-  // Formatação de contagem regressiva
-  const formatTimeRemaining = (targetDateStr: string, prefixText = "Auto-Disparo em:") => {
+  // Formatação de contagem regressiva da régua de tempo: 10m operador + 20m worker
+  const formatTimeRemaining = (targetDateStr: string, prefixText?: string) => {
     const diff = new Date(targetDateStr).getTime() - nowTime;
     if (diff <= 0) return "Disparando via worker...";
+
+    // Primeiros 10 minutos (restam mais de 20 min para os 30 min totais)
+    const twentyMinsMs = 20 * 60 * 1000;
+    if (diff > twentyMinsMs) {
+      const opDiff = diff - twentyMinsMs;
+      const mins = Math.floor(opDiff / (1000 * 60));
+      const secs = Math.floor((opDiff % (1000 * 60)) / 1000);
+      return `Operador: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min (depois +20m auto)`;
+    }
+
+    // Últimos 20 minutos de contagem para o auto-disparo
     const mins = Math.floor(diff / (1000 * 60));
     const secs = Math.floor((diff % (1000 * 60)) / 1000);
-    return `${prefixText} ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min`;
+    const label = prefixText || "Auto-Disparo em:";
+    return `${label} ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} min`;
   };
 
   return (
@@ -470,7 +481,7 @@ export default function PushAgentPage() {
               Resumo de Rodada Concluída Aguardando Operador ({pendingQueueItems.length})
             </h3>
             <span className="text-xs text-slate-400 font-mono">
-              Sentinel Watcher Ativo (Janela 60m)
+              Sentinel Watcher Ativo (Janela 10m operador + 20m auto)
             </span>
           </div>
 
@@ -587,11 +598,14 @@ export default function PushAgentPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {roundsDashboard.completedLeagues.map((lg) => {
                       const isDispatched = lg.queueItem && lg.queueItem.status.startsWith('DISPATCHED');
+                      const isCancelled = lg.queueItem && lg.queueItem.status === 'CANCELLED';
+                      const isInactive = isDispatched || isCancelled;
+
                       return (
                         <div 
                           key={lg.leagueId}
                           className={`p-5 rounded-3xl border backdrop-blur-xl space-y-3.5 transition ${
-                            isDispatched 
+                            isInactive 
                               ? 'bg-slate-900/40 border-slate-800 opacity-80'
                               : 'bg-gradient-to-b from-slate-900/90 to-slate-950 border-emerald-500/30 shadow-lg shadow-emerald-500/5'
                           }`}
@@ -609,6 +623,10 @@ export default function PushAgentPage() {
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                 ✅ ENVIADO
                               </span>
+                            ) : isCancelled ? (
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                ❌ DESCARTADO
+                              </span>
                             ) : (
                               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                                 🟢 100% CONCLUÍDA
@@ -624,7 +642,7 @@ export default function PushAgentPage() {
 
                           {lg.queueItem?.status === 'PENDING_APPROVAL' && (
                             <div className="flex items-center justify-between text-xs text-amber-300 font-mono bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
-                              <span>Auto-Disparo Fallback:</span>
+                              <span>Janela de Ação:</span>
                               <strong className="animate-pulse">{formatTimeRemaining(lg.queueItem.scheduledAutoDispatchAt)}</strong>
                             </div>
                           )}
@@ -634,15 +652,28 @@ export default function PushAgentPage() {
                               <div className="w-full py-2 bg-slate-950 rounded-xl text-center text-xs font-semibold text-slate-500 border border-slate-800">
                                 Disparado às {new Date(lg.queueItem.dispatchedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} ({lg.queueItem.sentCount || 0} entregues)
                               </div>
+                            ) : isCancelled ? (
+                              <div className="w-full py-2 bg-slate-950 rounded-xl text-center text-xs font-semibold text-rose-400/80 border border-slate-800">
+                                Resumo descartado pelo operador (Inabilitado)
+                              </div>
                             ) : (
                               <>
                                 <button
-                                  onClick={() => handleSendPush({
-                                    leagueId: lg.leagueId,
-                                    appSlug: lg.appSlug,
-                                    title: lg.suggestedTitle,
-                                    body: lg.suggestedBody
-                                  })}
+                                  onClick={() => {
+                                    if (lg.queueItem?.id) {
+                                      handleDispatchQueueItem(lg.queueItem.id, {
+                                        title: lg.suggestedTitle,
+                                        body: lg.suggestedBody
+                                      });
+                                    } else {
+                                      handleSendPush({
+                                        leagueId: lg.leagueId,
+                                        appSlug: lg.appSlug,
+                                        title: lg.suggestedTitle,
+                                        body: lg.suggestedBody
+                                      });
+                                    }
+                                  }}
                                   disabled={isSending}
                                   className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-xs font-bold text-white rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20"
                                 >
@@ -659,9 +690,20 @@ export default function PushAgentPage() {
                                     setActiveTab('manual');
                                   }}
                                   className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-xl transition"
+                                  title="Editar no simulador"
                                 >
                                   <Edit3 className="h-3.5 w-3.5" />
                                 </button>
+
+                                {lg.queueItem?.id && (
+                                  <button
+                                    onClick={() => handleCancelQueueItem(lg.queueItem.id)}
+                                    className="px-3 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-400 border border-rose-500/20 rounded-xl transition"
+                                    title="Descartar resumo"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
                               </>
                             )}
                           </div>

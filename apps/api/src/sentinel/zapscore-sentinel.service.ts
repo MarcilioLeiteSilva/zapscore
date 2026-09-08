@@ -177,7 +177,8 @@ export class ZapScoreSentinelService {
     endBrt.setDate(endBrt.getDate() + 1);
 
     let completedRoundsCount = 0;
-    const monitoredLeagues = SUPPORTED_COMPETITIONS;
+    const CUP_LEAGUE_IDS = [13, 73, 612, 1, 10];
+    const monitoredLeagues = SUPPORTED_COMPETITIONS.filter((comp) => !CUP_LEAGUE_IDS.includes(comp.externalId));
 
     for (const comp of monitoredLeagues) {
       try {

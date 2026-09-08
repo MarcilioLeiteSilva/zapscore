@@ -63,7 +63,10 @@ export class LineupsService {
     const windowStart = new Date(now.getTime() - 4 * 60 * 60 * 1000); // 4h atrás para cobrir partidas recentes/ao vivo
     const windowEnd = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Janela de 4 horas à frente
 
-    const monitoredLeagueIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+    // Monitora exclusivamente Europa, Brasil e Estaduais (Copas estritamente excluídas do Lineup Agent)
+    const monitoredLeagueIds = SUPPORTED_COMPETITIONS
+      .map((c) => c.externalId)
+      .filter((id) => ![13, 73, 612, 1, 10].includes(id));
 
     try {
       // 1. Busca partidas na janela para as ligas do Sentinel

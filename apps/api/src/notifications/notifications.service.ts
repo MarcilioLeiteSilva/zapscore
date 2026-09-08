@@ -56,13 +56,19 @@ export class NotificationsService {
 
   /**
    * Mapeia a liga / appSlug para o endpoint correto do PocketBase
+   * Retorna null se a competição não pertencer a nenhum app com PocketBase ativo (Zero vazamento de escopo)
    */
-  private resolvePocketBaseTarget(leagueId?: number, appSlug?: string): { url: string; slug: string; name: string } {
+  private resolvePocketBaseTarget(leagueId?: number, appSlug?: string): { url: string; slug: string; name: string } | null {
     const slug = (appSlug || '').toLowerCase().trim();
     const id = leagueId ? Number(leagueId) : 0;
 
+    // Se for Copa (Libertadores, Copa do Brasil, Copa do Nordeste, etc.), não possui app nem PocketBase dedicado
+    if ([73, 612, 13, 1, 10].includes(id)) {
+      return null;
+    }
+
     // 1. Brasil / Brasileirão
-    if (id === 71 || id === 72 || id === 73 || slug === 'brasileirao') {
+    if (id === 71 || id === 72 || slug === 'brasileirao') {
       return { url: this.PB_BRASIL, slug: 'brasileirao', name: 'PocketBase Brasil' };
     }
 
@@ -78,26 +84,36 @@ export class NotificationsService {
     if (europaSlugs[slug] || [140, 78, 39, 135, 61, 2].includes(id)) {
       let resolvedSlug = slug;
       if (!resolvedSlug) {
-        resolvedSlug = Object.keys(europaSlugs).find((k) => europaSlugs[k] === id) || 'laliga';
+        resolvedSlug = Object.keys(europaSlugs).find((k) => europaSlugs[k] === id) || '';
       }
-      return { url: this.PB_EUROPA, slug: resolvedSlug, name: 'PocketBase Europa' };
+      if (resolvedSlug) {
+        return { url: this.PB_EUROPA, slug: resolvedSlug, name: 'PocketBase Europa' };
+      }
     }
 
-    // 3. Estaduais (Padrão)
-    const estadualSlugs: Record<string, number> = {
-      campeonato_paulista: 610,
-      campeonato_carioca: 624,
-      campeonato_mineiro: 629,
-      campeonato_gaucho: 614,
-      campeonato_baiano: 617,
-      campeonato_paranaense: 616,
-      campeonato_cearense: 618,
+    // 3. Estaduais (Apenas ligas estaduais mapeadas)
+    const estadualSlugs: Record<string, number[]> = {
+      campeonato_paulista: [475, 476, 610],
+      campeonato_carioca: [624, 851],
+      campeonato_mineiro: [629, 619],
+      campeonato_gaucho: [477, 478, 614, 622, 853],
+      campeonato_baiano: [602, 613, 617],
+      campeonato_paranaense: [606, 614, 616],
+      campeonato_cearense: [607, 609, 618, 620],
     };
-    let resolvedEstadual = slug;
-    if (!resolvedEstadual) {
-      resolvedEstadual = Object.keys(estadualSlugs).find((k) => estadualSlugs[k] === id) || 'campeonato_paulista';
+
+    if (estadualSlugs[slug]) {
+      return { url: this.PB_ESTADUAIS, slug, name: 'PocketBase Estaduais' };
     }
-    return { url: this.PB_ESTADUAIS, slug: resolvedEstadual, name: 'PocketBase Estaduais' };
+
+    for (const [key, ids] of Object.entries(estadualSlugs)) {
+      if (ids.includes(id)) {
+        return { url: this.PB_ESTADUAIS, slug: key, name: 'PocketBase Estaduais' };
+      }
+    }
+
+    // Se não for nem Brasil, nem Europa, nem Estadual mapeado, retorna NULL (SEM FALLBACK CEGO)
+    return null;
   }
 
   /**
@@ -105,6 +121,14 @@ export class NotificationsService {
    */
   async sendBroadcast(dto: BroadcastPushDto) {
     const target = this.resolvePocketBaseTarget(dto.leagueId, dto.appSlug);
+    if (!target) {
+      this.logger.warn(`📢 Disparo de Push cancelado: Nenhuma instância PocketBase mapeada para a liga ${dto.leagueId} / slug ${dto.appSlug}`);
+      return {
+        success: false,
+        message: `Nenhuma instância do PocketBase mapeada para a competição ${dto.leagueId || dto.appSlug}. Disparo cancelado para evitar desvio de rota.`,
+      };
+    }
+
     this.logger.log(`📢 Disparando Broadcast Push para [${target.name}] (AppSlug: ${target.slug})`);
 
     const payload = {
@@ -268,10 +292,17 @@ export class NotificationsService {
       }
 
       const target = this.resolvePocketBaseTarget(leagueId);
+      if (!target) {
+        return {
+          success: false,
+          message: `Nenhum app PocketBase mapeado para a liga ${leagueId}. Resumo de rodada não enfileirado para preservar escopo.`,
+        };
+      }
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const scheduledAutoDispatchAt = new Date(Date.now() + 60 * 60 * 1000);
+      // Nova régua: 10m operador + 20m worker = 30m no total a partir da detecção do término
+      const scheduledAutoDispatchAt = new Date(Date.now() + 30 * 60 * 1000);
 
-      // 1. Verificação de Idempotência: não enfileira se já existir notificação recente para esta rodada
+      // 1. Verificação de Idempotência Estrita: não enfileira se já existir notificação recente (incluindo CANCELLED)
       let existing: any = null;
       if (this.hasPushQueueTable) {
         try {
@@ -280,7 +311,7 @@ export class NotificationsService {
               leagueId: Number(leagueId),
               round: summary.round,
               createdAt: { gte: twentyFourHoursAgo },
-              status: { in: ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO'] },
+              status: { in: ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO', 'CANCELLED'] },
             },
           });
         } catch (dbErr: any) {
@@ -296,14 +327,14 @@ export class NotificationsService {
             q.leagueId === Number(leagueId) &&
             q.round === summary.round &&
             q.createdAt >= twentyFourHoursAgo &&
-            ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO'].includes(q.status)
+            ['PENDING_APPROVAL', 'DISPATCHED_OPERATOR', 'DISPATCHED_AUTO', 'CANCELLED'].includes(q.status)
         );
       }
 
       if (existing) {
         return {
           success: true,
-          message: 'Resumo já enfileirado ou despachado para esta rodada.',
+          message: 'Resumo já enfileirado, despachado ou descartado para esta rodada.',
           queueItem: existing,
         };
       }
@@ -352,11 +383,11 @@ export class NotificationsService {
         this.inMemoryPushQueue.unshift(queueItem);
       }
 
-      this.logger.log(`[Push Queue] 📥 Resumo enfileirado para [${target.name}] (${summary.round}). Disparo automático agendado para ${scheduledAutoDispatchAt.toISOString()}`);
+      this.logger.log(`[Push Queue] 📥 Resumo enfileirado para [${target.name}] (${summary.round}). Janela operador 10m + auto-disparo para ${scheduledAutoDispatchAt.toISOString()}`);
 
       return {
         success: true,
-        message: 'Resumo enfileirado com sucesso. Aguardando operador ou fallback de 60 min.',
+        message: 'Resumo enfileirado com sucesso. Aguardando operador (10m) ou auto-disparo de fallback (+20m).',
         queueItem,
       };
     } catch (e: any) {
@@ -633,7 +664,7 @@ export class NotificationsService {
         return { processedCount: 0 };
       }
 
-      this.logger.log(`[AutoDispatch Worker] ⏰ Encontrados ${expiredItems.length} itens pendentes de auto-disparo (janela de 60m expirada).`);
+      this.logger.log(`[AutoDispatch Worker] ⏰ Encontrados ${expiredItems.length} itens pendentes de auto-disparo (janela de 30m expirada: 10m operador + 20m worker).`);
 
       let processedCount = 0;
       for (const item of expiredItems) {
@@ -834,8 +865,8 @@ export class NotificationsService {
           totalStarters,
           autoDispatchAt,
           lineupDispatchedAt: this.dispatchedLineupMap.get(f.externalId) || null,
-          target: target.name,
-          appSlug: target.slug,
+          target: target?.name || 'Não Mapeado',
+          appSlug: target?.slug || 'none',
           suggestedTitle,
           suggestedBody,
         };
@@ -879,6 +910,15 @@ export class NotificationsService {
       }
 
       const target = this.resolvePocketBaseTarget(fixture.league.externalId);
+      if (!target) {
+        this.logger.warn(
+          `[Lineup Push] Nenhuma instância PocketBase configurada para a liga ${fixture.league.externalId} (${fixture.league.name}). Push cancelado para preservar isolamento.`,
+        );
+        return {
+          success: false,
+          message: `Nenhum app PocketBase configurado para a liga ${fixture.league.name} (${fixture.league.externalId}).`,
+        };
+      }
       const title = override?.title || `📋 Escalações Confirmadas: ${fixture.homeTeam.name} x ${fixture.awayTeam.name}!`;
       const body = override?.body || 'Escalação disponível. Confira os 11 titulares no aplicativo!';
       const imageUrl = override?.imageUrl || '';
@@ -938,7 +978,10 @@ export class NotificationsService {
       const startBrt = new Date(`${dateStr}T00:00:00-03:00`);
       const endBrt = new Date(`${dateStr}T23:59:59.999-03:00`);
 
-      const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+      const CUP_LEAGUE_IDS = [13, 73, 612, 1, 10];
+      const monitoredIds = SUPPORTED_COMPETITIONS
+        .map((c) => c.externalId)
+        .filter((id) => !CUP_LEAGUE_IDS.includes(id));
 
       const fixturesToday = await this.prisma.fixture.findMany({
         where: {
@@ -963,9 +1006,11 @@ export class NotificationsService {
       const leaguesMap: Record<number, any> = {};
       for (const f of fixturesToday) {
         const lid = f.league.externalId;
+        const target = this.resolvePocketBaseTarget(lid);
+        if (!target) continue; // Garante isolamento restrito a Europa, Brasil e Estaduais
+
         if (!leaguesMap[lid]) {
           const compConfig = SUPPORTED_COMPETITIONS.find((c) => c.externalId === lid);
-          const target = this.resolvePocketBaseTarget(lid);
           const moduleInfo = this.getModuleForLeague(lid);
           leaguesMap[lid] = {
             leagueId: lid,
@@ -1061,7 +1106,10 @@ export class NotificationsService {
       const windowStart = new Date(now.getTime() - 2 * 60 * 60 * 1000);
       const windowEnd = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
-      const monitoredIds = SUPPORTED_COMPETITIONS.map((c) => c.externalId);
+      // Monitora exclusivamente Europa, Brasil e Estaduais (Copas estritamente excluídas do auto-disparo)
+      const monitoredIds = SUPPORTED_COMPETITIONS
+        .map((c) => c.externalId)
+        .filter((id) => ![13, 73, 612, 1, 10].includes(id));
 
       const candidateFixtures = await this.prisma.fixture.findMany({
         where: {
