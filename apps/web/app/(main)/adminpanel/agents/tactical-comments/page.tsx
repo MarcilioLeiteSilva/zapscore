@@ -27,11 +27,27 @@ import {
   Calendar,
   Layers,
   ChevronRight,
+  Tv,
+  ExternalLink,
+  Edit3,
+  X,
 } from 'lucide-react';
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 const PB_COMMENTS_URL = "https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host";
 const CRAWL4AI_URL = "https://zapscore-crwal4ai.gtalg3.easypanel.host";
+
+interface BroadcastData {
+  id?: string;
+  fixture_id?: number;
+  league_id?: number;
+  match_title?: string;
+  tv_open?: string;
+  tv_closed?: string;
+  streaming?: string;
+  details?: string;
+  source_url?: string;
+}
 
 interface TeamInfo {
   name: string;
@@ -177,6 +193,121 @@ export default function TacticalCommentsAgentPage() {
   const [adminApiKey] = useState<string>('7Ma+1d8R2VkkAEUzGNLhrVYaoYfOLaUdxXTkocQa+ac=');
   const [generating, setGenerating] = useState<boolean>(false);
   const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string; data?: any } | null>(null);
+
+  // Transmissão da Partida Selecionada
+  const [broadcastData, setBroadcastData] = useState<BroadcastData | null>(null);
+  const [loadingBroadcast, setLoadingBroadcast] = useState<boolean>(false);
+  const [fetchingBroadcast, setFetchingBroadcast] = useState<boolean>(false);
+  const [savingBroadcast, setSavingBroadcast] = useState<boolean>(false);
+  const [isEditingBroadcast, setIsEditingBroadcast] = useState<boolean>(false);
+  const [editTvOpen, setEditTvOpen] = useState<string>('');
+  const [editTvClosed, setEditTvClosed] = useState<string>('');
+  const [editStreaming, setEditStreaming] = useState<string>('');
+  const [broadcastMessage, setBroadcastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const loadBroadcastForSelectedFixture = useCallback(async (fixtureId: number) => {
+    setLoadingBroadcast(true);
+    setBroadcastMessage(null);
+    try {
+      const res = await fetch(`${API_URL}/fixtures/${fixtureId}/broadcast`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setBroadcastData(data);
+        setEditTvOpen(data?.tv_open || '');
+        setEditTvClosed(data?.tv_closed || '');
+        setEditStreaming(data?.streaming || '');
+      } else {
+        setBroadcastData(null);
+        setEditTvOpen('');
+        setEditTvClosed('');
+        setEditStreaming('');
+      }
+    } catch (e) {
+      console.error('Erro ao buscar transmissão da partida', e);
+      setBroadcastData(null);
+    } finally {
+      setLoadingBroadcast(false);
+    }
+  }, []);
+
+  const handleAutoFetchBroadcast = async () => {
+    if (!selectedFixture) return;
+    setFetchingBroadcast(true);
+    setBroadcastMessage(null);
+    try {
+      const res = await fetch(`${API_URL}/fixtures/${selectedFixture.externalId}/broadcast/auto-fetch`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': adminApiKey,
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBroadcastMessage({
+          type: 'success',
+          text: data.updated 
+            ? 'Transmissão identificada pelo Crawl4AI e salva no PocketBase com sucesso!' 
+            : 'Coleta executada, mantendo dados existentes no PocketBase.',
+        });
+        await loadBroadcastForSelectedFixture(selectedFixture.externalId);
+      } else {
+        setBroadcastMessage({
+          type: 'error',
+          text: data.message || 'Falha ao acionar coleta de transmissão.',
+        });
+      }
+    } catch (err: any) {
+      setBroadcastMessage({
+        type: 'error',
+        text: `Erro ao conectar com a API: ${err.message}`,
+      });
+    } finally {
+      setFetchingBroadcast(false);
+    }
+  };
+
+  const handleSaveBroadcastManual = async () => {
+    if (!selectedFixture) return;
+    setSavingBroadcast(true);
+    setBroadcastMessage(null);
+    try {
+      const res = await fetch(`${API_URL}/fixtures/${selectedFixture.externalId}/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': adminApiKey,
+        },
+        body: JSON.stringify({
+          league_id: selectedLeagueId,
+          match_title: `${selectedFixture.homeTeam.name} x ${selectedFixture.awayTeam.name}`,
+          tv_open: editTvOpen,
+          tv_closed: editTvClosed,
+          streaming: editStreaming,
+          details: 'Atualizado manualmente via AdminPanel',
+        }),
+      });
+      if (res.ok) {
+        setBroadcastMessage({
+          type: 'success',
+          text: 'Dados de transmissão atualizados com sucesso!',
+        });
+        setIsEditingBroadcast(false);
+        await loadBroadcastForSelectedFixture(selectedFixture.externalId);
+      } else {
+        setBroadcastMessage({
+          type: 'error',
+          text: 'Erro ao salvar transmissão no PocketBase.',
+        });
+      }
+    } catch (err: any) {
+      setBroadcastMessage({
+        type: 'error',
+        text: `Erro: ${err.message}`,
+      });
+    } finally {
+      setSavingBroadcast(false);
+    }
+  };
 
   // Carrega configuração de calibração do prompt do PocketBase
   const loadPromptConfig = useCallback(async () => {
@@ -344,10 +475,11 @@ export default function TacticalCommentsAgentPage() {
     loadFixturesForLeague(selectedLeagueId);
   }, [selectedLeagueId, loadFixturesForLeague]);
 
-  // Efeito ao trocar partida selecionada: busca os comentários dela
+  // Efeito ao trocar partida selecionada: busca os comentários e transmissão dela
   useEffect(() => {
     if (selectedFixture) {
       loadCommentsForSelectedFixture(selectedFixture.externalId);
+      loadBroadcastForSelectedFixture(selectedFixture.externalId);
       // Ajusta minuto e fase recomendada
       if (selectedFixture.statusShort === '1H') {
         setTargetPhase('FIRST_HALF');
@@ -367,8 +499,9 @@ export default function TacticalCommentsAgentPage() {
       }
     } else {
       setFixtureComments([]);
+      setBroadcastData(null);
     }
-  }, [selectedFixture, loadCommentsForSelectedFixture]);
+  }, [selectedFixture, loadCommentsForSelectedFixture, loadBroadcastForSelectedFixture]);
 
   // Polling automático para a aba Automático (se ativado)
   useEffect(() => {
@@ -764,6 +897,215 @@ export default function TacticalCommentsAgentPage() {
               </button>
             </div>
           </div>
+
+          {/* CARD DE TRANSMISSÃO: ONDE ASSISTIR */}
+          {selectedFixture && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950 border border-slate-800 shadow-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                    <Tv size={16} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white tracking-wide">
+                        Transmissão da Partida (Onde Assistir)
+                      </span>
+                      {broadcastData?.tv_open || broadcastData?.tv_closed || broadcastData?.streaming ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                          <CheckCircle2 size={10} /> Sincronizado
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Padrão do Torneio
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Canais exibidos na aba Info dos apps móveis (Brasileirão / Champions)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Botões de Ação */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {!isEditingBroadcast ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingBroadcast(true)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Edit3 size={13} />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={fetchingBroadcast}
+                        onClick={handleAutoFetchBroadcast}
+                        className="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-sky-600/25 transition-all cursor-pointer"
+                      >
+                        {fetchingBroadcast ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" />
+                            Coletando com Crawl4AI...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={13} />
+                            Forçar Coleta Automática (Crawl4AI)
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingBroadcast(false)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <X size={13} />
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={savingBroadcast}
+                        onClick={handleSaveBroadcastManual}
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        {savingBroadcast ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save size={13} />
+                            Salvar no PocketBase
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Mensagem de Feedback da Coleta/Edição */}
+              {broadcastMessage && (
+                <div
+                  className={`mt-3 p-2.5 rounded-lg text-xs flex items-center gap-2 border ${
+                    broadcastMessage.type === 'success'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                  }`}
+                >
+                  {broadcastMessage.type === 'success' ? (
+                    <CheckCircle2 size={14} className="shrink-0" />
+                  ) : (
+                    <AlertCircle size={14} className="shrink-0" />
+                  )}
+                  <span>{broadcastMessage.text}</span>
+                </div>
+              )}
+
+              {/* Conteúdo: Formulário de Edição vs Grid Informativo */}
+              {loadingBroadcast ? (
+                <div className="py-4 flex items-center justify-center gap-2 text-slate-400 text-xs">
+                  <Loader2 size={14} className="animate-spin" />
+                  Carregando informações de transmissão...
+                </div>
+              ) : isEditingBroadcast ? (
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1">TV Aberta</label>
+                    <input
+                      type="text"
+                      value={editTvOpen}
+                      onChange={(e) => setEditTvOpen(e.target.value)}
+                      placeholder="Ex: TV Globo, SBT"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 focus:border-sky-500 text-slate-200 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1">TV por Assinatura</label>
+                    <input
+                      type="text"
+                      value={editTvClosed}
+                      onChange={(e) => setEditTvClosed(e.target.value)}
+                      placeholder="Ex: SporTV / Premiere, TNT"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 focus:border-sky-500 text-slate-200 outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1">Streaming Online</label>
+                    <input
+                      type="text"
+                      value={editStreaming}
+                      onChange={(e) => setEditStreaming(e.target.value)}
+                      placeholder="Ex: Globoplay, CazéTV, Max"
+                      className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 focus:border-sky-500 text-slate-200 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80">
+                    <div className="text-[10px] uppercase font-bold text-sky-400 mb-1 flex items-center gap-1.5">
+                      📺 TV Aberta
+                    </div>
+                    <div className="text-xs font-semibold text-white">
+                      {broadcastData?.tv_open && broadcastData.tv_open.trim()
+                        ? broadcastData.tv_open
+                        : selectedLeagueId === 2
+                        ? 'SBT'
+                        : 'TV Globo'}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80">
+                    <div className="text-[10px] uppercase font-bold text-violet-400 mb-1 flex items-center gap-1.5">
+                      📡 TV por Assinatura
+                    </div>
+                    <div className="text-xs font-semibold text-white">
+                      {broadcastData?.tv_closed && broadcastData.tv_closed.trim()
+                        ? broadcastData.tv_closed
+                        : selectedLeagueId === 2
+                        ? 'TNT Sports / Space'
+                        : 'SporTV / Premiere'}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80">
+                    <div className="text-[10px] uppercase font-bold text-pink-400 mb-1 flex items-center gap-1.5">
+                      📱 Streaming Online
+                    </div>
+                    <div className="text-xs font-semibold text-white">
+                      {broadcastData?.streaming && broadcastData.streaming.trim()
+                        ? broadcastData.streaming
+                        : selectedLeagueId === 2
+                        ? 'Max (HBO Max)'
+                        : 'Globoplay / Premiere'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {broadcastData?.source_url && !isEditingBroadcast && (
+                <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="truncate">Fonte coletada: {broadcastData.source_url}</span>
+                  <a
+                    href={broadcastData.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium shrink-0 ml-2"
+                  >
+                    Ver matéria <ExternalLink size={11} />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* CONTEÚDO DA ABA MANUAL: FORMULÁRIO DE COMPOSIÇÃO */}
           {operationTab === 'manual' && (
