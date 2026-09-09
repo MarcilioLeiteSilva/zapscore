@@ -757,6 +757,25 @@ export class TacticalCommentsService {
 ⚔️ DESFALQUES, SUSPENSÕES E RETORNOS: Liste nominalmente cada jogador fora por lesão (departamento médico), os suspensos por cartões e os retornos/dúvidas, separando claramente por clube (com base nos dados apurados).
 📋 ESCALAÇÕES (PROVÁVEIS OU CONFIRMADAS): Apresente o time titular e principais opções de cada lado.
 🔎 LEITURA TÁTICA E TENDÊNCIA: Onde a partida será decidida, propostas de jogo, encaixe das linhas e a tendência do confronto.`;
+    } else if (context.phase === 'HALF_TIME') {
+      lengthInstruction = `FORMATO DE INTERVALO COMPLETO E APROFUNDADO EM SEÇÕES (220 A 350 PALAVRAS):
+É TERMINANTEMENTE PROIBIDO gerar parágrafos corridos curtos ou genéricos! Estruture o comentário do intervalo obrigatoriamente com quebras de linha duplas e as seguintes seções com emojis editoriais:
+
+⏸️ LEITURA DOS PRIMEIROS 45 MINUTOS:
+- 🔥 Quem está dominando: Análise de quem controlou o jogo e teve chances reais de gol.
+- 📈 Equipe em crescimento vs 📉 Equipe em queda: Mudança de volume e intensidade ao longo da etapa inicial.
+
+⭐ DESTAQUES & CONFRONTOS INDIVIDUAIS:
+- ⭐ Jogador mais influente: Quem se destacou tecnicamente e taticamente no 1º tempo.
+- ⚔️ Confronto individual decisivo: O duelo mais acirrado da partida (ex: ponta contra lateral, atacante contra zaga).
+
+🚨 O NÓ TÁTICO & AJUSTES DE VESTIÁRIO:
+- 🚨 Principal problema: O que travou a criação ou expôs a equipe na defesa.
+- 🔄 Substituição ou ajuste tático provável: O que os treinadores precisam corrigir no vestiário para a volta.
+
+🔮 PROJEÇÃO PARA O 2º TEMPO:
+- 🎯 Caminho provável para o gol: Onde estão os espaços e brechas defensivas a explorar.
+- 🔮 Cenário do 2º tempo: A tendência tática e psicológica dos 45 minutos finais.`;
     } else if (isLive) {
       if (config.live_length === 'FLASH') {
         lengthInstruction = 'TAMANHO ULTRA-CURTO / FLASH: No máximo 2 frases diretas e objetivas (cerca de 25 a 35 palavras). Vá direto ao ponto sem rodeios.';
@@ -790,7 +809,7 @@ export class TacticalCommentsService {
       FIRST_HALF:
         'Foco no 1º Tempo: Ritmo inicial, encaixe de marcação, aproveitamento das transições e momentos de perigo.',
       HALF_TIME:
-        'Foco no Intervalo: Leitura dos primeiros 45 minutos, quem controlou o jogo e quais ajustes táticos os técnicos precisam fazer para o 2º tempo.',
+        'Foco no Intervalo: Dissecção profunda dos primeiros 45 minutos. Avalie o domínio do jogo, destaques individuais, nós táticos e aponte com clareza os ajustes de vestiário e projeção para a etapa final.',
       SECOND_HALF:
         'Foco no 2º Tempo: Mudança de postura pós-substituições, desgaste físico, pressão no campo adversário e efetividade.',
       FULL_TIME:
@@ -906,7 +925,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
       return 'EQUILIBRADO';
     };
 
-    const targetTemperature = context.phase === 'PRE_MATCH' ? 0.5 : 0.2;
+    const targetTemperature = ['PRE_MATCH', 'HALF_TIME'].includes(context.phase) ? 0.5 : 0.2;
 
     // 1. Tenta com OpenAI se for o provider selecionado ou se disponível (com Prompt Caching no system message)
     if ((provider === 'OPENAI' || !this.genAI) && this.openai) {
@@ -945,7 +964,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
           systemInstruction: systemPrompt,
           generationConfig: {
             responseMimeType: 'application/json',
-            temperature: context.phase === 'PRE_MATCH' ? 0.55 : 0.4,
+            temperature: ['PRE_MATCH', 'HALF_TIME'].includes(context.phase) ? 0.55 : 0.4,
           },
         });
 
