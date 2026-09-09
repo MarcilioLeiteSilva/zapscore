@@ -74,22 +74,6 @@ class _TacticalCommentsFixPageState extends State<TacticalCommentsFixPage> {
     }
   }
 
-  String _formatPhase(String phase) {
-    switch (phase.toUpperCase()) {
-      case 'PRE_MATCH':
-        return 'Pré-Jogo';
-      case 'FIRST_HALF':
-        return '1º Tempo';
-      case 'HALF_TIME':
-        return 'Intervalo';
-      case 'SECOND_HALF':
-        return '2º Tempo';
-      case 'FULL_TIME':
-        return 'Fim de Jogo';
-      default:
-        return phase;
-    }
-  }
 
   Color _getSentimentColor(String? sentiment) {
     final s = sentiment?.toUpperCase() ?? '';
@@ -261,222 +245,214 @@ class _TacticalCommentsFixPageState extends State<TacticalCommentsFixPage> {
           final itemId = item.id.isNotEmpty ? item.id : 'comment_$index';
           final isExpanded = _expandedCommentIds.contains(itemId);
 
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Linha do Tempo Vertical Conectada
-                SizedBox(
-                  width: 22,
-                  child: Column(
-                    children: [
-                      // Linha superior
-                      Container(
-                        width: 2,
-                        height: 14,
-                        color: index == 0
-                            ? Colors.transparent
-                            : Colors.white.withValues(alpha: 0.2),
+          return Stack(
+            children: [
+              // 1. Linha do Tempo Vertical Conectada
+              if (_comments.length > 1)
+                Positioned(
+                  left: 10,
+                  top: index == 0 ? 19 : 0,
+                  bottom: index == _comments.length - 1 ? null : 0,
+                  height: index == _comments.length - 1 ? 19 : null,
+                  child: Container(
+                    width: 2,
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+              // 2. Nó da timeline com a cor do sentimento
+              Positioned(
+                left: 6,
+                top: 14,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: sentimentColor,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: sentimentColor.withValues(alpha: 0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
                       ),
-                      // Nó da timeline com a cor do sentimento
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: sentimentColor,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: sentimentColor.withValues(alpha: 0.5),
-                              blurRadius: 4,
-                              spreadRadius: 1,
+                    ],
+                  ),
+                ),
+              ),
+              // 3. Card do Comentário com Sanfona (Accordion)
+              Padding(
+                padding: const EdgeInsets.only(left: 28, bottom: 12),
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: AppColor.card,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isExpanded
+                          ? sentimentColor.withValues(alpha: 0.35)
+                          : Colors.white.withValues(alpha: 0.08),
+                      width: 1,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Faixa lateral colorida contínua
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 3.5,
+                          decoration: BoxDecoration(
+                            color: sentimentColor,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(14),
+                              bottomLeft: Radius.circular(14),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                      // Linha inferior
-                      Expanded(
-                        child: Container(
-                          width: 2,
-                          color: index == _comments.length - 1
-                              ? Colors.transparent
-                              : Colors.white.withValues(alpha: 0.2),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            setState(() {
+                              if (isExpanded) {
+                                _expandedCommentIds.remove(itemId);
+                              } else {
+                                _expandedCommentIds.add(itemId);
+                              }
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 14, right: 12, top: 12, bottom: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 2. Cabeçalho com Pílula da Fase + Pílula do Sentimento + Seta de Sanfona
+                                Row(
+                                  children: [
+                                    _buildPhaseBadge(item),
+                                    const Gap(8),
+                                    if (item.sentiment != null && item.sentiment!.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: sentimentColor.withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
+                                        ),
+                                        child: Text(
+                                          _formatSentiment(item.sentiment),
+                                          style: GoogleFonts.urbanist(
+                                            color: sentimentColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+                                    const Spacer(),
+                                    // Seta de Sanfona Animada
+                                    AnimatedRotation(
+                                      turns: isExpanded ? 0.5 : 0.0,
+                                      duration: const Duration(milliseconds: 250),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.06),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          size: 20,
+                                          color: isExpanded
+                                              ? sentimentColor
+                                              : Colors.white.withValues(alpha: 0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // Título (Sempre Visível)
+                                if (item.title.isNotEmpty) ...[
+                                  const Gap(10),
+                                  Text(
+                                    item.title,
+                                    style: GoogleFonts.urbanist(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                                // Conteúdo da Sanfona protegido contra overflow com ClipRect + AnimatedSize
+                                ClipRect(
+                                  child: AnimatedSize(
+                                    duration: const Duration(milliseconds: 250),
+                                    curve: Curves.easeInOut,
+                                    alignment: Alignment.topCenter,
+                                    child: isExpanded
+                                        ? Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Gap(10),
+                                              Divider(
+                                                color: Colors.white.withValues(alpha: 0.08),
+                                                height: 1,
+                                              ),
+                                              const Gap(10),
+                                              Text(
+                                                item.comment,
+                                                style: GoogleFonts.urbanist(
+                                                  color: Colors.white.withValues(alpha: 0.88),
+                                                  fontSize: 13.5,
+                                                  height: 1.5,
+                                                ),
+                                              ),
+                                              if (item.created != null) ...[
+                                                const Gap(10),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.access_time,
+                                                      size: 12,
+                                                      color: Colors.white.withValues(alpha: 0.35),
+                                                    ),
+                                                    const Gap(4),
+                                                    Text(
+                                                      DateFormat('HH:mm').format(item.created!.toLocal()),
+                                                      style: GoogleFonts.urbanist(
+                                                        color: Colors.white.withValues(alpha: 0.35),
+                                                        fontSize: 11,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ],
+                                          )
+                                        : const SizedBox(width: double.infinity, height: 0),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Gap(8),
-                // 3. Card do Comentário com Sanfona (Accordion)
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                      color: AppColor.card,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border(
-                        left: BorderSide(color: sentimentColor, width: 3.5),
-                        top: BorderSide(
-                          color: isExpanded
-                              ? sentimentColor.withValues(alpha: 0.35)
-                              : Colors.white.withValues(alpha: 0.08),
-                          width: 1,
-                        ),
-                        right: BorderSide(
-                          color: isExpanded
-                              ? sentimentColor.withValues(alpha: 0.35)
-                              : Colors.white.withValues(alpha: 0.08),
-                          width: 1,
-                        ),
-                        bottom: BorderSide(
-                          color: isExpanded
-                              ? sentimentColor.withValues(alpha: 0.35)
-                              : Colors.white.withValues(alpha: 0.08),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (isExpanded) {
-                              _expandedCommentIds.remove(itemId);
-                            } else {
-                              _expandedCommentIds.add(itemId);
-                            }
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(14),
-                        child: Padding(
-                          padding: const EdgeInsets.all(13),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // 2. Cabeçalho com Pílula da Fase + Pílula do Sentimento + Seta de Sanfona
-                              Row(
-                                children: [
-                                  _buildPhaseBadge(item),
-                                  const Gap(8),
-                                  if (item.sentiment != null && item.sentiment!.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: sentimentColor.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: sentimentColor.withValues(alpha: 0.3)),
-                                      ),
-                                      child: Text(
-                                        _formatSentiment(item.sentiment),
-                                        style: GoogleFonts.urbanist(
-                                          color: sentimentColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  const Spacer(),
-                                  // Seta de Sanfona Animada
-                                  AnimatedRotation(
-                                    turns: isExpanded ? 0.5 : 0.0,
-                                    duration: const Duration(milliseconds: 250),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.06),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 20,
-                                        color: isExpanded
-                                            ? sentimentColor
-                                            : Colors.white.withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              // Título (Sempre Visível)
-                              if (item.title.isNotEmpty) ...[
-                                const Gap(10),
-                                Text(
-                                  item.title,
-                                  style: GoogleFonts.urbanist(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                              // Conteúdo da Sanfona protegido contra overflow com ClipRect + AnimatedSize
-                              ClipRect(
-                                child: AnimatedSize(
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeInOut,
-                                  alignment: Alignment.topCenter,
-                                  child: isExpanded
-                                      ? Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Gap(10),
-                                            Divider(
-                                              color: Colors.white.withValues(alpha: 0.08),
-                                              height: 1,
-                                            ),
-                                            const Gap(10),
-                                            Text(
-                                              item.comment,
-                                              style: GoogleFonts.urbanist(
-                                                color: Colors.white.withValues(alpha: 0.88),
-                                                fontSize: 13.5,
-                                                height: 1.5,
-                                              ),
-                                            ),
-                                            if (item.created != null) ...[
-                                              const Gap(10),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: [
-                                                  Icon(
-                                                    Icons.access_time,
-                                                    size: 12,
-                                                    color: Colors.white.withValues(alpha: 0.35),
-                                                  ),
-                                                  const Gap(4),
-                                                  Text(
-                                                    DateFormat('HH:mm').format(item.created!.toLocal()),
-                                                    style: GoogleFonts.urbanist(
-                                                      color: Colors.white.withValues(alpha: 0.35),
-                                                      fontSize: 11,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ],
-                                        )
-                                      : const SizedBox(width: double.infinity, height: 0),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
