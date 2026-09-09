@@ -776,6 +776,33 @@ export class TacticalCommentsService {
 🔮 PROJEÇÃO PARA O 2º TEMPO:
 - 🎯 Caminho provável para o gol: Onde estão os espaços e brechas defensivas a explorar.
 - 🔮 Cenário do 2º tempo: A tendência tática e psicológica dos 45 minutos finais.`;
+    } else if (context.phase === 'FULL_TIME') {
+      lengthInstruction = `FORMATO DE FIM DE JOGO / RESENHA COMPLETA DOS 90 MINUTOS EM SEÇÕES (280 A 450 PALAVRAS):
+É TERMINANTEMENTE PROIBIDO gerar apenas um resumo simples do placar ou parágrafos corridos clichês! Estruture a resenha final obrigatoriamente com quebras de linha duplas e as seguintes seções com emojis editoriais:
+
+🏁 O VEREDITO:
+O que realmente decidiu a partida (eficiência nas finalizações, superioridade tática, erro individual ou imposição física).
+
+🎬 A HISTÓRIA DO JOGO:
+Como os 90 minutos se desenvolveram (postura inicial, oscilações de ritmo, reviravoltas e o desfecho).
+
+⭐ OS PROTAGONISTAS:
+Melhor jogador em campo, destaque positivo e o jogador ou setor que decepcionou.
+
+🧠 A LEITURA TÁTICA:
+Qual estratégia funcionou e qual plano de jogo falhou (linhas, encaixe de marcação e transições).
+
+⚡ O MOMENTO-CHAVE:
+O lance capital que mudou o rumo da partida (gol decisivo, expulsão, defesa salvadora ou mexida do treinador).
+
+📊 OS NÚMEROS QUE EXPLICAM O RESULTADO:
+Poucos números (posse, finalizações no alvo, desarmes), mas sempre interpretados com inteligência tática, e não apenas números jogados na tela.
+
+🏆 QUEM SAI GANHANDO:
+Não apenas quem somou os pontos, mas quem sai fortalecido moral e taticamente para a sequência.
+
+🔮 O QUE VEM AGORA:
+Impacto direto do resultado na tabela de classificação e os próximos desafios de cada clube.`;
     } else if (isLive) {
       if (config.live_length === 'FLASH') {
         lengthInstruction = 'TAMANHO ULTRA-CURTO / FLASH: No máximo 2 frases diretas e objetivas (cerca de 25 a 35 palavras). Vá direto ao ponto sem rodeios.';
@@ -813,7 +840,7 @@ export class TacticalCommentsService {
       SECOND_HALF:
         'Foco no 2º Tempo: Mudança de postura pós-substituições, desgaste físico, pressão no campo adversário e efetividade.',
       FULL_TIME:
-        'Foco no Pós-Jogo / Resumo: Balanço tático completo dos 90 minutos, mérito no resultado, destaques individuais e impacto na competição.',
+        'Foco no Pós-Jogo / Resenha Final: Balanço tático profundo dos 90 minutos seguindo rigorosamente o roteiro editorial (O Veredito, A História do Jogo, Os Protagonistas, A Leitura Tática, O Momento-Chave, Os Números que Explicam o Resultado, Quem Sai Ganhando e O Que Vem Agora).',
     };
 
     let phaseInstruction = phaseInstructions[context.phase];
@@ -864,7 +891,8 @@ REGRAS OBRIGATÓRIAS DE IDIOMA E FORMATAÇÃO (RIGOROSO):
 9. FATOS NOMINAIS, DESFALQUES E PROIBIÇÃO DE JORNALÊS PROTOCOLAR:
    - É TERMINANTEMENTE PROIBIDO iniciar o comentário com "A partida promete ser um embate interessante", "O confronto promete ser disputado" ou qualquer variação de abertura genérica. Comece direto no fato, no momento do campeonato ou no impacto do jogo.
    - No Pré-Jogo, NUNCA termine falando de "substituições dos treinadores" de forma genérica. Foque no duelo de início, nos esquemas táticos e nos desfalques.
-   - Cite nominalmente todos os jogadores em evidência (desfalques, suspensos, pendurados, retornos e titulares).
+   - No Fim de Jogo / Resenha Final, NUNCA gere apenas um resumo simples de placar. Siga integralmente o roteiro editorial com todos os tópicos e emojis solicitados.
+   - Cite nominalmente todos os jogadores em evidência (gols, assistências, defesas, desfalques, destaques e quem decepcionou).
 
 FORMATO JSON ESPERADO:
 {
@@ -925,7 +953,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
       return 'EQUILIBRADO';
     };
 
-    const targetTemperature = ['PRE_MATCH', 'HALF_TIME'].includes(context.phase) ? 0.5 : 0.2;
+    const targetTemperature = ['PRE_MATCH', 'HALF_TIME', 'FULL_TIME'].includes(context.phase) ? 0.5 : 0.2;
 
     // 1. Tenta com OpenAI se for o provider selecionado ou se disponível (com Prompt Caching no system message)
     if ((provider === 'OPENAI' || !this.genAI) && this.openai) {
@@ -964,7 +992,7 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
           systemInstruction: systemPrompt,
           generationConfig: {
             responseMimeType: 'application/json',
-            temperature: ['PRE_MATCH', 'HALF_TIME'].includes(context.phase) ? 0.55 : 0.4,
+            temperature: ['PRE_MATCH', 'HALF_TIME', 'FULL_TIME'].includes(context.phase) ? 0.55 : 0.4,
           },
         });
 
