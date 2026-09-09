@@ -9,11 +9,15 @@ import { PocketbaseCommentsClient } from './providers/pocketbase-comments.client
 export class TacticalCommentsSchedulerService {
   private readonly logger = new Logger(TacticalCommentsSchedulerService.name);
 
-  // Ligas homologadas: Brasileirão Série A (71) e Série B (72)
+  // Ligas homologadas para comentários táticos: Brasileirão Série A (71) e Série B (72)
   private readonly TARGET_LEAGUES = [71, 72];
 
-  // Trava para evitar sobreposição de execuções
+  // Ligas homologadas para ingestão automática de "Onde Assistir": Brasileirão Série A (71), Série B (72) e Champions League (2)
+  private readonly BROADCAST_TARGET_LEAGUES = [71, 72, 2];
+
+  // Travas para evitar sobreposição de execuções
   private isRunning = false;
+  private isBroadcastRunning = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -178,5 +182,67 @@ export class TacticalCommentsSchedulerService {
     // para evitar repetições, alucinações de IA e ruído desnecessário.
     // O sistema foca estritamente nos 3 marcos consolidados: Pré-Jogo, Intervalo e Fim de Jogo.
     return;
+  }
+
+  /**
+   * Executa a cada 2 horas para coletar transmissões das próximas partidas (janela de 72h)
+   * Ligas: Brasileirão Série A (71), Série B (72) e Champions League (2)
+   */
+  @Cron('0 */2 * * *')
+  async handleBroadcastIngestionCron() {
+    const isEnabled = this.configService.get<string>('ENABLE_TACTICAL_COMMENTS_CRON', 'true') === 'true';
+    if (!isEnabled) {
+      return;
+    }
+
+    if (this.isBroadcastRunning) {
+      this.logger.debug('[BroadcastScheduler] Ingestão anterior ainda em andamento. Pulando...');
+      return;
+    }
+
+    this.isBroadcastRunning = true;
+
+    try {
+      const now = new Date();
+      const threeDaysAhead = new Date(now.getTime() + 72 * 60 * 60 * 1000);
+
+      const upcomingFixtures = await this.prisma.fixture.findMany({
+        where: {
+          league: { externalId: { in: this.BROADCAST_TARGET_LEAGUES } },
+          statusShort: { in: ['NS', 'TBD'] },
+          date: { gte: now, lte: threeDaysAhead },
+        },
+        include: { homeTeam: true, awayTeam: true, league: true },
+        orderBy: { date: 'asc' },
+        take: 20,
+      });
+
+      if (upcomingFixtures.length === 0) {
+        return;
+      }
+
+      this.logger.log(
+        `[BroadcastScheduler] 📡 Avaliando transmissões para ${upcomingFixtures.length} partida(s) futuras (Brasileirão / Champions)...`,
+      );
+
+      for (const fix of upcomingFixtures) {
+        try {
+          const fetched = await this.tacticalCommentsService.ingestBroadcastForFixture(fix.externalId);
+          if (fetched) {
+            this.logger.log(
+              `[BroadcastScheduler] ✅ Transmissão atualizada com sucesso para: ${fix.homeTeam.name} x ${fix.awayTeam.name}`,
+            );
+          }
+        } catch (err: any) {
+          this.logger.warn(
+            `[BroadcastScheduler] Falha na ingestão de transmissão da partida ${fix.externalId}: ${err.message}`,
+          );
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`[BroadcastScheduler] Erro no ciclo de transmissões: ${err.message}`);
+    } finally {
+      this.isBroadcastRunning = false;
+    }
   }
 }

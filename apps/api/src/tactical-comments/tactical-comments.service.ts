@@ -1100,4 +1100,76 @@ DIRETRIZ MANDATÓRIA DE CONTEXTO REAL E NÃO-REPETIÇÃO:
       this.logger.warn(`[BroadcastExtractor] Erro ao extrair transmissão para fixture ${fixtureExternalId}: ${err.message}`);
     }
   }
+
+  /**
+   * Coleta e ingere informações de transmissão ("Onde Assistir") para uma partida com antecedência
+   */
+  async ingestBroadcastForFixture(fixtureExternalId: number): Promise<boolean> {
+    try {
+      // 1. Verifica se já existe no PocketBase com dados preenchidos
+      const existing = await this.pbCommentsClient.getBroadcastByFixture(fixtureExternalId);
+      if (existing && (existing.tv_open || existing.tv_closed || existing.streaming)) {
+        return false; // Já possui canais gravados
+      }
+
+      // 2. Busca dados da partida no banco local
+      const fixture = await this.prisma.fixture.findFirst({
+        where: { externalId: fixtureExternalId },
+        include: { homeTeam: true, awayTeam: true, league: true },
+      });
+
+      if (!fixture) {
+        return false;
+      }
+
+      const sources = ['ge.globo.com', 'lance.com.br', 'uol.com.br', 'gazetaesportiva.com', 'espn.com.br'];
+
+      // 3. Tenta descobrir URL pré-jogo de "onde assistir"
+      const previewUrl = await this.crawl4aiClient.discoverMatchLiveUrl(
+        fixture.homeTeam.name,
+        fixture.awayTeam.name,
+        sources,
+        false,
+      );
+
+      if (previewUrl) {
+        const rawPreview = await this.crawl4aiClient.crawlSync(previewUrl, {
+          timeoutMs: 12000,
+          sessionId: `broadcast_${fixtureExternalId}`,
+        });
+        if (rawPreview) {
+          await this.extractAndSaveBroadcastInfo(
+            fixtureExternalId,
+            fixture.league.externalId,
+            fixture.homeTeam.name,
+            fixture.awayTeam.name,
+            rawPreview,
+            previewUrl,
+          );
+          return true;
+        }
+      }
+
+      // 4. Fallback: busca via press radar de manchetes esportivas
+      const pressRadar = await this.crawl4aiClient.fetchMultiSourcePressRadar(
+        fixture.homeTeam.name,
+        fixture.awayTeam.name,
+        sources,
+      );
+      if (pressRadar) {
+        await this.extractAndSaveBroadcastInfo(
+          fixtureExternalId,
+          fixture.league.externalId,
+          fixture.homeTeam.name,
+          fixture.awayTeam.name,
+          pressRadar,
+          previewUrl || '',
+        );
+        return true;
+      }
+    } catch (err: any) {
+      this.logger.warn(`[BroadcastIngest] Falha ao coletar transmissão para partida ${fixtureExternalId}: ${err.message}`);
+    }
+    return false;
+  }
 }

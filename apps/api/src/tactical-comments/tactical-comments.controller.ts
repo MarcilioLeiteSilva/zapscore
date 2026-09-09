@@ -83,6 +83,22 @@ export class TacticalCommentsController {
   }
 
   /**
+   * Dispara a coleta e ingestão automática de transmissão ("Onde Assistir") para uma partida
+   * Protegido por ADMIN_API_KEY (header: x-api-key)
+   */
+  @Post(':id/broadcast/auto-fetch')
+  @UseGuards(ApiKeyGuard)
+  @HttpCode(HttpStatus.OK)
+  async autoFetchFixtureBroadcast(@Param('id', ParseIntPipe) fixtureId: number) {
+    const updated = await this.tacticalCommentsService.ingestBroadcastForFixture(fixtureId);
+    return {
+      success: true,
+      fixtureId,
+      updated,
+    };
+  }
+
+  /**
    * Retorna prévia em tempo real da coleta de múltiplas fontes esportivas
    */
   @Get(':id/comments/multi-source-preview')
