@@ -120,13 +120,12 @@ export class NewsService implements OnModuleInit {
       ];
 
       const brazilKeywords = [
-        'brasileirão', 'brasileirao', 'campeonato brasileiro', 'flamengo', 'palmeiras',
-        'corinthians', 'são paulo', 'santos', 'grêmio', 'gremio', 'internacional',
-        'botafogo', 'fluminense', 'vasco', 'cruzeiro', 'atlético-mg', 'atletico-mg',
+        'brasileirão', 'brasileirao', 'campeonato brasileiro', 'futebol brasileiro',
+        'flamengo', 'palmeiras', 'corinthians', 'são paulo', 'santos', 'grêmio', 'gremio',
+        'internacional', 'botafogo', 'fluminense', 'vasco', 'cruzeiro', 'atlético-mg', 'atletico-mg',
         'bahia', 'fortaleza', 'athletico-pr', 'cuiabá', 'cuiaba', 'vitória', 'vitoria',
-        'juventude', 'criciúma', 'criciuma', 'atlético-go', 'atletico-go',
-        'jovem pan', 'gazeta esportiva', 'torcedores', 'globo esporte', 'ge.globo',
-        'uol', 'lance!', 'portal ne9', 'ne9'
+        'juventude', 'criciúma', 'criciuma', 'atlético-go', 'atletico-go', 'red bull bragantino',
+        'bragantino'
       ];
 
       const allNews = await this.prisma.news.findMany({
@@ -139,14 +138,13 @@ export class NewsService implements OnModuleInit {
       for (const item of allNews) {
         const fullText = `${item.title || ''} ${item.description || ''}`.toLowerCase();
         const source = (item.source || '').toLowerCase();
-        const combined = `${fullText} ${source}`;
 
         let targetLeagueId: string | null = null;
 
-        // 1. Prioriza fontes e termos brasileiros
-        const isBrazilianContext = brazilKeywords.some((kw) => combined.includes(kw));
-        const isSerieBContext = brazilSerieBKeywords.some((kw) => combined.includes(kw));
-        const isItalianContext = italianKeywords.some((kw) => combined.includes(kw));
+        // 1. Prioriza termos futebolísticos e clubes brasileiros no texto da matéria
+        const isBrazilianContext = brazilKeywords.some((kw) => fullText.includes(kw));
+        const isSerieBContext = brazilSerieBKeywords.some((kw) => fullText.includes(kw));
+        const isItalianContext = italianKeywords.some((kw) => fullText.includes(kw));
 
         if (isBrazilianContext && !isItalianContext) {
           targetLeagueId = isSerieBContext && serieBBrasil ? serieBBrasil.id : serieABrasil.id;
@@ -154,7 +152,7 @@ export class NewsService implements OnModuleInit {
           targetLeagueId = serieAItalia.id;
         } else if (isBrazilianContext && isItalianContext) {
           // Se houver conflito, prioriza a fonte (fontes brasileiras -> Brasil)
-          if (source.includes('gazeta') || source.includes('globo') || source.includes('lance') || source.includes('uol') || source.includes('ne9')) {
+          if (source.includes('gazeta') || source.includes('globo') || source.includes('lance') || source.includes('uol')) {
             targetLeagueId = serieABrasil.id;
           } else {
             targetLeagueId = serieAItalia.id;

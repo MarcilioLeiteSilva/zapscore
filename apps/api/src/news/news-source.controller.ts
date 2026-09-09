@@ -25,10 +25,14 @@ export class NewsSourceController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() data: { active: boolean }) {
+  async update(@Param('id') id: string, @Body() data: { active?: boolean; name?: string; url?: string }) {
     return this.prisma.newsSource.update({
       where: { id },
-      data: { active: data.active }
+      data: {
+        ...(data.active !== undefined && { active: data.active }),
+        ...(data.name && { name: data.name }),
+        ...(data.url && { url: data.url, domain: new URL(data.url).hostname.replace('www.', '') }),
+      }
     });
   }
 
