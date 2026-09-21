@@ -190,15 +190,15 @@ export class SyncJobsService implements OnApplicationBootstrap {
     }
   }
 
-  // A cada 1 hora: Sincroniza e consolida a artilharia (Scorers) de todas as ligas ativas
-  @Cron(CronExpression.EVERY_HOUR)
+  // 1x ao dia às 00:30 BRT (03:30 UTC): Sincroniza e consolida a artilharia híbrida (Scorer Agent)
+  @Cron('30 3 * * *')
   async handleTopScorersSync() {
-    this.logger.log('[Cron] Iniciando rotina periódica de cálculo de artilharia (Scorer Agent)...');
+    this.logger.log('[Cron ⚽] Iniciando rotina diária consolidada de artilharia (Scorer Agent)...');
     try {
       await this.scorerAgent.aggregateAllActiveLeagues(2026);
-      this.logger.log('[Cron] Sincronização periódica de artilharia concluída com sucesso.');
-    } catch (err) {
-      this.logger.error(`[Cron] Falha no job periódico de artilharia: ${err.message}`);
+      this.logger.log('[Cron ⚽] Sincronização diária de artilharia concluída com sucesso.');
+    } catch (err: any) {
+      this.logger.error(`[Cron ❌] Falha no job diário de artilharia: ${err.message}`);
     }
   }
 

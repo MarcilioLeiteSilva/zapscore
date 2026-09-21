@@ -33,6 +33,7 @@ interface LeagueScorerStatus {
   topScorerGoals?: number;
   lastSync?: string;
   loading?: boolean;
+  source?: 'official' | 'calculated';
 }
 
 export default function ScorerAgentDashboardPage() {
@@ -67,6 +68,7 @@ export default function ScorerAgentDashboardPage() {
           let count = 0;
           let topScorer = undefined;
           let topScorerGoals = undefined;
+          let source: 'official' | 'calculated' | undefined = undefined;
 
           if (res.ok) {
             const data = await res.json();
@@ -74,6 +76,10 @@ export default function ScorerAgentDashboardPage() {
               count = data.length;
               topScorer = data[0].playerName || data[0].player?.name;
               topScorerGoals = data[0].goals;
+              // Se possuir externalPlayerId ou foto oficial da api-sports, foi oficial
+              source = data[0].externalPlayerId || data[0].playerPhoto?.includes('api-sports.io')
+                ? 'official'
+                : 'calculated';
             }
           }
 
@@ -87,7 +93,10 @@ export default function ScorerAgentDashboardPage() {
             scorersCount: count,
             topScorer,
             topScorerGoals,
-            lastSync: count > 0 ? 'Consolidado' : 'Sem registros',
+            source,
+            lastSync: count > 0 
+              ? (source === 'official' ? 'Oficial (API)' : 'Calculado (Eventos)') 
+              : 'Sem registros',
           };
         } catch {
           return {
@@ -125,6 +134,7 @@ export default function ScorerAgentDashboardPage() {
 
       if (res.ok) {
         const data = await res.json();
+        const isOfficial = data.source === 'official';
         // Atualiza estado local daquela liga
         setLeaguesStatus((prev) =>
           prev.map((item) => {
@@ -132,13 +142,19 @@ export default function ScorerAgentDashboardPage() {
               return {
                 ...item,
                 scorersCount: data.topScorersCount || item.scorersCount,
-                lastSync: 'Atualizado agora',
+                source: data.source,
+                lastSync: isOfficial ? 'Oficial (API)' : 'Calculado (Eventos)',
               };
             }
             return item;
           })
         );
-        showToast('success', `Artilharia atualizada! ${data.totalGoalsFound || 0} gols calculados.`);
+        showToast(
+          'success', 
+          isOfficial 
+            ? `Artilharia oficial sincronizada via API-Football (${data.topScorersCount || 0} artilheiros)!`
+            : `Artilharia consolidada via eventos locais (${data.totalGoalsFound || 0} gols calculados)!`
+        );
       } else {
         showToast('error', 'Falha ao sincronizar artilharia da liga.');
       }
@@ -278,8 +294,8 @@ export default function ScorerAgentDashboardPage() {
             <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Frequência Cron</span>
             <Clock size={18} className="text-blue-400" />
           </div>
-          <div className="text-2xl font-black text-white mt-3">A cada 1 hora</div>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1">+ Reativo em Fim de Jogo (FT)</p>
+          <div className="text-2xl font-black text-white mt-3">1x ao dia</div>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1">00:30 BRT (Madrugada) • Cota protegida</p>
         </div>
 
         <div className="card p-5">
@@ -382,15 +398,27 @@ export default function ScorerAgentDashboardPage() {
                         )}
                       </td>
 
-                      {/* Status */}
+                      {/* Status / Origem */}
                       <td className="p-4 text-center">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                          league.scorersCount > 0 
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                          league.scorersCount === 0
+                            ? 'bg-slate-800 text-slate-400 border-slate-700'
+                            : league.source === 'official' || league.lastSync?.includes('Oficial')
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${league.scorersCount > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></span>
-                          {league.lastSync}
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            league.scorersCount === 0
+                              ? 'bg-slate-500'
+                              : league.source === 'official' || league.lastSync?.includes('Oficial')
+                              ? 'bg-emerald-400 animate-pulse'
+                              : 'bg-amber-400'
+                          }`}></span>
+                          {league.scorersCount === 0
+                            ? 'Sem registros'
+                            : league.source === 'official' || league.lastSync?.includes('Oficial')
+                            ? '🟢 Oficial (API)'
+                            : '🟡 Calculado (Eventos)'}
                         </span>
                       </td>
 

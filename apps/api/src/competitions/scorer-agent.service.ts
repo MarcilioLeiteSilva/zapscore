@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { PocketBaseSyncService } from '../integrations/pocketbase/pocketbase-sync.service';
+import { ApiFootballService } from '../integrations/api-football/api-football.service';
 
 export interface ScorerAggregateResult {
   success: boolean;
@@ -10,6 +11,7 @@ export interface ScorerAggregateResult {
   season: number;
   totalGoalsFound: number;
   topScorersCount: number;
+  source?: 'official' | 'calculated';
   message?: string;
 }
 
@@ -22,10 +24,14 @@ export class ScorerAgentService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly pocketbaseSync: PocketBaseSyncService,
+    private readonly apiFootball: ApiFootballService,
   ) {}
 
   /**
-   * Executa o cálculo de artilharia idempotente para uma liga específica.
+   * Executa a sincronização e cálculo de artilharia híbrida idempotente para uma liga específica:
+   * 1. Prioridade Primária: Consulta a API-Football oficial (/players/topscorers) -> 1 req leve.
+   * 2. Fallback Autônomo: Se results === 0 (ligas menores/estaduais), calcula via eventos locais de partidas.
+   * 3. Erradicação de deleteMany(): Sempre grava via upsert cirúrgico na chave composta.
    */
   async aggregateLeagueScorers(
     leagueIdOrExtId: string | number,
@@ -80,10 +86,140 @@ export class ScorerAgentService {
       }
 
       this.logger.log(
-        `[ScorerAgent ⚽] Iniciando agregação de artilharia para ${league.name} (ExtID: ${league.externalId}, Season: ${targetSeason})...`,
+        `[ScorerAgent ⚽] Iniciando verificação de artilharia para ${league.name} (ExtID: ${league.externalId}, Season: ${targetSeason})...`,
       );
 
-      // 2. Busca todas as partidas da temporada com eventos e times
+      // =========================================================================
+      // CAMADA 1: Prioridade Primária — Oficial API-Football
+      // =========================================================================
+      let officialScorers: any[] = [];
+      try {
+        const response = await this.apiFootball.getTopScorers({
+          league: league.externalId,
+          season: targetSeason,
+        });
+
+        if (Array.isArray(response) && response.length > 0) {
+          officialScorers = response;
+        }
+      } catch (err: any) {
+        this.logger.warn(
+          `[ScorerAgent] Consulta oficial API-Football para ${league.name} falhou: ${err.message}. Acionando fallback...`,
+        );
+      }
+
+      if (officialScorers.length > 0) {
+        this.logger.log(
+          `[ScorerAgent 🟢 OFICIAL] ${officialScorers.length} artilheiros oficiais recebidos da API-Football para ${league.name}. Aplicando upsert cirúrgico...`,
+        );
+
+        let totalGoals = 0;
+
+        for (const [index, item] of officialScorers.entries()) {
+          const stats = item.statistics?.[0];
+          const player = item.player;
+
+          if (!player?.name || !stats?.team?.name) continue;
+
+          const photo =
+            player.photo ||
+            (player.id
+              ? `https://media.api-sports.io/football/players/${player.id}.png`
+              : null);
+          const goals = Number(stats.goals?.total || 0);
+          const assists = Number(stats.goals?.assists || 0);
+          totalGoals += goals;
+
+          const savedScorer = await this.prisma.scorer.upsert({
+            where: {
+              leagueId_season_playerName_teamName: {
+                leagueId: league.id,
+                season: targetSeason,
+                playerName: player.name,
+                teamName: stats.team.name,
+              },
+            },
+            update: {
+              rank: index + 1,
+              playerPhoto: photo,
+              teamLogo: stats.team.logo || null,
+              goals,
+              assists,
+              externalPlayerId: player.id || null,
+            },
+            create: {
+              leagueId: league.id,
+              season: targetSeason,
+              rank: index + 1,
+              playerName: player.name,
+              playerPhoto: photo,
+              teamName: stats.team.name,
+              teamLogo: stats.team.logo || null,
+              goals,
+              assists,
+              externalPlayerId: player.id || null,
+            },
+          });
+
+          // Sincronização secundária com PocketBase (não-bloqueante)
+          try {
+            await this.pocketbaseSync.syncScorer(
+              {
+                ...savedScorer,
+                season: targetSeason,
+              },
+              league.externalId,
+            );
+          } catch (pbErr) {
+            // PocketBase opcional
+          }
+        }
+
+        // Saneamento Cirúrgico: Remove apenas resíduos/duplicatas antigas que não constam na lista oficial da federação
+        const officialNames = officialScorers
+          .map((item) => item.player?.name)
+          .filter(Boolean);
+        if (officialNames.length > 0) {
+          const purged = await this.prisma.scorer.deleteMany({
+            where: {
+              leagueId: league.id,
+              season: targetSeason,
+              playerName: { notIn: officialNames },
+            },
+          });
+          if (purged.count > 0) {
+            this.logger.log(
+              `[ScorerAgent 🧹 SANEAMENTO] Removidos ${purged.count} registros órfãos/duplicados antigos de ${league.name}.`,
+            );
+          }
+        }
+
+        // Invalidação do Cache Redis
+        await this.redis.delPattern('topscorers:*');
+
+        this.logger.log(
+          `[ScorerAgent 🟢 OFICIAL ✅] Artilharia oficial de ${league.name} sincronizada com sucesso (${officialScorers.length} atletas, ${totalGoals} gols)!`,
+        );
+
+        return {
+          success: true,
+          leagueId: league.externalId,
+          leagueName: league.name,
+          season: targetSeason,
+          totalGoalsFound: totalGoals,
+          topScorersCount: officialScorers.length,
+          source: 'official',
+        };
+      }
+
+      // =========================================================================
+      // CAMADA 2: Fallback Autônomo — Detecção de Ausência Oficial (Eventos Locais)
+      // =========================================================================
+      this.logger.log(
+        `[ScorerAgent 🟡 FALLBACK] Liga ${league.name} (${league.externalId}) sem cobertura oficial na API-Football. Ativando motor de cálculo por eventos locais...`,
+      );
+
+      // Busca partidas da temporada com eventos e equipes
       const fixtures = await this.prisma.fixture.findMany({
         where: {
           leagueId: league.id,
@@ -111,7 +247,7 @@ export class ScorerAgentService {
         }
       >();
 
-      // 3. Varrer eventos de gols
+      // Varrer eventos de gols
       for (const fixture of fixtures) {
         if (!fixture.events || fixture.events.length === 0) continue;
 
@@ -121,7 +257,7 @@ export class ScorerAgentService {
 
           const detail = (event.detail || '').toLowerCase();
 
-          // Ignora Gol Contra para a artilharia do jogador
+          // Ignora Gol Contra
           if (
             detail.includes('own goal') ||
             detail.includes('contra') ||
@@ -152,7 +288,8 @@ export class ScorerAgentService {
             teamLogo = fixture.awayTeam.logo;
           }
 
-          const isPenalty = detail.includes('penalty') || detail.includes('pênalti');
+          const isPenalty =
+            detail.includes('penalty') || detail.includes('pênalti');
           const playerKey = `${rawPlayerName.toLowerCase()}_${teamName.toLowerCase()}`;
 
           if (!playerScorersMap.has(playerKey)) {
@@ -182,7 +319,7 @@ export class ScorerAgentService {
         }
       }
 
-      // 4. Ordenação Idempotente
+      // Ordenação Idempotente
       const sortedScorers = Array.from(playerScorersMap.values()).sort(
         (a, b) => {
           if (b.goals !== a.goals) return b.goals - a.goals;
@@ -192,25 +329,32 @@ export class ScorerAgentService {
       );
 
       this.logger.log(
-        `[ScorerAgent] Agregados ${sortedScorers.length} artilheiros (${totalGoalsFound} gols) para ${league.name}.`,
+        `[ScorerAgent 🟡 CALCULADO] Agregados ${sortedScorers.length} artilheiros (${totalGoalsFound} gols) via eventos para ${league.name}. Gravando via upsert...`,
       );
 
-      // 5. Atualização no Banco de Dados (Prisma)
-      // Remove artilheiros anteriores da temporada para garantir consolidação 100% limpa
-      await this.prisma.scorer.deleteMany({
-        where: {
-          leagueId: league.id,
-          season: targetSeason,
-        },
-      });
-
-      // Insere os novos artilheiros consolidados com seu rank
+      // Gravação cirúrgica via upsert (SEM deleteMany)
       for (let i = 0; i < sortedScorers.length; i++) {
         const item = sortedScorers[i];
         const rank = i + 1;
 
-        const savedScorer = await this.prisma.scorer.create({
-          data: {
+        const savedScorer = await this.prisma.scorer.upsert({
+          where: {
+            leagueId_season_playerName_teamName: {
+              leagueId: league.id,
+              season: targetSeason,
+              playerName: item.playerName,
+              teamName: item.teamName,
+            },
+          },
+          update: {
+            rank,
+            playerPhoto: item.playerPhoto,
+            teamLogo: item.teamLogo,
+            goals: item.goals,
+            assists: item.assists,
+            externalPlayerId: item.externalPlayerId,
+          },
+          create: {
             leagueId: league.id,
             season: targetSeason,
             rank,
@@ -234,15 +378,15 @@ export class ScorerAgentService {
             league.externalId,
           );
         } catch (pbErr) {
-          // PocketBase opcional/não bloqueante
+          // PocketBase opcional
         }
       }
 
-      // 6. Invalidação do Cache Redis
+      // Invalidação do Cache Redis
       await this.redis.delPattern('topscorers:*');
 
       this.logger.log(
-        `[ScorerAgent ✅] Artilharia de ${league.name} atualizada com sucesso!`,
+        `[ScorerAgent 🟡 CALCULADO ✅] Artilharia por eventos de ${league.name} consolidada com sucesso!`,
       );
 
       return {
@@ -252,10 +396,11 @@ export class ScorerAgentService {
         season: targetSeason,
         totalGoalsFound,
         topScorersCount: sortedScorers.length,
+        source: 'calculated',
       };
-    } catch (err) {
+    } catch (err: any) {
       this.logger.error(
-        `[ScorerAgent ❌] Erro ao agregar artilharia: ${err.message}`,
+        `[ScorerAgent ❌] Erro ao sincronizar artilharia de ${leagueIdOrExtId}: ${err.message}`,
         err.stack,
       );
       throw err;

@@ -32,7 +32,7 @@
 - [Capítulo 5: Central de Governança, Hub de Agentes e Sentinel](#-capítulo-5-central-de-governança-hub-de-agentes-e-sentinel)
   - [5.1 Hub Central de Agentes (`/adminpanel/agents`)](#51-hub-central-de-agentes-adminpanelagents)
   - [5.2 Sentinel Multi-Instâncias em 4 Abas (`/adminpanel/sentinel`)](#52-sentinel-multi-instâncias-em-4-abas-adminpanelsentinel)
-  - [5.3 [A FAZER - AMANHÃ] Agente Scorer Sentinel & Hybrid Self-Healer (Artilharia Híbrida Oficial + Fallback por Cálculo Local)](#53-a-fazer---amanhã-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)
+  - [5.3 [CONCLUÍDO] Agente Scorer Sentinel & Hybrid Self-Healer (Artilharia Híbrida Oficial + Fallback por Cálculo Local)](#53-concluído-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)
   - [5.4 Agente Monitor de IA (AI Sentinel & Feedback Loop Preditivo)](#54-agente-monitor-de-ia-ai-sentinel--feedback-loop-preditivo)
   - [5.5 Agente Quota Watchdog (Controle de Taxa da API-Football)](#55-agente-quota-watchdog-controle-de-taxa-da-api-football)
   - [5.6 Agente Lineup Agent (Escalações Oficiais Multi-Fonte & Buffer PocketBase)](#56-agente-lineup-agent-escalações-oficiais-multi-fonte--buffer-pocketbase)
@@ -411,7 +411,7 @@ Auditoria em tempo real dividida em 4 abas isoladas:
 * 📍 **Aba Estaduais:** Paulistão (`475`/`476`), Carioca (`624`/`851`), Mineiro (`629`/`619`).
 * **Ações:** Detecção de partidas travadas em `LIVE` (>115 min) e botão de **Sync Forçado**.
 
-### 5.3 [A FAZER - AMANHÃ] Agente Scorer Sentinel & Hybrid Self-Healer (Artilharia Híbrida Oficial + Fallback por Cálculo Local)
+### 5.3 [CONCLUÍDO] Agente Scorer Sentinel & Hybrid Self-Healer (Artilharia Híbrida Oficial + Fallback por Cálculo Local)
 * **Localização Principal:** `apps/api/src/competitions/scorer-agent.service.ts` e `apps/api/src/sync/sync-jobs.service.ts`.
 * **Rota no AdminPanel:** `/adminpanel/agents/scorers` (com cards por liga e gaveta de emergência).
 * **Proposta Arquitetural:** Eliminação do risco de dados corrompidos/incompletos em grandes ligas e garantia de cobertura autônoma para competições menores que a API oficial não audita.
@@ -586,7 +586,7 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 * [ ] **Ativação dos Workers de Segundo Plano**:
   * Implementação do worker cron do Content Scout em `apps/api` (coleta RSS/YouTube a cada 30 min).
   * Implementação do middleware Quota Watchdog na `apps/api` para telemetria da API-Football.
-* [ ] **[A FAZER - AMANHÃ 🚀] Reestruturação do Agente Scorer Sentinel & Hybrid Self-Healer**: Implementação da árvore de decisão com prioridade oficial na API-Football (1x/dia na madrugada, gastando apenas 1 request/liga), detecção inteligente de ausência de dados para estaduais menores (ativação automática do motor de cálculo por eventos locais), erradicação do `deleteMany()` destrutivo via `upsert` acumulativo e interface com badges de origem e gestão de emergência no AdminPanel ([Capítulo 5.3](#53-a-fazer---amanhã-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)).
+* [x] **[CONCLUÍDO] Reestruturação do Agente Scorer Sentinel & Hybrid Self-Healer**: Implementação da árvore de decisão com prioridade oficial na API-Football (1x/dia na madrugada às 00:30 BRT, gastando apenas 1 request/liga), detecção inteligente de ausência de dados para estaduais menores (ativação automática do motor de cálculo por eventos locais), erradicação do `deleteMany()` destrutivo via `upsert` cirúrgico com saneamento de órfãos e interface com badges de origem e governança no AdminPanel ([Capítulo 5.3](#53-concluído-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)).
 * [ ] **[A FAZER] AdMob Rewarded IDs Exclusivos nos Apps Estaduais**: Criar IDs de anúncio premiado (Rewarded) dedicados no Google AdMob para os 6 apps (`baiano`, `carioca`, `cearense`, `gaucho`, `mineiro`, `paranaense`), substituindo o ID compartilhado herdado do paulista (`ca-app-pub-6887857057070736/1666213763`) em `lib/services/ad_service.dart` para permitir a segregação de relatórios de receita por aplicativo.
 * [ ] **[A FAZER] Inclusão de 3 Novos Estaduais no Monitoramento ZapScore e Clonagem Mobile**:
   * **Etapa 1 — Monitoramento no Backend (`apps/api` & Governança)**:
