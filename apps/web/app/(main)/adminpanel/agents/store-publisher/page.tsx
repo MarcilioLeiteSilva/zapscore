@@ -29,7 +29,7 @@ import {
 import { ECOSYSTEM_APPS, EcosystemApp } from './lib/apps-catalog';
 import { ASOPayload, generateLocalASO } from './lib/aso-generator';
 import { StoreDeclarationsPayload, generateStoreDeclarations, getPlayConsoleFormChecklist } from './lib/store-forms';
-import { generateVisualAssetsSpecs, generateSvgMockupPreview } from './lib/canva-service';
+import { generateVisualAssetsSpecs, generateSvgMockupPreview, downloadSvgAsPng, VisualAssetSpec } from './lib/canva-service';
 import { generateExportPackage } from './lib/export-package';
 
 export default function StorePublisherAgentPage() {
@@ -196,6 +196,50 @@ export default function StorePublisherAgentPage() {
 
   const visualAssets = generateVisualAssetsSpecs(selectedApp);
   const checklist = getPlayConsoleFormChecklist(selectedApp.id);
+
+  // Estados do Gerador Autônomo de PNGs
+  const [isGeneratingAllPngs, setIsGeneratingAllPngs] = useState<boolean>(false);
+  const [generatingAssetId, setGeneratingAssetId] = useState<string | null>(null);
+  const [generationStatusText, setGenerationStatusText] = useState<string>('');
+
+  // Download individual de PNG autônomo
+  const handleDownloadSinglePng = async (asset: VisualAssetSpec) => {
+    try {
+      setGeneratingAssetId(asset.id);
+      const svg = generateSvgMockupPreview(selectedApp, asset);
+      const filename = `${selectedApp.id}_${asset.id}_${asset.width}x${asset.height}.png`;
+      await downloadSvgAsPng(svg, filename, asset.width, asset.height);
+    } catch (err: any) {
+      console.error('Erro ao gerar PNG:', err);
+      alert('Erro ao gerar PNG: ' + err.message);
+    } finally {
+      setGeneratingAssetId(null);
+    }
+  };
+
+  // Download de todos os 7 PNGs sequencialmente em alta resolução
+  const handleDownloadAllPngs = async () => {
+    if (isGeneratingAllPngs) return;
+    setIsGeneratingAllPngs(true);
+    try {
+      for (let i = 0; i < visualAssets.assets.length; i++) {
+        const asset = visualAssets.assets[i];
+        setGenerationStatusText(`Gerando ${i + 1}/7: ${asset.title}...`);
+        const svg = generateSvgMockupPreview(selectedApp, asset);
+        const filename = `${selectedApp.id}_${asset.id}_${asset.width}x${asset.height}.png`;
+        await downloadSvgAsPng(svg, filename, asset.width, asset.height);
+        // Intervalo para o navegador registrar os múltiplos downloads
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+      setGenerationStatusText('7/7 PNGs Gerados com Sucesso!');
+      setTimeout(() => setGenerationStatusText(''), 3000);
+    } catch (err: any) {
+      console.error('Erro ao gerar todos os PNGs:', err);
+      alert('Erro ao gerar PNGs: ' + err.message);
+    } finally {
+      setIsGeneratingAllPngs(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 p-4 sm:p-6 lg:p-8">
@@ -376,7 +420,7 @@ export default function StorePublisherAgentPage() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Palette className="w-3.5 h-3.5" /> Canva Pro & Mockups
+                <Palette className="w-3.5 h-3.5" /> Gerador PNG & Canva
               </button>
               <button
                 onClick={() => setActiveTab('publish')}
@@ -734,74 +778,130 @@ export default function StorePublisherAgentPage() {
               </div>
             )}
 
-            {/* ABA 3: CANVA PRO & MOCKUPS VISUAIS */}
+            {/* ABA 3: GERADOR AUTÔNOMO DE PNGs & CANVA PRO */}
             {activeTab === 'canva' && (
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-purple-900/30 via-indigo-900/20 to-slate-900/40 border border-purple-500/30 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-purple-500/20 text-purple-400">
-                      <Palette className="w-6 h-6" />
+                <div className="bg-gradient-to-r from-emerald-950/40 via-purple-950/30 to-slate-900/60 border border-emerald-500/30 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <Sparkles className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white">Integração Direta com Canva Pro</h4>
-                      <p className="text-xs text-slate-300">
-                        Dimensões oficiais da loja (1024x500, 1080x1920, 512x512) pré-configuradas em links de 1-clique.
+                      <h4 className="text-base font-bold text-white flex items-center gap-2">
+                        Gerador Autônomo de PNGs &amp; Canva Pro
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-mono font-bold border border-emerald-500/30">
+                          100% AUTOMÁTICO
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        Renderização nativa de 7 assets oficiais nas medidas da Play Store (512x512, 1024x500, 1080x1920) com 1 clique, com suporte ao Canva Pro mantido.
                       </p>
                     </div>
                   </div>
-                  <a
-                    href={visualAssets.canvaProjectUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg shadow-purple-600/20 transition-all shrink-0"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Abrir Pasta no Canva
-                  </a>
+                  
+                  {/* Botões do Cabeçalho: Gerador Autônomo e Canva */}
+                  <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button
+                      onClick={handleDownloadAllPngs}
+                      disabled={isGeneratingAllPngs}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50"
+                      title="Gera e baixa todos os 7 arquivos PNGs oficiais da loja"
+                    >
+                      {isGeneratingAllPngs ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                      ) : (
+                        <Download className="w-4 h-4 text-slate-950" />
+                      )}
+                      <span>
+                        {isGeneratingAllPngs ? (generationStatusText || 'Gerando PNGs...') : '⚡ Baixar Todos os PNGs (7)'}
+                      </span>
+                    </button>
+
+                    <a
+                      href={visualAssets.canvaProjectUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all shadow-sm"
+                      title="Pesquisar projetos deste app no Canva"
+                    >
+                      <Palette className="w-4 h-4" /> Abrir no Canva
+                    </a>
+                  </div>
                 </div>
 
-                {/* Grade de Assets */}
+                {/* Grade dos 7 Assets Oficiais */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {visualAssets.assets.map((asset) => (
                     <div
                       key={asset.id}
-                      className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3 hover:border-slate-700 transition-all"
+                      className="bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:border-emerald-500/40 transition-all shadow-md group"
                     >
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 font-mono">
                             {asset.width} x {asset.height} px
                           </span>
-                          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold">
                             {asset.format}
                           </span>
                         </div>
                         <h5 className="text-sm font-bold text-white">{asset.title}</h5>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">{asset.description}</p>
+                        <p className="text-xs text-slate-400 mt-1 leading-relaxed line-clamp-2">{asset.description}</p>
 
-                        <div className="mt-3 p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1 text-xs">
+                        {/* Pré-visualização do Mockup SVG Gerado pelo Agente */}
+                        <div className="w-full bg-slate-900/90 rounded-xl overflow-hidden border border-slate-800/80 p-2 flex items-center justify-center my-3 max-h-44 group-hover:border-slate-700 transition-all">
+                          <div
+                            className="w-full h-full max-h-40 flex items-center justify-center pointer-events-none transition-transform group-hover:scale-[1.02]"
+                            dangerouslySetInnerHTML={{ __html: generateSvgMockupPreview(selectedApp, asset) }}
+                          />
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-1 text-xs">
                           <span className="text-slate-500 font-semibold uppercase text-[10px] block">Copy do Mockup:</span>
-                          <p className="text-white font-bold">{asset.copyHeadline}</p>
-                          <p className="text-slate-400 text-[11px]">{asset.copySubtitle}</p>
+                          <p className="text-white font-bold truncate">{asset.copyHeadline}</p>
+                          <p className="text-slate-400 text-[11px] truncate">{asset.copySubtitle}</p>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      {/* Rodapé do Card com Botão Autônomo e Botão do Canva */}
+                      <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                         <button
-                          onClick={() => copyToClipboard(`${asset.copyHeadline} - ${asset.copySubtitle}`, asset.id)}
-                          className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs inline-flex items-center gap-1 transition-colors"
-                          title="Copiar Copy"
+                          onClick={() => handleDownloadSinglePng(asset)}
+                          disabled={generatingAssetId === asset.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                          title="Renderiza e baixa o PNG oficial deste asset"
                         >
-                          {copiedKey === asset.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span className="text-[11px]">Copy</span>
+                          {generatingAssetId === asset.id ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          <span>Baixar PNG</span>
                         </button>
-                        <a
-                          href={asset.canvaTemplateUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30 transition-all"
-                        >
-                          <Palette className="w-3.5 h-3.5" /> Criar no Canva
-                        </a>
+
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={asset.canvaTemplateUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-semibold border border-purple-500/30 transition-all"
+                            title="Buscar templates deste formato no Canva"
+                          >
+                            <Palette className="w-3 h-3" /> Canva
+                          </a>
+
+                          <button
+                            onClick={() => copyToClipboard(`${asset.copyHeadline} - ${asset.copySubtitle}`, asset.id)}
+                            className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs transition-colors"
+                            title="Copiar Headline & Subtitle"
+                          >
+                            {copiedKey === asset.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

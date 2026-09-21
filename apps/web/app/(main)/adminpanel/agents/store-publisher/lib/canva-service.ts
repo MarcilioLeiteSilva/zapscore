@@ -32,10 +32,10 @@ export interface AppVisualAssetsPackage {
  * e compatibilidade com o Canva Pro.
  */
 export function generateVisualAssetsSpecs(app: EcosystemApp): AppVisualAssetsPackage {
-  // URLs de deep-link para criação de design com dimensões exatas no Canva
-  const canvaFeatureGraphicLink = `https://www.canva.com/design/create?width=1024&height=500&units=px&title=${encodeURIComponent(`Feature Graphic 1024x500 - ${app.shortName}`)}`;
-  const canvaScreenshotLink = `https://www.canva.com/design/create?width=1080&height=1920&units=px&title=${encodeURIComponent(`Screenshot 1080x1920 - ${app.shortName}`)}`;
-  const canvaIconLink = `https://www.canva.com/design/create?width=512&height=512&units=px&title=${encodeURIComponent(`Icon 512x512 - ${app.shortName}`)}`;
+  // URLs de deep-link seguras para busca de templates e projetos no Canva (sem erro 400/404)
+  const canvaFeatureGraphicLink = `https://www.canva.com/templates/?query=${encodeURIComponent(`google play feature graphic 1024x500 ${app.shortName}`)}`;
+  const canvaScreenshotLink = `https://www.canva.com/templates/?query=${encodeURIComponent(`app store screenshot 1080x1920 ${app.shortName}`)}`;
+  const canvaIconLink = `https://www.canva.com/templates/?query=${encodeURIComponent(`app icon 512x512 ${app.shortName}`)}`;
 
   const assets: VisualAssetSpec[] = [
     // 1. Ícone do App em Alta Resolução (512x512)
@@ -159,7 +159,7 @@ export function generateVisualAssetsSpecs(app: EcosystemApp): AppVisualAssetsPac
     secondaryColor: app.secondaryColor,
     accentColor: app.accentColor,
     assets,
-    canvaProjectUrl: `https://www.canva.com/folder/projects?q=${encodeURIComponent(app.shortName)}`
+    canvaProjectUrl: `https://www.canva.com/projects?query=${encodeURIComponent(app.shortName)}`
   };
 }
 
@@ -198,14 +198,80 @@ export function validateAssetDimensions(
 }
 
 /**
- * Gera um SVG pré-formatado de mockups de smartphone para pré-visualização instantânea no painel
+ * Renderiza um SVG em um elemento Canvas e realiza o download direto como arquivo PNG de alta resolução.
+ */
+export function downloadSvgAsPng(
+  svgString: string,
+  fileName: string,
+  targetWidth: number,
+  targetHeight: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      resolve();
+      return;
+    }
+
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const URLObj = window.URL || window.webkitURL || window;
+    const blobUrl = URLObj.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URLObj.revokeObjectURL(blobUrl);
+          reject(new Error('Contexto 2D do Canvas não disponível'));
+          return;
+        }
+
+        ctx.clearRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        URLObj.revokeObjectURL(blobUrl);
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Falha ao gerar o blob PNG'));
+            return;
+          }
+          const pngUrl = URLObj.createObjectURL(blob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngUrl;
+          downloadLink.download = fileName;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          setTimeout(() => URLObj.revokeObjectURL(pngUrl), 2000);
+          resolve();
+        }, 'image/png');
+      } catch (err) {
+        URLObj.revokeObjectURL(blobUrl);
+        reject(err);
+      }
+    };
+
+    img.onerror = (err) => {
+      URLObj.revokeObjectURL(blobUrl);
+      reject(err);
+    };
+
+    img.src = blobUrl;
+  });
+}
+
+/**
+ * Gera um SVG pré-formatado de mockups de smartphone para pré-visualização instantânea e exportação autônoma em PNG
  */
 export function generateSvgMockupPreview(
   app: EcosystemApp,
   asset: VisualAssetSpec
 ): string {
   if (asset.type === 'feature_graphic') {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="100%" height="100%">
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
       <defs>
         <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="${app.secondaryColor}"/>
@@ -214,20 +280,20 @@ export function generateSvgMockupPreview(
         </linearGradient>
       </defs>
       <rect width="1024" height="500" fill="url(#grad)"/>
-      <circle cx="900" cy="100" r="300" fill="${app.accentColor}" opacity="0.12" filter="blur(40px)"/>
-      <circle cx="150" cy="400" r="250" fill="${app.primaryColor}" opacity="0.2" filter="blur(30px)"/>
-      <g transform="translate(80, 180)">
-        <text font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="${app.accentColor}" letter-spacing="4">ZAPSCORE APPS</text>
+      <circle cx="900" cy="100" r="300" fill="${app.accentColor}" opacity="0.15"/>
+      <circle cx="150" cy="400" r="250" fill="${app.primaryColor}" opacity="0.25"/>
+      <g transform="translate(80, 160)">
+        <text font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="${app.accentColor}" letter-spacing="4">ZAPSCORE APPS</text>
         <text y="70" font-family="Arial, sans-serif" font-size="64" font-weight="900" fill="#ffffff">${app.shortName.toUpperCase()}</text>
         <text y="125" font-family="Arial, sans-serif" font-size="24" fill="#94a3b8">${app.leagueName}</text>
-        <rect y="160" width="220" height="48" rx="24" fill="${app.accentColor}"/>
-        <text x="110" y="191" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#000000" text-anchor="middle">AO VIVO &amp; EM CORES</text>
+        <rect y="160" width="230" height="48" rx="24" fill="${app.accentColor}"/>
+        <text x="115" y="191" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#000000" text-anchor="middle">AO VIVO &amp; EM CORES</text>
       </g>
     </svg>`;
   }
 
   if (asset.type === 'icon') {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
       <defs>
         <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="${app.primaryColor}"/>
@@ -235,14 +301,80 @@ export function generateSvgMockupPreview(
         </linearGradient>
       </defs>
       <rect width="512" height="512" rx="100" fill="url(#iconGrad)"/>
-      <circle cx="256" cy="230" r="120" fill="#ffffff" opacity="0.1"/>
-      <path d="M256 140 L340 280 L172 280 Z" fill="${app.accentColor}"/>
-      <text x="256" y="420" font-family="Arial, sans-serif" font-size="60" font-weight="900" fill="#ffffff" text-anchor="middle">${app.shortName.toUpperCase().slice(0, 4)}</text>
+      <circle cx="256" cy="220" r="110" fill="#ffffff" opacity="0.12"/>
+      <path d="M256 130 L335 260 L177 260 Z" fill="${app.accentColor}"/>
+      <text x="256" y="390" font-family="Arial, sans-serif" font-size="52" font-weight="900" fill="#ffffff" text-anchor="middle">${app.shortName.toUpperCase().slice(0, 5)}</text>
+      <text x="256" y="440" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="${app.accentColor}" text-anchor="middle">ZAPSCORE</text>
     </svg>`;
   }
 
+  // Detalhes visuais internos do Smartphone por tipo de screenshot
+  let screenDetail = '';
+  if (asset.id === 'screenshot_1') {
+    // Placar ao vivo & Gol
+    screenDetail = `
+      <rect x="60" y="240" width="600" height="260" rx="24" fill="#131c2e" stroke="#334155" stroke-width="2"/>
+      <circle cx="160" cy="340" r="45" fill="${app.primaryColor}"/>
+      <text x="160" y="352" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">MAND</text>
+      <text x="360" y="360" font-family="Arial, sans-serif" font-size="54" font-weight="900" fill="#ffffff" text-anchor="middle">2 - 1</text>
+      <circle cx="560" cy="340" r="45" fill="${app.secondaryColor}"/>
+      <text x="560" y="352" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">VIS</text>
+      <rect x="270" y="440" width="180" height="36" rx="18" fill="#10B981"/>
+      <text x="360" y="464" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">GOL! 78'</text>
+    `;
+  } else if (asset.id === 'screenshot_2') {
+    // Tabela de Classificação
+    screenDetail = `
+      <rect x="50" y="220" width="620" height="520" rx="20" fill="#131c2e" stroke="#334155" stroke-width="2"/>
+      <text x="80" y="265" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#94a3b8">#  CLUBE          P   J   V   SG</text>
+      <line x1="70" y1="285" x2="650" y2="285" stroke="#334155" stroke-width="1"/>
+      <rect x="70" y="300" width="580" height="46" rx="8" fill="#10B981" fill-opacity="0.15"/>
+      <text x="80" y="332" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#10B981">1  Líder do Grupo   28  12   9  +15</text>
+      <text x="80" y="382" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff">2  Vice-Líder       25  12   8  +11</text>
+      <text x="80" y="432" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff">3  Terceiro         22  12   7   +8</text>
+      <text x="80" y="482" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff">4  Quarto           20  12   6   +5</text>
+      <text x="80" y="532" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#94a3b8">5  Quinto           17  12   5   +2</text>
+    `;
+  } else if (asset.id === 'screenshot_3') {
+    // Escalações 50min antes (Campinho Tático)
+    screenDetail = `
+      <rect x="50" y="220" width="620" height="600" rx="20" fill="#064e3b" stroke="#10b981" stroke-width="3"/>
+      <circle cx="360" cy="520" r="80" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+      <line x1="50" y1="520" x2="670" y2="520" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+      <rect x="230" y="220" width="260" height="120" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+      <circle cx="360" cy="270" r="18" fill="${app.accentColor}"/>
+      <circle cx="180" cy="380" r="18" fill="${app.primaryColor}"/>
+      <circle cx="360" cy="380" r="18" fill="${app.primaryColor}"/>
+      <circle cx="540" cy="380" r="18" fill="${app.primaryColor}"/>
+      <rect x="240" y="750" width="240" height="44" rx="22" fill="#0f172a"/>
+      <text x="360" y="778" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">ESCALAÇÃO 4-3-3</text>
+    `;
+  } else if (asset.id === 'screenshot_4') {
+    // Comentários Táticos com IA
+    screenDetail = `
+      <rect x="50" y="220" width="620" height="420" rx="20" fill="#131c2e" stroke="#8b5cf6" stroke-width="2"/>
+      <rect x="75" y="245" width="200" height="34" rx="17" fill="#8b5cf6" fill-opacity="0.2"/>
+      <text x="175" y="268" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#a78bfa" text-anchor="middle">COPILOT IA AO VIVO</text>
+      <text x="75" y="320" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff">Pressão Total no Campo de Ataque</text>
+      <text x="75" y="360" font-family="Arial, sans-serif" font-size="18" fill="#94a3b8">Time da casa adianta a linha de marcação</text>
+      <text x="75" y="390" font-family="Arial, sans-serif" font-size="18" fill="#94a3b8">e explora velocidade pelos flancos.</text>
+      <rect x="75" y="440" width="570" height="40" rx="10" fill="#1e293b"/>
+      <text x="95" y="466" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#10B981">72' Análise Atualizada em Tempo Real</text>
+    `;
+  } else {
+    // screenshot_5: Melhores Momentos & Vídeos
+    screenDetail = `
+      <rect x="50" y="220" width="620" height="360" rx="20" fill="#131c2e" stroke="#ef4444" stroke-width="2"/>
+      <circle cx="360" cy="380" r="50" fill="#ef4444"/>
+      <polygon points="350,360 380,380 350,400" fill="#ffffff"/>
+      <text x="360" y="470" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">MELHORES MOMENTOS</text>
+      <rect x="50" y="600" width="620" height="80" rx="16" fill="#1e293b"/>
+      <text x="80" y="648" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Artilharia: 8 Gols na Competição</text>
+    `;
+  }
+
   // Screenshots 1080x1920
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="100%" height="100%">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
     <defs>
       <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stop-color="#0b0f19"/>
@@ -251,28 +383,21 @@ export function generateSvgMockupPreview(
       </linearGradient>
     </defs>
     <rect width="1080" height="1920" fill="url(#screenGrad)"/>
-    <g transform="translate(100, 180)">
+    <g transform="translate(100, 160)">
       <text font-family="Arial, sans-serif" font-size="64" font-weight="900" fill="#ffffff" text-anchor="middle" x="440">${asset.copyHeadline}</text>
-      <text y="70" font-family="Arial, sans-serif" font-size="32" fill="#94a3b8" text-anchor="middle" x="440">${asset.copySubtitle}</text>
+      <text y="70" font-family="Arial, sans-serif" font-size="30" fill="#94a3b8" text-anchor="middle" x="440">${asset.copySubtitle}</text>
     </g>
     <!-- Smartphone Frame -->
-    <g transform="translate(180, 380)">
-      <rect width="720" height="1440" rx="60" fill="#1e293b" stroke="#334155" stroke-width="8"/>
-      <rect x="20" y="30" width="680" height="1380" rx="40" fill="#090d16"/>
+    <g transform="translate(180, 340)">
+      <rect width="720" height="1500" rx="60" fill="#1e293b" stroke="#334155" stroke-width="8"/>
+      <rect x="20" y="30" width="680" height="1440" rx="40" fill="#090d16"/>
       <!-- Notch / Dynamic Island -->
       <rect x="260" y="45" width="200" height="28" rx="14" fill="#000000"/>
       <!-- Header do App -->
       <rect x="20" y="30" width="680" height="140" fill="${app.primaryColor}" opacity="0.9"/>
       <text x="360" y="115" font-family="Arial, sans-serif" font-size="34" font-weight="bold" fill="#ffffff" text-anchor="middle">${app.shortName} ZapScore</text>
-      <!-- Placar Mockup -->
-      <rect x="60" y="240" width="600" height="260" rx="24" fill="#131c2e" stroke="#334155" stroke-width="2"/>
-      <circle cx="160" cy="340" r="45" fill="${app.primaryColor}"/>
-      <text x="160" y="352" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">MAND</text>
-      <text x="360" y="360" font-family="Arial, sans-serif" font-size="54" font-weight="900" fill="#ffffff" text-anchor="middle">2 - 1</text>
-      <circle cx="560" cy="340" r="45" fill="${app.secondaryColor}"/>
-      <text x="560" y="352" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">VIS</text>
-      <rect x="270" y="440" width="180" height="36" rx="18" fill="#10B981"/>
-      <text x="360" y="464" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">AO VIVO 78'</text>
+      ${screenDetail}
     </g>
   </svg>`;
 }
+
