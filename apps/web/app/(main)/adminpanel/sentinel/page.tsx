@@ -77,8 +77,8 @@ export default function SentinelAdminPage() {
       name: "Sentinel Estaduais",
       shortName: "Estaduais",
       flag: "📍",
-      description: "Auditoria dos Campeonatos Paulista (475/476), Carioca (624/851), Mineiro (629/619), Gaúcho (477/478), Baiano (602/613), Paranaense (606/614) e Cearense (609/620)",
-      leagueIds: [629, 619, 624, 851, 475, 476, 477, 478, 602, 613, 606, 614, 609, 620],
+      description: "Auditoria dos Campeonatos Paulista (475/476), Carioca (624/851), Mineiro (629/619), Gaúcho (477/478), Baiano (602/613), Paranaense (606/614), Cearense (609/620), Pernambucano (622), Paraibano (603) e Maranhense (608)",
+      leagueIds: [629, 619, 624, 851, 475, 476, 477, 478, 602, 613, 606, 614, 609, 620, 622, 603, 608],
       badgeColor: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     }
   };

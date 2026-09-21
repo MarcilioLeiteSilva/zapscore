@@ -25,6 +25,24 @@ import {
 export default function AgentsHubPage() {
   const agents = [
     {
+      id: 'store-publisher',
+      title: 'Publicador de Aplicativos',
+      subtitle: 'Google Play Edits API, Canva Pro & Formulários 16+',
+      description: 'Automatiza o lançamento e atualização dos 19 aplicativos na Google Play Store. Gera copywriting ASO com limites oficiais (30c/80c/4000c), mockups no Canva Pro e preenche declarações regulatórias (Público 16+, Categoria Esportes/Entretenimento, Data Safety e IARC).',
+      icon: Smartphone,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20',
+      badge: 'PLAY EDITS API • CANVA PRO • 16+ SPORTS',
+      badgeColor: 'badge-live',
+      href: '/adminpanel/agents/store-publisher',
+      stats: [
+        { label: 'Ecossistema', value: '19 Apps' },
+        { label: 'Público-Alvo', value: '16+ (Anti-COPPA)' },
+        { label: 'Canva Pro', value: '7 Assets' },
+      ],
+      actionText: 'Abrir Publicador de Apps'
+    },
+    {
       id: 'news-publisher',
       title: 'Publicador de Notícias',
       subtitle: 'Captura Automática por URL & Publicação por Liga',

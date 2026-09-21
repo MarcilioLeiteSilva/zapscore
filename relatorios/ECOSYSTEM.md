@@ -32,10 +32,12 @@
 - [Capítulo 5: Central de Governança, Hub de Agentes e Sentinel](#-capítulo-5-central-de-governança-hub-de-agentes-e-sentinel)
   - [5.1 Hub Central de Agentes (`/adminpanel/agents`)](#51-hub-central-de-agentes-adminpanelagents)
   - [5.2 Sentinel Multi-Instâncias em 4 Abas (`/adminpanel/sentinel`)](#52-sentinel-multi-instâncias-em-4-abas-adminpanelsentinel)
-  - [5.3 Agente Scorer Engine (Artilharia Automática Idempotente)](#53-agente-scorer-engine-artilharia-automática-idempotente)
+  - [5.3 [A FAZER - AMANHÃ] Agente Scorer Sentinel & Hybrid Self-Healer (Artilharia Híbrida Oficial + Fallback por Cálculo Local)](#53-a-fazer---amanhã-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)
   - [5.4 Agente Monitor de IA (AI Sentinel & Feedback Loop Preditivo)](#54-agente-monitor-de-ia-ai-sentinel--feedback-loop-preditivo)
   - [5.5 Agente Quota Watchdog (Controle de Taxa da API-Football)](#55-agente-quota-watchdog-controle-de-taxa-da-api-football)
   - [5.6 Agente Lineup Agent (Escalações Oficiais Multi-Fonte & Buffer PocketBase)](#56-agente-lineup-agent-escalações-oficiais-multi-fonte--buffer-pocketbase)
+  - [5.7 [A FAZER - AMANHÃ] Agente Push Sentinel & Delivery Intelligence (Certificação de Entrega, Latência E2E e Funil de Conversão)](#57-a-fazer---amanhã-agente-push-sentinel--delivery-intelligence-certificação-de-entrega-latência-e2e-e-funil-de-conversão)
+  - [5.8 [CONCLUÍDO] Agente Publicador de Aplicativos (Store Publisher Agent — Google Play Edits API & Canva Pro)](#58-concluído-agente-publicador-de-aplicativos-store-publisher-agent--google-play-edits-api--canva-pro)
 - [Capítulo 6: Aplicativos Mobile Flutter (Arquitetura White-Label & Cubits)](#-capítulo-6-aplicativos-mobile-flutter-arquitetura-white-label--cubits)
   - [6.1 Padrão White-Label e Diretrizes de Isolamento](#61-padrão-white-label-e-diretrizes-de-isolamento)
   - [6.2 Camada de Estado e Cubits (`HomeCubit`, `LeagueCubit`, `LiveCubit`)](#62-camada-de-estado-e-cubits-homecubit-leaguecubit-livecubit)
@@ -89,6 +91,7 @@
   - [14.6 Camada de Segurança, Rate Limiting e Guards](#146-camada-de-segurança-rate-limiting-e-guards)
   - [14.7 WebSockets e Transmissão em Tempo Real](#147-websockets-e-transmissão-em-tempo-real)
   - [14.8 Protocolo Operacional para Ingestão e Povoamento de Novos Estaduais](#148-protocolo-operacional-para-ingestão-e-povoamento-de-novos-estaduais)
+  - [14.9 [A FAZER] Contingência Apps Estaduais — Campeonato Gaúcho (Gauchão Série A2)](#149-a-fazer-contingência-apps-estaduais--campeonato-gaúcho-gauchão-série-a2)
 - [Capítulo 15: [A FAZER] Agente de Comentários Táticos ao Vivo e Coleta Multi-Fontes (Crawl4AI + IA Engine)](#-capítulo-15-a-fazer-agente-de-comentários-táticos-ao-vivo-e-coleta-multi-fontes-crawl4ai--ia-engine)
   - [15.1 Visão Geral e Proposta de Valor](#151-visão-geral-e-proposta-de-valor)
   - [15.2 Ciclo de Vida e Cadência de 5 em 5 Minutos](#152-ciclo-de-vida-e-cadência-de-5-em-5-minutos)
@@ -105,6 +108,7 @@
   - [16.7 Integração Sentinel + Agente Push (Resumo FT & Fallback de 60 Minutos)](#167-integração-sentinel--agente-push-resumo-ft--fallback-de-60-minutos)
   - [16.8 Diagnósticos Críticos de Produção, Gotchas e Soluções de Engenharia](#168-diagnósticos-críticos-de-produção-gotchas-e-soluções-de-engenharia)
   - [16.9 Roadmap Imediato e Próximos Incrementos](#169-roadmap-imediato-e-próximos-incrementos)
+  - [16.10 [A FAZER - AMANHÃ] Agente de Telemetria e Certificação de Entrega Push (Push Sentinel & Delivery Intelligence)](#1610-a-fazer---amanhã-agente-de-telemetria-e-certificação-de-entrega-push-push-sentinel--delivery-intelligence)
 - [Capítulo 17: Ajustes e Soluções — Registro de Diagnósticos e Correções](#️-capítulo-17-ajustes-e-soluções--registro-de-diagnósticos-e-correções)
   - [17.1 App `brasileirao` — Crash Fatal na Tela de Notícias](#171-app-brasileirao--crash-fatal-na-tela-de-notícias)
 - [Capítulo 18: Implantação do Agente Autônomo de Escalações Multi-Fonte (Lineup Agent)](#-capítulo-18-implantação-do-agente-autônomo-de-escalações-multi-fonte-lineup-agent)
@@ -116,6 +120,8 @@
   - [18.6 Observabilidade, Telemetria e Endpoints de Diagnóstico](#186-observabilidade-telemetria-e-endpoints-de-diagnóstico)
   - [18.7 Arquitetura com PocketBase Buffer e Ingestão Automática (Cron 2 Horas)](#187-arquitetura-com-pocketbase-buffer-e-ingestão-automática-cron-2-horas)
   - [18.8 Interface de Gestão e Operação no AdminPanel (`/adminpanel/agents/lineups`)](#188-interface-de-gestão-e-operação-no-adminpanel-adminpanelagentslineups)
+  - [18.9 Enriquecimento de Fotos Oficiais via Plantéis (`TeamSquad` / `media.api-sports.io`)](#189-enriquecimento-de-fotos-oficiais-via-plantéis-teamsquad--mediaapi-sportsio)
+  - [18.10 [A FAZER] Contingência Total no Lineup Agent: Normalização de Aliases, Extração por URL Direta e Editor Manual](#1810-a-fazer-contingência-total-no-lineup-agent-normalização-de-aliases-extração-por-url-direta-e-editor-manual)
 - [Capítulo 19: Trio de Agentes para Comentários Táticos ao Vivo (Multifontes, Tático e Auditor de Fatos)](#-capítulo-19-trio-de-agentes-para-comentários-táticos-ao-vivo-multifontes-tático-e-auditor-de-fatos)
   - [19.1 Visão Geral e Topologia em 3 Camadas](#191-visão-geral-e-topologia-em-3-camadas)
   - [19.2 Arquitetura do Agente Multifontes de Comentários (5 Fontes & Delta Engine 5m)](#192-arquitetura-do-agente-multifontes-de-comentários-5-fontes--delta-engine-5m)
@@ -128,6 +134,43 @@
     - [19.6.7 [A FAZER] Rotina de Varredura Antecipada de "Onde Assistir" no Dia do Jogo](#1967-a-fazer-rotina-de-varredura-antecipada-de-onde-assistir-no-dia-do-jogo-)
     - [19.6.8 [A FAZER] Coleção de Detentores Padrão por Liga no PocketBase (`league_broadcast_defaults`)](#1968-a-fazer-coleção-de-detentores-padrão-por-liga-no-pocketbase-league_broadcast_defaults-)
     - [19.6.9 [A FAZER - NA MEMÓRIA] Cálculo Dinâmico do "Form" (Últimos Jogos / Momento das Equipes)](#1969-a-fazer---na-memória-cálculo-dinâmico-do-form-últimos-jogos--momento-das-equipes-)
+- [Capítulo 20: [A FAZER] Rede Própria de Anúncios (House Ads & Direct Sponsorship Network)](#-capítulo-20-a-fazer-rede-própria-de-anúncios-house-ads--direct-sponsorship-network)
+  - [20.1 Visão Geral e Proposta de Valor](#201-visão-geral-e-proposta-de-valor)
+  - [20.2 Arquitetura em 4 Camadas (PocketBase, ZapScore API, AdminPanel e Flutter)](#202-arquitetura-em-4-camadas-pocketbase-zapscore-api-adminpanel-e-flutter)
+  - [20.3 Modelo de Dados no PocketBase (`ads_campaigns` e `ads_stats`)](#203-modelo-de-dados-no-pocketbase-ads_campaigns-e-ads_stats)
+  - [20.4 Motor de Agendamento, Rotação e Cron na ZapScore API](#204-motor-de-agendamento-rotação-e-cron-na-zapscore-api)
+  - [20.5 Interface de Gestão e Criação no AdminPanel (`/adminpanel/ads`)](#205-interface-de-gestão-e-criação-no-adminpanel-adminpanelads)
+  - [20.6 Integração Híbrida nos Apps Mobile Flutter (House Ads + AdMob Fallback)](#206-integração-híbrida-nos-apps-mobile-flutter-house-ads--admob-fallback)
+  - [20.7 Fases do Plano de Ação](#207-fases-do-plano-de-ação)
+- [Capítulo 21: [A FAZER / OPERACIONAL] Divulgação dos Apps e Estratégia de Crescimento Rápido (Ações Diárias de 5 Minutos)](#-capítulo-21-a-fazer--operacional-divulgação-dos-apps-e-estratégia-de-crescimento-rápido-ações-diárias-de-5-minutos)
+  - [21.1 Proposta de Valor e Estratégia de Tração Rápida](#211-proposta-de-valor-e-estratégia-de-tração-rápida)
+  - [21.2 Calendário Operacional Semanal (1 Ação Rápida de 5 Minutos por Dia)](#212-calendário-operacional-semanal-1-ação-rápida-de-5-minutos-por-dia)
+  - [21.3 Os 4 Formatos de Conteúdo de Alta Conversão](#213-os-4-formatos-de-conteúdo-de-alta-conversão)
+  - [21.4 Protocolo de Disseminação em Grupos de Torcida e Redes](#214-protocolo-de-disseminação-em-grupos-de-torcida-e-redes)
+  - [21.5 Checklist Semanal de ASO (App Store Optimization)](#215-checklist-semanal-de-aso-app-store-optimization)
+  - [21.6 [A FAZER] Arquitetura do Social Growth Agent (Marketing & Divulgação Autônoma)](#216-a-fazer-arquitetura-do-social-growth-agent-marketing--divulgação-autônoma)
+  - [21.7 Motor Gráfico de Mídia (Canva Connect API Pro & Fallback Headless)](#217-motor-gráfico-de-mídia-canva-connect-api-pro--fallback-headless)
+  - [21.8 Gerador de Copy com IA & Rastreamento UTM](#218-gerador-de-copy-com-ia--rastreamento-utm)
+  - [21.9 Conectores de Postagem e Canais de Distribuição (Telegram, X, WhatsApp, Instagram)](#219-conectores-de-postagem-e-canais-de-distribuição-telegram-x-whatsapp-instagram)
+  - [21.10 Seção Dedicada de Divulgação dos Apps no AdminPanel (`/adminpanel/growth`)](#2110-seção-dedicada-de-divulgação-dos-apps-no-adminpanel-adminpanelgrowth)
+  - [21.11 Fases de Implementação do Social Growth Agent](#2111-fases-de-implementação-do-social-growth-agent)
+  - [21.12 [CONCLUÍDO] Store Publisher Agent: Automação de Assets, Formulários 16+/SPORTS, Canva Pro e Google Play Edits API](#2112-concluído-store-publisher-agent-automação-de-assets-formulários-16sports-canva-pro-e-google-play-edits-api)
+  - [21.13 [A FAZER] Quality Gatekeeper & Vanguard AI Engine (Controle de Qualidade Multimodal e Criatividade de Vanguarda)](#2113-a-fazer-quality-gatekeeper--vanguard-ai-engine-controle-de-qualidade-multimodal-e-criatividade-de-vanguarda)
+- [Capítulo 22: [METAS & CRESCIMENTO 🎯] Meta 50k: Projeção de 50.000 Instalações em 5 Meses (Set/26 a Jan/27)](#-capítulo-22-metas--crescimento--meta-50k-projeção-de-50000-instalações-em-5-meses-set26-a-jan27)
+  - [22.1 A Rampa de Aceleração Mensal (Curva de Crescimento)](#221-a-rampa-de-aceleração-mensal-curva-de-crescimento)
+  - [22.2 A Abordagem Estratégica em 4 Alavancas](#222-a-abordagem-estratégica-em-4-alavancas)
+  - [22.3 Ações Práticas de Execução (Direto ao Ponto)](#223-ações-práticas-de-execução-direto-ao-ponto)
+  - [22.4 Métricas e KPIs de Acompanhamento no AdminPanel](#224-métricas-e-kpis-de-acompanhamento-no-adminpanel)
+  - [22.5 [A FAZER] Growth Orchestrator Agent: O Gerente de Metas e Estratégia de Tração](#225-a-fazer-growth-orchestrator-agent-o-gerente-de-metas-e-estratégia-de-tração)
+  - [22.6 [ROADMAP OPERACIONAL] Cronograma de Execução Imediata (Início: 12/09/2026)](#226-roadmap-operacional-cronograma-de-execução-imediata-início-12092026)
+- [Capítulo 23: [A FAZER - AMANHÃ] Novas Funcionalidades de Engajamento e Estatísticas Preditivas (Pílulas "Você Sabia?" & Central de Probabilidades)](#-capítulo-23-a-fazer---amanhã-novas-funcionalidades-de-engajamento-e-estatísticas-preditivas-pílulas-você-sabia--central-de-probabilidades)
+  - [23.1 Visão Geral e Proposta de Valor (Piloto Brasileirão Série A ➔ Escalação White-Label)](#231-visão-geral-e-proposta-de-valor-piloto-brasileirão-série-a--escalação-white-label)
+  - [23.2 Funcionalidade 1 — Pílulas "Você Sabia?" (Curiosity Feed & Radar Oculto)](#232-funcionalidade-1--pílulas-você-sabia-curiosity-feed--radar-oculto)
+  - [23.3 Motor Autônomo de Geração de Curiosidades (IA Engine + PocketBase Ingestion)](#233-motor-autônomo-de-geração-de-curiosidades-ia-engine--pocketbase-ingestion)
+  - [23.4 Funcionalidade 2 — Central de Probabilidades & Estatísticas Preditivas (Termômetro da Tabela & Minuto do Gol)](#234-funcionalidade-2--central-de-probabilidades--estatísticas-preditivas-termômetro-da-tabela--minuto-do-gol)
+  - [23.5 Arquitetura de Apresentação no Flutter (`fl_chart` & Micro-interações)](#235-arquitetura-de-apresentação-no-flutter-fl_chart--micro-interações)
+  - [23.6 Estratégia de Monetização (AdMob Rewarded & Interstitial no Feed)](#236-estratégia-de-monetização-admob-rewarded--interstitial-no-feed)
+  - [23.7 Cronograma de Execução Imediata (Plano de 4 Fases para Amanhã)](#237-cronograma-de-execução-imediata-plano-de-4-fases-para-amanhã)
 
 ---
 
@@ -222,6 +265,9 @@ d:\zapscore\
 | **Baiano 1ª / 2ª Divisão** | `602` / `613` | `/adminpanel/estaduais` | Estadual BA | `appbaiano` | `service_account_campeonato_baiano.json` |
 | **Paranaense 1ª / 2ª Divisão** | `606` / `614` | `/adminpanel/estaduais` | Estadual PR | `appparanaense` | `service_account_campeonato_paranaense.json` |
 | **Cearense 1ª / 2ª Divisão** | `607` / `617` | `/adminpanel/estaduais` | Estadual CE | `appcearense` | `service_account_campeonato_cearense.json` |
+| **Pernambucano 1ª / Série A2** | `622` / `1125` | `/adminpanel/estaduais` | Estadual PE | `apppernambucano` | `service_account_campeonato_pernambucano.json` |
+| **Paraibano 1ª / 2ª Divisão** | `603` / `1037` | `/adminpanel/estaduais` | Estadual PB | `appparaibano` | `service_account_campeonato_paraibano.json` |
+| **Maranhense 1ª / 2ª Divisão** | `608` / `854` | `/adminpanel/estaduais` | Estadual MA | `appmaranhense` | `service_account_campeonato_maranhense.json` |
 
 ### 2.3 Configurações dos Clientes Flutter (`AppConfig`)
 Cada app possui seu arquivo `lib/helpers/app_config.dart` com constantes imutáveis:
@@ -365,10 +411,47 @@ Auditoria em tempo real dividida em 4 abas isoladas:
 * 📍 **Aba Estaduais:** Paulistão (`475`/`476`), Carioca (`624`/`851`), Mineiro (`629`/`619`).
 * **Ações:** Detecção de partidas travadas em `LIVE` (>115 min) e botão de **Sync Forçado**.
 
-### 5.3 Agente Scorer Engine (Artilharia Automática Idempotente)
-* **Localização:** `europa/pb_hooks/scorer_sync.pb.js`.
-* **Idempotência (Full-State Aggregation):** Recalcula a artilharia a partir dos eventos reais de gols de todas as partidas da temporada, eliminando riscos de duplicação.
-* **Gatilhos:** Reativo no encerramento de partidas (`FT`), agendado (cron) ou manual via AdminPanel.
+### 5.3 [A FAZER - AMANHÃ] Agente Scorer Sentinel & Hybrid Self-Healer (Artilharia Híbrida Oficial + Fallback por Cálculo Local)
+* **Localização Principal:** `apps/api/src/competitions/scorer-agent.service.ts` e `apps/api/src/sync/sync-jobs.service.ts`.
+* **Rota no AdminPanel:** `/adminpanel/agents/scorers` (com cards por liga e gaveta de emergência).
+* **Proposta Arquitetural:** Eliminação do risco de dados corrompidos/incompletos em grandes ligas e garantia de cobertura autônoma para competições menores que a API oficial não audita.
+
+#### 1. Árvore de Decisão em 2 Camadas (Oficial ➔ Fallback por Eventos)
+O agente opera de forma inteligente através de uma rotina diária (executada 1x ao dia às 00:30 BRT, logo após a consolidação das tabelas de classificação):
+1. **Camada 1 (Prioridade Primária — Oficial API-Football):**
+   - O agente consulta o endpoint oficial `/players/topscorers?league={id}&season={season}` da API-Football (consumindo apenas **1 única requisição HTTP leve por liga ao dia**).
+   - **Se `response.length > 0`:** Aplica `upsert` dos dados consolidados da federação (gols oficiais, assistências, pênaltis e fotos oficiais em alta resolução de `media.api-sports.io`).
+   - Seta a tag da competição como `🟢 OFICIAL (API-Football)`.
+   - **Exemplos atendidos:** Brasileirão Séries A e B, Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Libertadores e Copa do Brasil.
+2. **Camada 2 (Fallback Autônomo — Detecção de Ausência Oficial):**
+   - Quando a API-Football não audita a artilharia daquela competição (comum em estaduais menores como Paraibano, Maranhense, Cearense, Potiguar ou divisões de acesso), ela retorna resposta vazia: `{ "results": 0, "response": [] }`.
+   - **Inteligência de Detecção:** O agente intercepta o `results === 0` e **não zera a tabela nem emite erro**.
+   - Emite log de auditoria: `[ScorerAgent] Liga {id} ({nome}) sem cobertura oficial na API-Football. Ativando motor de cálculo por eventos locais...`.
+   - **Motor de Cálculo Local:** Varre os eventos de gols (`FixtureEvent` com `type: 'goal'`) das partidas monitoradas daquela liga e consolida a artilharia acumulativa.
+   - Seta a tag da competição como `🟡 CALCULADO PELO AGENTE (Eventos Locais)`.
+   - **Exemplos atendidos:** Campeonato Paraibano, Campeonato Maranhense, etc.
+
+#### 2. Erradicação Absoluta do `deleteMany()` Destrutivo
+- **Proibição Mandatória:** Fica terminantemente proibido o uso de `prisma.scorer.deleteMany()` nos crons de sincronização.
+- **Gravação Cirúrgica via `upsert`:**
+  - Chave única composta: `(leagueId, season, playerName, teamName)`.
+  - Se o jogador já existe, atualiza as estatísticas mantendo seu UUID inalterado. Se não existe, cria o novo registro.
+  - Isso garante que os aplicativos móveis Flutter **nunca enfrentem telas em branco ou contagens zeradas** durante o processo de sincronização.
+
+#### 3. Painel de Governança, Badges e Gestão de Emergência no AdminPanel (`/adminpanel/agents/scorers`)
+- **Tags Semafóricas de Origem por Competição:**
+  - 🟢 **Oficial (API-Football):** Dados 100% auditados pela federação.
+  - 🟡 **Calculado pelo Agente:** Modo autônomo ativo para ligas menores sem cobertura oficial.
+  - 🔴 **Sem Registros:** Competição ainda sem partidas iniciadas na temporada.
+- **Gaveta de Gestão Manual de Emergência (Safety Valve):**
+  - Permite a edição inline instantânea de qualquer jogador (gols, time, fotos, rank).
+  - **Botão "Travar Artilheiro" (Freeze Lock):** Permite congelar um atleta manualmente caso haja disputa de súmula no tribunal desportivo da federação, impedindo qualquer automação de alterar até a liberação do operador.
+
+#### 4. Plano de Execução em 4 Fases (Cronograma para Amanhã)
+* **Fase 1 (`apps/api`):** Refatorar `scorer-agent.service.ts` para implementar a árvore de decisão híbrida (Oficial ➔ Fallback) e eliminar `deleteMany()`.
+* **Fase 2 (`sync-jobs.service.ts`):** Desativar o cron horário agressivo e plugar o `handleHybridScorersSync` no cron diário da madrugada (1x ao dia, economia máxima de cota).
+* **Fase 3 (Baseline Imediato):** Rodar rotina de saneamento para aplicar os dados oficiais corretos no Brasileirão Série A (Viveros 18, Pedro 15, etc.) e ligas europeias.
+* **Fase 4 (`apps/web` AdminPanel):** Atualizar `/adminpanel/agents/scorers` com as tags de origem (Oficial vs. Calculado) e ferramentas de edição de emergência.
 
 ### 5.4 Agente Monitor de IA (AI Sentinel & Feedback Loop Preditivo)
 * **Rota:** `/adminpanel/agents/ia-monitor`.
@@ -385,6 +468,34 @@ Auditoria em tempo real dividida em 4 abas isoladas:
 * **Buffer Desacoplado no PocketBase:** Ingestão segura via coleção `match_lineups` em `zapscore-pocketbase-multiapkagent`, isolando a API ZapScore de variações ou bloqueios WAF externos.
 * **Cascata Multi-Fonte:** Sofascore (Principal) ➔ FotMob (Fallback 1) ➔ GloboEsporte/365 (Fallback 2).
 * **Integração Automática com Push Agent:** Ao consolidar os 22 titulares, atualiza atomicamente o PostgreSQL local (`FixtureLineup`), emite WebSocket para os apps móveis e arma o gatilho automático de disparo pré-jogo do Push Agent a 10 min do apito inicial.
+
+### 5.7 [A FAZER - AMANHÃ] Agente Push Sentinel & Delivery Intelligence (Certificação de Entrega, Latência E2E e Funil de Conversão)
+* **Rota no AdminPanel:** `/adminpanel/agents/push-sentinel`.
+* **Proposta:** Eliminação do ponto cego do Google FCM v1 através de telemetria ativa e certificação física de entrega nos clientes Flutter.
+* **Os 4 Pilares Centrais:**
+  1. **Certificação Real de Entrega (Device ACK):** Pingback leve disparado pelo app em segundo plano confirmando recepção física no dispositivo (eliminando a falsa impressão de que `200 OK` do Google significa entrega).
+  2. **Medição de Latência E2E e Alerta de Lag:** Cálculo instantâneo do tempo decorrido entre o envio no servidor e o recebimento no aparelho (`<2s` ideal / `>10s` alerta crítico de lag de gol).
+  3. **Funil Completo de Conversão:** Disparadas ➔ Aceitas pelo FCM ➔ Entregues no Aparelho ➔ Abertas (CTR Real) ➔ Deep Link Success.
+  4. **Diagnóstico OEM & Doze Mode:** Mapeamento de retenção de notificações por fabricante (Xiaomi MIUI/HyperOS, Samsung OneUI, Motorola) e detecção de "Ghost Devices" para quarentena inteligente.
+* **Detalhamento Arquitetural Completo:** Consulte a especificação técnica detalhada no [Capítulo 16.10](#1610-a-fazer---amanhã-agente-de-telemetria-e-certificação-de-entrega-push-push-sentinel--delivery-intelligence).
+
+### 5.8 [CONCLUÍDO] Agente Publicador de Aplicativos (Store Publisher Agent — Google Play Edits API & Canva Pro)
+* **Rota no AdminPanel:** `/adminpanel/agents/store-publisher` (Card ativo no Hub `/adminpanel/agents`).
+* **Proposta Arquitetural:** Elimina 100% da fricção manual no lançamento e atualização de aplicativos na Google Play Store. Reúne ASO copywriting de alta conversão, templates de dimensões oficiais do Canva Pro (1024x500, 1080x1920, 512x512) e preenchimento validado de formulários regulatórios em uma única interface.
+* **Isolamento Absoluto:** Desenvolvido estritamente dentro de `apps/web/app/(main)/adminpanel/agents/store-publisher/`. A Zapscore API (`apps/api`) e os apps móveis Flutter permanecem 100% intocados.
+* **Os 5 Pilares de Engenharia:**
+  1. **Catálogo & Auto-Discovery de Pastas Clonadas (`auto-discovery.ts`):** Varre em tempo real `apps/estaduais/`, `apps/brasil/` e `apps/europa/`. Quando um app é clonado no disco (ex: `alagoano`, `sergipano`), o botão "Varredura Automática" detecta o `pubspec.yaml`, `app_config.dart` e `build.gradle.kts`, inserindo-o no painel com a tag `AUTO`.
+  2. **Formulários Obrigatórios e Isenção de Famílias/COPPA (`store-forms.ts`):**
+     - **Público-Alvo:** 16+ (16-17 e 18+), isentando o app da restritiva Política de Famílias e da legislação COPPA.
+     - **Categorização:** Categoria Primária **Esportes (`SPORTS`)** e Tag/Secundária **Entretenimento (`ENTERTAINMENT`)**.
+     - **Anúncios:** Declarado **Sim** (Google AdMob SDK integrado).
+     - **Classificação IARC:** Livre / Everyone (PEGI 3, USK 0, DJCTQ Livre).
+     - **Data Safety:** Identificadores de dispositivo (tokens FCM para push) e localização aproximada (AdMob) com criptografia HTTPS/TLS 1.3.
+     - **Acesso ao App:** Livre sem credenciais de login (`ALL_FUNCTIONALITY_AVAILABLE`).
+  3. **ASO Copywriting com Limites Rígidos (`aso-generator.ts`):** Título (máx 30c), Breve (máx 80c), Completa (máx 4000c) e Novidades (máx 500c), com integração inteligente ao Gemini.
+  4. **Canva Pro com Deep-Links Dimensionados (`canva-service.ts`):** Abre pranchetas oficiais na conta do operador com dimensões exatas da loja sem necessidade de credenciais de API.
+  5. **Google Play Edits API & Exportador Offline (`google-play-api.ts` & `export-package.ts`):** Autenticação JWT RS256 nativa com suporte a **Workload Identity Federation (OIDC sem chaves estáticas)**, modo Dry-Run seguro e download do pacote consolidado (`.txt`, `.json`, `.md`).
+* **Documentação e Tutorial Completo:** Consulte o [Capítulo 21.12](#2112-concluído-store-publisher-agent-automação-de-assets-formulários-16sports-canva-pro-e-google-play-edits-api).
 
 ---
 
@@ -468,12 +579,35 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 * **[2026-08-02]**: Implementação e homologação do motor de push notifications no PocketBase Europa com FCM HTTP v1 nativo em JavaScript.
 
 ### 8.2 Backlog e Próximos Incrementos Planejados
+* [ ] **[A FAZER - AMANHÃ 🚀] Novas Funcionalidades: Pílulas "Você Sabia?" & Central de Probabilidades Preditivas**: Implementação no app piloto Brasileirão Série A (e posterior escalação white-label) do feed de curiosidades com dados profundos (estilo Stories/Reels) e gráficos interativos de probabilidade de título, Z4 e gols minuto a minuto ([Capítulo 23](#-capítulo-23-a-fazer---amanhã-novas-funcionalidades-de-engajamento-e-estatísticas-preditivas-pílulas-você-sabia--central-de-probabilidades)).
+* [ ] **[A FAZER - AMANHÃ 🚀] Agente Push Sentinel & Delivery Intelligence**: Implementação do sistema de certificação física de entrega (Device ACK), medição de latência ponta a ponta (tempo real de gols), funil de abertura (CTR) e auditoria de fabricantes OEM no AdminPanel ([Capítulo 5.7](#57-a-fazer---amanhã-agente-push-sentinel--delivery-intelligence-certificação-de-entrega-latência-e2e-e-funil-de-conversão) e [Capítulo 16.10](#1610-a-fazer---amanhã-agente-de-telemetria-e-certificação-de-entrega-push-push-sentinel--delivery-intelligence)).
 * [ ] **Agente de Comentários Táticos ao Vivo (Crawl4AI + LLM Engine)**: Implementação do comentador em tempo real de 5 em 5 minutos em 6 fases cronológicas ([Capítulo 15](#-capítulo-15-a-fazer-agente-de-comentários-táticos-ao-vivo-e-coleta-multi-fontes-crawl4ai--ia-engine)).
 * [ ] **Ajuste Sintático na Chave PEM Bundesliga**: Ajustar os 4 hífens de fechamento para 5 (`-----END PRIVATE KEY-----`) em `notifications.pb.js`.
 * [ ] **Ativação dos Workers de Segundo Plano**:
   * Implementação do worker cron do Content Scout em `apps/api` (coleta RSS/YouTube a cada 30 min).
   * Implementação do middleware Quota Watchdog na `apps/api` para telemetria da API-Football.
-* [ ] **Conclusão da Artilharia Automática**: Ativação do hook reativo `scorer_sync.pb.js` no PocketBase para atualização instantânea em fim de jogo (`FT`).
+* [ ] **[A FAZER - AMANHÃ 🚀] Reestruturação do Agente Scorer Sentinel & Hybrid Self-Healer**: Implementação da árvore de decisão com prioridade oficial na API-Football (1x/dia na madrugada, gastando apenas 1 request/liga), detecção inteligente de ausência de dados para estaduais menores (ativação automática do motor de cálculo por eventos locais), erradicação do `deleteMany()` destrutivo via `upsert` acumulativo e interface com badges de origem e gestão de emergência no AdminPanel ([Capítulo 5.3](#53-a-fazer---amanhã-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)).
+* [ ] **[A FAZER] AdMob Rewarded IDs Exclusivos nos Apps Estaduais**: Criar IDs de anúncio premiado (Rewarded) dedicados no Google AdMob para os 6 apps (`baiano`, `carioca`, `cearense`, `gaucho`, `mineiro`, `paranaense`), substituindo o ID compartilhado herdado do paulista (`ca-app-pub-6887857057070736/1666213763`) em `lib/services/ad_service.dart` para permitir a segregação de relatórios de receita por aplicativo.
+* [ ] **[A FAZER] Inclusão de 3 Novos Estaduais no Monitoramento ZapScore e Clonagem Mobile**:
+  * **Etapa 1 — Monitoramento no Backend (`apps/api` & Governança)**:
+    1. Mapear IDs oficiais na API-Football para Campeonato Maranhense, Campeonato Paraibano e Campeonato Pernambucano (1ª Divisão).
+    2. Cadastrar competições em `apps/api/src/config/competitions.config.ts`.
+    3. Cadastrar cards e rotas no AdminPanel (`apps/web/.../registry.ts`) e Sentinel (`sentinel/page.tsx`).
+    4. Cadastrar registros na coleção `apps` do PocketBase Estaduais e provisionar Service Accounts Firebase para notificações push.
+    5. Disparar rotinas de bootstrap (`/sync/bootstrap`) e artilharia (`/sync/scorers`).
+  * **Etapa 2 — Clonagem Cirúrgica dos Apps Flutter (`apps/estaduais/*`)**:
+    * Execução sequencial e isolada (um por um) utilizando `paulista` como molde estabilizado:
+      1. `apps/estaduais/pernambucano`
+      2. `apps/estaduais/paraibano`
+      3. `apps/estaduais/maranhense`
+    * Sanitização de identificadores (`pubspec.yaml`, `AndroidManifest.xml`, `build.gradle.kts`, `AppConfig`, `push_notification_service.dart`), injeção dos IDs AdMob (App ID, Banner, Interstitial, Native, Rewarded), identidade visual (`colors.dart`, telas `about_{app}.dart`), assets/ícones dedicados, ajuste fino dos engines (`standings_engine`, `bracket_engine`, `competition_normalizer`) conforme o regulamento de cada federação e validação estática de 0 erros via `flutter analyze`.
+* [ ] **[ROADMAP IMEDIATO 🚀 (Início: 12/09/2026)] Execução em 6 Sprints Rumo aos 50k & Monetização**:
+  * **Sprint 1 (12/09 a 14/09):** Contingência Total do Lineup Agent (Aliases, URL direta, Editor Manual e IA T-20m).
+  * **Sprint 2 (15/09 a 18/09):** Criação do Hub `/adminpanel/growth` e Conexão da Canva Connect API Pro (3 templates oficiais).
+  * **Sprint 3 (19/09 a 22/09):** Social Growth Agent (geração de mídias, copy com IA, Telegram/X/WhatsApp e rotina 5 min).
+  * **Sprint 4 (23/09 a 26/09):** Rede Própria de Anúncios (House Ads & Direct Sponsorships: PocketBase, API, `/adminpanel/growth/ads` e Flutter híbrido) ([Capítulo 20](#-capítulo-20-a-fazer-rede-própria-de-anúncios-house-ads--direct-sponsorship-network)).
+  * **Sprint 5 (27/09 a 29/09):** Store Publisher Agent (Feature Graphic, screenshots 3D, ícones, ASO e upload Google Play Edits API) + Quality Gatekeeper.
+  * **Sprint 6 (30/09):** Growth Orchestrator Agent (painel de metas 50k, pacing diário e briefing matinal via Telegram) ([Capítulo 22.6](#226-roadmap-operacional-cronograma-de-execução-imediata-início-12092026)).
 
 ---
 
@@ -506,6 +640,12 @@ A aplicação está organizada sob a pasta `apps/web/app/(main)/adminpanel/`:
 | `/adminpanel/estaduais` | `estaduais/page.tsx` | **Gestão Módulo Estaduais**: Painel do Paulistão, Carioca, Mineiro e Gaúcho. |
 | `/adminpanel/news` | `news/page.tsx` | **Curadoria de Notícias**: Gerenciamento de fontes RSS, feed capturado e publicação. |
 | `/adminpanel/videos` | `videos/page.tsx` | **Curadoria de Vídeos**: Importação e gestão de canais do YouTube por liga. |
+| `/adminpanel/growth` | `growth/page.tsx` | **Hub de Divulgação & Monetização**: Seção central de crescimento, campanhas ativas, downloads e métricas de conversão. |
+| `/adminpanel/growth/agent` | `growth/agent/page.tsx` | **Social Growth Agent**: Geração de artes (campinho, onde assistir, tabelas), copy com IA e disparos em redes sociais. |
+| `/adminpanel/growth/ads` | `growth/ads/page.tsx` | **Rede Própria de Anúncios (House Ads)**: Gestão de campanhas de patrocínio, banners próprios e capping. |
+| `/adminpanel/growth/calendar` | `growth/calendar/page.tsx` | **Calendário Diário de Divulgação**: Rotina diária de 5 minutos (ações de segunda a domingo com checklist). |
+| `/adminpanel/growth/links` | `growth/links/page.tsx` | **Auditoria de Links & UTMs**: Rastreamento de instalações por canal e gerador de links para influenciadores. |
+| `/adminpanel/agents/store-publisher` | `agents/store-publisher/page.tsx` | **Store Publisher Agent**: Automação oficial de lançamento na Google Play Store (ASO 30c/80c, Formulários 16+/SPORTS, Canva Pro, Edits API v3 e Auto-Discovery). |
 
 ### 9.3 Registro Centralizado de Módulos (`registry.ts`) e Renderização Dinâmica
 Localizado em `apps/web/app/(main)/adminpanel/registry.ts`, este arquivo centraliza os metadados de todas as competições e fontes de dados:
@@ -815,7 +955,7 @@ static const String _nativeAdUnitId = 'ca-app-pub-XXXX/YYYY';
 
 ### 11.4 Passo 3 — Substituição dos IDs AdMob
 
-Cada app estadual possui um **App ID** e **3 Unit IDs** exclusivos no AdMob:
+Cada app estadual possui um **App ID** e **4 Unit IDs** exclusivos no AdMob:
 
 | Tipo | Localização do arquivo |
 |---|---|
@@ -824,8 +964,9 @@ Cada app estadual possui um **App ID** e **3 Unit IDs** exclusivos no AdMob:
 | Banner ID | `lib/services/ad_service.dart` → `_bannerAdUnitId` |
 | Interstitial ID | `lib/services/ad_service.dart` → `_interstitialAdUnitId` |
 | Native ID | `lib/services/ad_service.dart` → `_nativeAdUnitId` |
+| Rewarded ID | `lib/services/ad_service.dart` → `_rewardedAdUnitId` |
 
-> ⚠️ **NUNCA** reutilize IDs AdMob de outro app. Isso resulta em bloqueio da conta AdMob.
+> ⚠️ **NUNCA** reutilize IDs AdMob de outro app. Isso resulta em bloqueio da conta AdMob ou distorção de relatórios de monetização.
 
 **Exemplo — App Paulista (referência real):**
 ```
@@ -833,6 +974,7 @@ App ID:   ca-app-pub-6887857057070736~7229322510
 Banner:   ca-app-pub-6887857057070736/1753634557
 Inter:    ca-app-pub-6887857057070736/5501307878
 Nativo:   ca-app-pub-6887857057070736/4063163773
+Rewarded: ca-app-pub-6887857057070736/1666213763
 ```
 
 ---
@@ -1338,6 +1480,94 @@ Verifique a resposta dos endpoints públicos da ZapScore API:
 
 ---
 
+### 14.9 [A FAZER] Contingência Apps Estaduais — Campeonato Gaúcho (Gauchão Série A2)
+
+> **Status:** `[A FAZER - CONTINGÊNCIA PRIORITÁRIA 🛠️]`  
+> **Competição:** Campeonato Gaúcho Série A2 (Divisão de Acesso) - Temporada 2026  
+> **Identificadores:** ID API-Football: `478` (Legado: `853`) | Código ZapScore: `BR_GAUCHO_2` | App Slug: `campeonato_gaucho`  
+> **Módulos Afetados:** `apps/api` (Ingestor Autônomo / Prisma), `apps/estaduais/gaucho` (Consumo via endpoints existentes), `apps/web` (Gatilho no Sentinel)
+
+---
+
+#### 14.9.1 Relato do Problema: Falta de Dados do Gaúcho 2 na API-Football
+Durante os testes de homologação do app **Gauchão** (`apps/estaduais/gaucho`) para a temporada 2026:
+* **Diagnóstico da API-Football:** Mesmo com chave de plano Pro ativa e funcional (`ac2466bba57666a7fa0dd153228f71d6`, cota de 7.500 requisições/dia), a API-Sports **não possui registros cadastrados para a temporada 2026 do Campeonato Gaúcho Série A2 (ID 478)**. As chamadas a `/fixtures?league=478&season=2026` e `/standings?league=478&season=2026` retornam `results: 0` (o catálogo do provedor para esta divisão encerrou na temporada 2025).
+* **Contraste com a Série A1:** O Gauchão Série A (ID `477`) possui cobertura normal na API-Football (64 jogos em 2026, dos quais 50 já estão sincronizados no PostgreSQL da ZapScore API).
+* **Impacto no Aplicativo Mobile:** O app Flutter possui seletor nativo entre a Série A e a Série A2. Sem os dados da 2ª divisão no backend, a interface ficaria vazia ao alternar para a Divisão de Acesso, comprometendo a experiência do usuário e a homologação na Play Store.
+
+---
+
+#### 14.9.2 Mapeamento da Fonte Oficial: Federação Gaúcha de Futebol (FGF)
+Foi identificada a fonte oficial completa e atualizada diretamente no portal da Federação Gaúcha de Futebol:
+* **URL Oficial:** `https://fgf.com.br/competicoes/profissional/24/2026/4218`
+* **Formato da Competição 2026:** Disputada por **16 agremiações** em turno único (fase classificatória):
+  * *Clubes Participantes:* Veranópolis, Passo Fundo, Santa Cruz, União Frederiquense, Esportivo, Brasil de Farroupilha, APAFUT, Aimoré, Brasil de Pelotas, Pelotas, Guarani-VA, SC Gaúcho, Bagé, Glória, Gramadense, Lajeadense.
+* **Volume de Dados Disponíveis no Portal:**
+  * **15 Rodadas no total:**
+    * **Rodadas 1 a 11:** Já finalizadas, com placares consolidados, datas de realização e estádios.
+    * **Rodadas 12 a 15:** Agendadas com tabela de confrontos e horários futuros.
+  * **Tabela de Classificação Oficial:** Pontos, jogos, vitórias, empates, derrotas, gols pró, gols contra e saldo de gols consolidados.
+  * **Artilharia:** Relação oficial dos principais goleadores da competição.
+
+---
+
+#### 14.9.3 Solução Arquitetural: Ingestor Autônomo FGF (ZapScore API)
+Em vez de depender da atualização tardia ou inexistente da API-Football, a ZapScore API adota a **estratégia de ingestão autônoma de dados oficiais**:
+
+```mermaid
+flowchart TD
+    A["Portal Oficial FGF<br>(fgf.com.br/competicoes/...)"] -->|Scraping HTML / Cheerio| B["FgfAutonomousIngestorService<br>(apps/api)"]
+    B -->|Normalização & Upsert| C["PostgreSQL Central<br>(Prisma ORM)"]
+    C -->|leagueId: 478, season: 2026| D["ZapScore API Endpoints<br>(/standings, /fixtures, /teams)"]
+    D -->|Zero Alterações no App| E["App Gauchão Flutter<br>(apps/estaduais/gaucho)"]
+    D -->|Monitoramento Visual| F["AdminPanel Sentinel<br>(Aba Estaduais)"]
+```
+
+1. **Camada de Extração (`cheerio` + `@nestjs/axios`):**
+   * Coleta o HTML oficial da página da FGF em alta velocidade sem necessidade de browser headless pesado.
+   * Faz o parsing estruturado das tabelas de classificação, blocos de rodadas e confrontos.
+2. **Camada de Normalização e Persistência no Banco (Prisma ORM):**
+   * **`teams`:** Garante o cadastro dos 16 clubes participantes com nomes limpos, siglas e escudos oficiais.
+   * **`leagues`:** Vincula à entidade `BR_GAUCHO_2` (externalId `478`, temporada `2026`).
+   * **`fixtures`:** Registra as partidas das 15 rodadas:
+     * Rodadas 1 a 11: status `FT`, com placares gravados e datas corretas.
+     * Rodadas 12 a 15: status `NS`, com data prevista para as próximas semanas.
+   * **`standings`:** Upsert da tabela completa com as 16 linhas de pontuação.
+3. **Preservação Integral de Contratos de API:**
+   * O app Flutter consome `GET /standings?leagueId=478&season=2026` e `GET /fixtures?leagueId=478&season=2026`.
+   * Como a estrutura de retorno segue rigorosamente os DTOs do `StandingsController` e `FixturesController`, **nenhuma alteração é necessária no código Dart do app**, cumprindo a regra de edição cirúrgica e estabilidade do ecossistema.
+
+---
+
+#### 14.9.4 Como Vai Atualizar (Estratégia de Atualização e Ciclo de Vida)
+O fluxo de atualização é estruturado em três frentes complementares:
+
+1. **Carga Inicial (Bootstrap Sob Demanda):**
+   * Execução de rotina administrativa via endpoint protegido por `ApiKeyGuard`:
+     ```bash
+     POST /sync/autonomous/fgf-gaucho-a2
+     Header: x-api-key: ADMIN_API_KEY
+     ```
+   * Popula imediatamente todos os 16 times, a tabela de classificação e as 15 rodadas (1 a 11 finalizadas, 12 a 15 agendadas).
+
+2. **Rotina Automatizada de Atualização (Cron Job Leve):**
+   * Agendamento no `SyncJobsService` (`@Cron`) com frequência voltada aos dias e horários de jogos da Divisão de Acesso (quartas-feiras e domingos à noite, ex: 18h e 22h).
+   * O worker faz a releitura da página da FGF, detecta se partidas `NS` mudaram para `FT` com novos placares e reescreve a classificação atualizada no PostgreSQL.
+
+3. **Gatilho Manual de Contingência no AdminPanel:**
+   * Inclusão do botão **"Atualizar FGF (Gauchão A2)"** no painel de controle do AdminPanel (`/adminpanel/sentinel` na aba Estaduais).
+   * Permite que o operador force a atualização instantânea caso um jogo termine e a federação publique o resultado sem esperar pelo cron.
+
+---
+
+#### 14.9.5 Fases de Implementação `[A FAZER]`
+* [ ] **Fase 1 (Parser FGF):** Criar parser de teste para extrair times, tabela e rodadas do HTML da FGF com integridade.
+* [ ] **Fase 2 (Serviço de Ingestão):** Implementar o serviço de ingestão autônoma no NestJS (`apps/api`) realizando upserts idempotentes via Prisma ORM com `leagueId: 478`.
+* [ ] **Fase 3 (Endpoint & Automação):** Criar a rota de disparo `POST /sync/autonomous/fgf-gaucho-a2` e agendar a checagem no `SyncJobsService`.
+* [ ] **Fase 4 (Homologação):** Validar os dados retornados no app mobile `apps/estaduais/gaucho` (classificação e rodadas da Série A2) e no Sentinel do AdminPanel.
+
+---
+
 ## 🎙️ Capítulo 15: [A FAZER] Agente de Comentários Táticos ao Vivo e Coleta Multi-Fontes (Crawl4AI + IA Engine)
 
 > **Documento Completo do Plano:** [plano_implementacao_agente_comentarios_taticos_ia_2026_08_26.md](file:///d:/zapscore/relatorios/plano_implementacao_agente_comentarios_taticos_ia_2026_08_26.md)  
@@ -1730,6 +1960,117 @@ Durante a validação em produção do módulo de Broadcast e Agente Push (31/08
 
 ---
 
+### 16.10 [A FAZER - AMANHÃ] Agente de Telemetria e Certificação de Entrega Push (Push Sentinel & Delivery Intelligence)
+
+#### 1. Contexto, Problema e Eliminação do Ponto Cego do FCM v1
+No modelo tradicional do Google FCM HTTP v1, o backend recebe status HTTP `200 OK` assim que o Google aceita a mensagem para enfileiramento em sua infraestrutura em nuvem. **No entanto, `200 OK` do Google NÃO significa que a notificação foi entregue ao aparelho do usuário.**
+Existe um **ponto cego estrutural** onde a notificação pode:
+1. Ser retida ou adiada por dezenas de segundos ou minutos pelo Android Doze Mode (Deep Sleep);
+2. Ser silenciada ou bloqueada por algoritmos proprietários de gerenciamento de bateria de fabricantes OEM (Xiaomi HyperOS/MIUI, Samsung OneUI, Motorola);
+3. Ser descartada se o aparelho estiver temporariamente sem sinal, desligado ou conectado a Wi-Fi instável;
+4. Sofrer gargalos de latência interna no caminho servidor ➔ nuvem ➔ gateway de rádio do celular.
+
+Em partidas de futebol em tempo real, **atrasos superiores a 5 a 10 segundos em notificações de gol destroem a experiência do torcedor** (o usuário assiste ao gol na TV ou é avisado por mensagem antes do push tocar). O **Push Sentinel & Delivery Intelligence** é o agente autônomo projetado para erradicar essa assimetria de informação através de telemetria ponta a ponta e certificação física de entrega no cliente.
+
+---
+
+#### 2. Os 4 Pilares Arquiteturais do Agente
+
+```
++------------------------------------------------------------------------------------------------+
+|                        ARQUITETURA DO PUSH SENTINEL & DELIVERY INTELLIGENCE                    |
++------------------------------------------------------------------------------------------------+
+|                                                                                                |
+|   1. DISPARO BACKEND             2. REPASSE GOOGLE FCM         3. RECEPÇÃO FÍSICA NO HARDWARE  |
+|   [ZapScore API / PB] ---------> [ Google FCM v1 ] ---------> [ Smartphone do Torcedor ]      |
+|    sent_at: 18:34:00.100          HTTP 200 OK (Blindspot)      delivered_at: 18:34:01.350      |
+|    dispatch_id: UUID                                                    |                      |
+|                                                                         | (Background Pingback)|
+|                                                                         v                      |
+|   4. DASHBOARD ADMINPANEL <----- [ POST /telemetry/push-ack ] <---------+                      |
+|    - Latência E2E: 1.25s (Verde)  (Payload leve não-bloqueante)                                |
+|    - Funil: 435 disp -> 412 ent -> 89 abertos (21.6% CTR)                                      |
+|    - Auditoria OEM: Xiaomi 94%, Samsung 98%, Moto 97%                                          |
++------------------------------------------------------------------------------------------------+
+```
+
+##### Pilar I — Certificação Real de Entrega via Device ACK (Pingback Silencioso)
+* **Mecanismo:** Ao receber o push em segundo plano (`FirebaseMessaging.onBackgroundMessage` no arquivo `push_notification_service.dart`), o app Flutter extrai o `dispatch_id` e o timestamp `sent_at` contidos no bloco `data` do payload.
+* **Pingback Ultra-Leve:** O app dispara em segundo plano uma requisição assíncrona desacoplada (`POST /api/telemetry/push-delivered`) contendo:
+  ```json
+  {
+    "dispatch_id": "7b8f9e21-4d3a-4a8b-9e12-8f9c2d1e4b5a",
+    "app_id": "brasileirao",
+    "device_hash": "a1b2c3d4e5f6...",
+    "sent_at": 1726868040100,
+    "delivered_at": 1726868041350,
+    "oem": "Xiaomi",
+    "model": "22101316G",
+    "os_version": "Android 14 (HyperOS)"
+  }
+  ```
+* **Garantia de Isolamento:** A rotina é executada em microtarefa com timeout estrito de 3 segundos, sem reter nem atrasar a exibição da notificação visual local (`flutter_local_notifications`).
+
+##### Pilar II — Medição de Latência E2E e Monitor de Lag (Speedometer Watchdog)
+* **Cálculo da Latência Real:** `latência = delivered_at - sent_at`.
+* **Semáforo de Performance por Disparo:**
+  - 🟢 **Excelente / Tempo Real Ótimo (< 2.0s):** Notificação de gol entregue antes ou concomitante à transmissão.
+  - 🟡 **Atenção / Latência Tolerável (2.1s a 7.0s):** Atraso leve; aceitável para cartões amarelos, início e fim de jogo.
+  - 🔴 **Crítico / Lag Severo (> 7.0s):** Notificação com atraso perceptual de gol. Gera flag de anomalia no AdminPanel e audita tempo de fila do PocketBase/Redis.
+* **Métricas Estatísticas:** Exibição em tempo real de $p50$, $p90$ e $p99$ agregados por partida e por liga.
+
+##### Pilar III — Funil Completo de Conversão e Engajamento (Disparadas ➔ Abertas)
+Rastreia a jornada completa do ciclo de vida da notificação:
+1. **Subscritos Elegíveis:** Usuários filtrados por time favorito ou broadcast geral.
+2. **FCM Accepted (200 OK):** Confirmação de recebimento pelos servidores do Google.
+3. **Hardware Confirmed (Device ACK):** Confirmação física de recepção pelo smartphone.
+4. **Visualizações / Abertura de Notificação (CTR Real):** Capturado no clique do usuário via `onMessageOpenedApp` e `getInitialMessage` através do endpoint `POST /api/telemetry/push-opened`.
+5. **Deep Link Success:** Confirmação de que o app abriu a tela solicitada (partida ao vivo, notícia ou tabela) com sucesso.
+
+##### Pilar IV — Diagnóstico OEM & Doze Mode Inspector
+* Identifica padrões de retenção por fabricante de smartphone:
+  - Dispositivos Xiaomi (MIUI/HyperOS) frequentemente suspendem workers de rede em tela apagada.
+  - Dispositivos Samsung com economia adaptativa ativada.
+* **Dica Contextual Amigável nos Apps:** Se um modelo específico apresentar taxa de entrega inferior a 70% ou latência >15s em background, o aplicativo exibe na aba de Configurações uma instrução passo a passo orientando o torcedor a desativar a "Otimização de Bateria" para o ZapScore.
+* **Quarentena de Dispositivos Fantasmas (Ghost Devices):** Dispositivos que recebem `200 OK` do Google sucessivamente (ex: >10 disparos) mas **nunca devolvem nenhum ACK** nos últimos 14 dias são marcados como zumbis/inativos e movidos para uma lista de quarentena de baixa prioridade, reduzindo a carga do servidor.
+
+---
+
+#### 3. Especificação Técnica dos Novos Endpoints (`apps/api`)
+
+| Método | Rota | Descrição | Nível de Carga |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/telemetry/push-delivered` | Ingestão de ACK de entrega física no aparelho. | Alta frequência (buffer em lote / memória). |
+| `POST` | `/telemetry/push-opened` | Registro de clique na notificação e CTR. | Média frequência. |
+| `GET` | `/telemetry/push-dashboard` | Agregação de métricas para o AdminPanel. | Baixa frequência (sob demanda). |
+| `GET` | `/telemetry/push-fixture/:fixtureId` | Diagnóstico cirúrgico de disparos de uma partida específica. | Baixa frequência. |
+
+---
+
+#### 4. Interface de Observabilidade no AdminPanel (`/adminpanel/agents/push-sentinel`)
+* **Localização:** Integrado ao Hub de Agentes (`apps/web/app/(main)/adminpanel/agents/push-sentinel/page.tsx`).
+* **Componentes da Interface:**
+  1. **Speedometer de Latência:** Medidor radial com percentil $p95$ em tempo real e tempo médio de entrega dos últimos disparos.
+  2. **Funil Gráfico Interativo:** Gráfico em barras ou funil detalhando: Disparados ➔ FCM 200 ➔ Entregues no Aparelho ➔ Abertos (CTR %).
+  3. **Auditoria por Partida ao Vivo:** Seletor de partidas do dia (ex: Flamengo x Bragantino) com histórico dos disparos de gols, tempo decorrido, taxa de entrega de cada lance e logs de anomalias.
+  4. **Mapa de Fabricantes OEM:** Gráfico de rosca distribuindo entregas por marca (Samsung, Xiaomi, Motorola, Apple, Outros).
+
+---
+
+#### 5. Plano de Execução em 4 Fases (Cronograma para Amanhã)
+* **Fase 1 — Backend & Ingestão de Telemetria (`apps/api`):**
+  - Criar `TelemetryModule` com controller e serviço leve.
+  - Implementar buffer em memória com expurgo rotativo de 7 dias (zero impacto no schema Prisma principal).
+* **Fase 2 — Injeção de Rastreabilidade no Payload FCM (`PocketBase pb_hooks` & `apps/api`):**
+  - Injetar `dispatch_id` (UUID v4) e `sent_at` (timestamp ms) em todos os payloads de `start`, `end`, `goal` e `broadcast`.
+* **Fase 3 — Telemetria Silenciosa nos Clientes Flutter (`push_notification_service.dart`):**
+  - Implementar callbacks em background para emissão do ACK assíncrono via `http.post`.
+  - Capturar clique de abertura e reportar CTR.
+* **Fase 4 — Interface no AdminPanel e Teste em Partida Real:**
+  - Criar a página `/adminpanel/agents/push-sentinel` e validar telemetria durante as partidas ao vivo do Brasileirão ou Copas.
+
+---
+
 ## 🛠️ Capítulo 17: Ajustes e Soluções — Registro de Diagnósticos e Correções
 
 > Este capítulo documenta problemas identificados em produção/debug, suas causas raiz e as correções cirúrgicas aplicadas. Cada entrada deve ser consultada antes de qualquer refatoração futura nos módulos afetados.
@@ -1928,6 +2269,58 @@ Para garantir qualidade visual máxima em 100% dos atletas titulares e reservas:
 2. **Eliminação de Links Fictícios:** Elimina fallbacks com IDs incompatíveis, garantindo que apenas imagens reais e acessíveis sejam salvas no PocketBase e no PostgreSQL.
 3. **Cálculo de Grid Tático Dinâmico:**
    - A partir da formação tática dos clubes (ex: `4-3-3`, `4-2-3-1`, `3-4-2-1`), o motor calcula automaticamente as coordenadas de linha e coluna (`grid: "row:col"`), consumidas pelos componentes de campo dos aplicativos Flutter.
+
+### 18.10 [A FAZER] Contingência Total no Lineup Agent: Normalização de Aliases, Extração por URL Direta e Editor Manual
+
+- **Diagnóstico do Problema (Incidente Coritiba x Athletico-PR / 11-12/09/2026):**
+  - O Lineup Agent (`apps/api/src/lineups`) não capturou a escalação oficial da partida Coritiba x Athletico Paranaense pela Série B, mesmo com a súmula já confirmada com 11 titulares e 12 reservas no 365Scores (`webws.365scores.com/web/game/?gameId=4632679`).
+  - **Causa Raiz:** Divergência de nomenclatura entre as bases de dados:
+    - No banco ZapScore / PocketBase (`active_fixtures`): `home_team_name: "Coritiba"`, `away_team_name: "Atletico Paranaense"`.
+    - No 365Scores (GloboesporteProvider): `away_team_name: "Athletico-PR"`.
+    - O método `normalizeTeamName()` remove acentos e caracteres especiais, gerando `"atleticoparanaense"` no ZapScore e `"athleticopr"` no 365Scores.
+    - Como a comparação de strings `normAway.includes(gAway) || gAway.includes(normAway)` falha (`"athleticopr"` não contém nem está contido em `"atleticoparanaense"`), o pareamento é descartado (`isAwayMatch = false`).
+  - **Impacto:** A escalação não foi persistida a tempo no PocketBase e no PostgreSQL pelo Lineup Agent (neste confronto específico, a IA nos comentários táticos supriu a lacuna publicando os nomes dos atletas).
+  
+- **Solução Arquitetural Planejada `[A FAZER]` (Pacote Completo de Contingência):**
+  1. **Dicionário Canônico e Mapeamento de Aliases de Clubes Brasileiros:**
+     - Criar dicionário canônico centralizado (ou expandir a collection `team_aliases` no PocketBase) com aliases usuais do futebol brasileiro:
+       - `athleticopr` / `atleticopr` / `cap` ➔ `atleticoparanaense`
+       - `atleticomg` / `cam` ➔ `atleticomineiro`
+       - `americamg` ➔ `americamineiro`
+       - `americarn` ➔ `americadenatal` / `americarn`
+       - `redbullbragantino` / `rbbragantino` ➔ `bragantino`
+       - `botafogosp` ➔ `botafogoderibeiraopreto` / `botafogosp`
+       - `botafogopb` ➔ `botafogodaparaiba` / `botafogopb`
+       - `atleticogo` ➔ `atleticogoianiense`
+  2. **Camada Unificada de Normalização nos Provedores:**
+     - Atualizar a função `normalizeTeamName` ou criar `canonicalTeamMatch(nameA, nameB)` compartilhada entre `globoesporte.provider.ts`, `sofascore.provider.ts`, `livescore.provider.ts` e `besoccer.provider.ts`.
+     - Aplicar substituição de sufixos de estado (`-pr`, `-mg`, `-sp`, `-rj`, `-go`, `-ba`, etc.) e siglas consagradas antes da checagem de inclusão/Levenshtein.
+  3. **Consulta de Fallback na Coleção `team_aliases` do PocketBase:**
+     - Se a comparação direta e por alias local falhar, consultar em memória o cache de `team_aliases` sincronizado do PocketBase antes de rejeitar o confronto.
+  4. **Fallback de Contingência via Comentários da IA (Janela T-20min):**
+     - Caso o Lineup Agent atinja a marca de **20 minutos antes do jogo** (`minutesUntilKickoff <= 20`) sem conseguir confirmar os 22 titulares pelas fontes convencionais estruturadas:
+     - O agente deve consultar a coleção de comentários táticos no PocketBase (`fixture_comments`, fase `PRE_MATCH`) gerada pela IA a partir das matérias esportivas de pré-jogo (GE, UOL, Gazeta).
+     - Extrair os nomes dos atletas citados na escalação provável/confirmada via parser com IA/Regex, cruzar com a base oficial de elencos (`TeamSquad`) e persistir os titulares para assegurar a exibição tática antes do apito inicial.
+  5. **Módulo URL-to-Lineup (Extração Forçada por URL Direta):**
+     - **Interface no AdminPanel (`/adminpanel/agents/lineups`):**
+       - Cada card de partida ganha o botão **"🔗 Ler por URL"**.
+       - Abre modal para colar a URL direta do confronto no 365Scores, GE Globo, UOL ou matéria de imprensa esportiva.
+     - **Endpoint na ZapScore API (`POST /lineups/extract-by-url`):**
+       - Recebe `{ fixtureId: number, url: string }`.
+       - Roteador de domínio inteligente:
+         - *365Scores (`webws.365scores.com` ou `365scores.com`)*: Extrai o `gameId` da URL e consome a API JSON direta do 365Scores (`/web/game/?gameId={id}`), obtendo titulares, reservas, camisas e fotos com dados 100% estruturados e bypass total de divergências de nomes.
+         - *GE Globo (`ge.globo.com`) / UOL Placar (`placar.uol.com.br`)*: Executa parser HTML da página do jogo para extrair a ficha técnica.
+         - *Artigos e Notícias de Imprensa*: Executa parser semântico com LLM/Regex para identificar os 11 atletas citados por equipe.
+       - Enriquecimento com fotos oficiais de `TeamSquad` e cálculo automático do grid tático (`grid: "row:col"`).
+       - Gravação atômica em `FixtureLineup` (PostgreSQL) e `match_lineups` (PocketBase), emissão de WebSocket e notificação ao Push Agent.
+  6. **Editor Manual de Escalação no AdminPanel (Manual Lineup Builder):**
+     - **Interface no AdminPanel:** Botão **"✏️ Inserir / Editar Escalação"** no card da partida.
+     - **Modal com 2 Modos Operacionais:**
+       - *Modo A: Colar Texto / IA*: Campo de texto para colar a lista crua de atletas postada pelo clube em redes sociais (ex: Twitter/Instagram/WhatsApp). Botão *"✨ Interpretar com IA / Regex"* que mapeia os nomes, camisas e posições diretamente com o elenco cadastrado.
+       - *Modo B: Seletor de Elenco (TeamSquad)*: Exibe a lista completa de atletas cadastrados de cada clube (`TeamsService.getSquad`). O operador marca os 11 titulares de cada time com 1 clique e escolhe a formação tática (ex: `4-3-3`, `4-2-3-1`).
+     - **Endpoint na ZapScore API (`POST /lineups/:fixtureId/manual`):**
+       - Recebe o payload estruturado com titulares, reservas e esquema tático.
+       - Calcula o grid tático automaticamente e persiste atômica e imediatamente no PostgreSQL e PocketBase, acionando o WebSocket em tempo real e o push pré-jogo.
 
 ---
 
@@ -2162,6 +2555,924 @@ Abaixo está o registro formal das melhorias e ajustes identificados para contin
   - Implementar no endpoint `/fixtures/:id` ou `/fixtures/:id/h2h` o cálculo retroativo das últimas 5 partidas disputadas por cada time na mesma temporada e competição, retornando o vetor ordenado de resultados (`W`, `D`, `L`) com links para os confrontos correspondentes.
   - No cliente Flutter, renderizar os crachás circulares estilizados de vitória (verde), empate (cinza) e derrota (vermelho) no card de detalhes da partida.
 
+---
 
+## 📢 Capítulo 20: [A FAZER] Rede Própria de Anúncios (House Ads & Direct Sponsorship Network)
 
+> **Status:** `[A FAZER - PLANEJADO]`  
+> **Módulos Envolvidos:**  
+> - `PocketBase` (Coleções `ads_campaigns` e `ads_stats` + CDN de Criativos)  
+> - `apps/api` (Módulo `AdsModule`: `AdsService`, `AdsController`, `AdsSchedulerService`)  
+> - `apps/web` (Interface `/adminpanel/ads`: Gestão de Campanhas, Métricas e Mockup Preview)  
+> - `apps/mobile` & Apps Estaduais / Europa (Widgets `HouseAdBanner` e `HouseNativeAdWidget` com fallback AdMob)
 
+---
+
+### 20.1 Visão Geral e Proposta de Valor
+Permitir a veiculação autônoma de campanhas publicitárias diretas e patrocínios regionais (casas de apostas, marcas esportivas, varejo local e infoprodutos) diretamente nos aplicativos móveis do ecossistema ZapScore, com:
+1. **Monetização 100% Direta:** Eliminação de intermediários e taxas das ad networks para campanhas diretas.
+2. **Preenchimento Garantido (Zero Fallback Waste):** Atua como alternativa primária ou como fallback perfeito quando o Google AdMob falhar (`onAdFailedToLoad`) ou apresentar baixo eCPM.
+3. **Autonomia Operacional Sem Rebuild:** Criação, pausa, agendamento e troca de banners em tempo real pelo AdminPanel sem necessidade de compilar ou enviar novas versões para Google Play ou App Store.
+
+---
+
+### 20.2 Arquitetura em 4 Camadas (PocketBase, ZapScore API, AdminPanel e Flutter)
+
+```mermaid
+flowchart TD
+    subgraph ADMIN [AdminPanel Next.js /adminpanel/ads]
+        DASH[🖥️ Dashboard: Métricas, Impressões e CTR]
+        FORM[📝 Criador: Upload de Banner, Datas e Ligas Alvo]
+        MOCK[📱 Simulador Visual no Celular]
+    end
+
+    subgraph PB [PocketBase - Dados & CDN de Imagens]
+        ADS[(Coleção ads_campaigns)]
+        STATS[(Coleção ads_stats)]
+        STORAGE[🗂️ Arquivos Públicos / Banners]
+    end
+
+    subgraph API [ZapScore API NestJS]
+        ROUTER[🎯 AdsService: Filtro de Alvo, Rotação e Cache em Memória]
+        CRON[⏱️ AdsSchedulerService: Expiração Automática e Cap de Impressões]
+        TRACK[📊 Telemetria: Contador Atômico de Views e Clicks]
+    end
+
+    subgraph MOBILE [Apps Flutter White-Label]
+        MIN[📱 App Mineiro]
+        CAR[📱 App Carioca]
+        BRA[📱 App Brasileirão]
+        EUR[📱 Apps Europa]
+    end
+
+    FORM -->|Cria campanha & faz upload| PB
+    DASH -->|Consulta relatórios consolidados| API
+    API -->|Lê campanhas ativas com cache 1m| PB
+    CRON -->|Atualiza status expirado / pausado| PB
+    MIN & CAR & BRA & EUR -->|GET /ads/serve?app=...&placement=...| API
+    MIN & CAR & BRA & EUR -->|POST /ads/:id/impression ou /click| TRACK
+    TRACK -->|Incrementa contadores| PB
+```
+
+---
+
+### 20.3 Modelo de Dados no PocketBase (`ads_campaigns` e `ads_stats`)
+
+#### 1. Coleção: `ads_campaigns`
+* `title` (text, obrigatório): Nome identificador da campanha (ex: *"SuperBet - Final Mineiro"*).
+* `advertiser` (text): Nome do anunciante/cliente parceiro.
+* `placement` (select):
+  * `banner_bottom`: Banner fixo ou rotativo no rodapé (320x50 / 300x50).
+  * `native_card`: Card nativo integrado aos feeds de partidas e notícias.
+  * `interstitial_modal`: Modal ou tela cheia de transição entre telas/partidas.
+  * `popup_launch`: Aviso/banner de boas-vindas na abertura do aplicativo.
+* `target_apps` (json): Lista de slugs dos apps autorizados (ex: `["campeonato_mineiro", "campeonato_carioca"]` ou `["all"]`).
+* `target_leagues` (json): Array de IDs numéricos da API-Football para segmentação exclusiva por campeonato.
+* `creative_image` (file, obrigatório): Arquivo gráfico do banner (PNG, WebP, JPG) com serving direto pela CDN do PocketBase.
+* `destination_url` (text, obrigatório): URL externa (com parâmetros UTM) ou rota de deep link interna do app.
+* `start_at` (datetime, obrigatório): Início da veiculação.
+* `end_at` (datetime, obrigatório): Fim da veiculação.
+* `priority` (number, default: 1): Peso para sorteio e rotação entre múltiplas campanhas concorrentes.
+* `status` (select): `draft`, `scheduled`, `active`, `paused`, `expired`.
+* `max_impressions` (number, opcional): Limite contratual de exibições (*capping*).
+* `impressions_count` (number, default: 0): Total acumulado de visualizações.
+* `clicks_count` (number, default: 0): Total acumulado de toques.
+
+#### 2. Coleção: `ads_stats` (Telemetria Detalhada / Auditoria)
+* `campaign_id` (relation `ads_campaigns`): Identificador da campanha.
+* `event_type` (select): `impression`, `click`.
+* `app_slug` (text): Slug do aplicativo de origem.
+* `league_id` (number, opcional): Campeonato visualizado.
+* `timestamp` (datetime): Data/hora do evento.
+
+---
+
+### 20.4 Motor de Agendamento, Rotação e Cron na ZapScore API (`apps/api`)
+
+* **Módulo:** `apps/api/src/ads/`
+* **Endpoints:**
+  1. `GET /ads/serve`:
+     * Query: `?app=campeonato_mineiro&placement=banner_bottom&leagueId=629`
+     * Consulta campanhas vigentes no PocketBase (`status = 'active'`, `start_at <= now <= end_at`, matching de `target_apps` e `target_leagues`).
+     * Realiza sorteio ponderado pela `priority`.
+     * Mantém **cache em memória (1 minuto)** para suportar alto tráfego sem onerar o PocketBase.
+  2. `POST /ads/:id/impression`:
+     * Registra exibição e incrementa `impressions_count` de forma atômica e assíncrona.
+  3. `POST /ads/:id/click`:
+     * Registra o clique e retorna a URL de redirecionamento.
+* **Cron Jobs (`AdsSchedulerService`):**
+  * **A cada 15 minutos:**
+    * Campanhas `scheduled` cujo `start_at <= now` ➔ Promove para `active`.
+    * Campanhas `active` cujo `end_at <= now` ➔ Promove para `expired`.
+    * Campanhas que atingiram `max_impressions` ➔ Altera para `paused`.
+
+---
+
+### 20.5 Interface de Gestão e Criação no AdminPanel (`/adminpanel/growth/ads`)
+
+* **Módulo:** `apps/web/app/(main)/adminpanel/growth/ads/page.tsx` (com rota legada/alias `/adminpanel/ads`)
+* **Localização Estrutural:** Integrado à seção dedicada de **Divulgação & Monetização dos Apps** (`/adminpanel/growth/ads`).
+* **Funcionalidades:**
+  1. **Dashboard Consolidado:** Métricas de Impressões, Cliques, CTR médio e campanhas ativas no momento.
+  2. **Tabela Operacional de Campanhas:** Listagem com filtro por status, toggle para pausar/reativar instantaneamente e pré-visualização de imagem.
+  3. **Formulário de Criação/Edição:**
+     * Upload de arte com validação de dimensões.
+     * Seletores dinâmicos de formato (`Banner`, `Card`, `Modal`).
+     * Multi-select de aplicativos suportados e competições.
+     * Agendamento com intervalo de datas.
+  4. **Simulador Visual (Mobile Mockup):** Renderização instantânea do banner no protótipo de smartphone antes de salvar a campanha.
+
+---
+
+### 20.6 Integração Híbrida nos Apps Mobile Flutter (House Ads + AdMob Fallback)
+
+* **Widgets Universais:** `HouseAdBanner` e `HouseNativeAdWidget`
+* **Modos de Operação Configuráveis:**
+  * **Modo A (House Ad Prioritário):** Busca primeiro o anúncio próprio. Se houver patrocínio ativo, exibe o House Ad com link direto. Se não houver, carrega o AdMob.
+  * **Modo B (AdMob com Fallback em House Ad):** Tenta carregar o banner AdMob. Caso o AdMob retorne erro ou sem fill (`onAdFailedToLoad`), renderiza o banner próprio imediatamente, garantindo 100% de aproveitamento de tela.
+
+---
+
+### 20.7 Fases do Plano de Ação
+
+* **Fase 1 (Estrutura no PocketBase & Backend):** Criação das coleções no PocketBase, serviço `AdsService` com cache em memória e endpoints `/ads/serve`, `/ads/:id/impression` e `/ads/:id/click`.
+* **Fase 2 (Agendador & Cron):** Implementação do `AdsSchedulerService` em `apps/api` com rotinas automáticas de expiração e transição de status.
+* **Fase 3 (Interface no AdminPanel):** Telas de gestão, upload de artes, indicadores de CTR e simulador mobile em `/adminpanel/ads`.
+* **Fase 4 (Clientes Flutter):** Desenvolvimento dos widgets híbridos nos apps estaduais, Brasileirão e Europa com rastreamento de impressões e cliques.
+
+---
+
+## 🚀 Capítulo 21: [A FAZER / OPERACIONAL] Divulgação dos Apps e Estratégia de Crescimento Rápido (Ações Diárias de 5 Minutos)
+
+> **Status:** `[OPERACIONAL / DIÁRIO]`  
+> **Objetivo:** Estabelecer uma rotina diária ultrarrápida (5 a 10 minutos por dia) para tração e crescimento de downloads orgânicos dos aplicativos ZapScore (Estaduais, Brasileirão e Europa), sem necessidade de equipe de marketing ou investimentos vultosos.
+
+---
+
+### 21.1 Proposta de Valor e Estratégia de Tração Rápida
+Os aplicativos do ecossistema ZapScore possuem 4 vantagens competitivas "injustas" em relação a concorrentes genéricos gigantes (Flashscore, Sofascore, 365Scores):
+1. **Hiperlocalização Regional:** Um torcedor do Coritiba, Athletico, Grêmio, Inter, Cruzeiro, Bahia, Sport ou Ponte Preta prefere ter o app exclusivo do seu campeonato estadual ou do Brasileirão com as cores e foco exclusivo na sua competição do que um app generalista.
+2. **Card "Onde Assistir" Integrado:** A pergunta mais buscada no Brasil nos dias de jogo é *"Onde vai passar o jogo de hoje?"*. O ZapScore entrega essa resposta com destaque nativo.
+3. **Escalação Antecipada (50 Minutos Antes) com Campinho Tático Oficial:** Fotos reais dos atletas, posições e formações táticas disponíveis antes da concorrência.
+4. **Notificações Instantâneas de Gol:** Velocidade máxima via FCM HTTP v1 sem atraso de streaming.
+
+A estratégia de crescimento baseia-se em **distribuir pequenas doses de valor utilitário** (uma resposta que o torcedor precisa na hora) acompanhada do link direto para baixar o aplicativo.
+
+---
+
+### 21.2 Calendário Operacional Semanal (1 Ação Rápida de 5 Minutos por Dia)
+
+Uma única ação executada com consistência diária gera efeito composto de downloads sem sobrecarregar o desenvolvedor:
+
+| Dia da Semana | Foco da Ação | Tempo Estimado | Canal Ideal | Como Fazer (Passo a Passo) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Segunda-feira** | **Tabela Pós-Rodada & G4/Z4** | 5 min | X / Threads / Grupos Torcida | 1. Abra o app e tire print da tabela atualizada pós-rodada.<br>2. Destaque o G4 e Z4 com uma legenda provocativa: *"Veja como ficou a tabela do Paulistão/Brasileirão após os jogos de ontem! Acompanhe a classificação atualizada a cada gol: [link do app]"*. |
+| **Terça-feira** | **"Onde Assistir" Meio de Semana** | 5 min | TikTok / Reels / Shorts / X | 1. Grave um vídeo rápido de tela (15s a 20s) ou tire print dos cards de transmissão do app.<br>2. Título: *"Onde assistir aos jogos de amanhã (quarta-feira)? TV Aberta, Premiere, CazéTV e streaming. Baixe grátis o app: [link]"*. |
+| **Quarta-feira (Dia de Jogo)** | **Furo da Escalação Oficial (50m antes)** | 3 min | Grupos WhatsApp / Telegram / X | 1. Assim que o Lineup Agent confirmar os 22 titulares (50 min antes do jogo), tire print do campinho tático com as fotos oficiais.<br>2. Poste no X e grupos de torcedores: *"OFICIAL! Saiu a escalação de [Time A] x [Time B]! Veja o campinho tático completo e banco de reservas no app: [link]"*. |
+| **Quinta-feira** | **Artilharia & Destaques da Rodada** | 5 min | X / Threads / Instagram | 1. Tire print da tela de Artilheiros ou dos Comentários Táticos da IA pós-jogo.<br>2. Texto: *"Quem assume a liderança da artilharia? Acompanhe estatísticas, resenhas táticas da IA e notas no app: [link]"*. |
+| **Sexta-feira** | **Agenda do Fim de Semana & "Onde Assistir"** | 5 min | Reels / Shorts / TikTok / Grupos | 1. Mostre a grade dos jogos de sábado e domingo no app.<br>2. Texto/Vídeo: *"Programação completa do futebol no fim de semana: horários e onde assistir cada confronto. Baixe o app e não perca nenhum lance: [link]"*. |
+| **Sábado** | **Escalação dos Clássicos / Jogos Decisivos** | 3 min | Grupos WhatsApp / X / Telegram | 1. 50 minutos antes do jogo principal do sábado, publique o print do campinho tático nas comunidades dos dois clubes.<br>2. Link direto para download do app com alertas de gol. |
+| **Domingo** | **Plantão do Gol / Placar ao Vivo** | 5 min | X / Threads / Grupos Torcida | 1. Durante os jogos das 16h/18h, compartilhe o placar ao vivo e o impacto na tabela simultânea.<br>2. *"Gol do [Time]! Acompanhe o minuto a minuto e tabela em tempo real pelo app: [link]"*. |
+
+---
+
+### 21.3 Os 4 Formatos de Conteúdo de Alta Conversão
+
+1. **O Print do Campinho Tático:**
+   - **Por que funciona:** Torcedor ama ver quem joga, quem foi barrado e a formação tática. O visual com fotos reais dos atletas gera curiosidade e cliques imediatos.
+   - **Dica:** Inclua sempre uma marca d'água discreta ou menção: *"Escalação gerada pelo app ZapScore / [Nome do App]"*.
+2. **O Vídeo Vertical "Onde Assistir aos Jogos de Hoje" (Shorts / Reels / TikTok):**
+   - **Por que funciona:** Os algoritmos do TikTok e YouTube Shorts entregam conteúdos utilitários de alta relevância com extrema facilidade.
+   - **Formato:** Vídeo gravando a tela do app rolando a lista de jogos do dia e os canais de TV/streaming, com áudio narrando os principais confrontos.
+3. **O Print Recortado da Tabela (Disputa de Título / Z4):**
+   - **Por que funciona:** Gera debate e engajamento apaixonado entre torcedores rivais nos comentários das redes sociais.
+4. **O Card de Transmissão Estático (Grade de Canais):**
+   - **Por que funciona:** Imagem simples em alta resolução listando: *Jogo + Horário + Canal de TV/Streaming*. Altamente compartilhada em grupos de família e amigos no WhatsApp.
+
+---
+
+### 21.4 Protocolo de Disseminação em Grupos de Torcida e Redes
+
+Para maximizar downloads sem ser banido ou considerado spam:
+1. **Regra de Ouro (Valor Primeiro, Convite Depois):**
+   - Nunca envie apenas o link. Sempre entregue a resposta que o usuário quer no próprio texto ou imagem (a escalação completa ou o canal de transmissão).
+   - O link do app entra como convite natural: *"Para receber notificação de gol sem delay e ver as estatísticas ao vivo, baixe o app: [link]"*.
+2. **Uso de Parâmetros UTM nos Links:**
+   - Crie links rastreados para entender de onde estão vindo as instalações:
+     - `https://play.google.com/store/apps/details?id=com.zapscore.estadualpaulista&referrer=utm_source%3Dwhatsapp_grupos`
+     - `...&referrer=utm_source%3Dtiktok_onde_assistir`
+     - `...&referrer=utm_source%3Dtwitter_escalacoes`
+3. **Ativação dos Anúncios Próprios (Cross-Promotion):**
+   - Conforme previsto no [Capítulo 20](#-capítulo-20-a-fazer-rede-própria-de-anúncios-house-ads--direct-sponsorship-network), quando um app estadual estiver em período sem partidas, os cards e banners internos devem promover o app do Brasileirão ou da Copa correspondente.
+
+---
+
+### 21.5 Checklist Semanal de ASO (App Store Optimization - 10 Minutos na Sexta-Feira)
+
+Ajustes periódicos simples na página da Google Play / App Store para capturar o fluxo de buscas orgânicas:
+* [ ] **Título do App:** Garantir que o nome inclua palavras de busca essenciais (ex: `Paulista: Tabela, Jogos e Onde Assistir`).
+* [ ] **Descrição Curta (80 caracteres):** Manter termos fortes de conversão (ex: *"Tabela atualizada, alertas de gol rápidos e onde assistir aos jogos ao vivo"*).
+* [ ] **Screenshots Atualizados:** Manter nos prints da loja a tela de escalação com campinho tático e a tela de Onde Assistir, pois são os recursos visuais de maior apelo.
+* [ ] **Monitoramento de Avaliações:** Responder a comentários na loja agradecendo e destacando a rapidez dos alertas.
+
+---
+
+### 21.6 [A FAZER] Arquitetura do Social Growth Agent (Marketing & Divulgação Autônoma)
+
+> **Módulo no Backend:** `apps/api/src/growth/`  
+> **Interface no AdminPanel:** `apps/web/app/(main)/adminpanel/agents/growth/page.tsx`  
+> **Proposta:** Transformar os dados esportivos do ecossistema ZapScore (escalações com fotos, horários, canais de TV, tabelas e gols) em **peças gráficas finalizadas em alta resolução e legendas de marketing geradas por IA**, prontas para postagem autônoma ou publicação em 1 clique.
+
+```mermaid
+flowchart TD
+    subgraph DATA_SOURCES [Gatilhos em Tempo Real - ZapScore API]
+        T1["⚽ Lineup Agent: Escalação Salva (T-50 min)"]
+        T2["📺 Broadcasts: Onde Assistir Atualizado"]
+        T3["📊 Standings: Tabela Pós-Rodada"]
+        T4["⏰ Cron Scheduler: Agenda Semanal"]
+    end
+
+    subgraph AGENT_CORE [Social Growth Agent - apps/api/src/growth]
+        ORCH[🎯 GrowthOrchestratorService]
+        MEDIA[🎨 MediaGeneratorService - Satori / Sharp / HTML]
+        COPY[✍️ CopywriterService - LLM / GPT / Gemini]
+        ROUTER[📡 SocialPublisherService]
+    end
+
+    subgraph OUTPUTS [Canais de Publicação & Governança]
+        TELEGRAM[✈️ Telegram Bot API - Canais Oficiais]
+        TWITTER[🐦 X / Twitter API v2 - Tweets com Mídia]
+        META[📸 Meta Graph API - Instagram / Threads]
+        PANEL[🖥️ AdminPanel /adminpanel/agents/growth: 1-Click Copy/Post]
+    end
+
+    T1 & T2 & T3 & T4 --> ORCH
+    ORCH --> MEDIA
+    ORCH --> COPY
+    MEDIA -->|Gera PNG 1080x1350 e 1080x1920| ROUTER
+    COPY -->|Gera texto com emojis + link UTM| ROUTER
+    ROUTER --> TELEGRAM
+    ROUTER --> TWITTER
+    ROUTER --> META
+    ROUTER --> PANEL
+```
+
+---
+
+### 21.7 Motor Gráfico de Mídia (Canva Connect API Pro & Fallback Headless)
+
+O ecossistema adota uma arquitetura híbrida de alto nível estético, utilizando a **Canva Connect API** conectada à conta **Canva Pro** como motor visual primário, com contingência local headless:
+
+```mermaid
+flowchart LR
+    AGENT[🤖 Social Growth Agent] -->|Payload JSON com dados da partida| CANVA_API[☁️ Canva Connect API Pro]
+    CANVA_API --> TPL{Templates Canva Pro}
+    TPL --> T1[1. Campinho Tático]
+    TPL --> T2[2. Onde Assistir]
+    TPL --> T3[3. Tabela G4 x Z4]
+    CANVA_API -->|Gera PNG alta resolução| EXPORT[🖼️ PNG 1080x1350 / 1080x1920]
+    CANVA_API -->|Gera edit_url| EDIT[✏️ Link de Edição no Canva Web/App]
+    AGENT -.->|Fallback de contingência local| HEADLESS[⚙️ Satori + Sharp]
+```
+
+#### 21.7.1 Vantagens da Integração com Canva Pro:
+1. **Zero Esforço de Código para Novos Layouts:**
+   - Criação e modificação de artes feitas diretamente na interface visual do Canva (arrastar e soltar, efeitos, gradientes, tipografia profissional).
+2. **Uso do Brand Kit (Identidade Visual):**
+   - Configuração das cores oficiais de cada aplicativo (Paulistão, Carioca, Mineiro, Gaúcho, Brasileirão) e tipografias oficiais da ZapScore.
+3. **Autofill Dinâmico via API (`POST /v1/autofills`):**
+   - O agente preenche campos dinâmicos no template: nomes dos clubes, placar, horário, formação tática e URLs das fotos oficiais dos atletas e escudos.
+4. **Exportação em Alta Resolução (`POST /v1/exports`):**
+   - Renderização na nuvem do Canva em PNG nítido para Feed (`1080x1350`) e Stories (`1080x1920`).
+5. **Edição Manual Instantânea com 1 Clique (`edit_url`):**
+   - No AdminPanel (`/adminpanel/growth/agent`), cada card gerado inclui o botão **"🎨 Abrir no Canva"**, permitindo ajustes finos ou personalizações especiais antes da publicação.
+6. **Fallback Headless de Contingência:**
+   - Caso a cota da API do Canva expire ou haja instabilidade externa, o motor local (`Satori` + `Sharp`) assume automaticamente a renderização.
+
+---
+
+### 21.8 Gerador de Copy com IA & Rastreamento UTM
+
+O `CopywriterService` recebe o contexto esportivo e gera automaticamente legendas otimizadas para conversão:
+* **Geração de Texto:**
+  - Linguagem apaixonada de torcedor, com emojis adequados e sem jargões corporativos.
+  - Formatação inteligente de acordo com o destino (Twitter: limite de 280 caracteres; Telegram/WhatsApp: formatação com negritos e marcadores).
+* **Injeção de Tags UTM Automáticas:**
+  - Cada link gerado inclui parâmetros de rastreamento para auditar downloads por canal:
+    `https://play.google.com/store/apps/details?id={appSlug}&referrer=utm_source%3D{network}%26utm_campaign%3D{fixtureSlug}`.
+
+---
+
+### 21.9 Conectores de Postagem e Canais de Distribuição
+
+O agente suporta dois modos operacionais configuráveis por canal: **Autônomo (Disparo Direto)** e **Supervisionado (Aprovação Manual)**:
+
+1. **Telegram Bot API (100% Gratuito e Instantâneo):**
+   - Método `sendPhoto` enviando o card em alta resolução + legenda formatada direto em canais públicos ou grupos de torcedores.
+2. **X / Twitter API v2:**
+   - Upload do PNG via `/media/upload` e publicação de tweet oficial com imagem anexada e menção das hashtags do clássico.
+3. **Meta Graph API (Instagram & Threads):**
+   - Publicação automática no Feed e Stories de páginas oficiais do ZapScore através da API de Content Publishing.
+4. **Cópia Instantânea para WhatsApp Pessoal (Modo 1-Clique):**
+   - No AdminPanel, botões dedicados:
+     - `📋 Copiar Texto Formatado`: Copia a legenda pronta com emojis e link para a área de transferência.
+     - `💾 Baixar Imagem PNG`: Salva o card em alta resolução no dispositivo para encaminhamento imediato em grupos de WhatsApp.
+
+---
+
+### 21.10 Seção Dedicada de Divulgação dos Apps no AdminPanel (`/adminpanel/growth`)
+
+Para centralizar a governança de aquisição de novos usuários, parcerias, campanhas e monetização direta, o AdminPanel passa a contar com uma **seção dedicada de 1º nível: "📣 Divulgação & Monetização dos Apps"**, acessível pela barra lateral de navegação em `/adminpanel/growth`.
+
+Essa seção desacopla as ações estratégicas de marketing da governança estritamente técnica de dados do Sentinel, unificando sob uma mesma interface operacional:
+
+```mermaid
+flowchart TD
+    MAIN["📣 Hub de Divulgação dos Apps (/adminpanel/growth)"]
+    
+    SUB1["🤖 Social Growth Agent (/adminpanel/growth/agent)"]
+    SUB2["📢 Rede Própria de Anúncios (/adminpanel/growth/ads)"]
+    SUB3["📅 Calendário Diário 5 Min (/adminpanel/growth/calendar)"]
+    SUB4["🔗 Gestor de Links & UTMs (/adminpanel/growth/links)"]
+    SUB5["📈 Radar de Instalações (/adminpanel/growth/analytics)"]
+    SUB6["🏪 Store Publisher Agent (/adminpanel/growth/store-assets)"]
+    
+    MAIN --> SUB1
+    MAIN --> SUB2
+    MAIN --> SUB3
+    MAIN --> SUB4
+    MAIN --> SUB5
+    MAIN --> SUB6
+```
+
+#### 21.10.1 As 6 Sub-Abas de Governança da Seção:
+
+1. **Dashboard Geral de Crescimento (`/adminpanel/growth/page.tsx`):**
+   - Visão consolidada: downloads estimados na semana, impressões totais da rede própria de anúncios, campanhas de patrocínio ativas e atalhos rápidos para as ações do dia.
+2. **Social Growth Agent (`/adminpanel/growth/agent/page.tsx`):**
+   - Radar de partidas do dia com status das artes gráficas (Campinho Tático, "Onde Assistir", Tabela).
+   - Visualizador interativo de PNGs (Feed e Stories) e editor rápido de copy com IA.
+   - Botões de ação direta: `🚀 Disparar em Todos os Canais (Telegram, X, Meta)` e `📋 Copiar Texto + Baixar PNG` (para envio imediato em grupos pessoais de WhatsApp).
+3. **Rede Própria de Anúncios / House Ads (`/adminpanel/growth/ads/page.tsx`):**
+   - Criação e gestão de campanhas publicitárias diretas e patrocínios regionais ([Capítulo 20](#-capítulo-20-a-fazer-rede-própria-de-anúncios-house-ads--direct-sponsorship-network)).
+   - Upload de criativos, segmentação por app/liga, limites de impressões (*capping*) e simulador em tela de celular.
+4. **Calendário Diário de Divulgação (`/adminpanel/growth/calendar/page.tsx`):**
+   - Checklist interativo da rotina diária de 5 minutos (Segunda: Tabela G4/Z4; Terça: Onde Assistir; Quarta: Escalação 50m antes; Quinta: Artilharia; Sexta: Agenda do Fim de Semana; Sábado/Domingo: Jogos ao Vivo).
+   - Marcação de tarefas concluídas e histórico semanal.
+5. **Gestor de Links Rastreados & Parcerias (`/adminpanel/growth/links/page.tsx`):**
+   - Gerador de links com UTMs personalizadas para parcerias com influenciadores, páginas de torcida e campanhas pagas.
+   - Relatórios de conversão por canal (`utm_source`, `utm_medium`, `utm_campaign`).
+6. **Store Publisher Agent (`/adminpanel/growth/store-assets/page.tsx`):**
+   - Geração com 1 clique de todos os assets gráficos e metadados ASO para publicação de novos apps na Google Play Console e Apple App Store (Feature Graphic 1024x500, Screenshots com moldura 3D de celular em 1242x2688/1080x1920, Ícone de alta resolução 512x512 e textos ASO formatados).
+
+---
+
+### 21.11 Fases de Implementação do Social Growth Agent
+
+* **Fase 1 — Motor Gráfico & Templates (`apps/api`):**
+  - Instalação dos pacotes headless `@resvg/resvg-js`, `satori` e `sharp` na ZapScore API.
+  - Implementação dos templates HTML/CSS para Campinho Tático e "Onde Assistir".
+  - Endpoint `GET /growth/preview/lineup/:fixtureId` retornando o PNG em tempo real.
+* **Fase 2 — Copywriter com IA & UTM Engine:**
+  - Implementação do `CopywriterService` integrado ao LLM já homologado nos comentários táticos.
+  - Gerador de links rastreados com UTM.
+* **Fase 3 — Interface de Governança no AdminPanel:**
+  - Criação da página `/adminpanel/agents/growth` com visualizador de imagens e botões de download e cópia de texto em 1 clique.
+* **Fase 4 — Conectores Sociais Autônomos:**
+  - Ativação do Telegram Bot e Webhooks para disparo automático 50 minutos antes de cada partida monitorada pelo Sentinel.
+
+---
+
+### 21.12 [CONCLUÍDO / OPERACIONAL] Store Publisher Agent: Automação de Assets, Formulários 16+/SPORTS, Canva Pro e Google Play Edits API
+
+> **Status:** `[CONCLUÍDO / 100% OPERACIONAL]`  
+> **Localização no Frontend:** `apps/web/app/(main)/adminpanel/agents/store-publisher/` (Acesso via `/adminpanel/agents/store-publisher`)  
+> **Card no Hub de Agentes:** Registrado em `/adminpanel/agents`  
+> **Diretriz Máxima de Isolamento:** **100% isolado dentro do AdminPanel (`apps/web`)**. Nenhuma linha de código, schema, dependência ou rota da Zapscore API central (`apps/api`) ou dos aplicativos móveis (`apps/mobile`, `apps/estaduais/*`, `apps/brasil/*`, `apps/europa/*`) foi alterada.
+
+```mermaid
+flowchart TD
+    subgraph UI [Interface do Agente: /adminpanel/agents/store-publisher]
+        SELECT["📱 Seletor dos 19 Apps + Filtros de Região (Nacional, Nordeste, Sudeste, Sul, Europa)"]
+        SCAN["🔄 Botão de Varredura Automática (Auto-Discovery de Pastas Clonadas)"]
+    end
+
+    subgraph ENGINE [Módulos Internos no AdminPanel (apps/web)]
+        CATALOG["📂 Catálogo Base + Auto-Discovery (apps-catalog.ts & auto-discovery.ts)"]
+        ASO["✍️ ASO Copywriting Engine: Título (30c), Breve (80c), Completa (4000c) (aso-generator.ts)"]
+        FORMS["📋 Motor de Formulários da Loja: 16+ Anos, SPORTS, ENTERTAINMENT, Data Safety (store-forms.ts)"]
+        CANVA["🎨 Canva Pro Integration: Deep-Links Dimensionados 1024x500, 1080x1920, 512x512 (canva-service.ts)"]
+        PLAY_API["🚀 Google Play Edits API v3: Autenticação JWT RS256 + Dry-Run Simulado (google-play-api.ts)"]
+        EXP["📦 Exportador de Pacote Consolidado: .txt, .json, .md (export-package.ts)"]
+    end
+
+    subgraph DESTINOS [Destinos de Publicação]
+        CANVA_PRO["🎨 Canva Pro (Pranchetas com Dimensões Exatas em 1-Clique)"]
+        CONSOLE_MANUAL["🌐 Google Play Console (Preenchimento Manual Risco Zero via Pacote TXT/MD)"]
+        API_DIRECT["⚡ Google Play Console via API (Sincronização 1-Clique com Service Account ou OIDC)"]
+    end
+
+    SELECT --> CATALOG
+    SCAN --> CATALOG
+    CATALOG --> ASO & FORMS & CANVA & PLAY_API & EXP
+    CANVA --> CANVA_PRO
+    EXP --> CONSOLE_MANUAL
+    PLAY_API --> API_DIRECT
+```
+
+---
+
+#### 21.12.1 Os 5 Pilares de Engenharia do Agente:
+
+1. **Catálogo Unificado & Auto-Discovery de Pastas Clonadas (`auto-discovery.ts`):**
+   - Mapeamento nativo dos 19 aplicativos do ecossistema (*Brasileirão Séries A e B, Pernambucano, Paraibano, Maranhense, Paulistão, Cariocão, Mineiro, Gauchão, Baiano, Cearense, Copas e Europeus*).
+   - **Varredura Automática em Disco:** O motor inspeciona em tempo real as pastas `apps/estaduais/`, `apps/brasil/` e `apps/europa/`. Quando um novo estadual é clonado (ex: `apps/estaduais/alagoano`, `sergipano`, `potiguar`):
+     - Confirma a presença do `pubspec.yaml` (validando app Flutter legítimo).
+     - Extrai o nome oficial e ID da liga de `lib/helpers/app_config.dart`.
+     - Extrai o `applicationId` oficial de `android/app/build.gradle.kts` ou `build.gradle`.
+     - Associa estado (UF), região e paleta esportiva automaticamente, exibindo o selo `AUTO` no seletor.
+     - Botão **"Varredura Automática"** no topo do painel atualiza a listagem sem recarregar a página.
+
+2. **Motor de Formulários e Declarações Obrigatórias (`store-forms.ts`):**
+   - **Público-Alvo (Target Audience):** Pré-selecionado rigorosamente em **16 a 17 anos** E **18 anos ou mais (16+)**. Atração não intencional por crianças declarada como **NÃO**.
+     - *Efeito Prático e Regulatório:* **Isenta integralmente o aplicativo das exigências da Política de Famílias do Google Play e da legislação COPPA**, autorizando anúncios Google AdMob sem restrição de inventário infantil e notificações push sem risco de bloqueio.
+   - **Categorização da Loja:** Tipo: `Aplicativo` • Categoria Primária: **Esportes (`SPORTS`)** • Categoria Secundária / Tag: **Entretenimento (`ENTERTAINMENT`)**.
+   - **Declaração de Anúncios:** Marcado como **SIM, contém anúncios** (Google AdMob SDK integrado).
+   - **Classificação Indicativa IARC:** Questionário esportivo respondido com classificação estimada **Livre / Everyone** (PEGI 3, USK 0, DJCTQ Livre).
+   - **Segurança dos Dados (Data Safety Form):**
+     - Coleta de *Identificadores de Dispositivo* para funcionalidade do app (Tokens FCM para envio de push de gols; efêmero e não vinculado à identidade do usuário).
+     - Coleta de *Localização Aproximada (Coarse Location)* para monetização regionalizada via AdMob.
+     - Criptografia em trânsito via HTTPS/TLS 1.3 e mecanismo de solicitação de exclusão de dados.
+   - **Acesso a Recursos:** Todas as funcionalidades declaradas disponíveis sem exigência de login ou credenciais (`ALL_FUNCTIONALITY_AVAILABLE`).
+
+3. **Copywriting ASO com Limites Rígidos da Google Play (`aso-generator.ts`):**
+   - **Título do App:** Máximo estrito de **30 caracteres** (ex: `Pernambucano Ao Vivo - ZapScore`).
+   - **Breve Descrição:** Máximo estrito de **80 caracteres** (ex: `Placar ao vivo do Pernambucano, tabela, gols em tempo real e escalações!`).
+   - **Descrição Completa:** Formatada em até **4.000 caracteres** com emojis, tópicos de recursos, benefícios de velocidade, termos legais e links da política de privacidade.
+   - **Notas da Versão (Release Notes):** Até **500 caracteres** para atualizações e novos lançamentos.
+   - Contadores visuais em tempo real na interface com alerta caso ultrapasse os limites da loja e botão de cópia rápida em 1 clique.
+   - Suporte a geração de variações persuasivas via **Google Gemini**.
+
+4. **Integração Canva Pro com Deep-Links Dimensionados (`canva-service.ts`):**
+   - **Zero necessidade de credenciais de API:** Os links abrem diretamente o Canva na conta do operador com as dimensões oficiais exatas:
+     - **Feature Graphic:** 1024 x 500 px (Banner principal da vitrine da loja).
+     - **Ícone de Alta Resolução:** 512 x 512 px (PNG 32-bit com cantos retos).
+     - **5 Screenshots de Celular (1080 x 1920 px - proporção 9:16):**
+       1. *Placar ao Vivo & Gol Instantâneo*
+       2. *Tabela e Classificação ao Vivo*
+       3. *Escalações Oficiais 50m Pré-Jogo*
+       4. *Comentários Táticos com Inteligência Artificial*
+       5. *Gols e Melhores Momentos em Vídeo*
+   - O painel fornece a **Headline** e o **Subtítulo** prontos para copiar e colar em cada mockup.
+
+5. **Conector Google Play Edits API & Exportador de Pacote Offline (`google-play-api.ts` & `export-package.ts`):**
+   - **Edits API v3:** Implementação nativa em Node.js com assinatura JWT RS256 pura (`crypto.createSign`), suportando abertura de sessão (`edits.insert`), atualização da ficha em português (`edits.listings.update`) e commit direto para revisão (`edits.commit`).
+   - **Modo Dry-Run (Simulação Segura):** Valida todos os limites de caracteres e regras regulatórias sem fazer requisições externas à loja.
+   - **Botão "Baixar Pacote da Loja":** Gera e baixa um arquivo consolidado contendo:
+     - `ASO_<appId>_pt_BR.txt` (Textos medidos e prontos).
+     - `FORMULARIOS_GOOGLE_PLAY_<appId>.md` (Checklist passo a passo campo a campo).
+     - `store_declarations_<appId>.json` (Payload estruturado das declarações).
+     - `CANVA_ASSETS_GUIDE_<appId>.md` (Links e copies dos mockups).
+
+---
+
+#### 21.12.2 Governança de Segurança e Autenticação (Por que NENHUMA Chave Fica no Código):
+
+O Google Cloud exibe alertas rigorosos recomendando evitar o download de chaves estáticas de Service Account (`.json`) para prevenir vazamentos acidentais em repositórios públicos. O ecossistema ZapScore segue três princípios absolutos de segurança:
+
+1. **Risco Zero Absoluto (Fluxo Offline Recomendado):**
+   - O operador **não precisa baixar nem cadastrar nenhuma chave do Google Cloud**.
+   - Clicando em **"Baixar Pacote da Loja"**, o Agente compila todos os textos e formulários mastigados. O desenvolvedor apenas copia e cola no console web da Google Play em 2 minutos. Risco de segurança: **zero**.
+
+2. **Isolamento de Credenciais no Servidor (Se Usar a API Direta):**
+   - A chave JSON nunca é incluída no código-fonte nem no Git (`.gitignore` ativo).
+   - Se utilizada, reside estritamente nas variáveis de ambiente seguras do Easypanel (`GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`).
+   - O campo de texto manual no painel do AdminPanel opera **exclusivamente na memória volátil do navegador** (`useState`), sem gravar dados em disco nem em banco de dados.
+
+3. **Autenticação Avançada: Workload Identity Federation (OIDC):**
+   - Em pipelines automatizados de CI/CD (GitHub Actions / GitLab) ou servidores corporativos, o sistema adota **Workload Identity Federation**:
+   - **Como funciona na prática:**
+     - Não existe arquivo de chave privada física (`.json`) baixado.
+     - O servidor e o Google Cloud estabelecem uma relação de confiança federada via **OIDC (OpenID Connect)**.
+     - Quando o Agente precisa publicar na loja, ele solicita um token OIDC emitido pelo repositório oficial (`MarcilioLeiteSilva/zapscore`).
+     - O Google Security Token Service (STS) valida a assinatura do repositório e emite um **Access Token temporário e efêmero que expira em 60 minutos**.
+     - O Agente realiza a publicação usando esse token descartável, eliminando qualquer risco de roubo ou vazamento de credenciais permanentes.
+
+---
+
+#### 21.12.3 Mini-Tutorial Operacional: Publicando ou Atualizando Apps na Prática:
+
+##### Cenário 1: Atualizar ou Lançar um App Já Existente
+1. Acesse o AdminPanel em `/adminpanel/agents/store-publisher`.
+2. Selecione o aplicativo desejado no seletor (ex: **Pernambucano**, **Paraibano**, **Brasileirão**).
+3. Na aba **Ficha ASO**, ajuste os textos ou clique em **"Regerar com Gemini"** e use o botão de cópia rápida.
+4. Na aba **Formulários 16+**, consulte o checklist e confirme as respostas no Google Play Console (Público 16+, Categoria SPORTS, Anúncios AdMob, Data Safety).
+5. Na aba **Canva Pro & Mockups**, clique em **"Criar no Canva"** em cada asset, cole os textos prontos e baixe os PNGs.
+6. Na aba **1-Click Publish**, execute a simulação Dry-Run ou clique em **"Baixar Pacote da Loja"** para obter todos os arquivos consolidados.
+
+##### Cenário 2: Publicar um Novo App do Zero na Google Play
+1. No [Google Play Console](https://play.google.com/console), clique em **"Criar app"** e insira o Título gerado pelo Agente (ex: `Paraibano Ao Vivo - ZapScore`).
+2. Em **Conteúdo do app**, preencha o questionário com as respostas da aba *Formulários 16+*:
+   - Público-Alvo: `16-17` e `18+` (Não direcionado a crianças).
+   - Categoria: `SPORTS` (Primária) e `ENTERTAINMENT` (Secundária/Tag).
+   - Anúncios: `Sim (Google AdMob)`.
+   - Data Safety: Identificadores de Dispositivo (push) e Localização aproximada.
+3. Em **Presença na loja > Ficha principal da loja**, suba as imagens criadas no Canva Pro (1024x500, 512x512, 1080x1920) e cole o Título, Breve Descrição e Descrição Completa.
+4. Em **Produção**, suba o pacote `.aab` assinado (ex: `apps/estaduais/paraibano/build/app/outputs/bundle/release/app-release.aab`) e envie para revisão.
+
+##### Cenário 3: Adição de um Novo Estadual Clonado
+1. Clone a pasta do app em `apps/estaduais/<novo_estado>` (ex: `apps/estaduais/alagoano`).
+2. Abra o Agente e clique no botão **🔄 "Varredura Automática"**.
+3. O novo app aparece imediatamente com o selo **`AUTO`** e com todas as fichas de ASO, formulários e links do Canva já gerados automaticamente.
+
+---
+
+### 21.13 [A FAZER] Quality Gatekeeper & Vanguard AI Engine (Controle de Qualidade Multimodal e Criatividade de Vanguarda)
+
+> **Módulo no Backend:** `apps/api/src/growth/quality-gatekeeper/`  
+> **Interface no AdminPanel:** Integrado em `/adminpanel/growth/agent` e `/adminpanel/growth/store-assets`  
+> **Proposta:** Injetar inteligência artificial de ponta em dois eixos complementares: **Auditoria Rigorosa de Qualidade (Quality Gatekeeper)** para garantir zero defeitos visuais, conformidade estrita com políticas das lojas e consistência factual de dados; e **Motor de Vanguarda Criativa (Creative Vanguard Engine)** para dotar os aplicativos de narrativas hiperlocais autênticas, análises táticas preditivas e testes multivariados de marketing que posicionam o ecossistema ZapScore à frente dos grandes concorrentes de mercado.
+
+```mermaid
+flowchart TD
+    subgraph INGESTION [Peças e Conteúdos Gerados]
+        IMG[🖼️ Imagens / Screenshots / Banners]
+        TXT[✍️ Textos / Legendas / Metadados ASO]
+        DATA[⚽ Dados Esportivos / Súmulas / Tabela]
+    end
+
+    subgraph GATEKEEPER [1. Controle de Qualidade com IA - Quality Gatekeeper]
+        VISION["👁️ Vision QA (Gemini 2.5 Pro Vision / GPT-4o)\nLegibilidade, Contraste, Quebras de Texto, Regras AdMob"]
+        POLICY["🛡️ Policy Compliance Guard\nAuditoria contra Diretrizes Google Play & Apple (Zero Rejeição)"]
+        FACT["⚖️ Fact & Data Auditor\nValidação de 11 Titulares, Integridade de Elencos e Tabela"]
+    end
+
+    subgraph VANGUARD [2. Motor de Vanguarda Criativa - Creative Vanguard]
+        PERSONA["🎭 Personas Hiperlocais de Torcida\nTom de Voz Regional: Gaúcho, Carioca, Mineiro, Paulista, Nordestino"]
+        TACTICAL["🧠 Análise Tática Preditiva\nLeitura de Embates de Esquemas Táticos no Campinho"]
+        AB["🎯 Teste Multivariado A/B\n3 Variações: Emocional, Utilitária e Alerta/Urgência"]
+    end
+
+    INGESTION --> GATEKEEPER
+    INGESTION --> VANGUARD
+    
+    GATEKEEPER --> SCORE{"Score de Qualidade >= 9.0/10?"}
+    SCORE -- SIM --> APPROVED["🟢 Selo de Qualidade Aprovado: Pronto para Publicar"]
+    SCORE -- NÃO --> WARN["⚠️ Ajuste Automático / Alerta Visual no AdminPanel"]
+    VANGUARD --> ENRICHED["✨ Conteúdo Enriquecido com Identidade de Vanguarda"]
+```
+
+#### 21.13.1 Pilar 1 — Controle de Qualidade com IA (AI Quality Gatekeeper):
+
+1. **Auditoria Visual Multimodal (Vision QA via Gemini 2.5 Vision / GPT-4o):**
+   - Inspeciona os arquivos PNG gerados antes de qualquer publicação ou upload nas lojas:
+     - **Legibilidade & Contraste:** Mede a razão de contraste entre tipografia e planos de fundo (gramado, degradês do clube, estádio).
+     - **Detecção de Quebras e Truncamentos:** Identifica textos cortados com reticências (ex: *"Campeonato Pa..."*), palavras sobrepostas ou desalinhadas.
+     - **Auditoria de Diretrizes AdMob:** Garante que mockups com banners e `MediaView` estejam em estrita conformidade com as dimensões mínimas (120x120 dp).
+     - **Métrica Estética:** Atribui um índice de qualidade visual de 0 a 10, exigindo nota mínima de **9.0** para aprovação automática.
+2. **Escudo Anti-Rejeição de Políticas de Lojas (Google Play & Apple Policy Compliance Guard):**
+   - Varredura semântica de 100% dos títulos, descrições e legendas:
+     - Previne infrações de marcas registradas (evita termos com tom de titularidade indevida).
+     - Bloqueia termos enganosos (ex: *"futebol grátis ao vivo"* ou promessas de pirataria que causam banimento imediato).
+     - Elimina o excesso repetitivo de termos de busca (*Keyword Stuffing*), garantindo taxa de aprovação de primeira esteira na Google Play e App Store.
+3. **Auditor de Integridade de Dados Esportivos:**
+   - Verifica se a formação possui exatamente 11 titulares confirmados, sem duplicatas de atletas, com fotos oficiais ativas e numeração consistente com o plantel oficial (`TeamSquad`).
+
+#### 21.13.2 Pilar 2 — Motor de Criatividade & Vanguarda (Creative Vanguard Engine):
+
+1. **Personas Hiperlocais (O Tom de Voz Autêntico de Cada Torcida):**
+   - Substituição de comunicados institucionais e frios por uma linguagem vibrante, que conversa diretamente com a cultura do torcedor de cada campeonato:
+     - **Módulo Gaúcho:** Vocabulário de arquibancada do Rio Grande do Sul (*"peleia", "raça", "camisa pesada", clima de decisão no Jaconi, Beira-Rio ou Arena"*).
+     - **Módulo Carioca:** Dinamismo, irreverência sadia, clima de Maracanã e São Januário.
+     - **Módulo Mineiro:** Tradição histórica, força do Mineirão e a mística dos clássicos em Minas.
+     - **Módulo Paulista:** Ritmo de clássicos da capital (Derby, San-São, Choque-Rei) e a vibração do futebol do interior.
+     - **Módulo Nordestino (Baiano, Cearense, Pernambucano, Paraibano):** Paixão calorosa das multidões em Fonte Nova, Castelão e Arruda.
+2. **Análise Tática Preditiva no Campinho (Além da Escalação Estática):**
+   - Ao detectar as formações oficiais (ex: `4-3-3` vs `3-5-2`), a IA gera uma micro-análise do duelo tático:
+     - *"O Coritiba deve explorar a transição em velocidade pelas alas aproveitando os espaços cedidos pelos alas adiantados do Athletico; partida com tendência de forte disputa física na faixa central."*
+   - Transforma o app em uma referência informativa para torcedores exigentes e apostadores esportivos.
+3. **Gerador de Variações Criativas A/B:**
+   - A cada rodada, o agente produz 3 versões de chamada de marketing para testes de conversão:
+     - **Variação A (Emoção/Paixão):** Foco na camisa, na história e no orgulho do torcedor.
+     - **Variação B (Utilitária/Prática):** Foco na utilidade imediata (*"Veja onde assistir e quem vai pro jogo em 5 segundos"*).
+     - **Variação C (Alerta/Urgência):** Foco no imediatismo (*"Escalação oficial confirmada com novidades de última hora no time titular!"*).
+
+#### 21.13.3 Interface Operacional no AdminPanel (`/adminpanel/growth`):
+* **Card de Auditoria com Selo Visual:**
+  - Cada peça gráfica ou pacote de publicação exibe o selo: `🛡️ Auditoria IA: 🟢 APROVADO (Nota 9.7/10)`.
+  - Checklist interativo de critérios: Contraste de Cores OK, Políticas Google Play OK, Resolução Retina Display OK, ASO OK.
+* **Botão "🪄 Gerar Variação Mais Criativa":**
+  - Permite ao operador solicitar uma releitura mais ousada ou descontraída de qualquer postagem ou arte com 1 clique.
+
+---
+
+## 🎯 Capítulo 22: [METAS & CRESCIMENTO] Meta 50k: Projeção de 50.000 Instalações em 5 Meses (Set/26 a Jan/27)
+
+> **Status:** `[PLANEJAMENTO ESTRATÉGICO]`  
+> **Horizonte Temporal:** 5 Meses (15 de Setembro de 2026 a 31 de Janeiro de 2027)  
+> **Alvo Global:** **50.000 Instalações Ativas** distribuídas pelos aplicativos do ecossistema ZapScore (Brasileirão Séries A e B, Estaduais e Europa).
+
+---
+
+### 22.1 A Rampa de Aceleração Mensal (Curva de Crescimento)
+
+O crescimento de apps de futebol no Brasil segue a sazonalidade do calendário esportivo: as decisões do Brasileirão e Copas (outubro/novembro) geram alta tração, e a largada dos Campeonatos Estaduais (janeiro) gera a maior explosão orgânica do ano:
+
+| Mês | Período / Momento do Futebol | Meta do Mês | Meta Acumulada | Ritmo Diário | Foco Principal |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Mês 1 (Set/26)** | Ajuste dos agentes, rodadas 25-28 Séries A/B | **4.000** | 4.000 | ~130/dia | Início da rotina de 5 min/dia, ASO nas lojas e testes de posts de "Onde Assistir". |
+| **Mês 2 (Out/26)** | Reta final do Brasileirão e semifinais de Copas | **7.000** | 11.000 | ~230/dia | Ativação do Social Growth Agent, vídeos verticais no TikTok/Shorts e grupos de torcida. |
+| **Mês 3 (Nov/26)** | Decisões de Título, G4, Acesso e Rebaixamento | **10.000** | 21.000 | ~330/dia | Alertas de escalações nos clássicos decisivos, prints de tabela simultânea e cross-promotion. |
+| **Mês 4 (Dez/26)** | Mercado da bola, transferências e pré-temporada | **9.000** | 30.000 | ~300/dia | Lançamento dos novos apps estaduais clonados (Pernambucano, Paraibano, etc.) e aquecimento Europa. |
+| **Mês 5 (Jan/27)** | **Estreia dos Campeonatos Estaduais 2027** 🔥 | **20.000** | **50.000** | ~650/dia | **O Grande Ápice:** Paulistão, Carioca, Mineiro, Gaúcho, Baiano na mídia nacional; busca orgânica no pico. |
+
+---
+
+### 22.2 A Abordagem Estratégica em 4 Alavancas
+
+1. **Alavanca 1 — A Força do Orgânico Hiperlocal (Estaduais 2027):**
+   - O torcedor brasileiro é apaixonado pelo seu clube e estado. Em janeiro, centenas de milhares de torcedores buscam especificamente por *"tabela do Paulistão"*, *"jogos do Carioca"*, *"Campeonato Mineiro ao vivo"*. Nossos apps estaduais capturam essa demanda direta na barra de busca da Google Play.
+2. **Alavanca 2 — Isca de Utilidade Imediata ("Onde Assistir"):**
+   - Publicação rápida de vídeos e cards respondendo a maior dor do torcedor em dias de jogo. Gera downloads espontâneos por impulso.
+3. **Alavanca 3 — Agilidade Pré-Jogo (Escalação com Campinho 50m Antes):**
+   - O print do campinho tático oficial publicado no X/Twitter e grupos de WhatsApp antes de portais convencionais atrai usuários de alto valor que querem a informação mais rápida.
+4. **Alavanca 4 — Efeito de Rede & Cross-Promotion (House Ads Gratuitos):**
+   - Usuários do app Brasileirão são convidados a baixar o estadual do seu time em dezembro/janeiro, e vice-versa, gerando instalações a custo zero.
+
+---
+
+### 22.3 Ações Práticas de Execução (Direto ao Ponto)
+
+* **Ação 1 (Diária, 5 min):** Cumprir o calendário semanal do [Capítulo 21.2](#212-calendário-operacional-semanal-1-ação-rápida-de-5-minutos-por-dia) (Segunda: Tabela, Terça: Onde Assistir, Quarta/Sábado: Escalação, Domingo: Placar ao vivo).
+* **Ação 2 (Vídeos Verticais nos Dias de Jogos Grandes):** 2 a 3 vídeos curtos semanais (15s a 30s) no TikTok/Reels mostrando o card "Onde Assistir" e o campinho tático.
+* **Ação 3 (Prontidão para Janeiro/2027):** Publicar e homologar os apps estaduais pendentes até meados de dezembro usando o **Store Publisher Agent** para estarem 100% indexados e ranqueados no réveillon.
+* **Ação 4 (Ativação de Micro-Parcerias Locais):** Envio das artes do campinho para 3 a 5 páginas de setoristas de clubes no Instagram/X com permissão de uso gratuito com menção ao app.
+
+---
+
+### 22.4 Métricas e KPIs de Acompanhamento no AdminPanel (`/adminpanel/growth`)
+
+Para medir a saúde do plano sem burocracia, o dashboard monitora 4 métricas essenciais:
+
+1. **Instalações Diárias (Daily Active Installs):**
+   - Linha de tendência acompanhando a meta diária do mês (ex: 130/dia em setembro ➔ 650/dia em janeiro).
+2. **Taxa de Conversão por Canal (UTM Tracking):**
+   - Identifica qual canal gera mais instalações (TikTok, Grupos WhatsApp, X ou Busca Orgânica da Loja).
+3. **Retenção D1 e D7 (Usuários que voltam no dia seguinte e em 7 dias):**
+   - Mantida alta pelos alertas automáticos de gol e súmula do Push Agent.
+4. **Monetização e eCPM (AdMob & House Ads):**
+   - Monitoramento do aumento proporcional de receita conforme a base de 50.000 usuários cresce.
+
+---
+
+### 22.5 [A FAZER] Growth Orchestrator Agent: O Gerente de Metas e Estratégia de Tração (Chief Growth Officer de IA)
+
+> **Módulo no Backend:** `apps/api/src/growth/orchestrator/`  
+> **Interface no AdminPanel:** `/adminpanel/growth` (Dashboard Principal)  
+> **Proposta:** Atuar como o cérebro estratégico central da Meta 50k. Enquanto os outros agentes executam tarefas táticas (o *Social Growth* gera as artes e publica; o *Store Publisher* cuida das lojas), o **Growth Orchestrator Agent** (Growth Sentinel) monitora diariamente o velocímetro de crescimento, envia briefings matinais proativos para o desenvolvedor e comanda o acionamento dos demais agentes para manter a tração sempre no ritmo ideal.
+
+```mermaid
+flowchart TD
+    GOAL["🎯 Meta 50k (Set/26 a Jan/27)"] --> ORCH["🤖 Growth Orchestrator Agent (O Gerente)"]
+    
+    ORCH -->|1. Pacing Watchdog| VELOCITY["📊 Monitor de Ritmo Diário\n(Ex: 130/dia em Setembro ➔ 650/dia em Janeiro)"]
+    ORCH -->|2. Orquestração de Conteúdo| SOCIAL["🎨 Social Growth Agent\n(Acelera posts se o ritmo cair)"]
+    ORCH -->|3. Prontidão de Lojas| STORE["🏪 Store Publisher Agent\n(Prepara novos estaduais em Dezembro)"]
+    ORCH -->|4. Atribuição & Canais| UTM["🔗 Analisador de Conversão UTM\n(Identifica melhor canal de aquisição)"]
+    ORCH -->|5. Briefing Matinal| NOTIF["📱 Alertas Proativos (Telegram Bot & AdminPanel)\nStatus diário + Ação de 5 min recomendada"]
+```
+
+#### 22.5.1 As 4 Funções Executivas do Growth Orchestrator:
+
+1. **Termômetro de Ritmo Diário (Pacing Watchdog):**
+   - Calcula a velocidade necessária para bater a meta de cada mês e compara contra as instalações reais:
+     - *Exemplo Setembro (Meta: 130/dia):* Se ontem entraram 145 downloads ➔ `🟢 +11% acima do pacing (Ritmo Saudável)`.
+     - *Exemplo Queda de Ritmo:* Se o ritmo cair 30% abaixo do pacing em dias sem rodada ➔ emite alerta de aceleração e sugere publicação de conteúdos de "Onde Assistir" ou destaques de tabela.
+2. **Briefing Matinal Proativo (Telegram Bot & Painel Web):**
+   - Todos os dias às 08h30, envia um resumo executivo direto e objetivo para o Telegram do desenvolvedor:
+     > *"⚽ Bom dia! Estamos com 3.120 / 4.000 da meta de setembro (78% concluído).*  
+     > *📊 Ontem: +142 instalações (dentro do pacing).*  
+     > *🔥 Hoje tem rodada da Série B: o card de 'Onde Assistir' já foi gerado.*  
+     > *👉 Ação recomendada: publicar o vídeo vertical no TikTok/Shorts ao meio-dia."*
+3. **Orquestração e Acionamento em Cascata dos Agentes:**
+   - **Comando do Social Growth Agent:** Quando detecta partidas de alta rivalidade (clássicos) ou queda no ritmo semanal, programa automaticamente mais posts no calendário e prepara artes antecipadas no Canva Pro.
+   - **Comando do Store Publisher Agent:** Em novembro, inicia o cronograma de prontidão para a virada de ano, cobrando a compilação e upload dos novos apps estaduais (Pernambucano, Paraibano, Maranhense) para estarem 100% indexados nas lojas antes de 1º de janeiro de 2027.
+4. **Auditoria de Origem e ROI de Canais (UTM Engine):**
+   - Cruza os downloads com as tags UTM para direcionar o esforço do operador apenas nos canais de maior conversão real (ex: TikTok vs Grupos de WhatsApp vs Busca Orgânica da Loja).
+
+#### 22.5.2 Experiência Visual no AdminPanel (`/adminpanel/growth`):
+* **Barra de Progresso Global da Meta 50k:** Barra percentual acumulada dos 5 meses com marcador do dia.
+* **Velocímetro de Pacing:** Gráfico simples de velocímetro indicando: `Abaixo da Meta` (amarelo), `No Ritmo` (verde) e `Acelerado` (azul).
+* **Card da Ação do Dia:** Exibição destacada da tarefa diária de 5 minutos com botão de execução rápida (`Copiar Texto`, `Ver Arte` ou `Publicar`).
+
+---
+
+### 22.6 [ROADMAP OPERACIONAL] Cronograma de Execução Imediata (Início: 12/09/2026)
+
+Cronograma sequencial, cirúrgico e focado em resultados rápidos, dividido em 6 Sprints progressivos com início imediato em **12/09/2026**:
+
+```mermaid
+gantt
+    title Roadmap de Crescimento, Monetização & Governança ZapScore
+    dateFormat  YYYY-MM-DD
+    section Sprint 1
+    Contingência Total Lineup Agent (Aliases, URL, Manual, IA T-20m) :2026-09-12, 2026-09-14
+    section Sprint 2
+    Hub /adminpanel/growth + Setup Canva Connect API Pro :2026-09-15, 2026-09-18
+    section Sprint 3
+    Social Growth Agent (Artes, Copy IA, Telegram/X/WhatsApp) :2026-09-19, 2026-09-22
+    section Sprint 4
+    Rede Própria de Anúncios (House Ads: PocketBase, API, Admin, Flutter) :2026-09-23, 2026-09-26
+    section Sprint 5
+    Store Publisher Agent + Quality Gatekeeper (Google Play Edits) :2026-09-27, 2026-09-29
+    section Sprint 6
+    Growth Orchestrator Agent + Pacing 50k :2026-09-30, 2026-09-30
+```
+
+#### 🗓️ Sprint 1 — Contingência Total do Lineup Agent (12/09 a 14/09/2026)
+* **Objetivo:** Blindar 100% das escalações do ecossistema para que nenhum jogo fique sem 22 titulares e campinho tático.
+* **Tarefas de Execução:**
+  1. **12/09 (Sábado — Amanhã):**
+     - Mapeamento e normalização canônica de clubes brasileiros (`athleticopr` ➔ `atleticoparanaense`, `atleticomg`, `americamg`, `bragantino`, etc.) em `globoesporte.provider.ts`, `sofascore.provider.ts`, `livescore.provider.ts` e PocketBase `team_aliases`.
+     - Teste prático de resolução imediata com a súmula oficial do Coritiba x Athletico-PR.
+  2. **13/09 (Domingo):**
+     - Criação do endpoint `POST /lineups/extract-by-url` na ZapScore API (suporte a links diretos do 365Scores, GE Globo e UOL Placar).
+     - Implementação do botão "🔗 Ler por URL" no card de partidas em `/adminpanel/agents/lineups`.
+  3. **14/09 (Segunda-feira):**
+     - Criação do Editor Manual de Escalação (`POST /lineups/:fixtureId/manual`) no AdminPanel com seletor de elenco `TeamSquad` e modo colar texto/IA.
+     - Ativação da regra de contingência T-20min via comentários da IA (`fixture_comments` / `PRE_MATCH`).
+
+#### 🗓️ Sprint 2 — Fundação do Hub de Divulgação & Conexão Canva Pro (15/09 a 18/09/2026)
+* **Objetivo:** Estruturar a nova seção de 1º nível no AdminPanel e conectar a API oficial do Canva Pro.
+* **Tarefas de Execução:**
+  1. **15/09 (Terça-feira):**
+     - Criação da rota e layout de 1º nível: `/adminpanel/growth` com barra de navegação das 6 sub-abas.
+  2. **16/09 (Quarta-feira):**
+     - Obtenção das credenciais na plataforma **Canva Developers** (`canva.dev` - Client ID / Secret) e configuração do módulo `CanvaConnectService` na ZapScore API (`apps/api`).
+  3. **17/09 e 18/09 (Quinta e Sexta-feira):**
+     - Montagem e vinculação dos 3 templates oficiais na conta Canva Pro:
+       - *Template 1:* Campinho Tático Oficial (Feed 1080x1350 e Stories 1080x1920).
+       - *Template 2:* Card "Onde Assistir" com badges das emissoras.
+       - *Template 3:* Recorte de Tabela G4 x Z4.
+
+#### 🗓️ Sprint 3 — Social Growth Agent & Automação de Conteúdo (19/09 a 22/09/2026)
+* **Objetivo:** Ativar a geração automática de artes e postagens diárias em redes sociais.
+* **Tarefas de Execução:**
+  1. **19/09 e 20/09 (Fim de Semana):**
+     - Motor `MediaGeneratorService` (Canva Autofill + Export API e fallback Satori/Sharp).
+     - Teste de renderização real com partidas ativas da Série A e Série B.
+  2. **21/09 (Segunda-feira):**
+     - Motor `CopywriterService` com IA (linguagem de torcida, hashtags e injeção automática de tags UTM).
+  3. **22/09 (Terça-feira):**
+     - Conectores de disparo: Telegram Bot API e X/Twitter API v2.
+     - Botões de 1 clique (`📋 Copiar Texto` e `💾 Baixar PNG`) para envio rápido no WhatsApp em `/adminpanel/growth/agent`.
+     - Ativação do checklist interativo da rotina diária de 5 minutos em `/adminpanel/growth/calendar`.
+
+#### 🗓️ Sprint 4 — Rede Própria de Anúncios (House Ads & Direct Sponsorship Network) (23/09 a 26/09/2026)
+* **Objetivo:** Implementar a infraestrutura autônoma de monetização direta e patrocínios regionais com preenchimento garantido e fallback automático para o Google AdMob ([Capítulo 20](#-capítulo-20-a-fazer-rede-própria-de-anúncios-house-ads--direct-sponsorship-network)).
+* **Tarefas de Execução:**
+  1. **23/09 (Quarta-feira) — Camada de Dados no PocketBase & Backend API:**
+     - Criação das coleções `ads_campaigns` (título, anunciante, placement, target_apps, target_leagues, creative_image, destination_url, datas, prioridade, status, max_impressions, impressions_count, clicks_count) e `ads_stats` (telemetria de impressões e cliques) no PocketBase.
+     - Implementação do `AdsModule` em `apps/api` (`AdsService`, `AdsController`) com endpoint `GET /ads/serve?app=...&placement=...&leagueId=...`, cache em memória de 1 minuto e sorteio ponderado por prioridade.
+  2. **24/09 (Quinta-feira) — Agendador, Telemetria & Crons:**
+     - Endpoints assíncronos atômicos `POST /ads/:id/impression` e `POST /ads/:id/click` com incremento em lote/buffer.
+     - Implementação do `AdsSchedulerService` (cron a cada 15 min): ativação automática de campanhas agendadas (`scheduled` ➔ `active`), expiração por data (`active` ➔ `expired`) e corte por capping contratual (`max_impressions` atingido ➔ `paused`).
+  3. **25/09 (Sexta-feira) — Painel Operacional no AdminPanel (`/adminpanel/growth/ads`):**
+     - Construção da interface `/adminpanel/growth/ads` (com redirecionamento legado de `/adminpanel/ads`):
+       - Dashboard executivo: Impressões totais, cliques, CTR consolidado e campanhas ativas.
+       - Formulário de cadastro/edição de campanha com upload de arte na CDN do PocketBase e seletores de ligas/apps.
+       - Simulador visual em mockup mobile (pré-visualização fiel do banner no celular antes de salvar).
+       - Tabela operacional de campanhas com toggle de pausa/reativação instantânea.
+  4. **26/09 (Sábado) — Clientes Flutter Híbridos (House Ads + AdMob Fallback):**
+     - Desenvolvimento dos widgets universais `HouseAdBanner` e `HouseNativeAdWidget` no core mobile compartilhado e apps estaduais, Brasileirão e Europa.
+     - Modo A (House Ad Prioritário com fallback AdMob) e Modo B (AdMob prioritário com fallback House Ad quando `onAdFailedToLoad`).
+     - Disparo automático de telemetria (impressão ao renderizar no viewport e clique ao abrir link).
+
+#### 🗓️ Sprint 5 — Store Publisher Agent & Quality Gatekeeper (27/09 a 29/09/2026)
+* **Objetivo:** Automação de assets e publicação com 1 clique para Google Play Console e Apple App Store.
+* **Tarefas de Execução:**
+  1. **27/09 (Domingo):**
+     - Geração automática de Feature Graphic (1024x500), Ícone (512x512) e 5 Screenshots em moldura 3D de smartphone via Canva Pro em `/adminpanel/growth/store-assets`.
+  2. **28/09 (Segunda-feira):**
+     - ASO Text Engine (Título, Descrição Curta 80c e Longa 4000c anti-rejeição).
+     - Conector oficial com **Google Play Edits API / Fastlane** para upload automático de imagens, descrições e binário `.aab` em 1 clique.
+  3. **29/09 (Terça-feira):**
+     - Injeção do **Vision QA (Gemini 2.5 Vision)** para auditoria estética (contraste, textos cortados, nota mínima 9.0/10) e Policy Compliance Guard.
+
+#### 🗓️ Sprint 6 — Growth Orchestrator Agent & Operação Rumo aos 50k (30/09/2026)
+* **Objetivo:** Conectar o cérebro executivo de metas e iniciar o monitoramento em tempo real da Meta 50k.
+* **Tarefas de Execução:**
+  1. **30/09 (Quarta-feira — Manhã):**
+     - Dashboard executivo em `/adminpanel/growth`: Barra de progresso dos 5 meses, velocímetro de pacing diário e card da ação do dia.
+  2. **30/09 (Quarta-feira — Tarde):**
+     - Ativação do Briefing Matinal diário via Telegram Bot (status da meta e ação recomendada de 5 min).
+     - Homologação final do ecossistema integrado e início oficial da marcha rumo a Janeiro/2027!
+
+---
+
+## 💡 Capítulo 23: [A FAZER - AMANHÃ] Novas Funcionalidades de Engajamento e Estatísticas Preditivas (Pílulas "Você Sabia?" & Central de Probabilidades)
+
+### 23.1 Visão Geral e Proposta de Valor (Piloto Brasileirão Série A ➔ Escalação White-Label)
+Os aplicativos de futebol tradicionais limitam-se a entregar placares ao vivo e tabelas estáticas de classificação. O objetivo deste incremento é posicionar o **ZapScore como um hub de inteligência e entretenimento futebolístico** (estilo *The Athletic* / *Opta Analyst*), combinando duas grandes forças:
+1. **Storytelling com Dados ("Você sabia?"):** Pílulas em vídeo curto / cards visuais com curiosidades contra-intuitivas que despertam a atenção do torcedor analítico.
+2. **Central de Probabilidades & Estatísticas Preditivas:** Gráficos interativos modernos em Flutter (`fl_chart`) demonstrando probabilidades de título, risco de rebaixamento e termômetro de gols minuto a minuto.
+
+* **Estratégia de Rollout:** O desenvolvimento e homologação ocorrem prioritariamente no app **`apps/brasil/brasileirao`**. Uma vez validado em produção, a arquitetura modular e white-label permite ativar as mesmas telas e widgets nos apps europeus (Premier League, La Liga, Serie A, etc.) e estaduais mudando apenas o identificador da liga (`AppConfig.externalLeagueId`).
+
+---
+
+### 23.2 Funcionalidade 1 — Pílulas "Você Sabia?" (Curiosity Feed & Radar Oculto)
+
+#### 1. Conceito e Formato do Conteúdo
+Pílulas de consumo rápido (15 a 20 segundos) que revelam destaques estatísticos que a grande mídia não noticia:
+* **O Garçom Oculto:** *"Você sabia? O meia X do Juventude tem mais passes decisivos por jogo que Arrascaeta e Raphael Veiga, mas quase ninguém está falando dele. Olha só o mapa de calor dele..."* (com botão direto para abrir o perfil do atleta).
+* **O Time dos Minutos Finais:** *"Você sabia? 45% dos gols do Palmeiras nesta temporada saíram após os 80 minutos de jogo. O time nunca desiste. Veja a distribuição temporal de gols..."*
+* **A Muralha Invisível:** *"O goleiro com melhor índice de defesas em finalizações à queima-roupa no campeonato não joga no G4. Descubra quem é."*
+* **A Lei do Ex:** Partidas da rodada com atacantes que possuem histórico artilheiro contra seus ex-clubes.
+
+#### 2. Experiência do Usuário (UI/UX no Flutter)
+* **Carrossel Superior no Topo da Home:** Círculos com bordas em gradiente neon pulsante (**"Você Sabia?"**, **"Raio-X da Rodada"**, **"Radar Oculto"**).
+* **Player / Viewer Imersivo (Estilo Stories/Reels):**
+  - Barra de progresso segmentada no topo (15s);
+  - Fundo em vídeo vertical (YouTube Shorts embebido via `youtube_player_flutter` ou animação de dados);
+  - Card central translúcido em *Glassmorphism* destacando o dado estatístico chave;
+  - **Botão de Ação Direta (Deep Link):** Leva o torcedor diretamente para a tela do jogador, da equipe ou da partida dentro do próprio app;
+  - **Compartilhamento Viral (Estilo Spotify Wrapped):** Botão nativo que renderiza uma imagem estilizada para compartilhamento com 1 clique no WhatsApp ou Instagram Stories com marca d'água do ZapScore.
+
+---
+
+### 23.3 Motor Autônomo de Geração de Curiosidades (IA Engine + PocketBase Ingestion)
+O operador não precisa criar nem digitar conteúdos manualmente:
+1. **Agente Curiosity Scout (`CuriosityScoutService` em `apps/api`):**
+   - Executa uma varredura semanal no banco de dados consolidado da liga (`FixtureStatistics`, `Player`, `FixtureEvent`).
+   - Identifica desvios e anomalias estatísticas positivas (ex: maior média de dribles certos, maior taxa de conversão de chances criadas, equipe com maior posse de bola que menos finaliza).
+2. **Enriquecimento com IA (Gemini / OpenAI):**
+   - Gera o roteiro/copy pronto em tom provocativo e jornalístico de torcida:
+     - Título: *"Você sabia?"*
+     - Fato estatístico central;
+     - Chamada para ação (*"Abra o app para ver o raio-x completo"*).
+3. **Persistência no PocketBase (`curiosities`):**
+   - Ingestão na coleção `curiosities` vinculada ao `app_id` e `league_id`.
+   - Disponibilização na rota do AdminPanel `/adminpanel/curiosities` para aprovação com 1 clique ou auto-publicação programada.
+
+---
+
+### 23.4 Funcionalidade 2 — Central de Probabilidades & Estatísticas Preditivas
+
+#### 1. Termômetro da Tabela (Probabilidades de Temporada)
+Na tela de Classificação (`StandingsScreen`), adiciona-se uma chave seletora no topo: `[ Tabela de Pontos | Probabilidades do Campeonato ]`:
+* 🏆 **Chance de Título (%):** Gráfico de barras horizontais coloridas com porcentagem calculada (ex: Botafogo 54%, Palmeiras 31%, Fortaleza 12%).
+* 🌎 **Chance de Libertadores (G4 / G6) (%).**
+* ⚠️ **Risco de Rebaixamento (Z4) (%):** Barra de perigo em vermelho destacando as probabilidades matemáticas de queda dos clubes ameaçados.
+* **Modelo Matemático Autônomo:** Simulação baseada no aproveitamento atual, mando de campo e força relativa dos adversários restantes das rodadas futuras (**zero custo de API externa!**).
+
+#### 2. Raio-X de Partida (Probabilidade de Gols Minuto a Minuto)
+Na tela de detalhes de cada jogo (`FixtureDetailScreen`), adiciona-se a aba **"Probabilidades"**:
+* **Zonas de Perigo (Distribuição de Gols por Tempo):**
+  - Gráfico de colunas dividido em 6 faixas de 15 minutos: `0-15'`, `16-30'`, `31-45'`, `46-60'`, `61-75'`, `76-90'+`.
+  - Demonstra claramente as janelas de maior perigo ofensivo e fragilidade defensiva dos dois times (dados já disponíveis no endpoint `/teams/statistics` da API-Football).
+* **Mostrador Radial de Gols (Over / Under & Ambas Marcam):**
+  - Medidor de pressão (*Gauge Chart*) com estimativa percentual para Over 1.5, Over 2.5 e Ambas Marcam (BTTS).
+* **Momento de Pressão ao Vivo (Attack Momentum):**
+  - Gráfico de linha em tempo real durante a partida mostrando qual equipe está exercendo maior volume de ataque minuto a minuto.
+
+---
+
+### 23.5 Arquitetura de Apresentação no Flutter (`fl_chart` & Micro-interações)
+* **Biblioteca Gráfica Oficial:** Adoção de `fl_chart` nos módulos mobile (alta performance, renderização 60fps via canvas e suporte a sombras e gradientes temáticos em Dark Mode).
+* **Design System & Paleta de Cores:**
+  - Dark Slate background (`#0B0F19` e `#111827`);
+  - Verde Esmeralda / Neon para dados positivos (`#10B981` / `#00E676`);
+  - Âmbar / Ouro para destaques e chances de título (`#F59E0B`);
+  - Vermelho Carmim para risco de rebaixamento (`#EF4444`).
+* **Widgets Modulares Reutilizáveis:**
+  - `CuriosityStoryBarWidget` (carrossel superior da Home).
+  - `CuriosityStoryViewerScreen` (tela cheia estilo Stories com overlay glassmorphism).
+  - `LeagueProbabilitiesCard` (gráfico de chances de título e Z4).
+  - `GoalDistributionChartWidget` (gráfico de colunas de gols por faixa de 15 minutos).
+
+---
+
+### 23.6 Estratégia de Monetização (Google AdMob)
+1. **AdMob Rewarded (Vídeo Premiado de Alto eCPM):**
+   - As probabilidades básicas do campeonato são abertas e gratuitas.
+   - O **"Relatório Preditivo Completo da Rodada"** (com projeção de zebras e simulação de rebaixamento jogo a jogo) é desbloqueado mediante a visualização de 1 vídeo premiado de 15 segundos.
+2. **AdMob Interstitial Nativo no Stories:**
+   - Inserção de anúncio interstitial discreto a cada 4 ou 5 curiosidades navegadas no feed "Você Sabia?".
+
+---
+
+### 23.7 Cronograma de Execução Imediata (Plano de 4 Fases para Amanhã)
+* **Fase 1 — Backend & Modelo Matemático (`apps/api`):**
+  - Implementação do endpoint de probabilidades da liga (`GET /competitions/:id/probabilities`) com cálculo de Monte Carlo;
+  - Criação do serviço agregador de curiosidades estatísticas (`CuriosityScoutService`).
+* **Fase 2 — Camada de Dados no PocketBase & AdminPanel (`apps/web`):**
+  - Criação da coleção `curiosities` no PocketBase Multi-Apk Agent;
+  - Construção da tela de gestão e curadoria `/adminpanel/curiosities`.
+* **Fase 3 — Piloto no App Brasileirão (`apps/brasil/brasileirao`):**
+  - Adição do pacote `fl_chart` no `pubspec.yaml`;
+  - Construção do carrossel de Stories e tela imersiva `CuriosityStoryViewerScreen`;
+  - Integração da aba de Probabilidades na tela de Classificação e Detalhes da Partida.
+* **Fase 4 — Homologação e Escalação White-Label:**
+  - Teste de fluidez e renderização gráfica em dispositivo físico Android;
+  - Replicação imediata para a suíte Europa (Premier League, La Liga) e Estaduais.
