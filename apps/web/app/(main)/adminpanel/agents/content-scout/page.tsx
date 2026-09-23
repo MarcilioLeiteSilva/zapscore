@@ -165,6 +165,17 @@ export default function ContentScoutDashboardPage() {
     );
   }) || [];
 
+  const getFlag = (country?: string | null, extId?: number) => {
+    const c = (country || '').toLowerCase();
+    if (c.includes('brazil') || c.includes('brasil') || extId === 71 || extId === 72) return '🇧🇷';
+    if (c.includes('italy') || c.includes('itália') || extId === 135) return '🇮🇹';
+    if (c.includes('england') || c.includes('inglaterra') || extId === 39) return '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+    if (c.includes('spain') || c.includes('espanha') || extId === 140) return '🇪🇸';
+    if (c.includes('germany') || c.includes('alemanha') || extId === 78) return '🇩🇪';
+    if (c.includes('france') || c.includes('frança') || extId === 61) return '🇫🇷';
+    return '🌐';
+  };
+
   return (
     <div className="space-y-8 pb-16" style={{ fontFamily: 'var(--font-outfit)' }}>
       {/* Toast Notification */}
@@ -461,7 +472,11 @@ export default function ContentScoutDashboardPage() {
               <div key={league.id} className="card p-5 border border-[var(--border)] flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-bold text-white text-sm truncate">{league.name}</span>
+                    <span className="font-bold text-white text-sm truncate flex items-center gap-2">
+                      <span className="text-base">{getFlag(league.country, league.externalId)}</span>
+                      <span>{league.name}</span>
+                      <span className="text-[11px] text-[var(--text-muted)] font-normal">({league.country || 'Geral'})</span>
+                    </span>
                     <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                       league.contaminatedNews === 0 
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 

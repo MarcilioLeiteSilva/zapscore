@@ -117,10 +117,25 @@ export class ContentScoutService {
     let contaminatedCount = 0;
 
     // Cache rápido de ligas
-    const leagueByExtId = new Map<number, { id: string; name: string }>();
+    const leagueByExtId = new Map<number, { id: string; name: string; country: string | null }>();
     for (const l of leagues) {
-      leagueByExtId.set(l.externalId, { id: l.id, name: l.name });
+      leagueByExtId.set(l.externalId, { id: l.id, name: l.name, country: l.country });
     }
+
+    const formatLeagueBadge = (name: string, country?: string | null, extId?: number | null) => {
+      let flag = '🌐';
+      const c = (country || '').toLowerCase();
+      if (c.includes('brazil') || c.includes('brasil') || extId === 71 || extId === 72) flag = '🇧🇷';
+      else if (c.includes('italy') || c.includes('itália') || extId === 135) flag = '🇮🇹';
+      else if (c.includes('england') || c.includes('inglaterra') || extId === 39) flag = '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+      else if (c.includes('spain') || c.includes('espanha') || extId === 140) flag = '🇪🇸';
+      else if (c.includes('germany') || c.includes('alemanha') || extId === 78) flag = '🇩🇪';
+      else if (c.includes('france') || c.includes('frança') || extId === 61) flag = '🇫🇷';
+
+      const countryName = country ? country : (extId === 71 || extId === 72 ? 'Brasil' : extId === 135 ? 'Itália' : '');
+      const idTag = extId ? ` #${extId}` : '';
+      return `${flag} ${name} (${countryName}${idTag})`;
+    };
 
     for (const item of recentNews) {
       const text = `${item.title || ''} ${item.description || ''} ${item.content || ''}`.toLowerCase();
@@ -128,7 +143,9 @@ export class ContentScoutService {
       const fullSemanticText = `${text} ${source}`;
 
       const currentExtId = item.league?.externalId;
-      const currentLeagueName = item.league?.name || 'Sem Liga Atribuída';
+      const currentCountry = item.league?.country;
+      const currentRawName = item.league?.name || 'Sem Liga Atribuída';
+      const currentLeagueDisplay = item.league ? formatLeagueBadge(currentRawName, currentCountry, currentExtId) : '⚪ Sem Liga Atribuída';
 
       // 1. Checagem: Notícia Italiana com ID da Liga do Brasil Série A (71)
       if (currentExtId === 71) {
@@ -139,14 +156,15 @@ export class ContentScoutService {
         // Se tem marcadores italianos claros e nenhum clube brasileiro, OU veio de fonte 100% italiana
         if ((detectedItalian.length > 0 && detectedBraA.length === 0) || (isFromItalianSource && detectedBraA.length === 0)) {
           contaminatedCount++;
+          const targetLeagueInfo = leagueByExtId.get(135);
           flaggedItems.push({
             id: item.id,
             title: item.title,
             source: item.source,
             currentLeagueId: item.leagueId,
-            currentLeagueName,
+            currentLeagueName: currentLeagueDisplay,
             suggestedLeagueExternalId: 135,
-            suggestedLeagueName: leagueByExtId.get(135)?.name || 'Serie A (Itália)',
+            suggestedLeagueName: formatLeagueBadge(targetLeagueInfo?.name || 'Serie A', targetLeagueInfo?.country || 'Itália', 135),
             violationType: 'ITALIAN_IN_BRAZIL',
             severity: 'HIGH',
             detectedTokens: detectedItalian.slice(0, 5),
@@ -159,14 +177,15 @@ export class ContentScoutService {
         const detectedBraB = this.BRAZIL_SERIE_B_KEYWORDS.filter(kw => fullSemanticText.includes(kw));
         if (detectedBraB.length > 0 && detectedBraA.length === 0 && !detectedItalian.length) {
           contaminatedCount++;
+          const targetLeagueInfo = leagueByExtId.get(72);
           flaggedItems.push({
             id: item.id,
             title: item.title,
             source: item.source,
             currentLeagueId: item.leagueId,
-            currentLeagueName,
+            currentLeagueName: currentLeagueDisplay,
             suggestedLeagueExternalId: 72,
-            suggestedLeagueName: leagueByExtId.get(72)?.name || 'Série B (Brasil)',
+            suggestedLeagueName: formatLeagueBadge(targetLeagueInfo?.name || 'Série B', targetLeagueInfo?.country || 'Brasil', 72),
             violationType: 'SERIE_B_IN_SERIE_A',
             severity: 'MEDIUM',
             detectedTokens: detectedBraB.slice(0, 5),
@@ -183,14 +202,15 @@ export class ContentScoutService {
 
         if (detectedBraA.length > 0 && detectedItalian.length === 0) {
           contaminatedCount++;
+          const targetLeagueInfo = leagueByExtId.get(71);
           flaggedItems.push({
             id: item.id,
             title: item.title,
             source: item.source,
             currentLeagueId: item.leagueId,
-            currentLeagueName,
+            currentLeagueName: currentLeagueDisplay,
             suggestedLeagueExternalId: 71,
-            suggestedLeagueName: leagueByExtId.get(71)?.name || 'Brasileirão Série A',
+            suggestedLeagueName: formatLeagueBadge(targetLeagueInfo?.name || 'Serie A', targetLeagueInfo?.country || 'Brasil', 71),
             violationType: 'BRAZIL_IN_ITALY',
             severity: 'HIGH',
             detectedTokens: detectedBraA.slice(0, 5),
@@ -248,13 +268,37 @@ export class ContentScoutService {
   async heal() {
     this.logger.log('[CONTENT-SCOUT] Executando rotina de faxina e reclassificação de conteúdo...');
 
-    const [serieABrasil, serieBBrasil, serieAItalia, premierLeague, laLiga] = await Promise.all([
+    let [serieABrasil, serieBBrasil, serieAItalia, premierLeague, laLiga] = await Promise.all([
       this.prisma.league.findUnique({ where: { externalId: 71 } }),
       this.prisma.league.findUnique({ where: { externalId: 72 } }),
       this.prisma.league.findUnique({ where: { externalId: 135 } }),
       this.prisma.league.findUnique({ where: { externalId: 39 } }),
       this.prisma.league.findUnique({ where: { externalId: 140 } }),
     ]);
+
+    // Resiliência caso o externalId varie ou esteja salvo com busca aproximada
+    if (!serieAItalia) {
+      serieAItalia = await this.prisma.league.findFirst({
+        where: {
+          OR: [
+            { externalId: 135 },
+            { country: { equals: 'Italy', mode: 'insensitive' } },
+            { name: { equals: 'Serie A', mode: 'insensitive' }, country: { not: 'Brazil' } },
+          ],
+        },
+      });
+    }
+
+    if (!serieABrasil) {
+      serieABrasil = await this.prisma.league.findFirst({
+        where: {
+          OR: [
+            { externalId: 71 },
+            { country: { equals: 'Brazil', mode: 'insensitive' }, name: { contains: 'Serie A', mode: 'insensitive' } },
+          ],
+        },
+      });
+    }
 
     // Busca todas as notícias (varredura profunda)
     const allNews = await this.prisma.news.findMany({
@@ -285,12 +329,12 @@ export class ContentScoutService {
         if ((detectedItalian.length > 0 && detectedBraA.length === 0) || (isFromItalianSource && detectedBraA.length === 0)) {
           if (serieAItalia) {
             targetLeagueId = serieAItalia.id;
-            targetLeagueName = 'Serie A (Itália)';
+            targetLeagueName = '🇮🇹 Serie A (Itália #135)';
           }
         } else if (detectedBraB.length > 0 && detectedBraA.length === 0 && detectedItalian.length === 0) {
           if (serieBBrasil) {
             targetLeagueId = serieBBrasil.id;
-            targetLeagueName = 'Série B (Brasil)';
+            targetLeagueName = '🇧🇷 Série B (Brasil #72)';
           }
         }
       }
@@ -300,12 +344,12 @@ export class ContentScoutService {
         if (detectedBraA.length > 0 && detectedItalian.length === 0) {
           if (serieABrasil) {
             targetLeagueId = serieABrasil.id;
-            targetLeagueName = 'Brasileirão Série A';
+            targetLeagueName = '🇧🇷 Brasileirão Série A (#71)';
           }
         } else if (detectedBraB.length > 0 && detectedBraA.length === 0 && detectedItalian.length === 0) {
           if (serieBBrasil) {
             targetLeagueId = serieBBrasil.id;
-            targetLeagueName = 'Série B (Brasil)';
+            targetLeagueName = '🇧🇷 Série B (Brasil #72)';
           }
         }
       }
