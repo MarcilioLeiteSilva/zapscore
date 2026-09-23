@@ -237,6 +237,29 @@ export default function ZapScoreAdminSidebar({
                 {!isCollapsed && <span className="truncate">Vídeos</span>}
               </div>
             </Link>
+
+            <Link
+              href="/adminpanel/agents/content-scout"
+              style={{
+                background: isActive('/adminpanel/agents/content-scout') ? 'rgba(255, 31, 31, 0.15)' : 'transparent',
+                borderColor: isActive('/adminpanel/agents/content-scout') ? 'var(--primary)' : 'transparent',
+                color: isActive('/adminpanel/agents/content-scout') ? '#ffffff' : 'var(--text-muted)',
+              }}
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border hover:text-white hover:bg-[var(--surface-hover)] ${
+                isCollapsed ? 'justify-center px-0' : 'justify-between'
+              }`}
+              title={isCollapsed ? 'Content Scout' : undefined}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <ShieldCheck size={18} className="shrink-0 text-blue-400" />
+                {!isCollapsed && <span className="truncate">Content Scout</span>}
+              </div>
+              {!isCollapsed && (
+                <span className="badge badge-ft text-[9px] px-2 py-0.5 font-bold shrink-0">
+                  SCOUT
+                </span>
+              )}
+            </Link>
           </div>
         </div>
 

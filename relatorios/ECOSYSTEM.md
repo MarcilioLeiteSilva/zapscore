@@ -38,6 +38,7 @@
   - [5.6 Agente Lineup Agent (Escalações Oficiais Multi-Fonte & Buffer PocketBase)](#56-agente-lineup-agent-escalações-oficiais-multi-fonte--buffer-pocketbase)
   - [5.7 [A FAZER - AMANHÃ] Agente Push Sentinel & Delivery Intelligence (Certificação de Entrega, Latência E2E e Funil de Conversão)](#57-a-fazer---amanhã-agente-push-sentinel--delivery-intelligence-certificação-de-entrega-latência-e2e-e-funil-de-conversão)
   - [5.8 [CONCLUÍDO] Agente Publicador de Aplicativos (Store Publisher Agent — Google Play Edits API & Canva Pro)](#58-concluído-agente-publicador-de-aplicativos-store-publisher-agent--google-play-edits-api--canva-pro)
+  - [5.9 [CONCLUÍDO] Agente Content Scout (Guardião Semântico de Notícias, Desambiguação de Ligas & Auto-Healer)](#59-concluído-agente-content-scout-guardião-semântico-de-notícias-desambiguação-de-ligas--auto-healer)
 - [Capítulo 6: Aplicativos Mobile Flutter (Arquitetura White-Label & Cubits)](#-capítulo-6-aplicativos-mobile-flutter-arquitetura-white-label--cubits)
   - [6.1 Padrão White-Label e Diretrizes de Isolamento](#61-padrão-white-label-e-diretrizes-de-isolamento)
   - [6.2 Camada de Estado e Cubits (`HomeCubit`, `LeagueCubit`, `LiveCubit`)](#62-camada-de-estado-e-cubits-homecubit-leaguecubit-livecubit)
@@ -493,6 +494,31 @@ O agente opera de forma inteligente através de uma rotina diária (executada 1x
   5. **Google Play Edits API & Exportador Offline (`google-play-api.ts` & `export-package.ts`):** Autenticação JWT RS256 nativa com suporte a **Workload Identity Federation (OIDC sem chaves estáticas)**, modo Dry-Run seguro e download do pacote consolidado (`.txt`, `.json`, `.md`).
 * **Documentação e Tutorial Completo:** Consulte o [Capítulo 21.12](#2112-concluído-store-publisher-agent-automação-de-assets-formulários-16sports-canva-pro-e-google-play-edits-api).
 
+### 5.9 [CONCLUÍDO] Agente Content Scout (Guardião Semântico de Notícias, Desambiguação de Ligas & Auto-Healer)
+* **Localização Principal:** `apps/api/src/news/content-scout.service.ts`, `apps/api/src/news/content-scout.controller.ts` e `apps/api/src/news/news.service.ts`.
+* **Rota no AdminPanel:** `/adminpanel/agents/content-scout` (com link direto na sidebar em *Gestão de Conteúdo* e card ativo no Hub `/adminpanel/agents`).
+* **Proposta Arquitetural:** Elimina em definitivo a contaminação cruzada de notícias entre ligas homônimas (especialmente o **Brasileirão Série A** `externalId: 71` e a **Serie A Italiana** `externalId: 135`), garantindo conformidade semântica de 100% sem tocar nos crawlers base nem alterar o schema do banco de dados.
+
+#### 1. Os 4 Pilares de Proteção do Content Scout
+1. **Dicionário Semântico Canônico & Base de Conhecimento:**
+   - Reconhece e mapeia vocabulário futebolístico exclusivo por competição:
+     - **Itália (135):** *Juventus, Milan, Inter Milan, Roma, Lazio, Napoli, Atalanta, Fiorentina, Bologna, Torino, Calcio, Scudetto, Coppa Italia, San Siro, Allegri, Serie A Enilive, Football Italia*.
+     - **Brasil Série A (71):** *Flamengo, Palmeiras, Corinthians, São Paulo, Grêmio, Internacional, Botafogo, Fluminense, Vasco, Cruzeiro, Atlético-MG, Bahia, Fortaleza, Athletico-PR, Cuiabá, Vitória, Juventude, Criciúma, Atlético-GO, Red Bull Bragantino, Brasileirão*.
+     - **Brasil Série B (72):** *Santos, Sport, Ceará, Goiás, Coritiba, América-MG, Avaí, Novorizontino, Mirassol, Vila Nova, Operário, CRB, Ponte Preta, Brusque, Paysandu, Guarani, Amazonas, Ituano, Botafogo-SP, Chapecoense*.
+     - **Inglaterra (39), Espanha (140), etc.**
+2. **Camada Defensiva em Tempo Real (`NewsService.findAll`):**
+   - Intercepta requisições móveis para a Liga 71 (`GET /news?leagueId=71`).
+   - Se qualquer matéria com marcadores estritamente italianos (e sem menção a clubes brasileiros) estiver vinculada ao ID 71, ela é **bloqueada imediatamente na saída para os apps Flutter**.
+   - Proporciona **latência zero e proteção instantânea** aos usuários do aplicativo do Brasileirão.
+3. **Auto-Healer em Segundo Plano (`@Cron('*/30 * * * *')`):**
+   - Rotina periódica autônoma executada a cada 30 minutos na API central.
+   - Audita até 2.000 notícias recentes no banco PostgreSQL.
+   - Transfere matérias do Calcio atribuídas erroneamente ao Brasileirão diretamente para a Serie A Italiana (`135`) de forma segura, silenciosa e idempotente.
+4. **Painel de Governança no AdminPanel (`/adminpanel/agents/content-scout`):**
+   - Exibe a taxa de integridade semântica (%), contaminações detectadas e status de saúde por liga (🟢 Limpo / 🔴 Alerta).
+   - Tabela de alertas com tokens detectados e sugestão de destino correto.
+   - Botão *"Executar Faxina e Reclassificação"* para saneamento manual em 1 clique e reatribuição granular de matérias.
+
 ---
 
 ## 📱 Capítulo 6: Aplicativos Mobile Flutter (Arquitetura White-Label & Cubits)
@@ -562,6 +588,8 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 ## 📈 Capítulo 8: Histórico de Implementações e Roadmap de Incrementos
 
 ### 8.1 Histórico de Entregas Validadas
+* **[2026-09-23]**: Estruturação e implantação do **Agente Content Scout** (`apps/api/src/news/content-scout.service.ts` e `/adminpanel/agents/content-scout`). Eliminação definitiva da contaminação de notícias italianas no Brasileirão Série A (`71`) via dicionário semântico canônico, filtro defensivo em tempo real no `findAll`, rotina periódica de auto-heal a cada 30 minutos e painel de governança completo com reclassificação em lote e manual ([Capítulo 5.9](#59-concluído-agente-content-scout-guardião-semântico-de-notícias-desambiguação-de-ligas--auto-healer)).
+* **[2026-09-23]**: Reestruturação do **Agente Scorer Sentinel & Hybrid Self-Healer** com árvore de decisão oficial API-Football + fallback de eventos locais, erradicação do `deleteMany()` destrutivo via `upsert` com regra não-regressiva $\max(\text{Local}, \text{Oficial}, \text{Eventos})$ e gaveta de auditoria de atletas no AdminPanel.
 * **[2026-09-03]**: Implementação do **Lineup Agent** (Agente Autônomo de Escalações Multi-Fonte) na ZapScore API central (`apps/api/src/lineups`). Coleta antecipada (50 a 60 min antes do jogo) com tripla redundância em cascata (Sofascore, FotMob e GloboEsporte/365), janela estrita de 4 horas, escopo filtrado pelas ligas do Sentinel, zero chamadas à API-Football e integração automática com o worker de 10 minutos do Push Agent.
 * **[2026-08-31]**: Integração do Agente Sentinel com o Agente Push: detecção autônoma de conclusão de partidas (100% FT do dia em todas as ligas monitoradas), geração imediata de resumo de placares da rodada, persistência na tabela `PushQueue` (Prisma/PostgreSQL), fila de aprovação com contagem regressiva em tempo real no AdminPanel e disparo automático por fallback após 60 minutos via worker em segundo plano.
 * **[2026-08-23]**: Validação e disparo em produção com 100% de sucesso (19/19 Serie A, 14/14 La Liga) via FCM HTTP v1.
@@ -580,7 +608,7 @@ Antes de concluir qualquer tarefa, o agente deve verificar:
 * [ ] **Agente de Comentários Táticos ao Vivo (Crawl4AI + LLM Engine)**: Implementação do comentador em tempo real de 5 em 5 minutos em 6 fases cronológicas ([Capítulo 15](#-capítulo-15-a-fazer-agente-de-comentários-táticos-ao-vivo-e-coleta-multi-fontes-crawl4ai--ia-engine)).
 * [ ] **Ajuste Sintático na Chave PEM Bundesliga**: Ajustar os 4 hífens de fechamento para 5 (`-----END PRIVATE KEY-----`) em `notifications.pb.js`.
 * [ ] **Ativação dos Workers de Segundo Plano**:
-  * Implementação do worker cron do Content Scout em `apps/api` (coleta RSS/YouTube a cada 30 min).
+  * [x] **[CONCLUÍDO] Implantação do Agente Content Scout** em `apps/api` (auditoria, desambiguação semântica de ligas, auto-healer de 30m e filtro defensivo em tempo real).
   * Implementação do middleware Quota Watchdog na `apps/api` para telemetria da API-Football.
 * [x] **[CONCLUÍDO] Reestruturação do Agente Scorer Sentinel & Hybrid Self-Healer**: Implementação da árvore de decisão com prioridade oficial na API-Football (1x/dia na madrugada às 00:30 BRT, gastando apenas 1 request/liga), detecção inteligente de ausência de dados para estaduais menores (ativação automática do motor de cálculo por eventos locais), erradicação do `deleteMany()` destrutivo via `upsert` cirúrgico com saneamento de órfãos e interface com badges de origem e governança no AdminPanel ([Capítulo 5.3](#53-concluído-agente-scorer-sentinel--hybrid-self-healer-artilharia-híbrida-oficial--fallback-por-cálculo-local)).
 * [ ] **[A FAZER] AdMob Rewarded IDs Exclusivos nos Apps Estaduais**: Criar IDs de anúncio premiado (Rewarded) dedicados no Google AdMob para os 6 apps (`baiano`, `carioca`, `cearense`, `gaucho`, `mineiro`, `paranaense`), substituindo o ID compartilhado herdado do paulista (`ca-app-pub-6887857057070736/1666213763`) em `lib/services/ad_service.dart` para permitir a segregação de relatórios de receita por aplicativo.

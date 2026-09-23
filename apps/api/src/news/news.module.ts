@@ -7,10 +7,13 @@ import { HttpModule } from '@nestjs/axios';
 import { NewsCrawlerService } from './news-crawler.service';
 import { NewsSourceController } from './news-source.controller';
 
+import { ContentScoutService } from './content-scout.service';
+import { ContentScoutController } from './content-scout.controller';
+
 @Module({
   imports: [PrismaModule, HttpModule],
-  controllers: [NewsController, NewsSourceController],
-  providers: [NewsService, NewsCrawlerService],
-  exports: [NewsCrawlerService],
+  controllers: [NewsController, NewsSourceController, ContentScoutController],
+  providers: [NewsService, NewsCrawlerService, ContentScoutService],
+  exports: [NewsCrawlerService, ContentScoutService],
 })
 export class NewsModule {}

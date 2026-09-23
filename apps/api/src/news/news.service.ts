@@ -35,7 +35,7 @@ export class NewsService implements OnModuleInit {
       }
     }
 
-    return this.prisma.news.findMany({
+    const news = await this.prisma.news.findMany({
       where: {
         ...(leagueFilter ? leagueFilter : {}),
         ...(teamId && { teamId }),
@@ -47,6 +47,41 @@ export class NewsService implements OnModuleInit {
         team: true,
       },
     });
+
+    // Camada Defensiva em Tempo Real do Content Scout:
+    // Garante que nenhuma notícia italiana vaze no feed do Brasileirão Série A (ID 71)
+    const isBrasileiraoRequest = leagueId === '71' || (news.length > 0 && news[0].league?.externalId === 71);
+    if (isBrasileiraoRequest) {
+      const strictItalianTokens = [
+        'football italia', 'serie a tim', 'calcio', 'scudetto', 'coppa italia',
+        'serie a enilive', 'juventus', 'ac milan', 'inter milan', 'internazionale',
+        'as roma', 'lazio', 'atalanta', 'fiorentina', 'bologna', 'torino', 'monza',
+        'sassuolo', 'genoa', 'udinese', 'lecce', 'verona', 'cagliari', 'empoli',
+        'salernitana', 'frosinone', 'como 1907', 'parma calcio', 'venezia fc'
+      ];
+      const brazilianClubs = [
+        'flamengo', 'palmeiras', 'corinthians', 'são paulo', 'sao paulo', 'grêmio',
+        'gremio', 'internacional', 'botafogo', 'fluminense', 'vasco', 'cruzeiro',
+        'atlético-mg', 'atletico-mg', 'bahia', 'fortaleza', 'athletico-pr', 'cuiabá',
+        'cuiaba', 'vitória', 'vitoria', 'juventude', 'criciúma', 'criciuma', 'atlético-go',
+        'atletico-go', 'bragantino', 'brasileirão', 'brasileirao'
+      ];
+
+      return news.filter((item) => {
+        const text = `${item.title || ''} ${item.description || ''}`.toLowerCase();
+        const source = (item.source || '').toLowerCase();
+        const hasItalianMarker = strictItalianTokens.some(kw => text.includes(kw) || source.includes(kw));
+        const hasBrazilianMarker = brazilianClubs.some(kw => text.includes(kw));
+
+        // Se tiver marcador italiano e NENHUM clube brasileiro, bloqueia para o Brasileirão
+        if (hasItalianMarker && !hasBrazilianMarker) {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    return news;
   }
 
   async findOne(id: string) {
