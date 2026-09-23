@@ -7,6 +7,7 @@ import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 import { AiSyncService } from '../fixtures/ai-analysis/ai-sync.service';
 import { FixturesGateway } from '../fixtures/fixtures.gateway';
 import { RedisService } from '../redis/redis.service';
+import { ScorerAgentService } from '../competitions/scorer-agent.service';
 
 @Injectable()
 export class SyncService {
@@ -19,6 +20,7 @@ export class SyncService {
     private readonly aiSyncService: AiSyncService,
     private readonly fixturesGateway: FixturesGateway,
     private readonly redis: RedisService,
+    private readonly scorerAgent: ScorerAgentService,
   ) {}
 
   private get defaultLeagueId(): number {
@@ -328,6 +330,11 @@ export class SyncService {
         this.aiSyncService.resolveFixtureAnalysis(fixture.id).catch(err => {
           this.logger.error(`Error resolving AI prediction for fixture ${fixture.id}: ${err.message}`);
         });
+
+        // 4.1 Micro-sync pós-jogo da artilharia para atualização instantânea no app
+        this.scorerAgent.aggregateLeagueScorers(fixture.leagueId, fixture.season).catch(err => {
+          this.logger.warn(`Post-match scorer auto-sync warning for fixture ${fixture.id}: ${err.message}`);
+        });
       } else {
         this.aiSyncService.syncFixtureAnalysis(fixture.id).catch(err => {
           this.logger.error(`Error triggering AI prediction for fixture ${fixture.id}: ${err.message}`);
@@ -532,55 +539,14 @@ export class SyncService {
     const targetLeague = leagueId || this.defaultLeagueId;
     const targetSeason = season || this.defaultSeason;
 
-    this.logger.log(`Syncing scorers for league ${targetLeague} season ${targetSeason}...`);
-    
-    const scorersData = await this.apiFootball.getTopScorers({ league: targetLeague, season: targetSeason });
-    if (!scorersData || scorersData.length === 0) return { count: 0 };
-
-    const league = await this.prisma.league.findUnique({
-      where: { externalId: targetLeague }
-    });
-    if (!league) return { count: 0 };
-
-    let count = 0;
-    for (const [index, item] of scorersData.entries()) {
-      const stats = item.statistics[0];
-      const player = item.player;
-
-      await this.prisma.scorer.upsert({
-        where: {
-          leagueId_season_playerName_teamName: {
-            leagueId: league.id,
-            season: targetSeason,
-            playerName: player.name,
-            teamName: stats.team.name
-          }
-        },
-        update: {
-          rank: index + 1,
-          playerPhoto: player.photo || (player.id ? `https://media.api-sports.io/football/players/${player.id}.png` : null),
-          goals: stats.goals.total,
-          assists: stats.goals.assists || 0,
-          teamLogo: stats.team.logo,
-          externalPlayerId: player.id
-        },
-        create: {
-          leagueId: league.id,
-          season: targetSeason,
-          rank: index + 1,
-          playerName: player.name,
-          playerPhoto: player.photo || (player.id ? `https://media.api-sports.io/football/players/${player.id}.png` : null),
-          teamName: stats.team.name,
-          teamLogo: stats.team.logo,
-          goals: stats.goals.total,
-          assists: stats.goals.assists || 0,
-          externalPlayerId: player.id
-        }
-      });
-      count++;
+    this.logger.log(`Syncing scorers via ScorerAgent for league ${targetLeague} season ${targetSeason}...`);
+    try {
+      const result = await this.scorerAgent.aggregateLeagueScorers(targetLeague, targetSeason);
+      return { count: result.topScorersCount, source: result.source };
+    } catch (err: any) {
+      this.logger.error(`Error in syncScorers for league ${targetLeague}: ${err.message}`);
+      return { count: 0, error: err.message };
     }
-
-    return { count };
   }
 
   async repairPhotos() {

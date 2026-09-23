@@ -86,11 +86,32 @@ export class ScorerAgentService {
       }
 
       this.logger.log(
-        `[ScorerAgent ⚽] Iniciando verificação de artilharia para ${league.name} (ExtID: ${league.externalId}, Season: ${targetSeason})...`,
+        `[ScorerAgent ⚽] Iniciando auditoria e reconciliação factual de artilharia para ${league.name} (ExtID: ${league.externalId}, Season: ${targetSeason})...`,
       );
 
+      // 2. Extrai os gols registrados em eventos locais de partidas (Tempo Real)
+      const localScorersMap = await this.getLocalScorersMap(league.id, targetSeason);
+
+      // 3. Mapeia os registros já existentes no banco (para preservação de edições e não-regressão)
+      const existingScorers = await this.prisma.scorer.findMany({
+        where: {
+          leagueId: league.id,
+          season: targetSeason,
+        },
+      });
+
+      const existingByNameAndTeam = new Map<string, any>();
+      const existingByExtPlayerId = new Map<number, any>();
+      for (const s of existingScorers) {
+        const key = `${s.playerName.toLowerCase().trim()}_${s.teamName.toLowerCase().trim()}`;
+        existingByNameAndTeam.set(key, s);
+        if (s.externalPlayerId) {
+          existingByExtPlayerId.set(s.externalPlayerId, s);
+        }
+      }
+
       // =========================================================================
-      // CAMADA 1: Prioridade Primária — Oficial API-Football
+      // CAMADA 1: Consulta à API Oficial da Federação (API-Football)
       // =========================================================================
       let officialScorers: any[] = [];
       try {
@@ -104,16 +125,18 @@ export class ScorerAgentService {
         }
       } catch (err: any) {
         this.logger.warn(
-          `[ScorerAgent] Consulta oficial API-Football para ${league.name} falhou: ${err.message}. Acionando fallback...`,
+          `[ScorerAgent] Consulta oficial API-Football para ${league.name} falhou: ${err.message}. Operando com eventos locais...`,
         );
       }
 
-      if (officialScorers.length > 0) {
-        this.logger.log(
-          `[ScorerAgent 🟢 OFICIAL] ${officialScorers.length} artilheiros oficiais recebidos da API-Football para ${league.name}. Aplicando upsert cirúrgico...`,
-        );
+      let source: 'official' | 'calculated' = 'calculated';
+      const processedLocalKeys = new Set<string>();
 
-        let totalGoals = 0;
+      if (officialScorers.length > 0) {
+        source = 'official';
+        this.logger.log(
+          `[ScorerAgent 🟢 OFICIAL] ${officialScorers.length} artilheiros oficiais recebidos da API-Football para ${league.name}. Aplicando reconciliação não-regressiva...`,
+        );
 
         for (const [index, item] of officialScorers.entries()) {
           const stats = item.statistics?.[0];
@@ -121,42 +144,67 @@ export class ScorerAgentService {
 
           if (!player?.name || !stats?.team?.name) continue;
 
+          const playerName = player.name.trim();
+          const teamName = stats.team.name.trim();
+          const lookupKey = `${playerName.toLowerCase()}_${teamName.toLowerCase()}`;
+
+          // Localiza registro existente no banco (por chave composta ou por externalId)
+          const existing =
+            existingByNameAndTeam.get(lookupKey) ||
+            (player.id ? existingByExtPlayerId.get(player.id) : null);
+
+          // Localiza evento local correspondente
+          const localItem = localScorersMap.get(lookupKey);
+          if (localItem) {
+            processedLocalKeys.add(lookupKey);
+          }
+
+          const officialGoals = Number(stats.goals?.total || 0);
+          const officialAssists = Number(stats.goals?.assists || 0);
+          const localGoals = localItem ? localItem.goals : 0;
+          const localAssists = localItem ? localItem.assists : 0;
+          const existingGoals = existing ? Number(existing.goals || 0) : 0;
+          const existingAssists = existing ? Number(existing.assists || 0) : 0;
+
+          // REGRA DE NÃO-REGRESSÃO FOCADA NA VERDADE FACTUAL:
+          // O número de gols de um atleta nunca diminui devido a atrasos da API oficial.
+          const effectiveGoals = Math.max(existingGoals, officialGoals, localGoals);
+          const effectiveAssists = Math.max(existingAssists, officialAssists, localAssists);
+
           const photo =
             player.photo ||
             (player.id
               ? `https://media.api-sports.io/football/players/${player.id}.png`
-              : null);
-          const goals = Number(stats.goals?.total || 0);
-          const assists = Number(stats.goals?.assists || 0);
-          totalGoals += goals;
+              : existing?.playerPhoto || null);
+
+          const teamLogo = stats.team.logo || existing?.teamLogo || null;
 
           const savedScorer = await this.prisma.scorer.upsert({
             where: {
               leagueId_season_playerName_teamName: {
                 leagueId: league.id,
                 season: targetSeason,
-                playerName: player.name,
-                teamName: stats.team.name,
+                playerName,
+                teamName,
               },
             },
             update: {
-              rank: index + 1,
               playerPhoto: photo,
-              teamLogo: stats.team.logo || null,
-              goals,
-              assists,
-              externalPlayerId: player.id || null,
+              teamLogo,
+              goals: effectiveGoals,
+              assists: effectiveAssists,
+              externalPlayerId: player.id || existing?.externalPlayerId || null,
             },
             create: {
               leagueId: league.id,
               season: targetSeason,
               rank: index + 1,
-              playerName: player.name,
+              playerName,
               playerPhoto: photo,
-              teamName: stats.team.name,
-              teamLogo: stats.team.logo || null,
-              goals,
-              assists,
+              teamName,
+              teamLogo,
+              goals: effectiveGoals,
+              assists: effectiveAssists,
               externalPlayerId: player.id || null,
             },
           });
@@ -174,201 +222,55 @@ export class ScorerAgentService {
             // PocketBase opcional
           }
         }
-
-        // Saneamento Cirúrgico: Remove apenas resíduos/duplicatas antigas que não constam na lista oficial da federação
-        const officialNames = officialScorers
-          .map((item) => item.player?.name)
-          .filter(Boolean);
-        if (officialNames.length > 0) {
-          const purged = await this.prisma.scorer.deleteMany({
-            where: {
-              leagueId: league.id,
-              season: targetSeason,
-              playerName: { notIn: officialNames },
-            },
-          });
-          if (purged.count > 0) {
-            this.logger.log(
-              `[ScorerAgent 🧹 SANEAMENTO] Removidos ${purged.count} registros órfãos/duplicados antigos de ${league.name}.`,
-            );
-          }
-        }
-
-        // Invalidação do Cache Redis
-        await this.redis.delPattern('topscorers:*');
-
-        this.logger.log(
-          `[ScorerAgent 🟢 OFICIAL ✅] Artilharia oficial de ${league.name} sincronizada com sucesso (${officialScorers.length} atletas, ${totalGoals} gols)!`,
-        );
-
-        return {
-          success: true,
-          leagueId: league.externalId,
-          leagueName: league.name,
-          season: targetSeason,
-          totalGoalsFound: totalGoals,
-          topScorersCount: officialScorers.length,
-          source: 'official',
-        };
       }
 
       // =========================================================================
-      // CAMADA 2: Fallback Autônomo — Detecção de Ausência Oficial (Eventos Locais)
+      // CAMADA 2 & OVERFLOW: Preservação de Atletas Locais / Fora do Top 20 Oficial
       // =========================================================================
-      this.logger.log(
-        `[ScorerAgent 🟡 FALLBACK] Liga ${league.name} (${league.externalId}) sem cobertura oficial na API-Football. Ativando motor de cálculo por eventos locais...`,
-      );
+      // Atletas que pontuaram em eventos locais mas não constam na lista oficial da API
+      // NUNCA são deletados. São preservados e atualizados cirurgicamente.
+      for (const [key, localItem] of localScorersMap.entries()) {
+        if (processedLocalKeys.has(key)) continue;
 
-      // Busca partidas da temporada com eventos e equipes
-      const fixtures = await this.prisma.fixture.findMany({
-        where: {
-          leagueId: league.id,
-          season: targetSeason,
-        },
-        include: {
-          events: true,
-          homeTeam: true,
-          awayTeam: true,
-        },
-      });
+        const existing = existingByNameAndTeam.get(key);
+        const existingGoals = existing ? Number(existing.goals || 0) : 0;
+        const existingAssists = existing ? Number(existing.assists || 0) : 0;
 
-      let totalGoalsFound = 0;
-      const playerScorersMap = new Map<
-        string,
-        {
-          playerName: string;
-          playerPhoto: string | null;
-          externalPlayerId: number | null;
-          teamName: string;
-          teamLogo: string | null;
-          goals: number;
-          penalties: number;
-          assists: number;
-        }
-      >();
+        const effectiveGoals = Math.max(existingGoals, localItem.goals);
+        const effectiveAssists = Math.max(existingAssists, localItem.assists);
 
-      // Varrer eventos de gols
-      for (const fixture of fixtures) {
-        if (!fixture.events || fixture.events.length === 0) continue;
-
-        for (const event of fixture.events) {
-          const type = (event.type || '').toLowerCase();
-          if (type !== 'goal') continue;
-
-          const detail = (event.detail || '').toLowerCase();
-
-          // Ignora Gol Contra
-          if (
-            detail.includes('own goal') ||
-            detail.includes('contra') ||
-            detail.includes('autogol')
-          ) {
-            continue;
-          }
-
-          const rawPlayerName = (event.player || '').trim();
-          if (!rawPlayerName || rawPlayerName === 'Desconhecido') continue;
-
-          totalGoalsFound++;
-
-          // Determina o time do evento
-          let teamName = 'Desconhecido';
-          let teamLogo: string | null = null;
-          if (
-            fixture.homeTeam &&
-            event.teamId === fixture.homeTeam.externalId
-          ) {
-            teamName = fixture.homeTeam.name;
-            teamLogo = fixture.homeTeam.logo;
-          } else if (
-            fixture.awayTeam &&
-            event.teamId === fixture.awayTeam.externalId
-          ) {
-            teamName = fixture.awayTeam.name;
-            teamLogo = fixture.awayTeam.logo;
-          }
-
-          const isPenalty =
-            detail.includes('penalty') || detail.includes('pênalti');
-          const playerKey = `${rawPlayerName.toLowerCase()}_${teamName.toLowerCase()}`;
-
-          if (!playerScorersMap.has(playerKey)) {
-            playerScorersMap.set(playerKey, {
-              playerName: rawPlayerName,
-              playerPhoto: event.playerPhoto || null,
-              externalPlayerId: event.externalPlayerId || null,
-              teamName,
-              teamLogo,
-              goals: 0,
-              penalties: 0,
-              assists: 0,
-            });
-          }
-
-          const record = playerScorersMap.get(playerKey)!;
-          record.goals += 1;
-          if (isPenalty) {
-            record.penalties += 1;
-          }
-          if (event.playerPhoto && !record.playerPhoto) {
-            record.playerPhoto = event.playerPhoto;
-          }
-          if (event.externalPlayerId && !record.externalPlayerId) {
-            record.externalPlayerId = event.externalPlayerId;
-          }
-        }
-      }
-
-      // Ordenação Idempotente
-      const sortedScorers = Array.from(playerScorersMap.values()).sort(
-        (a, b) => {
-          if (b.goals !== a.goals) return b.goals - a.goals;
-          if (a.penalties !== b.penalties) return a.penalties - b.penalties;
-          return a.playerName.localeCompare(b.playerName);
-        },
-      );
-
-      this.logger.log(
-        `[ScorerAgent 🟡 CALCULADO] Agregados ${sortedScorers.length} artilheiros (${totalGoalsFound} gols) via eventos para ${league.name}. Gravando via upsert...`,
-      );
-
-      // Gravação cirúrgica via upsert (SEM deleteMany)
-      for (let i = 0; i < sortedScorers.length; i++) {
-        const item = sortedScorers[i];
-        const rank = i + 1;
+        if (effectiveGoals <= 0) continue;
 
         const savedScorer = await this.prisma.scorer.upsert({
           where: {
             leagueId_season_playerName_teamName: {
               leagueId: league.id,
               season: targetSeason,
-              playerName: item.playerName,
-              teamName: item.teamName,
+              playerName: localItem.playerName,
+              teamName: localItem.teamName,
             },
           },
           update: {
-            rank,
-            playerPhoto: item.playerPhoto,
-            teamLogo: item.teamLogo,
-            goals: item.goals,
-            assists: item.assists,
-            externalPlayerId: item.externalPlayerId,
+            playerPhoto: localItem.playerPhoto || existing?.playerPhoto || null,
+            teamLogo: localItem.teamLogo || existing?.teamLogo || null,
+            goals: effectiveGoals,
+            assists: effectiveAssists,
+            externalPlayerId: localItem.externalPlayerId || existing?.externalPlayerId || null,
           },
           create: {
             leagueId: league.id,
             season: targetSeason,
-            rank,
-            playerName: item.playerName,
-            playerPhoto: item.playerPhoto,
-            teamName: item.teamName,
-            teamLogo: item.teamLogo,
-            goals: item.goals,
-            assists: item.assists,
-            externalPlayerId: item.externalPlayerId,
+            rank: 999,
+            playerName: localItem.playerName,
+            playerPhoto: localItem.playerPhoto || null,
+            teamName: localItem.teamName,
+            teamLogo: localItem.teamLogo || null,
+            goals: effectiveGoals,
+            assists: effectiveAssists,
+            externalPlayerId: localItem.externalPlayerId || null,
           },
         });
 
-        // Sincroniza com PocketBase
         try {
           await this.pocketbaseSync.syncScorer(
             {
@@ -382,11 +284,41 @@ export class ScorerAgentService {
         }
       }
 
+      // =========================================================================
+      // 4. REORDENAÇÃO IDEMPOTENTE DE RANKS (1º, 2º, 3º...)
+      // =========================================================================
+      // Substitui o deleteMany destrutivo: os atletas são classificados por ordem
+      // decrescente de gols e assistências.
+      const allScorers = await this.prisma.scorer.findMany({
+        where: {
+          leagueId: league.id,
+          season: targetSeason,
+        },
+        orderBy: [
+          { goals: 'desc' },
+          { assists: 'desc' },
+          { playerName: 'asc' },
+        ],
+      });
+
+      let totalGoals = 0;
+      for (let i = 0; i < allScorers.length; i++) {
+        const s = allScorers[i];
+        totalGoals += s.goals;
+        const newRank = i + 1;
+        if (s.rank !== newRank) {
+          await this.prisma.scorer.update({
+            where: { id: s.id },
+            data: { rank: newRank },
+          });
+        }
+      }
+
       // Invalidação do Cache Redis
       await this.redis.delPattern('topscorers:*');
 
       this.logger.log(
-        `[ScorerAgent 🟡 CALCULADO ✅] Artilharia por eventos de ${league.name} consolidada com sucesso!`,
+        `[ScorerAgent ✅ RECONCILIADO] Artilharia de ${league.name} consolidada com sucesso (${allScorers.length} atletas, ${totalGoals} gols totais, Origem: ${source})!`,
       );
 
       return {
@@ -394,19 +326,116 @@ export class ScorerAgentService {
         leagueId: league.externalId,
         leagueName: league.name,
         season: targetSeason,
-        totalGoalsFound,
-        topScorersCount: sortedScorers.length,
-        source: 'calculated',
+        totalGoalsFound: totalGoals,
+        topScorersCount: allScorers.length,
+        source,
       };
     } catch (err: any) {
       this.logger.error(
-        `[ScorerAgent ❌] Erro ao sincronizar artilharia de ${leagueIdOrExtId}: ${err.message}`,
+        `[ScorerAgent ❌] Erro ao reconciliar artilharia de ${leagueIdOrExtId}: ${err.message}`,
         err.stack,
       );
       throw err;
     } finally {
       this.activeLocks.delete(lockKey);
     }
+  }
+
+  /**
+   * Varre todos os eventos de partidas já registradas no banco para compor
+   * o mapa de artilharia factual em tempo real por jogador.
+   */
+  private async getLocalScorersMap(leagueDbId: string, season: number) {
+    const fixtures = await this.prisma.fixture.findMany({
+      where: {
+        leagueId: leagueDbId,
+        season,
+      },
+      include: {
+        events: true,
+        homeTeam: true,
+        awayTeam: true,
+      },
+    });
+
+    const playerScorersMap = new Map<
+      string,
+      {
+        playerName: string;
+        playerPhoto: string | null;
+        externalPlayerId: number | null;
+        teamName: string;
+        teamLogo: string | null;
+        goals: number;
+        penalties: number;
+        assists: number;
+      }
+    >();
+
+    for (const fixture of fixtures) {
+      if (!fixture.events || fixture.events.length === 0) continue;
+
+      for (const event of fixture.events) {
+        const type = (event.type || '').toLowerCase();
+        if (type !== 'goal') continue;
+
+        const detail = (event.detail || '').toLowerCase();
+        if (
+          detail.includes('own goal') ||
+          detail.includes('contra') ||
+          detail.includes('autogol')
+        ) {
+          continue;
+        }
+
+        const rawPlayerName = (event.player || '').trim();
+        if (!rawPlayerName || rawPlayerName === 'Desconhecido') continue;
+
+        let teamName = 'Desconhecido';
+        let teamLogo: string | null = null;
+        if (fixture.homeTeam && event.teamId === fixture.homeTeam.externalId) {
+          teamName = fixture.homeTeam.name;
+          teamLogo = fixture.homeTeam.logo;
+        } else if (
+          fixture.awayTeam &&
+          event.teamId === fixture.awayTeam.externalId
+        ) {
+          teamName = fixture.awayTeam.name;
+          teamLogo = fixture.awayTeam.logo;
+        }
+
+        const isPenalty =
+          detail.includes('penalty') || detail.includes('pênalti');
+        const playerKey = `${rawPlayerName.toLowerCase()}_${teamName.toLowerCase()}`;
+
+        if (!playerScorersMap.has(playerKey)) {
+          playerScorersMap.set(playerKey, {
+            playerName: rawPlayerName,
+            playerPhoto: event.playerPhoto || null,
+            externalPlayerId: event.externalPlayerId || null,
+            teamName,
+            teamLogo,
+            goals: 0,
+            penalties: 0,
+            assists: 0,
+          });
+        }
+
+        const record = playerScorersMap.get(playerKey)!;
+        record.goals += 1;
+        if (isPenalty) {
+          record.penalties += 1;
+        }
+        if (event.playerPhoto && !record.playerPhoto) {
+          record.playerPhoto = event.playerPhoto;
+        }
+        if (event.externalPlayerId && !record.externalPlayerId) {
+          record.externalPlayerId = event.externalPlayerId;
+        }
+      }
+    }
+
+    return playerScorersMap;
   }
 
   /**

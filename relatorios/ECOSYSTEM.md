@@ -432,27 +432,22 @@ O agente opera de forma inteligente através de uma rotina diária (executada 1x
    - Seta a tag da competição como `🟡 CALCULADO PELO AGENTE (Eventos Locais)`.
    - **Exemplos atendidos:** Campeonato Paraibano, Campeonato Maranhense, etc.
 
-#### 2. Erradicação Absoluta do `deleteMany()` Destrutivo
-- **Proibição Mandatória:** Fica terminantemente proibido o uso de `prisma.scorer.deleteMany()` nos crons de sincronização.
-- **Gravação Cirúrgica via `upsert`:**
-  - Chave única composta: `(leagueId, season, playerName, teamName)`.
-  - Se o jogador já existe, atualiza as estatísticas mantendo seu UUID inalterado. Se não existe, cria o novo registro.
-  - Isso garante que os aplicativos móveis Flutter **nunca enfrentem telas em branco ou contagens zeradas** durante o processo de sincronização.
+#### 2. Erradicação Absoluta do `deleteMany()` e Regra de Não-Regressão Factual
+- **Proibição Mandatória:** Fica terminantemente proibido o uso de `prisma.scorer.deleteMany()` nos crons de sincronização e saneamento. Nenhum atleta que pontuou ou foi cadastrado é apagado do banco de dados.
+- **Regra de Monotonicidade Não-Regressiva:**
+  $$\text{Gols Efetivos} = \max(\text{Gols Banco Local}, \text{Gols API Oficial}, \text{Gols por Eventos de Partidas})$$
+  Isso garante que atrasos na homologação de súmulas pela API externa nunca reduzam a pontuação de um artilheiro no ZapScore. Quando a API oficial atualiza para um valor igual ou maior, ela alcança a realidade e a tabela avança automaticamente.
+- **Reordenação Idempotente de Ranks:** Ao término de cada sincronização, os atletas são reclassificados sequencialmente (`1º, 2º, 3º...`) por ordem decrescente de gols e assistências (`ORDER BY goals DESC, assists DESC`).
+- **Disparo Pós-Jogo Instantâneo (`FT Trigger`):** Quando uma partida finaliza (`statusShort: 'FT'`), o sistema aciona um micro-sync em background via `aggregateLeagueScorers`, atualizando a artilharia minutos após o apito final.
 
-#### 3. Painel de Governança, Badges e Gestão de Emergência no AdminPanel (`/adminpanel/agents/scorers`)
+#### 3. Painel de Governança e Auditoria Detalhada no AdminPanel (`/adminpanel/agents/scorers`)
 - **Tags Semafóricas de Origem por Competição:**
-  - 🟢 **Oficial (API-Football):** Dados 100% auditados pela federação.
-  - 🟡 **Calculado pelo Agente:** Modo autônomo ativo para ligas menores sem cobertura oficial.
-  - 🔴 **Sem Registros:** Competição ainda sem partidas iniciadas na temporada.
-- **Gaveta de Gestão Manual de Emergência (Safety Valve):**
-  - Permite a edição inline instantânea de qualquer jogador (gols, time, fotos, rank).
-  - **Botão "Travar Artilheiro" (Freeze Lock):** Permite congelar um atleta manualmente caso haja disputa de súmula no tribunal desportivo da federação, impedindo qualquer automação de alterar até a liberação do operador.
-
-#### 4. Plano de Execução em 4 Fases (Cronograma para Amanhã)
-* **Fase 1 (`apps/api`):** Refatorar `scorer-agent.service.ts` para implementar a árvore de decisão híbrida (Oficial ➔ Fallback) e eliminar `deleteMany()`.
-* **Fase 2 (`sync-jobs.service.ts`):** Desativar o cron horário agressivo e plugar o `handleHybridScorersSync` no cron diário da madrugada (1x ao dia, economia máxima de cota).
-* **Fase 3 (Baseline Imediato):** Rodar rotina de saneamento para aplicar os dados oficiais corretos no Brasileirão Série A (Viveros 18, Pedro 15, etc.) e ligas europeias.
-* **Fase 4 (`apps/web` AdminPanel):** Atualizar `/adminpanel/agents/scorers` com as tags de origem (Oficial vs. Calculado) e ferramentas de edição de emergência.
+  - 🟢 **Oficial (API-Football):** Dados auditados pela federação.
+  - 🟡 **Calculado pelo Agente:** Modo autônomo ativo por eventos locais.
+  - ⚪ **Sem Registros:** Competição ainda sem partidas iniciadas na temporada.
+- **Gaveta Lateral de Auditoria de Atletas (Slide-over Drawer):**
+  - Permite inspecionar a qualquer momento a lista completa de atletas, fotos oficiais, escudos dos clubes, gols e assistências de qualquer liga diretamente na tela.
+  - Botão de reconciliação instantânea com 1 clique para auditar e sanear a liga imediatamente.
 
 ### 5.4 Agente Monitor de IA (AI Sentinel & Feedback Loop Preditivo)
 * **Rota:** `/adminpanel/agents/ia-monitor`.
