@@ -13,7 +13,8 @@ import {
   Sparkles,
   Bot,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Megaphone
 } from 'lucide-react';
 import { ECOSYSTEM_MODULES } from '../registry';
 
@@ -235,6 +236,39 @@ export default function ZapScoreAdminSidebar({
                 <Video size={18} className="shrink-0" />
                 {!isCollapsed && <span className="truncate">Vídeos</span>}
               </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Rede de Anúncios */}
+        <div className="border-t border-[var(--border)] pt-4">
+          {!isCollapsed && (
+            <p className="px-3 text-[10px] font-bold uppercase tracking-widest mb-3 text-[var(--text-muted)]">
+              Monetização
+            </p>
+          )}
+          <div className="space-y-2">
+            <Link
+              href="/adminpanel/ads"
+              style={{
+                background: isActive('/adminpanel/ads') ? 'rgba(255, 31, 31, 0.15)' : 'transparent',
+                borderColor: isActive('/adminpanel/ads') ? 'var(--primary)' : 'transparent',
+                color: isActive('/adminpanel/ads') ? '#ffffff' : 'var(--text-muted)',
+              }}
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border hover:text-white hover:bg-[var(--surface-hover)] ${
+                isActive('/adminpanel/ads') ? 'border-l-4 border-l-[var(--primary)]' : ''
+              } ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}
+              title={isCollapsed ? 'Rede de Anúncios' : undefined}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Megaphone size={18} className="shrink-0 text-amber-400" />
+                {!isCollapsed && <span className="truncate">Rede de Anúncios</span>}
+              </div>
+              {!isCollapsed && (
+                <span className="badge badge-live text-[9px] px-2 py-0.5 font-bold shrink-0">
+                  HOUSE ADS
+                </span>
+              )}
             </Link>
           </div>
         </div>

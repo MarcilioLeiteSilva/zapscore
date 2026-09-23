@@ -22,6 +22,7 @@ import { SentinelModule } from './sentinel/sentinel.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { LineupsModule } from './lineups/lineups.module';
 import { TacticalCommentsModule } from './tactical-comments/tactical-comments.module';
+import { AdsModule } from './ads/ads.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { TacticalCommentsModule } from './tactical-comments/tactical-comments.mo
     NotificationsModule,
     LineupsModule,
     TacticalCommentsModule,
+    AdsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -134,14 +134,15 @@
     - [19.6.7 [A FAZER] Rotina de Varredura Antecipada de "Onde Assistir" no Dia do Jogo](#1967-a-fazer-rotina-de-varredura-antecipada-de-onde-assistir-no-dia-do-jogo-)
     - [19.6.8 [A FAZER] Coleção de Detentores Padrão por Liga no PocketBase (`league_broadcast_defaults`)](#1968-a-fazer-coleção-de-detentores-padrão-por-liga-no-pocketbase-league_broadcast_defaults-)
     - [19.6.9 [A FAZER - NA MEMÓRIA] Cálculo Dinâmico do "Form" (Últimos Jogos / Momento das Equipes)](#1969-a-fazer---na-memória-cálculo-dinâmico-do-form-últimos-jogos--momento-das-equipes-)
-- [Capítulo 20: [A FAZER] Rede Própria de Anúncios (House Ads & Direct Sponsorship Network)](#-capítulo-20-a-fazer-rede-própria-de-anúncios-house-ads--direct-sponsorship-network)
+- [Capítulo 20: [CONCLUÍDO] Rede Própria de Anúncios (House Ads & Direct Sponsorship Network)](#-capítulo-20-concluído-rede-própria-de-anúncios-house-ads--direct-sponsorship-network)
   - [20.1 Visão Geral e Proposta de Valor](#201-visão-geral-e-proposta-de-valor)
-  - [20.2 Arquitetura em 4 Camadas (PocketBase, ZapScore API, AdminPanel e Flutter)](#202-arquitetura-em-4-camadas-pocketbase-zapscore-api-adminpanel-e-flutter)
-  - [20.3 Modelo de Dados no PocketBase (`ads_campaigns` e `ads_stats`)](#203-modelo-de-dados-no-pocketbase-ads_campaigns-e-ads_stats)
+  - [20.2 Arquitetura em 4 Camadas (PocketBase Dedicado, ZapScore API, AdminPanel e Flutter)](#202-arquitetura-em-4-camadas-pocketbase-dedicado-zapscore-api-adminpanel-e-flutter)
+  - [20.3 Modelo de Dados no PocketBase Dedicado (`ads_campaigns` e `ads_stats`)](#203-modelo-de-dados-no-pocketbase-dedicado-ads_campaigns-e-ads_stats)
   - [20.4 Motor de Agendamento, Rotação e Cron na ZapScore API](#204-motor-de-agendamento-rotação-e-cron-na-zapscore-api)
   - [20.5 Interface de Gestão e Criação no AdminPanel (`/adminpanel/ads`)](#205-interface-de-gestão-e-criação-no-adminpanel-adminpanelads)
-  - [20.6 Integração Híbrida nos Apps Mobile Flutter (House Ads + AdMob Fallback)](#206-integração-híbrida-nos-apps-mobile-flutter-house-ads--admob-fallback)
-  - [20.7 Fases do Plano de Ação](#207-fases-do-plano-de-ação)
+  - [20.6 Integração Híbrida nos Apps Mobile Flutter (App Piloto `paulista`)](#206-integração-híbrida-nos-apps-mobile-flutter-app-piloto-paulista)
+  - [20.7 Fases e Histórico da Implementação](#207-fases-e-histórico-da-implementação)
+  - [20.8 Tutorial Prático: Como Criar e Operar House Ads no Dia a Dia](#208-tutorial-prático-como-criar-e-operar-house-ads-no-dia-a-dia)
 - [Capítulo 21: [A FAZER / OPERACIONAL] Divulgação dos Apps e Estratégia de Crescimento Rápido (Ações Diárias de 5 Minutos)](#-capítulo-21-a-fazer--operacional-divulgação-dos-apps-e-estratégia-de-crescimento-rápido-ações-diárias-de-5-minutos)
   - [21.1 Proposta de Valor e Estratégia de Tração Rápida](#211-proposta-de-valor-e-estratégia-de-tração-rápida)
   - [21.2 Calendário Operacional Semanal (1 Ação Rápida de 5 Minutos por Dia)](#212-calendário-operacional-semanal-1-ação-rápida-de-5-minutos-por-dia)
@@ -2557,88 +2558,101 @@ Abaixo está o registro formal das melhorias e ajustes identificados para contin
 
 ---
 
-## 📢 Capítulo 20: [A FAZER] Rede Própria de Anúncios (House Ads & Direct Sponsorship Network)
+## 📢 Capítulo 20: [CONCLUÍDO] Rede Própria de Anúncios (House Ads & Direct Sponsorship Network)
 
-> **Status:** `[A FAZER - PLANEJADO]`  
+> **Status:** `[CONCLUÍDO - OPERACIONAL EM PRODUÇÃO]`  
+> **App Piloto de Referência:** `apps/estaduais/paulista` (Campeonato Paulista)  
+> **Instância Dedicada PocketBase:** `https://zapscore-pocketbase-houseads.gtalg3.easypanel.host/`  
 > **Módulos Envolvidos:**  
-> - `PocketBase` (Coleções `ads_campaigns` e `ads_stats` + CDN de Criativos)  
-> - `apps/api` (Módulo `AdsModule`: `AdsService`, `AdsController`, `AdsSchedulerService`)  
-> - `apps/web` (Interface `/adminpanel/ads`: Gestão de Campanhas, Métricas e Mockup Preview)  
-> - `apps/mobile` & Apps Estaduais / Europa (Widgets `HouseAdBanner` e `HouseNativeAdWidget` com fallback AdMob)
+> - `PocketBase House Ads` (Coleções `ads_campaigns` [`pbc_886351542`] e `ads_stats` [`pbc_749087155`] + CDN de Criativos)  
+> - `apps/api` (Módulo `AdsModule`: `PocketbaseAdsClient`, `AdsService`, `AdsController`, `AdsSchedulerService`)  
+> - `apps/web` (Interface `/adminpanel/ads`: Dashboard com Filtro por Anunciante, Criador com Canva Specs & 3D Mockup, Mapa de Inventário `/adminpanel/ads/inventory`)  
+> - `apps/estaduais/paulista` (Piloto: `HouseAdService`, `HouseAdBanner`, `HouseHeaderSponsor` e retrocompatibilidade com `AdBanner`)
 
 ---
 
 ### 20.1 Visão Geral e Proposta de Valor
-Permitir a veiculação autônoma de campanhas publicitárias diretas e patrocínios regionais (casas de apostas, marcas esportivas, varejo local e infoprodutos) diretamente nos aplicativos móveis do ecossistema ZapScore, com:
-1. **Monetização 100% Direta:** Eliminação de intermediários e taxas das ad networks para campanhas diretas.
-2. **Preenchimento Garantido (Zero Fallback Waste):** Atua como alternativa primária ou como fallback perfeito quando o Google AdMob falhar (`onAdFailedToLoad`) ou apresentar baixo eCPM.
+A Rede Própria de Anúncios (House Ads & Direct Sponsorship Network) do ZapScore viabiliza a veiculação autônoma de campanhas publicitárias diretas e patrocínios regionais (casas de apostas, marcas esportivas, varejo local e infoprodutos) diretamente nos aplicativos móveis do ecossistema, com:
+1. **Monetização 100% Direta:** Eliminação total de intermediários e taxas das ad networks para campanhas diretas fechadas com patrocinadores.
+2. **Preenchimento Garantido (Zero Fallback Waste):** Atua como alternativa primária (Patrocínio Master) ou como fallback perfeito quando o Google AdMob falhar (`onAdFailedToLoad`) ou apresentar baixo eCPM.
 3. **Autonomia Operacional Sem Rebuild:** Criação, pausa, agendamento e troca de banners em tempo real pelo AdminPanel sem necessidade de compilar ou enviar novas versões para Google Play ou App Store.
+4. **Separação de Métricas por Empresa/Anunciante:** Relatórios filtráveis dedicados para prestação de contas com patrocinadores.
+5. **Multi-App Targeting Flexível:** Capacidade de veicular um anúncio globalmente (em todos os apps com 1 clique) ou em aplicativos selecionados via checkboxes.
 
 ---
 
-### 20.2 Arquitetura em 4 Camadas (PocketBase, ZapScore API, AdminPanel e Flutter)
+### 20.2 Arquitetura em 4 Camadas (PocketBase Dedicado, ZapScore API, AdminPanel e Flutter Piloto)
 
 ```mermaid
 flowchart TD
     subgraph ADMIN [AdminPanel Next.js /adminpanel/ads]
-        DASH[🖥️ Dashboard: Métricas, Impressões e CTR]
-        FORM[📝 Criador: Upload de Banner, Datas e Ligas Alvo]
-        MOCK[📱 Simulador Visual no Celular]
+        DASH[🖥️ Dashboard: Métricas, Filtro por Empresa e Capping]
+        INV[🗺️ Mapa de Inventário: Locais Livres vs Híbridos]
+        FORM[📝 Criador: Canva Specs, Multi-App Checkboxes e 3D Mockup]
     end
 
-    subgraph PB [PocketBase - Dados & CDN de Imagens]
-        ADS[(Coleção ads_campaigns)]
-        STATS[(Coleção ads_stats)]
-        STORAGE[🗂️ Arquivos Públicos / Banners]
+    subgraph PB [PocketBase Dedicado House Ads - Easypanel]
+        ADS[(Coleção ads_campaigns - pbc_886351542)]
+        STATS[(Coleção ads_stats - pbc_749087155)]
+        STORAGE[🗂️ CDN Pública de Criativos / Banners]
     end
 
-    subgraph API [ZapScore API NestJS]
-        ROUTER[🎯 AdsService: Filtro de Alvo, Rotação e Cache em Memória]
-        CRON[⏱️ AdsSchedulerService: Expiração Automática e Cap de Impressões]
-        TRACK[📊 Telemetria: Contador Atômico de Views e Clicks]
+    subgraph API [ZapScore API NestJS - AdsModule]
+        CLIENT[🔌 PocketbaseAdsClient: Token Cache 2h & Atomic Counter]
+        ROUTER[🎯 AdsService: Filtro de App, Rotação Ponderada e Cache 60s]
+        CRON[⏱️ AdsSchedulerService: Cron 15m para Expiração e Capping]
+        CTRL[📡 AdsController: Endpoints Públicos e Administrativos]
     end
 
-    subgraph MOBILE [Apps Flutter White-Label]
-        MIN[📱 App Mineiro]
-        CAR[📱 App Carioca]
-        BRA[📱 App Brasileirão]
-        EUR[📱 Apps Europa]
+    subgraph PILOT [App Piloto Flutter - apps/estaduais/paulista]
+        SVC[⚙️ HouseAdService: Fetch com Timeout 2.5s & Telemetria Fire-and-Forget]
+        HYBRID[🖼️ HouseAdBanner: AdMob Primário + Fallback House Ad]
+        SPONSOR[🏆 HouseHeaderSponsor: Topo da Tabela 100% Livre de AdMob]
+        LEGACY[🛡️ AdBanner: Retrocompatibilidade 100%]
     end
 
-    FORM -->|Cria campanha & faz upload| PB
-    DASH -->|Consulta relatórios consolidados| API
-    API -->|Lê campanhas ativas com cache 1m| PB
-    CRON -->|Atualiza status expirado / pausado| PB
-    MIN & CAR & BRA & EUR -->|GET /ads/serve?app=...&placement=...| API
-    MIN & CAR & BRA & EUR -->|POST /ads/:id/impression ou /click| TRACK
-    TRACK -->|Incrementa contadores| PB
+    FORM -->|POST /ads/campaigns com multipart/form-data| CTRL
+    DASH & INV -->|GET /ads/dashboard & /ads/inventory| CTRL
+    CTRL --> CLIENT
+    CLIENT --> PB
+    ROUTER -->|Lê campanhas ativas com cache 60s| CLIENT
+    CRON -->|Atualiza status expirado / pausado| CLIENT
+    SVC -->|GET /ads/serve?app=campeonato_paulista&placement=...| CTRL
+    SVC -->|POST /ads/:id/impression ou /click| CTRL
+    HYBRID & SPONSOR --> SVC
+    LEGACY --> HYBRID
 ```
 
 ---
 
-### 20.3 Modelo de Dados no PocketBase (`ads_campaigns` e `ads_stats`)
+### 20.3 Instância e Modelo de Dados no PocketBase
 
-#### 1. Coleção: `ads_campaigns`
-* `title` (text, obrigatório): Nome identificador da campanha (ex: *"SuperBet - Final Mineiro"*).
-* `advertiser` (text): Nome do anunciante/cliente parceiro.
-* `placement` (select):
+* **Instância Dedicada:** `https://zapscore-pocketbase-houseads.gtalg3.easypanel.host/`
+* **Superusuário:** `prolaser2005@hotmail.com`
+* **Coleções Provisionadas:**
+
+#### 1. Coleção: `ads_campaigns` (`pbc_886351542`)
+* `title` (text, obrigatório): Nome identificador da campanha (ex: *"SuperBet - Final Paulista"*).
+* `advertiser` (text, obrigatório): Nome da empresa ou cliente anunciante (ex: *"SuperBet"*, *"Loja do Esporte"*).
+* `placement` (select, obrigatório):
   * `banner_bottom`: Banner fixo ou rotativo no rodapé (320x50 / 300x50).
-  * `native_card`: Card nativo integrado aos feeds de partidas e notícias.
-  * `interstitial_modal`: Modal ou tela cheia de transição entre telas/partidas.
+  * `header_table_sponsor`: Banner de patrocínio no topo da tabela de classificação (350x65 / 320x60). **100% Livre de AdMob**.
+  * `native_card`: Card nativo integrado aos feeds de partidas e notícias (360x200 / 300x250).
+  * `interstitial_modal`: Modal ou tela cheia de transição entre telas/partidas (320x480 / 360x640).
   * `popup_launch`: Aviso/banner de boas-vindas na abertura do aplicativo.
-* `target_apps` (json): Lista de slugs dos apps autorizados (ex: `["campeonato_mineiro", "campeonato_carioca"]` ou `["all"]`).
+* `target_apps` (json): Lista de slugs dos apps autorizados (ex: `["campeonato_paulista", "campeonato_carioca"]` ou `["all"]`).
 * `target_leagues` (json): Array de IDs numéricos da API-Football para segmentação exclusiva por campeonato.
-* `creative_image` (file, obrigatório): Arquivo gráfico do banner (PNG, WebP, JPG) com serving direto pela CDN do PocketBase.
+* `creative_image` (file, obrigatório): Arquivo gráfico do banner (PNG, WebP, JPG) com serving direto pela CDN do PocketBase. Regra de listagem pública ativada (`""`).
 * `destination_url` (text, obrigatório): URL externa (com parâmetros UTM) ou rota de deep link interna do app.
 * `start_at` (datetime, obrigatório): Início da veiculação.
 * `end_at` (datetime, obrigatório): Fim da veiculação.
 * `priority` (number, default: 1): Peso para sorteio e rotação entre múltiplas campanhas concorrentes.
 * `status` (select): `draft`, `scheduled`, `active`, `paused`, `expired`.
-* `max_impressions` (number, opcional): Limite contratual de exibições (*capping*).
+* `max_impressions` (number, default: 0): Limite contratual de exibições (*capping*). Se 0, exibições ilimitadas.
 * `impressions_count` (number, default: 0): Total acumulado de visualizações.
 * `clicks_count` (number, default: 0): Total acumulado de toques.
 
-#### 2. Coleção: `ads_stats` (Telemetria Detalhada / Auditoria)
+#### 2. Coleção: `ads_stats` (`pbc_749087155`)
 * `campaign_id` (relation `ads_campaigns`): Identificador da campanha.
 * `event_type` (select): `impression`, `click`.
 * `app_slug` (text): Slug do aplicativo de origem.
@@ -2647,58 +2661,138 @@ flowchart TD
 
 ---
 
-### 20.4 Motor de Agendamento, Rotação e Cron na ZapScore API (`apps/api`)
+### 20.4 Backend NestJS (`apps/api/src/ads`)
 
-* **Módulo:** `apps/api/src/ads/`
-* **Endpoints:**
-  1. `GET /ads/serve`:
-     * Query: `?app=campeonato_mineiro&placement=banner_bottom&leagueId=629`
-     * Consulta campanhas vigentes no PocketBase (`status = 'active'`, `start_at <= now <= end_at`, matching de `target_apps` e `target_leagues`).
-     * Realiza sorteio ponderado pela `priority`.
-     * Mantém **cache em memória (1 minuto)** para suportar alto tráfego sem onerar o PocketBase.
-  2. `POST /ads/:id/impression`:
-     * Registra exibição e incrementa `impressions_count` de forma atômica e assíncrona.
-  3. `POST /ads/:id/click`:
-     * Registra o clique e retorna a URL de redirecionamento.
-* **Cron Jobs (`AdsSchedulerService`):**
-  * **A cada 15 minutos:**
-    * Campanhas `scheduled` cujo `start_at <= now` ➔ Promove para `active`.
-    * Campanhas `active` cujo `end_at <= now` ➔ Promove para `expired`.
-    * Campanhas que atingiram `max_impressions` ➔ Altera para `paused`.
-
----
-
-### 20.5 Interface de Gestão e Criação no AdminPanel (`/adminpanel/growth/ads`)
-
-* **Módulo:** `apps/web/app/(main)/adminpanel/growth/ads/page.tsx` (com rota legada/alias `/adminpanel/ads`)
-* **Localização Estrutural:** Integrado à seção dedicada de **Divulgação & Monetização dos Apps** (`/adminpanel/growth/ads`).
-* **Funcionalidades:**
-  1. **Dashboard Consolidado:** Métricas de Impressões, Cliques, CTR médio e campanhas ativas no momento.
-  2. **Tabela Operacional de Campanhas:** Listagem com filtro por status, toggle para pausar/reativar instantaneamente e pré-visualização de imagem.
-  3. **Formulário de Criação/Edição:**
-     * Upload de arte com validação de dimensões.
-     * Seletores dinâmicos de formato (`Banner`, `Card`, `Modal`).
-     * Multi-select de aplicativos suportados e competições.
-     * Agendamento com intervalo de datas.
-  4. **Simulador Visual (Mobile Mockup):** Renderização instantânea do banner no protótipo de smartphone antes de salvar a campanha.
+* **Módulo:** `AdsModule` registrado no `AppModule`.
+* **Provedor:** `PocketbaseAdsClient` (`providers/pocketbase-ads.client.ts`):
+  * Cache de autenticação superuser (2 horas) via JWT no header.
+  * Suporte a upload multipart em Node.js (`new Blob([new Uint8Array(file.buffer)])`).
+  * Atualizações atômicas e ordenação confiável (`-id`).
+* **Serviço de Negócios:** `AdsService` (`ads.service.ts`):
+  * **Cache em Memória:** TTL de 60 segundos com invalidação imediata em mutações.
+  * **Algoritmo de Sorteio Ponderado:** Seleciona entre campanhas ativas concorrentes usando pesos (`priority`).
+  * **Agregação por Anunciante:** Consolida impressões, cliques e CTR individualmente por empresa.
+  * **Mapa de Inventário:** Rastreia e reporta ocupação de cada slot nos apps.
+* **Cron Automático:** `AdsSchedulerService` (`ads-scheduler.service.ts`):
+  * Roda a cada 15 minutos (`CronExpression.EVERY_15_MINUTES`).
+  * Promove `scheduled` ➔ `active` quando `start_at <= now`.
+  * Promove `active` ➔ `expired` quando `end_at <= now`.
+  * Pausa campanhas (`active` ➔ `paused`) ao atingir `max_impressions`.
+* **Endpoints HTTP:**
+  * `GET /ads/serve?app=...&placement=...&leagueId=...`: Serving leve com cache para apps mobile.
+  * `POST /ads/:id/impression`: Telemetria de visualização.
+  * `POST /ads/:id/click`: Telemetria de toque com retorno de URL de redirecionamento.
+  * `GET /ads/dashboard`: Métricas consolidadas e detalhadas por anunciante.
+  * `GET /ads/inventory`: Status de ocupação e dicas dos slots de anúncios.
+  * `GET /ads/campaigns`: Listagem de campanhas com paginação e filtro por anunciante.
+  * `POST /ads/campaigns`: Criação de nova campanha com upload de criativo.
+  * `PATCH /ads/campaigns/:id/status`: Play/pause instantâneo.
 
 ---
 
-### 20.6 Integração Híbrida nos Apps Mobile Flutter (House Ads + AdMob Fallback)
+### 20.5 Interface de Gestão no AdminPanel (`apps/web`)
 
-* **Widgets Universais:** `HouseAdBanner` e `HouseNativeAdWidget`
-* **Modos de Operação Configuráveis:**
-  * **Modo A (House Ad Prioritário):** Busca primeiro o anúncio próprio. Se houver patrocínio ativo, exibe o House Ad com link direto. Se não houver, carrega o AdMob.
-  * **Modo B (AdMob com Fallback em House Ad):** Tenta carregar o banner AdMob. Caso o AdMob retorne erro ou sem fill (`onAdFailedToLoad`), renderiza o banner próprio imediatamente, garantindo 100% de aproveitamento de tela.
+* **Menu Lateral:** Adicionado item dedicado `Monetização ➔ Rede de Anúncios` com badge `HOUSE ADS`.
+* **Dashboard Principal (`/adminpanel/ads`):**
+  * 4 KPIs em tempo real: Impressões Totais, Cliques Totais, CTR Médio e Campanhas Ativas.
+  * **Filtro de Métricas por Empresa/Anunciante:** Menu suspenso para isolar o relatório de um cliente parceiro e prestar contas de desempenho.
+  * **Tabela de Campanhas:** Miniatura do banner, status badge, datas, barra de progresso do capping de impressões e botão de alternância (play/pause).
+* **Criador de Campanhas com 3D Mockup (`/adminpanel/ads/new`):**
+  * **Dimensões Recomendadas Canva:** Exibe a proporção e resolução exata para cada formato (ex: `320 x 50 px` no Rodapé, `350 x 65 px` no Topo da Tabela).
+  * **Badges de Ocupação AdMob:** Identificação visual entre 🟢 Livre (exclusivo para patrocínio próprio) e 🟡 Híbrido (divide espaço com AdMob via fallback).
+  * **Filtro Rápido:** Checkbox *"Mostrar apenas locais livres (100% patrocínio direto)"*.
+  * **Segmentação Multi-App:** Opção de veicular globalmente (*"Todos os Aplicativos"*) ou marcar individualmente os apps desejados via checkboxes.
+  * **Simulador 3D Mobile Mockup:** Protótipo interativo em smartphone na lateral direita com visualização do banner na tela real antes de salvar.
+* **Mapa de Inventário (`/adminpanel/ads/inventory`):**
+  * Tabela completa com todos os slots disponíveis no ecossistema, status de ocupação AdMob, contagem de campanhas ativas e dicas de precificação/monetização.
 
 ---
 
-### 20.7 Fases do Plano de Ação
+### 20.6 App Piloto: Integração no Campeonato Paulista (`apps/estaduais/paulista`)
 
-* **Fase 1 (Estrutura no PocketBase & Backend):** Criação das coleções no PocketBase, serviço `AdsService` com cache em memória e endpoints `/ads/serve`, `/ads/:id/impression` e `/ads/:id/click`.
-* **Fase 2 (Agendador & Cron):** Implementação do `AdsSchedulerService` em `apps/api` com rotinas automáticas de expiração e transição de status.
-* **Fase 3 (Interface no AdminPanel):** Telas de gestão, upload de artes, indicadores de CTR e simulador mobile em `/adminpanel/ads`.
-* **Fase 4 (Clientes Flutter):** Desenvolvimento dos widgets híbridos nos apps estaduais, Brasileirão e Europa com rastreamento de impressões e cliques.
+O aplicativo **Campeonato Paulista** (`apps/estaduais/paulista`) foi estabelecido e implementado como o **molde piloto de referência** de todo o ecossistema ZapScore:
+
+1. **Serviço Centralizado:** `lib/services/house_ad_service.dart`
+   * Singleton instanciado via `HouseAdService()`.
+   * Defensive Timeout de 2.5 segundos para garantir que a interface do usuário nunca trave ou espere por conexões lentas.
+   * Resolução automática do slug do app a partir do `AppConfig.appSlug` (`campeonato_paulista`).
+   * Telemetria assíncrona (`fire-and-forget`) para não degradar a experiência do usuário.
+2. **Banner Híbrido com Fallback:** `lib/presentation/widgets/house_ad_banner.dart`
+   * Primeiro solicita o anúncio ao AdMob.
+   * Ao receber `onAdFailedToLoad`, chaveia instantaneamente para o House Ad da ZapScore API.
+   * Suporta o parâmetro `preferHouseAd: true` para campanhas de Patrocínio Master prioritário.
+3. **Patrocínio Exclusivo no Topo da Tabela:** `lib/presentation/widgets/house_header_sponsor.dart`
+   * Widget dedicado para o slot `header_table_sponsor`.
+   * Não possui código do AdMob (100% limpo e reservado para parceiros comerciais diretos).
+   * Badge discreta *"Patrocinado"* e clique direto com abertura no navegador externo via `url_launcher`.
+4. **Retrocompatibilidade Absoluta:** `lib/presentation/widgets/ad_banner.dart`
+   * O widget legado existente de banner foi atualizado internamente para apontar para `HouseAdBanner`.
+   * Preservou 100% da assinatura, dos parâmetros e do visual original sem quebrar nenhuma tela do app.
+5. **Validação:** Verificado com `flutter analyze`, resultando em 0 erros e 0 alertas (`No issues found!`).
+
+---
+
+### 20.7 Replicação para os Demais Aplicativos do Ecossistema
+
+Para replicar a integração do piloto Paulista nos demais aplicativos (`apps/estaduais/*`, `apps/brasileirao`, `apps/europa/*`):
+1. Copiar `lib/services/house_ad_service.dart` para a pasta `lib/services/` do app de destino.
+2. Copiar `lib/presentation/widgets/house_ad_banner.dart` e `house_header_sponsor.dart` para `lib/presentation/widgets/`.
+3. Ajustar `lib/presentation/widgets/ad_banner.dart` para delegar para `HouseAdBanner`.
+4. Adicionar `HouseHeaderSponsorWidget()` no topo da tela de classificação do respectivo app.
+
+---
+
+### 20.8 Tutorial Prático: Como Criar e Operar House Ads no Dia a Dia
+
+Este guia passo a passo descreve como qualquer operador ou administrador do ZapScore pode comercializar, cadastrar e acompanhar campanhas na rede própria.
+
+#### Passo 1: Analisar os Espaços Disponíveis
+1. No AdminPanel, abra o menu **Monetização ➔ Rede de Anúncios**.
+2. Clique no botão **"🗺️ Ver Mapa de Inventário"** (ou acesse `/adminpanel/ads/inventory`).
+3. Verifique quais espaços estão disponíveis:
+   * **🟢 100% Livre (Topo da Tabela):** Ideal para vender cotas exclusivas de Patrocínio Master para casas de apostas ou marcas locais (nenhum anúncio do AdMob concorre neste espaço).
+   * **🟡 Híbrido (Rodapé das Telas):** O anúncio será exibido sempre que o AdMob falhar ou quando for definido com prioridade alta.
+
+#### Passo 2: Criar a Arte no Canva
+Abra o [Canva](https://www.canva.com) e crie o design na resolução exata recomendada para o formato escolhido:
+* **Rodapé (Banner Bottom):** `320 x 50 px` (ou `640 x 100 px` para telas Retina @2x).
+* **Topo da Tabela (Header Table Sponsor):** `350 x 65 px` (ou `700 x 130 px` @2x).
+* **Card Nativo de Notícias:** `360 x 200 px` (proporção 16:9).
+* **Modal Tela Cheia (Interstitial):** `320 x 480 px` (ou `1080 x 1920 px` @2x).
+> **Dica de Design:** Exporte a imagem em formato **PNG** ou **WebP** com fundo contrastante e um botão de ação chamativo (ex: *"Aposte Agora"*, *"Comprar Ingresso"*, *"Baixar App"*).
+
+#### Passo 3: Cadastrar a Nova Campanha
+1. No menu superior da Rede de Anúncios, clique no botão **"➕ Nova Campanha"** (`/adminpanel/ads/new`).
+2. **Dados Básicos:**
+   * **Título:** Dê um nome descritivo (ex: *"Cota Master - Betano Paulista 2026"*).
+   * **Empresa / Anunciante:** Digite o nome da empresa parceira (ex: *"Betano"*). Isso permitirá gerar relatórios exclusivos para esse cliente.
+3. **Formato e Posição:**
+   * Selecione o formato desejado (ex: *"Topo da Tabela de Classificação"* ou *"Banner Fixo no Rodapé"*).
+   * O sistema exibirá um lembrete com as dimensões recomendadas e o status de ocupação AdMob.
+4. **Segmentação de Aplicativos:**
+   * Se a cota for global (veiculada em toda a rede), marque *"Todos os Aplicativos (Global)"*.
+   * Se a cota for regional, desmarque a opção global e selecione os apps específicos (ex: marque apenas `Campeonato Paulista`).
+5. **Upload do Criativo:**
+   * Faça o upload do arquivo gerado no Canva.
+   * Veja o criativo aparecer instantaneamente no **Simulador 3D de Smartphone** ao lado para validar o enquadramento.
+6. **Destino e Agendamento:**
+   * **URL de Destino:** Cole o link externo do anunciante (recomenda-se incluir parâmetros UTM, ex: `https://anunciante.com.br/?utm_source=zapscore&utm_medium=housead&utm_campaign=paulista`).
+   * **Período de Veiculação:** Selecione a data e hora de início e término do contrato.
+   * **Limite de Impressões (Capping):** Se o contrato tiver um teto de exibições (ex: 50.000 visualizações), digite o valor. Ao atingir essa meta, o sistema pausa a campanha automaticamente. Para exibições ilimitadas até o fim da data, deixe `0`.
+7. Clique em **"Publicar Campanha"**.
+
+#### Passo 4: Operação em Tempo Real (Pausar / Retomar)
+* Na listagem de campanhas (`/adminpanel/ads`), você pode pausar ou reativar qualquer campanha a qualquer momento clicando no botão **Pausar** ou **Ativar**.
+* A alteração entra em vigor no aplicativo em até 60 segundos (tempo de cache em memória da API), sem necessidade de reiniciar o app móvel.
+
+#### Passo 5: Prestação de Contas ao Patrocinador
+1. Acesse o painel principal (`/adminpanel/ads`).
+2. No topo da tela, clique no seletor **"Filtrar por Empresa / Anunciante"** e escolha o cliente (ex: *"Betano"*).
+3. O painel recalcula instantaneamente os números:
+   * **Visualizações Entregues:** Total de vezes que a arte foi renderizada na tela do usuário.
+   * **Cliques Gerados:** Total de toques recebidos.
+   * **Taxa de Cliques (CTR):** Porcentagem de conversão e engajamento da campanha.
+4. Você pode tirar um print deste dashboard ou exportar as métricas para enviar o relatório oficial de prestação de contas do patrocínio.
 
 ---
 
