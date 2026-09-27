@@ -5,7 +5,6 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView
 import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin
@@ -17,7 +16,7 @@ class NativeAdFactorySmall(private val layoutInflater: LayoutInflater) : GoogleM
     ): NativeAdView {
         val nativeAdView = layoutInflater.inflate(R.layout.custom_native_ad, null) as NativeAdView
 
-        // Headline
+        // Headline (Required)
         val headlineView = nativeAdView.findViewById<TextView>(R.id.ad_headline)
         headlineView.text = nativeAd.headline
         nativeAdView.headlineView = headlineView
@@ -27,20 +26,22 @@ class NativeAdFactorySmall(private val layoutInflater: LayoutInflater) : GoogleM
         if (nativeAd.body != null) {
             bodyView.text = nativeAd.body
             bodyView.visibility = View.VISIBLE
+            nativeAdView.bodyView = bodyView
         } else {
             bodyView.visibility = View.GONE
+            nativeAdView.bodyView = null
         }
-        nativeAdView.bodyView = bodyView
 
         // Call to Action Button
         val ctaView = nativeAdView.findViewById<Button>(R.id.ad_call_to_action)
         if (nativeAd.callToAction != null) {
             ctaView.text = nativeAd.callToAction
             ctaView.visibility = View.VISIBLE
+            nativeAdView.callToActionView = ctaView
         } else {
             ctaView.visibility = View.GONE
+            nativeAdView.callToActionView = null
         }
-        nativeAdView.callToActionView = ctaView
 
         // Advertiser / Price
         val advertiserView = nativeAdView.findViewById<TextView>(R.id.ad_advertiser)
@@ -48,34 +49,27 @@ class NativeAdFactorySmall(private val layoutInflater: LayoutInflater) : GoogleM
         if (advertiserText != null) {
             advertiserView.text = advertiserText
             advertiserView.visibility = View.VISIBLE
+            nativeAdView.advertiserView = advertiserView
         } else {
             advertiserView.visibility = View.GONE
+            nativeAdView.advertiserView = null
         }
-        nativeAdView.advertiserView = advertiserView
 
-        // Icon / Media
+        // Icon / Image (Small layout uses iconView to comply with AdMob 120x120 MediaView policy)
         val iconView = nativeAdView.findViewById<ImageView>(R.id.ad_app_icon)
-        val mediaView = nativeAdView.findViewById<MediaView>(R.id.ad_media)
+        val iconDrawable = nativeAd.icon?.drawable
+            ?: nativeAd.mediaContent?.mainImage
+            ?: nativeAd.images.firstOrNull()?.drawable
 
-        if (nativeAd.mediaContent != null && nativeAd.mediaContent!!.hasVideoContent()) {
-            mediaView.mediaContent = nativeAd.mediaContent
-            mediaView.visibility = View.VISIBLE
-            iconView.visibility = View.GONE
-            nativeAdView.mediaView = mediaView
-        } else if (nativeAd.icon != null && nativeAd.icon!!.drawable != null) {
-            iconView.setImageDrawable(nativeAd.icon!!.drawable)
+        if (iconDrawable != null) {
+            iconView.setImageDrawable(iconDrawable)
             iconView.visibility = View.VISIBLE
-            mediaView.visibility = View.GONE
             nativeAdView.iconView = iconView
-        } else if (nativeAd.images.isNotEmpty() && nativeAd.images[0].drawable != null) {
-            iconView.setImageDrawable(nativeAd.images[0].drawable)
-            iconView.visibility = View.VISIBLE
-            mediaView.visibility = View.GONE
-            nativeAdView.imageView = iconView
         } else {
             iconView.visibility = View.GONE
-            mediaView.visibility = View.GONE
+            nativeAdView.iconView = null
         }
+        nativeAdView.mediaView = null
 
         nativeAdView.setNativeAd(nativeAd)
         return nativeAdView

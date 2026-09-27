@@ -12,6 +12,7 @@ import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
 import '../../logic/models/player.dart';
 import '../../logic/models/ai_performance_stats.dart';
+import '../../logic/models/tactical_comment.dart';
 
 
 class ApiClient {
@@ -235,7 +236,7 @@ class ApiClient {
           .where((l) => l.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     } catch (e) {
-      print('Error searching leagues: $e');
+      debugPrint('Error searching leagues: $e');
       return [];
     }
   }
@@ -341,7 +342,7 @@ class ApiClient {
         return _decodeResponse(response);
       }
     } catch (e) {
-      print('Error loading AI analysis: $e');
+      debugPrint('Error loading AI analysis: $e');
     }
     return null;
   }
@@ -353,7 +354,7 @@ class ApiClient {
         return _decodeResponse(response);
       }
     } catch (e) {
-      print('Error loading H2H: $e');
+      debugPrint('Error loading H2H: $e');
     }
     return null;
   }
@@ -362,7 +363,7 @@ class ApiClient {
     try {
       await http.post(Uri.parse('$baseUrl/sync/fixture/$externalId'));
     } catch (e) {
-      print('Sync failed: $e');
+      debugPrint('Sync failed: $e');
     }
   }
 
@@ -384,6 +385,55 @@ class ApiClient {
       }
     }
     throw Exception('Failed to load AI performance stats');
+  }
+
+  Future<Map<String, dynamic>?> getMatchBroadcast(int fixtureId) async {
+    try {
+      final pbUrl =
+          'https://zapscore-pocketbase-comentarios.gtalg3.easypanel.host/api/collections/fixture_broadcasts/records?filter=(fixture_id=$fixtureId)&limit=1';
+      final pbRes =
+          await http.get(Uri.parse(pbUrl)).timeout(const Duration(seconds: 3));
+      if (pbRes.statusCode == 200) {
+        final data = json.decode(pbRes.body);
+        if (data != null &&
+            data['items'] != null &&
+            (data['items'] as List).isNotEmpty) {
+          return data['items'][0] as Map<String, dynamic>;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      final apiRes = await http
+          .get(Uri.parse('$baseUrl/fixtures/$fixtureId/broadcast'))
+          .timeout(const Duration(seconds: 3));
+      if (apiRes.statusCode == 200) {
+        final data = _decodeResponse(apiRes);
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<List<TacticalComment>> getFixtureTacticalComments(int fixtureId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/fixtures/$fixtureId/comments'));
+      if (response.statusCode == 200) {
+        final data = _decodeResponse(response);
+        if (data is Map<String, dynamic> && data['comments'] is List) {
+          return (data['comments'] as List)
+              .map((c) => TacticalComment.fromJson(c))
+              .toList();
+        } else if (data is List) {
+          return data.map((c) => TacticalComment.fromJson(c)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading tactical comments: $e');
+    }
+    return [];
   }
 }
 

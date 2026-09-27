@@ -14,7 +14,7 @@ class SettingsPage extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 Theme.of(context).cardColor,
-                Theme.of(context).cardColor.withOpacity(0.8),
+                Theme.of(context).cardColor.withValues(alpha: 0.8),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -60,7 +60,7 @@ class SettingsPage extends StatelessWidget {
                 onPressed: () => context.pushNamed(screenEditInfo),
                 icon: CircleAvatar(
                   backgroundColor:
-                      AppColor.accent.withOpacity(0.15),
+                      AppColor.accent.withValues(alpha: 0.15),
                   child: SvgPicture.asset(
                     Assets.edit,
                     width: 18,
@@ -96,7 +96,7 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'profile'.tr(context),
             icon: Assets.accountLine,
-            color: AppColor.accent.withOpacity(.12),
+            color: AppColor.accent.withValues(alpha: .12),
             iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenEditInfo);
@@ -105,7 +105,7 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'theme'.tr(context),
             icon: Assets.eye,
-            color: AppColor.accent.withOpacity(.12),
+            color: AppColor.accent.withValues(alpha: .12),
             iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenTheme);
@@ -114,7 +114,7 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'notifications'.tr(context),
             icon: Assets.bell,
-            color: AppColor.accent.withOpacity(.12),
+            color: AppColor.accent.withValues(alpha: .12),
             iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenEditNotification);
@@ -123,7 +123,7 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'general'.tr(context),
             icon: Assets.general,
-            color: AppColor.accent.withOpacity(.12),
+            color: AppColor.accent.withValues(alpha: .12),
             iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenGeneral);
@@ -132,7 +132,7 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'about'.tr(context),
             icon: Assets.info,
-            color: AppColor.accent.withOpacity(.12),
+            color: AppColor.accent.withValues(alpha: .12),
             iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenAbout);
@@ -141,7 +141,7 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'logout'.tr(context),
             icon: Assets.logout,
-            color: AppColor.accent.withOpacity(.12),
+            color: AppColor.accent.withValues(alpha: .12),
             iconColor: AppColor.accent,
             onTap: () {
               showModalBottomSheet(

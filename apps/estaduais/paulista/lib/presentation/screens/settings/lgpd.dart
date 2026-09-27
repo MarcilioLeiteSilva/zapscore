@@ -67,7 +67,7 @@ O usuário pode a qualquer momento alterar suas preferências ou solicitar a exc
 Adotamos os melhores padrões de segurança da informação para garantir a privacidade e inviolabilidade das suas preferências no aplicativo.''',
                 style: GoogleFonts.urbanist(
                   textStyle: context.textTheme.bodySmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
                     fontSize: 12,
                     height: 1.55,
                   ),

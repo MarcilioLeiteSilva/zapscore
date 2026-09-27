@@ -71,7 +71,7 @@ Empregamos medidas técnicas e organizacionais avançadas de criptografia para p
 Dúvidas sobre nossa política de privacidade podem ser sanadas através dos canais oficiais de suporte do Zapscore Football.''',
                 style: GoogleFonts.urbanist(
                   textStyle: context.textTheme.bodySmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
                     fontSize: 12,
                     height: 1.55,
                   ),

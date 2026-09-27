@@ -34,13 +34,18 @@ import '../../logic/models/news.dart';
 import '../../logic/models/video.dart';
 import '../../logic/models/competition.dart';
 import '../../logic/models/competition_phase.dart';
-import '../../logic/models/tie.dart';
 import '../../repository/api/api_client.dart';
-import 'ad_banner.dart';
 import 'native_ad.dart';
 import 'standings_table.dart';
 import 'competition_bracket.dart';
+import 'house_header_sponsor.dart';
+import 'house_native_match_card.dart';
+import 'house_popup_launch.dart';
 import '../../services/ad_service.dart';
+
+export 'house_header_sponsor.dart';
+export 'house_native_match_card.dart';
+export 'house_popup_launch.dart';
 
 part 'user.dart';
 part 'home.dart';

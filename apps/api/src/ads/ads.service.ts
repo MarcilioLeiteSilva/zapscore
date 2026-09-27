@@ -76,9 +76,30 @@ export class AdsService {
         return false;
       }
 
-      // 4. Filtro de Aplicativo
+      // 4. Filtro de Aplicativo (com suporte a sinônimos: "paulista" <=> "campeonato_paulista")
       const targetApps = campaign.target_apps || ['all'];
-      const appMatch = targetApps.includes('all') || (query.app && targetApps.includes(query.app));
+      const queryApp = query.app ? query.app.toLowerCase().trim() : '';
+      const queryCandidates = new Set<string>();
+      if (queryApp) {
+        queryCandidates.add(queryApp);
+        if (queryApp.startsWith('campeonato_')) {
+          queryCandidates.add(queryApp.replace('campeonato_', ''));
+        } else {
+          queryCandidates.add(`campeonato_${queryApp}`);
+        }
+      }
+
+      const appMatch =
+        targetApps.includes('all') ||
+        targetApps.some((target) => {
+          const t = target.toLowerCase().trim();
+          return (
+            queryCandidates.has(t) ||
+            (t.startsWith('campeonato_') && queryCandidates.has(t.replace('campeonato_', ''))) ||
+            (!t.startsWith('campeonato_') && queryCandidates.has(`campeonato_${t}`))
+          );
+        });
+
       if (!appMatch) return false;
 
       // 5. Filtro de Liga/Campeonato (se fornecido na query)

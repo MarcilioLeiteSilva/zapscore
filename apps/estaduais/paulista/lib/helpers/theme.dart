@@ -84,7 +84,7 @@ abstract class AppTheme {
         drawerHead = AppColor.darkDrawerHeader;
         darkG = const Color(0xFF38BDF8); // High contrast cyan/blue link accent for dark mode
         infoColor = AppColor.darkAccent;
-        hintColor = AppColor.hint.withOpacity(0.5);
+        hintColor = AppColor.hint.withValues(alpha: 0.5);
         break;
       case 'white':
         primaryColor = AppColor.lightPrimary;
@@ -132,7 +132,7 @@ abstract class AppTheme {
         seedColor: primaryColor,
         primary: primaryColor,
         onPrimary: isLight ? Colors.black : Colors.white,
-        secondary: isDefault ? AppColor.accent : primaryColor.withOpacity(0.8),
+        secondary: isDefault ? AppColor.accent : primaryColor.withValues(alpha: 0.8),
         onSecondary: Colors.white,
         surface: cardColor,
         onSurface: textColor,
@@ -150,7 +150,7 @@ abstract class AppTheme {
         }),
         trackColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
-            return isDefault ? AppColor.accent : (isLight ? primaryColor : primaryColor.withOpacity(0.8));
+            return isDefault ? AppColor.accent : (isLight ? primaryColor : primaryColor.withValues(alpha: 0.8));
           }
           return isLight ? Colors.black12 : Colors.black38;
         }),
@@ -162,7 +162,7 @@ abstract class AppTheme {
         }),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: appBarBg.withOpacity(0.85),
+        backgroundColor: appBarBg.withValues(alpha: 0.85),
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -191,9 +191,9 @@ abstract class AppTheme {
         bodyLarge: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 24),
         bodyMedium: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 20),
         bodySmall: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 18),
-        labelLarge: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.normal, fontSize: 20),
-        labelMedium: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.normal, fontSize: 18),
-        labelSmall: TextStyle(color: textColor.withOpacity(0.8), fontWeight: FontWeight.normal, fontSize: 15),
+        labelLarge: TextStyle(color: textColor.withValues(alpha: 0.8), fontWeight: FontWeight.normal, fontSize: 20),
+        labelMedium: TextStyle(color: textColor.withValues(alpha: 0.8), fontWeight: FontWeight.normal, fontSize: 18),
+        labelSmall: TextStyle(color: textColor.withValues(alpha: 0.8), fontWeight: FontWeight.normal, fontSize: 15),
       ),
       iconTheme: IconThemeData(color: textColor),
     );

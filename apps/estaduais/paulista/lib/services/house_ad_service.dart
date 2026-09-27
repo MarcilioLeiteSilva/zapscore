@@ -11,6 +11,7 @@ class HouseAdModel {
   final String placement;
   final String imageUrl;
   final String destinationUrl;
+  final int rotateIntervalSeconds;
 
   const HouseAdModel({
     required this.id,
@@ -19,6 +20,7 @@ class HouseAdModel {
     required this.placement,
     required this.imageUrl,
     required this.destinationUrl,
+    this.rotateIntervalSeconds = 0,
   });
 
   factory HouseAdModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,9 @@ class HouseAdModel {
       placement: json['placement']?.toString() ?? '',
       imageUrl: json['imageUrl']?.toString() ?? '',
       destinationUrl: json['destinationUrl']?.toString() ?? '',
+      rotateIntervalSeconds: json['rotateIntervalSeconds'] != null
+          ? (int.tryParse(json['rotateIntervalSeconds'].toString()) ?? 0)
+          : 0,
     );
   }
 }
@@ -56,6 +61,25 @@ class HouseAdService {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['hasAd'] == true && data['ad'] != null) {
           return HouseAdModel.fromJson(data['ad']);
+        }
+      }
+
+      // Fallback defensivo com slug curto (ex: paulista) para sincronização imediata
+      if (AppConfig.appSlug.startsWith('campeonato_')) {
+        final shortSlug = AppConfig.appSlug.replaceFirst('campeonato_', '');
+        final fallbackUri = Uri.parse('${AppConfig.apiBaseUrl}/ads/serve').replace(
+          queryParameters: {
+            'app': shortSlug,
+            'placement': placement,
+            if (leagueId != null) 'leagueId': leagueId.toString(),
+          },
+        );
+        final fbResponse = await http.get(fallbackUri).timeout(const Duration(milliseconds: 2000));
+        if (fbResponse.statusCode == 200) {
+          final fbData = jsonDecode(fbResponse.body);
+          if (fbData['success'] == true && fbData['hasAd'] == true && fbData['ad'] != null) {
+            return HouseAdModel.fromJson(fbData['ad']);
+          }
         }
       }
     } catch (e) {

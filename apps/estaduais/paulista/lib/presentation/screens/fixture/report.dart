@@ -35,7 +35,23 @@ class _ReportFixPageState extends State<ReportFixPage> {
           return ListView.separated(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 6, bottom: 120),
             itemBuilder: (context, index) {
-              return CardNewsItem(news: state.news[index]);
+              final newsItem = state.news[index];
+              final isAdPosition = state.news.length <= 2
+                  ? index == 1
+                  : (index > 0 && index % 3 == 0);
+              if (isAdPosition) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AppNativeAdWidget(
+                      variant: NativeAdVariant.newsOrVideo,
+                      margin: EdgeInsets.only(bottom: 6),
+                    ),
+                    CardNewsItem(news: newsItem),
+                  ],
+                );
+              }
+              return CardNewsItem(news: newsItem);
             },
             separatorBuilder: (context, index) => const Gap(6),
             itemCount: state.news.length,

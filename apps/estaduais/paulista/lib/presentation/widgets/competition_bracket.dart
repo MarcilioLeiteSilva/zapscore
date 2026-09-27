@@ -26,7 +26,7 @@ class CompetitionBracketWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 40),
           child: Column(
             children: [
-              Icon(Icons.sports_soccer_outlined, size: 40, color: Colors.grey.withOpacity(0.5)),
+              Icon(Icons.sports_soccer_outlined, size: 40, color: Colors.grey.withValues(alpha: 0.5)),
               const Gap(10),
               Text(
                 'Confrontos ainda não definidos',
@@ -47,9 +47,9 @@ class CompetitionBracketWidget extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: AppColor.accent.withOpacity(0.1),
+              color: AppColor.accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColor.accent.withOpacity(0.3)),
+              border: Border.all(color: AppColor.accent.withValues(alpha: 0.3)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +61,7 @@ class CompetitionBracketWidget extends StatelessWidget {
                     phaseDescription!,
                     style: GoogleFonts.urbanist(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.9),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
                     ),
                   ),
                 ),
@@ -139,7 +139,7 @@ class _TieCard extends StatelessWidget {
             aggScore: tie.homeAggregateScore,
           ),
           const Gap(8),
-          Divider(color: Theme.of(context).dividerColor.withOpacity(0.1), height: 1),
+          Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.1), height: 1),
           const Gap(8),
 
           // Time Visitante / Seed 2
@@ -225,7 +225,7 @@ class _TieCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -242,7 +242,7 @@ class _TieCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -259,7 +259,7 @@ class _TieCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: isWinner ? AppColor.accent.withOpacity(0.2) : Colors.white10,
+              color: isWinner ? AppColor.accent.withValues(alpha: 0.2) : Colors.white10,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(

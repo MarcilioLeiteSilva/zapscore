@@ -182,10 +182,13 @@ class FixturePage extends StatelessWidget {
                             if (i == displayCompetitions.length + 1) {
                               return const HomeNewsCarouselSection();
                             }
+                            if (i == displayCompetitions.length + 2) {
+                              return const AppNativeAdMediumWidget();
+                            }
                             return const HomeVideoCarouselSection();
                           },
                           separatorBuilder: (_, i) => const Gap(12),
-                          itemCount: displayCompetitions.length + 3,
+                          itemCount: displayCompetitions.length + 4,
                         );
                       }
                       return const SizedBox();

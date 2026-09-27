@@ -95,16 +95,16 @@ const PLACEMENTS: PlacementOption[] = [
 ];
 
 const AVAILABLE_APPS = [
-  { slug: 'paulista', name: 'Paulistão', flag: '🏙️' },
-  { slug: 'carioca', name: 'Carioca', flag: '🌊' },
-  { slug: 'mineiro', name: 'Mineiro', flag: '🔺' },
-  { slug: 'gaucho', name: 'Gaúcho', flag: '🧉' },
-  { slug: 'baiano', name: 'Baiano', flag: '☀️' },
-  { slug: 'paranaense', name: 'Paranaense', flag: '🌲' },
-  { slug: 'cearense', name: 'Cearense', flag: '🌴' },
-  { slug: 'pernambucano', name: 'Pernambucano', flag: '🦁' },
-  { slug: 'paraibano', name: 'Paraibano', flag: '☀️' },
-  { slug: 'maranhense', name: 'Maranhense', flag: '🌴' },
+  { slug: 'campeonato_paulista', name: 'Paulistão', flag: '🏙️' },
+  { slug: 'campeonato_carioca', name: 'Carioca', flag: '🌊' },
+  { slug: 'campeonato_mineiro', name: 'Mineiro', flag: '🔺' },
+  { slug: 'campeonato_gaucho', name: 'Gaúcho', flag: '🧉' },
+  { slug: 'campeonato_baiano', name: 'Baiano', flag: '☀️' },
+  { slug: 'campeonato_paranaense', name: 'Paranaense', flag: '🌲' },
+  { slug: 'campeonato_cearense', name: 'Cearense', flag: '🌴' },
+  { slug: 'campeonato_pernambucano', name: 'Pernambucano', flag: '🦁' },
+  { slug: 'campeonato_paraibano', name: 'Paraibano', flag: '☀️' },
+  { slug: 'campeonato_maranhense', name: 'Maranhense', flag: '🌴' },
   { slug: 'brasileirao', name: 'Brasileirão', flag: '🇧🇷' },
   { slug: 'europa', name: 'Suíte Europa', flag: '🇪🇺' },
 ];

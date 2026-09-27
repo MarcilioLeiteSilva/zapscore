@@ -9,13 +9,12 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
-  String? selectedFilter;
 
   final List<Map<String, String?>> _categories = [
-    {'name': 'Todas', 'filter': null},
-    {'name': 'Campeonato Paulista', 'filter': 'paulista'},
-    {'name': 'Paulistão A1', 'filter': 'paulistão'},
-    {'name': 'Paulista A2', 'filter': 'a2'},
+    {'name': 'Todas', 'type': 'all'},
+    {'name': 'Paulistão A1', 'type': 'a1'},
+    {'name': 'Paulista A2', 'type': 'a2'},
+    {'name': 'Mercado da Bola', 'type': 'mercado'},
   ];
 
   @override
@@ -30,12 +29,104 @@ class _NewsPageState extends State<NewsPage> {
     context.read<NewsCubit>().fetchNews(leagueId: AppConfig.leagueId, limit: 100);
   }
 
-  bool _matchesFilter(News news, String? filter) {
-    if (filter == null || filter.isEmpty) return true;
-    final f = filter.toLowerCase();
-    return news.title.toLowerCase().contains(f) ||
-        news.description.toLowerCase().contains(f) ||
-        (news.source != null && news.source!.toLowerCase().contains(f));
+  static const List<String> _paulistaoA1Clubs = [
+    'corinthians', 'palmeiras', 'são paulo', 'sao paulo', 'santos',
+    'red bull bragantino', 'bragantino', 'ponte preta', 'guarani', 'mirassol',
+    'novorizontino', 'ituano', 'botafogo-sp', 'botafogo sp', 'portuguesa',
+    'água santa', 'agua santa', 'são bernardo', 'sao bernardo',
+    'inter de limeira', 'inter limeira', 'noroeste', 'velo clube',
+    'ferroviária', 'ferroviaria'
+  ];
+
+  static const List<String> _paulistaoA2Clubs = [
+    'juventus', 'xv de piracicaba', 'oeste', 'santo andré', 'santo andre',
+    'taubaté', 'taubate', 'comercial', 'são bento', 'sao bento',
+    'primavera', 'capivariano', 'rio claro', 'monte azul', 'linense',
+    'marília', 'marilia', 'portuguesa santista'
+  ];
+
+  static const List<String> _excludedKeywords = [
+    'wsl', 'surf', 'trestles', 'fórmula 1', 'formula 1', 'motogp',
+    'stf', 'reforma tributária', 'reforma tributaria', 'senado', 'eleições', 'eleicoes'
+  ];
+
+  bool _hasClub(String text, List<String> clubs) {
+    for (final club in clubs) {
+      if (club.length <= 4) {
+        if (RegExp(r'\b' + RegExp.escape(club) + r'\b', caseSensitive: false).hasMatch(text)) {
+          return true;
+        }
+      } else {
+        if (text.contains(club)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _isA1News(String text) {
+    final hasExplicitA1 = text.contains('paulistão a1') ||
+        text.contains('paulistao a1') ||
+        text.contains('campeonato paulista a1') ||
+        text.contains('paulistão série a1') ||
+        text.contains('paulistao serie a1');
+    if (hasExplicitA1) return true;
+
+    final hasGeneralComp = text.contains('paulistão') ||
+        text.contains('paulistao') ||
+        text.contains('campeonato paulista') ||
+        text.contains('futebol paulista');
+
+    return (hasGeneralComp && _hasClub(text, _paulistaoA1Clubs)) || _hasClub(text, _paulistaoA1Clubs);
+  }
+
+  bool _isA2News(String text) {
+    final hasExplicitA2 = text.contains('paulista a2') ||
+        text.contains('paulistão a2') ||
+        text.contains('paulistao a2') ||
+        text.contains('série a2') ||
+        text.contains('serie a2');
+    if (hasExplicitA2) return true;
+
+    return _hasClub(text, _paulistaoA2Clubs);
+  }
+
+  bool _matchesFilter(News news) {
+    final t = '${news.title} ${news.description}'.toLowerCase();
+
+    // Filtro negativo contra ruídos externos (política, outros esportes)
+    if (_excludedKeywords.any((kw) => t.contains(kw))) {
+      return false;
+    }
+
+    if (indexTab == 0) {
+      // Aba 'Todas'
+      return true;
+    } else if (indexTab == 1) {
+      // Aba 'Paulistão A1'
+      return _isA1News(t);
+    } else if (indexTab == 2) {
+      // Aba 'Paulista A2'
+      return _isA2News(t);
+    } else if (indexTab == 3) {
+      // Aba 'Mercado da Bola'
+      final isPaulistaFootball = _isA1News(t) ||
+          _isA2News(t) ||
+          _hasClub(t, _paulistaoA1Clubs) ||
+          _hasClub(t, _paulistaoA2Clubs) ||
+          t.contains('paulista') ||
+          t.contains('paulistão');
+      if (!isPaulistaFootball) return false;
+
+      final marketKeywords = [
+        'mercado', 'transferência', 'transferencia', 'reforço', 'reforco',
+        'contrata', 'contratação', 'contratacao', 'acerta', 'negocia',
+        'fechou', 'assina', 'proposta', 'rescinde', 'anuncia'
+      ];
+      return marketKeywords.any((kw) => t.contains(kw));
+    }
+    return true;
   }
 
   Widget _buildCompetitionFilters() {
@@ -56,9 +147,9 @@ class _NewsPageState extends State<NewsPage> {
               select: isSelected,
               label: cat['name']!,
               onTap: () {
+                if (indexTab == i) return;
                 setState(() {
                   indexTab = i;
-                  selectedFilter = cat['filter'];
                 });
               },
             );
@@ -100,7 +191,7 @@ class _NewsPageState extends State<NewsPage> {
               return Center(child: Text(state.message));
             }
             if (state is NewsLoaded) {
-              final filteredNews = state.news.where((n) => _matchesFilter(n, selectedFilter)).toList();
+              final filteredNews = state.news.where(_matchesFilter).toList();
               final carouselNews = filteredNews.take(5).toList();
               final listNews = filteredNews.skip(5).toList();
 

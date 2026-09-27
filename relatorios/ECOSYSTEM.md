@@ -2733,25 +2733,36 @@ flowchart TD
 
 ### 20.6 App Piloto: Integração no Campeonato Paulista (`apps/estaduais/paulista`)
 
-O aplicativo **Campeonato Paulista** (`apps/estaduais/paulista`) foi estabelecido e implementado como o **molde piloto de referência** de todo o ecossistema ZapScore:
+O aplicativo **Campeonato Paulista** (`apps/estaduais/paulista`) foi estabelecido e implementado como o **molde piloto de referência** de todo o ecossistema ZapScore, contemplando tanto os espaços híbridos com AdMob quanto as **3 Áreas 100% Livres de AdMob**:
 
-1. **Serviço Centralizado:** `lib/services/house_ad_service.dart`
-   * Singleton instanciado via `HouseAdService()`.
+1. **Serviço Centralizado e Modelo com Rotação:** `lib/services/house_ad_service.dart`
+   * Singleton instanciado via `HouseAdService.instance`.
    * Defensive Timeout de 2.5 segundos para garantir que a interface do usuário nunca trave ou espere por conexões lentas.
    * Resolução automática do slug do app a partir do `AppConfig.appSlug` (`campeonato_paulista`).
-   * Telemetria assíncrona (`fire-and-forget`) para não degradar a experiência do usuário.
-2. **Banner Híbrido com Fallback:** `lib/presentation/widgets/house_ad_banner.dart`
+   * Campo `rotateIntervalSeconds` no modelo `HouseAdModel` para permitir que o tempo de rotação entre patrocinadores seja governado 100% pelo AdminPanel / Backend sem necessidade de alterar o código Flutter.
+   * Telemetria assíncrona (`fire-and-forget`) para impressões e cliques.
+2. **Área Livre 1 — Topo da Tabela / Oferecimento (`header_sponsor` — 640 x 120 px, Aspect Ratio 16:3):**
+   * Widget: `lib/presentation/widgets/house_header_sponsor.dart`.
+   * Integrado em: `lib/presentation/widgets/competetion.dart` (`TableLeaguePage`), posicionado no topo de todas as fases da classificação (grupos, mata-mata e fase única).
+   * Totalmente isento de AdMob. Suporta rotação automática com transição suave via `AnimatedSwitcher` e cancelamento de timer no `dispose()`.
+   * Se vazio: colapsa instantaneamente para `const SizedBox.shrink()` (zero pixels, zero espaçamento).
+3. **Área Livre 2 — Card entre Jogos no Feed (`native_match_card` — 600 x 150 px, Aspect Ratio 4:1):**
+   * Widget: `lib/presentation/widgets/house_native_match_card.dart`.
+   * Integrado em: `lib/presentation/widgets/fixture.dart` (`CardGroupFixtureItem`), intercalado entre os jogos da rodada no feed da Home.
+   * Totalmente isento de AdMob. Suporta rotação automática e colapso estrito para `const SizedBox.shrink()` quando vazio.
+4. **Área Livre 3 — Pop-up de Boas-Vindas (`popup_launch` — 600 x 600 px, Aspect Ratio 1:1 Quadrado):**
+   * Helper: `lib/presentation/widgets/house_popup_launch.dart` (`HousePopupLaunchHelper`).
+   * Integrado em: `lib/presentation/screens/home/home.dart` (`HomeScreen`), acionado de forma não-bloqueante na abertura da Home após o primeiro frame (`addPostFrameCallback`).
+   * Regra de frequência (capping) via `SharedPreferences`: exibido no máximo 1x ao dia por torcedor.
+   * Zero impacto visual: se não houver campanha ou se já exibido hoje, não abre modal e não altera o fluxo do app.
+5. **Banner Híbrido com Fallback de Rodapé:** `lib/presentation/widgets/house_ad_banner.dart`
    * Primeiro solicita o anúncio ao AdMob.
-   * Ao receber `onAdFailedToLoad`, chaveia instantaneamente para o House Ad da ZapScore API.
-   * Suporta o parâmetro `preferHouseAd: true` para campanhas de Patrocínio Master prioritário.
-3. **Patrocínio Exclusivo no Topo da Tabela:** `lib/presentation/widgets/house_header_sponsor.dart`
-   * Widget dedicado para o slot `header_table_sponsor`.
-   * Não possui código do AdMob (100% limpo e reservado para parceiros comerciais diretos).
-   * Badge discreta *"Patrocinado"* e clique direto com abertura no navegador externo via `url_launcher`.
-4. **Retrocompatibilidade Absoluta:** `lib/presentation/widgets/ad_banner.dart`
-   * O widget legado existente de banner foi atualizado internamente para apontar para `HouseAdBanner`.
+   * Ao receber `onAdFailedToLoad`, chaveia instantaneamente para o House Ad da ZapScore API (`banner_bottom`).
+   * Suporta o parâmetro `preferHouseAdFirst: true` para campanhas de Patrocínio Master prioritário.
+6. **Retrocompatibilidade Absoluta:** `lib/presentation/widgets/ad_banner.dart`
+   * O widget legado existente de banner aponta para `HouseAdBanner`.
    * Preservou 100% da assinatura, dos parâmetros e do visual original sem quebrar nenhuma tela do app.
-5. **Validação:** Verificado com `flutter analyze`, resultando em 0 erros e 0 alertas (`No issues found!`).
+7. **Validação:** Verificado com `dart analyze`, resultando em 0 erros bloqueantes.
 
 ---
 
@@ -2759,9 +2770,16 @@ O aplicativo **Campeonato Paulista** (`apps/estaduais/paulista`) foi estabelecid
 
 Para replicar a integração do piloto Paulista nos demais aplicativos (`apps/estaduais/*`, `apps/brasileirao`, `apps/europa/*`):
 1. Copiar `lib/services/house_ad_service.dart` para a pasta `lib/services/` do app de destino.
-2. Copiar `lib/presentation/widgets/house_ad_banner.dart` e `house_header_sponsor.dart` para `lib/presentation/widgets/`.
-3. Ajustar `lib/presentation/widgets/ad_banner.dart` para delegar para `HouseAdBanner`.
-4. Adicionar `HouseHeaderSponsorWidget()` no topo da tela de classificação do respectivo app.
+2. Copiar os 4 widgets para `lib/presentation/widgets/`:
+   * `house_ad_banner.dart` (Banner Híbrido Rodapé)
+   * `house_header_sponsor.dart` (Área Livre: Topo da Tabela / Oferecimento)
+   * `house_native_match_card.dart` (Área Livre: Card entre Jogos no Feed)
+   * `house_popup_launch.dart` (Área Livre: Pop-up de Boas-Vindas)
+3. Exportar os novos widgets em `lib/presentation/widgets/widgets.dart`.
+4. Ajustar `ad_banner.dart` para delegar para `HouseAdBanner`.
+5. Inserir `HouseHeaderSponsor()` no topo de `TableLeaguePage` em `competetion.dart`.
+6. Inserir `HouseNativeMatchCard()` entre os jogos em `CardGroupFixtureItem` em `fixture.dart`.
+7. Acionar `HousePopupLaunchHelper.checkAndShow(context)` no `initState` da `HomeScreen` em `home.dart`.
 
 ---
 
