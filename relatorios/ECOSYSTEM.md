@@ -141,9 +141,11 @@
   - [20.3 Modelo de Dados no PocketBase Dedicado (`ads_campaigns` e `ads_stats`)](#203-modelo-de-dados-no-pocketbase-dedicado-ads_campaigns-e-ads_stats)
   - [20.4 Motor de Agendamento, Rotação e Cron na ZapScore API](#204-motor-de-agendamento-rotação-e-cron-na-zapscore-api)
   - [20.5 Interface de Gestão e Criação no AdminPanel (`/adminpanel/ads`)](#205-interface-de-gestão-e-criação-no-adminpanel-adminpanelads)
-  - [20.6 Integração Híbrida nos Apps Mobile Flutter (App Piloto `paulista`)](#206-integração-híbrida-nos-apps-mobile-flutter-app-piloto-paulista)
-  - [20.7 Fases e Histórico da Implementação](#207-fases-e-histórico-da-implementação)
+  - [20.6 App Piloto: Integração no Campeonato Paulista (`apps/estaduais/paulista`)](#206-app-piloto-integração-no-campeonato-paulista-appsestaduaispaulista)
+  - [20.7 Replicação para os Demais Aplicativos do Ecossistema](#207-replicação-para-os-demais-aplicativos-do-ecossistema)
   - [20.8 Tutorial Prático: Como Criar e Operar House Ads no Dia a Dia](#208-tutorial-prático-como-criar-e-operar-house-ads-no-dia-a-dia)
+  - [20.9 Ajustes de Padronização e Resolução de Divergência de Slugs (26/09/2026)](#209-ajustes-de-padronização-e-resolução-de-divergência-de-slugs-26092026)
+  - [20.10 Roadmap de Evoluções e Melhorias Estratégicas para a Rede House Ads](#2010-roadmap-de-evoluções-e-melhorias-estratégicas-para-a-rede-house-ads)
 - [Capítulo 21: [A FAZER / OPERACIONAL] Divulgação dos Apps e Estratégia de Crescimento Rápido (Ações Diárias de 5 Minutos)](#-capítulo-21-a-fazer--operacional-divulgação-dos-apps-e-estratégia-de-crescimento-rápido-ações-diárias-de-5-minutos)
   - [21.1 Proposta de Valor e Estratégia de Tração Rápida](#211-proposta-de-valor-e-estratégia-de-tração-rápida)
   - [21.2 Calendário Operacional Semanal (1 Ação Rápida de 5 Minutos por Dia)](#212-calendário-operacional-semanal-1-ação-rápida-de-5-minutos-por-dia)
@@ -2834,6 +2836,51 @@ Abra o [Canva](https://www.canva.com) e crie o design na resolução exata recom
    * **Cliques Gerados:** Total de toques recebidos.
    * **Taxa de Cliques (CTR):** Porcentagem de conversão e engajamento da campanha.
 4. Você pode tirar um print deste dashboard ou exportar as métricas para enviar o relatório oficial de prestação de contas do patrocínio.
+
+---
+
+### 20.9 Ajustes de Padronização e Resolução de Divergência de Slugs (26/09/2026)
+
+Durante a homologação em hardware real do app piloto Paulista (`apps/estaduais/paulista`), identificou-se e corrigiu-se cirurgicamente uma divergência de nomenclatura entre o AdminPanel e o cliente mobile:
+1. **Causa Raiz:** O criador de campanhas (`/adminpanel/ads/new`) salvava no PocketBase com o slug curto (`target_apps: ["paulista"]`), enquanto o aplicativo Flutter consultava a API utilizando o slug oficial completo (`appSlug = "campeonato_paulista"`).
+2. **Correção no AdminPanel (`apps/web`):** A constante `AVAILABLE_APPS` em `ads/new/page.tsx` foi padronizada com os slugs oficiais completos (`campeonato_paulista`, `campeonato_carioca`, `campeonato_mineiro`, etc.), garantindo que novas campanhas sejam gravadas com 100% de paridade.
+3. **Normalizador Bidirecional no Backend (`apps/api`):** Em `ads.service.ts`, implementou-se normalização automática de sinônimos (`paulista` ↔ `campeonato_paulista`), permitindo que a API atenda requisições com ambos os formatos.
+4. **Fallback Defensivo no Flutter (`house_ad_service.dart`):** Caso a consulta com o slug completo retorne vazia, o serviço realiza automaticamente um segundo fetch com o slug curto, garantindo compatibilidade imediata com campanhas legadas.
+5. **Resultado dos Testes:** Todos os testes no dispositivo físico (`SM A075M`) foram validados com 100% de sucesso (exibição do Banner no Topo da Tabela, Card entre Jogos e Pop-up de Boas-Vindas com capping de 1x ao dia).
+
+---
+
+### 20.10 Roadmap de Evoluções e Melhorias Estratégicas para a Rede House Ads
+
+Com o piloto validado, estabeleceu-se o seguinte roadmap de expansão para a rede própria:
+
+#### 1. Regionalização Inteligente via GeoIP no Backend (Sem GPS e Sem Atrito)
+* **Objetivo:** Permitir segmentação hiperlocal para patrocinadores de cidades ou estados específicos (ex: uma campanha no app Mineiro veiculada estritamente no Estado de Minas Gerais ou apenas na Grande Belo Horizonte).
+* **Mecanismo Técnico:** 
+  - A API detecta a localização geográfica do usuário a partir do IP público da requisição HTTP (`x-forwarded-for`) utilizando uma base leve em memória (`geoip-lite` ou MaxMind GeoLite2).
+  - Em < 2ms, a API extrai UF (ex: `MG`, `SP`) e Cidade/Região Metropolitana (ex: `Belo Horizonte`, `Contagem`, `Betim`).
+  - No AdminPanel: inclusão de filtros opcionais `target_states` (UFs) e `target_metro_regions` (Grande BH, Grande SP, etc.).
+* **Vantagens:** Zero necessidade de pedir permissão de GPS no celular do torcedor, zero impacto de bateria, total conformidade com a LGPD e as diretrizes do Google Play Data Safety.
+
+#### 2. Governança Centralizada de Rotação e Frequência no AdminPanel
+* **Controle de Rotação por Slot:** Adicionar no criador de campanhas (`/adminpanel/ads/new`) ou no inventário um seletor de tempo de rotação (`0s - Fixo`, `30s`, `45s`, `60s`). O app mobile já lê o campo `rotateIntervalSeconds` e realiza a transição suave com `AnimatedSwitcher`.
+* **Frequência do Pop-up Configurável:** Permitir definir no AdminPanel a regra de exibição do modal (`1x ao dia por torcedor`, `1x por semana`, `A cada abertura` ou `A cada X horas`).
+
+#### 3. Segmentação por Clube do Coração (`target_teams`)
+* Permitir que o anunciante selecione um ou mais clubes específicos (ex: campanha direcionada exclusivamente para torcedores do Corinthians ou do Cruzeiro).
+* O app repassa o ID do time favorito do usuário na query (`&teamId=...`), viabilizando a comercialização de cotas segmentadas de maior valor agregado.
+
+#### 4. Suporte a Deep Linking Interno (`app://`)
+* Permitir que a `destination_url` navegue para telas internas do app móvel além de URLs externas no navegador:
+  - `app://fixture/{id}` ➔ Detalhes de um clássico patrocinado.
+  - `app://news/{id}` ➔ Notícia ou publieditorial de parceiro.
+  - `app://table` ➔ Tela de classificação.
+
+#### 5. Relatórios Executivos em PDF/CSV para Prestação de Contas
+* Botão *"📄 Gerar Extrato do Anunciante"* no AdminPanel (`/adminpanel/ads`), consolidando impressões entregues, cliques, CTR diário e gráfico de entrega formatado para envio direto aos patrocinadores comerciais.
+
+#### 6. Notificações Push Promocionais Vinculadas a Campanhas
+* Disparo de push com imagem expandida (*Rich Notification*) pelo PocketBase integrado ao link ou criativo da campanha de patrocínio direto.
 
 ---
 
