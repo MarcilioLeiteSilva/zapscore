@@ -274,6 +274,39 @@ export default function NewsPublisherAgentPage() {
       };
     }
 
+    const stateRules: { ids: number[]; matchText: string; slug: string; name: string }[] = [
+      { ids: [622], matchText: 'pernambucan', slug: 'campeonato_pernambucano', name: 'Campeonato Pernambucano' },
+      { ids: [603], matchText: 'paraiban', slug: 'campeonato_paraibano', name: 'Campeonato Paraibano' },
+      { ids: [608], matchText: 'maranhens', slug: 'campeonato_maranhense', name: 'Campeonato Maranhense' },
+      { ids: [604], matchText: 'catarinens', slug: 'campeonato_catarinense', name: 'Campeonato Catarinense' },
+      { ids: [611], matchText: 'capixaba', slug: 'campeonato_capixaba', name: 'Campeonato Capixaba' },
+      { ids: [628], matchText: 'goiano', slug: 'campeonato_goiano', name: 'Campeonato Goiano' },
+      { ids: [630], matchText: 'matogrossens', slug: 'campeonato_matogrossense', name: 'Campeonato Matogrossense' },
+      { ids: [623], matchText: 'sul-mato', slug: 'campeonato_sulmatogrossense', name: 'Campeonato Sul-Matogrossense' },
+      { ids: [610], matchText: 'brasiliense', slug: 'campeonato_brasiliense', name: 'Campeonato Brasiliense' },
+      { ids: [616], matchText: 'potiguar', slug: 'campeonato_potiguar', name: 'Campeonato Potiguar' },
+      { ids: [621], matchText: 'piauien', slug: 'campeonato_piauiense', name: 'Campeonato Piauiense' },
+      { ids: [626], matchText: 'sergipan', slug: 'campeonato_sergipano', name: 'Campeonato Sergipano' },
+      { ids: [627], matchText: 'paraense', slug: 'campeonato_paraense', name: 'Campeonato Paraense' },
+      { ids: [522], matchText: 'amazonens', slug: 'campeonato_amazonense', name: 'Campeonato Amazonense' },
+      { ids: [520], matchText: 'acrean', slug: 'campeonato_acreano', name: 'Campeonato Acreano' },
+      { ids: [521], matchText: 'amapaens', slug: 'campeonato_amapaense', name: 'Campeonato Amapaense' },
+      { ids: [615], matchText: 'rondonien', slug: 'campeonato_rondoniense', name: 'Campeonato Rondoniense' },
+      { ids: [607], matchText: 'roraimens', slug: 'campeonato_roraimense', name: 'Campeonato Roraimense' },
+      { ids: [631], matchText: 'tocantinens', slug: 'campeonato_tocantinense', name: 'Campeonato Tocantinense' },
+    ];
+
+    for (const rule of stateRules) {
+      if ((extId && rule.ids.includes(extId)) || nameLower.includes(rule.matchText)) {
+        return {
+          leagueIdForPrisma: prismaId,
+          externalId: extId || rule.ids[0],
+          appSlug: rule.slug,
+          appName: rule.name,
+        };
+      }
+    }
+
     return {
       leagueIdForPrisma: prismaId,
       externalId: extId,
@@ -436,6 +469,120 @@ export default function NewsPublisherAgentPage() {
         name: 'Campeonato Alagoano',
         icon: '🌴',
         match: (item, info) => info.appSlug === 'campeonato_alagoano' || (item.league?.name || '').toLowerCase().includes('alagoano'),
+      },
+      {
+        key: 'pernambucano',
+        name: 'Campeonato Pernambucano',
+        icon: '🦁',
+        match: (item, info) => info.appSlug === 'campeonato_pernambucano' || (item.league?.name || '').toLowerCase().includes('pernambucan'),
+      },
+      {
+        key: 'paraibano',
+        name: 'Campeonato Paraibano',
+        icon: '☀️',
+        match: (item, info) => info.appSlug === 'campeonato_paraibano' || (item.league?.name || '').toLowerCase().includes('paraiban'),
+      },
+      {
+        key: 'maranhense',
+        name: 'Campeonato Maranhense',
+        icon: '🌴',
+        match: (item, info) => info.appSlug === 'campeonato_maranhense' || (item.league?.name || '').toLowerCase().includes('maranhens'),
+      },
+      {
+        key: 'catarinense',
+        name: 'Campeonato Catarinense',
+        icon: '🌲',
+        match: (item, info) => info.appSlug === 'campeonato_catarinense' || (item.league?.name || '').toLowerCase().includes('catarinens'),
+      },
+      {
+        key: 'capixaba',
+        name: 'Campeonato Capixaba',
+        icon: '🏖️',
+        match: (item, info) => info.appSlug === 'campeonato_capixaba' || (item.league?.name || '').toLowerCase().includes('capixaba'),
+      },
+      {
+        key: 'goiano',
+        name: 'Campeonato Goiano',
+        icon: '🌾',
+        match: (item, info) => info.appSlug === 'campeonato_goiano' || (item.league?.name || '').toLowerCase().includes('goiano'),
+      },
+      {
+        key: 'matogrossense',
+        name: 'Campeonato Matogrossense',
+        icon: '🌿',
+        match: (item, info) => info.appSlug === 'campeonato_matogrossense' || (item.league?.name || '').toLowerCase().includes('matogrossens'),
+      },
+      {
+        key: 'sulmatogrossense',
+        name: 'Campeonato Sul-Matogrossense',
+        icon: '🐆',
+        match: (item, info) => info.appSlug === 'campeonato_sulmatogrossense' || (item.league?.name || '').toLowerCase().includes('sul-mato'),
+      },
+      {
+        key: 'brasiliense',
+        name: 'Campeonato Brasiliense',
+        icon: '🏛️',
+        match: (item, info) => info.appSlug === 'campeonato_brasiliense' || (item.league?.name || '').toLowerCase().includes('brasiliense'),
+      },
+      {
+        key: 'potiguar',
+        name: 'Campeonato Potiguar',
+        icon: '☀️',
+        match: (item, info) => info.appSlug === 'campeonato_potiguar' || (item.league?.name || '').toLowerCase().includes('potiguar'),
+      },
+      {
+        key: 'piauiense',
+        name: 'Campeonato Piauiense',
+        icon: '🏜️',
+        match: (item, info) => info.appSlug === 'campeonato_piauiense' || (item.league?.name || '').toLowerCase().includes('piauien'),
+      },
+      {
+        key: 'sergipano',
+        name: 'Campeonato Sergipano',
+        icon: '🦀',
+        match: (item, info) => info.appSlug === 'campeonato_sergipano' || (item.league?.name || '').toLowerCase().includes('sergipan'),
+      },
+      {
+        key: 'paraense',
+        name: 'Campeonato Paraense',
+        icon: '🦅',
+        match: (item, info) => info.appSlug === 'campeonato_paraense' || (item.league?.name || '').toLowerCase().includes('paraense'),
+      },
+      {
+        key: 'amazonense',
+        name: 'Campeonato Amazonense',
+        icon: '🌳',
+        match: (item, info) => info.appSlug === 'campeonato_amazonense' || (item.league?.name || '').toLowerCase().includes('amazonens'),
+      },
+      {
+        key: 'acreano',
+        name: 'Campeonato Acreano',
+        icon: '⭐',
+        match: (item, info) => info.appSlug === 'campeonato_acreano' || (item.league?.name || '').toLowerCase().includes('acrean'),
+      },
+      {
+        key: 'amapaense',
+        name: 'Campeonato Amapaense',
+        icon: '🧭',
+        match: (item, info) => info.appSlug === 'campeonato_amapaense' || (item.league?.name || '').toLowerCase().includes('amapaens'),
+      },
+      {
+        key: 'rondoniense',
+        name: 'Campeonato Rondoniense',
+        icon: '🚂',
+        match: (item, info) => info.appSlug === 'campeonato_rondoniense' || (item.league?.name || '').toLowerCase().includes('rondonien'),
+      },
+      {
+        key: 'roraimense',
+        name: 'Campeonato Roraimense',
+        icon: '⛰️',
+        match: (item, info) => info.appSlug === 'campeonato_roraimense' || (item.league?.name || '').toLowerCase().includes('roraimens'),
+      },
+      {
+        key: 'tocantinense',
+        name: 'Campeonato Tocantinense',
+        icon: '🌞',
+        match: (item, info) => info.appSlug === 'campeonato_tocantinense' || (item.league?.name || '').toLowerCase().includes('tocantinens'),
       },
     ];
 

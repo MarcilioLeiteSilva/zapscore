@@ -25,7 +25,12 @@ const STATE_METADATA: Record<string, { name: string; region: EcosystemApp['regio
   matogrossense: { name: 'Campeonato Mato-Grossense', region: 'Sudeste', stateCode: 'MT', primaryColor: '#059669', secondaryColor: '#047857', accentColor: '#F59E0B' },
   sulmatogrossense: { name: 'Campeonato Sul-Mato-Grossense', region: 'Sul', stateCode: 'MS', primaryColor: '#0284C7', secondaryColor: '#0369A1', accentColor: '#FBBF24' },
   paraense: { name: 'Campeonato Paraense', region: 'Nacional', stateCode: 'PA', primaryColor: '#3B82F6', secondaryColor: '#1D4ED8', accentColor: '#EF4444' },
-  amazonense: { name: 'Campeonato Amazonense', region: 'Nacional', stateCode: 'AM', primaryColor: '#10B981', secondaryColor: '#047857', accentColor: '#F59E0B' }
+  amazonense: { name: 'Campeonato Amazonense', region: 'Nacional', stateCode: 'AM', primaryColor: '#10B981', secondaryColor: '#047857', accentColor: '#F59E0B' },
+  acreano: { name: 'Campeonato Acreano', region: 'Nacional', stateCode: 'AC', primaryColor: '#10B981', secondaryColor: '#047857', accentColor: '#EF4444' },
+  amapaense: { name: 'Campeonato Amapaense', region: 'Nacional', stateCode: 'AP', primaryColor: '#0284C7', secondaryColor: '#0369A1', accentColor: '#FBBF24' },
+  rondoniense: { name: 'Campeonato Rondoniense', region: 'Nacional', stateCode: 'RO', primaryColor: '#3B82F6', secondaryColor: '#1D4ED8', accentColor: '#10B981' },
+  roraimense: { name: 'Campeonato Roraimense', region: 'Nacional', stateCode: 'RR', primaryColor: '#059669', secondaryColor: '#047857', accentColor: '#F59E0B' },
+  tocantinense: { name: 'Campeonato Tocantinense', region: 'Nacional', stateCode: 'TO', primaryColor: '#F59E0B', secondaryColor: '#B45309', accentColor: '#3B82F6' }
 };
 
 function getAppsBaseDir(): string {
