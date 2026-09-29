@@ -147,6 +147,38 @@ export const ECOSYSTEM_APPS: EcosystemApp[] = [
     bundleCode: 1
   },
   {
+    id: 'alagoano',
+    name: 'Alagoano ZapScore',
+    shortName: 'Alagoano',
+    leagueName: 'Campeonato Alagoano',
+    packageName: 'com.zapscore.estadualalagoano',
+    primaryColor: '#E11D48',
+    secondaryColor: '#9F1239',
+    accentColor: '#3B82F6',
+    region: 'Nordeste',
+    stateCode: 'AL',
+    defaultKeywords: [
+      'campeonato alagoano',
+      'crb',
+      'csa',
+      'asa de arapiraca',
+      'futebol alagoas',
+      'placar alagoano',
+      'tabela alagoano'
+    ],
+    features: [
+      'Clássicos das Multidões no Estádio Rei Pelé acompanhados lance a lance',
+      'Push notification de gols no exato momento da bola na rede',
+      'Tabela de classificação atualizada, artilharia e chaveamento',
+      'Escalações confirmadas e estatísticas detalhadas de posse e finalizações',
+      'Vídeos dos gols e notícias diárias do futebol alagoano'
+    ],
+    privacyPolicyUrl: 'https://zapscore.com.br/politica-de-privacidade',
+    supportEmail: 'suporte@zapscore.com.br',
+    bundleVersion: '1.0.0',
+    bundleCode: 1
+  },
+  {
     id: 'paulista',
     name: 'Paulista ZapScore',
     shortName: 'Paulistão',

@@ -44,6 +44,7 @@ const COMPETITIONS: CompetitionOption[] = [
   { id: 602, name: "Campeonato Baiano", slug: "campeonato_baiano", country: "Brasil", cluster: "Estaduais" },
   { id: 606, name: "Campeonato Paranaense", slug: "campeonato_paranaense", country: "Brasil", cluster: "Estaduais" },
   { id: 609, name: "Campeonato Cearense", slug: "campeonato_cearense", country: "Brasil", cluster: "Estaduais" },
+  { id: 77, name: "Campeonato Alagoano", slug: "campeonato_alagoano", country: "Brasil", cluster: "Estaduais" },
   { id: 140, name: "La Liga (Espanha)", slug: "laliga", country: "Espanha", cluster: "Europa" },
   { id: 39, name: "Premier League (Inglaterra)", slug: "premierleague", country: "Inglaterra", cluster: "Europa" },
   { id: 78, name: "Bundesliga (Alemanha)", slug: "bundesliga", country: "Alemanha", cluster: "Europa" },

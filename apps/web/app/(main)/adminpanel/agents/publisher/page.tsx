@@ -265,6 +265,15 @@ export default function NewsPublisherAgentPage() {
       };
     }
 
+    if (extId === 77 || nameLower.includes('alagoano')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: extId || 77,
+        appSlug: 'campeonato_alagoano',
+        appName: 'Campeonato Alagoano',
+      };
+    }
+
     return {
       leagueIdForPrisma: prismaId,
       externalId: extId,
@@ -421,6 +430,12 @@ export default function NewsPublisherAgentPage() {
         name: 'Campeonato Cearense',
         icon: '📍',
         match: (item, info) => info.appSlug === 'campeonato_cearense' || (item.league?.name || '').toLowerCase().includes('cearense'),
+      },
+      {
+        key: 'alagoano',
+        name: 'Campeonato Alagoano',
+        icon: '🌴',
+        match: (item, info) => info.appSlug === 'campeonato_alagoano' || (item.league?.name || '').toLowerCase().includes('alagoano'),
       },
     ];
 

@@ -105,6 +105,7 @@ const AVAILABLE_APPS = [
   { slug: 'campeonato_pernambucano', name: 'Pernambucano', flag: '🦁' },
   { slug: 'campeonato_paraibano', name: 'Paraibano', flag: '☀️' },
   { slug: 'campeonato_maranhense', name: 'Maranhense', flag: '🌴' },
+  { slug: 'campeonato_alagoano', name: 'Alagoano', flag: '🌴' },
   { slug: 'brasileirao', name: 'Brasileirão', flag: '🇧🇷' },
   { slug: 'europa', name: 'Suíte Europa', flag: '🇪🇺' },
 ];

@@ -142,6 +142,7 @@ const REGION_MODULES: RegionModule[] = [
       { id: 624, name: 'Carioca Série A', shortName: 'Carioca', flag: '🌊' },
       { id: 477, name: 'Gaúcho Série A', shortName: 'Gauchão', flag: '🧉' },
       { id: 629, name: 'Mineiro Módulo 1', shortName: 'Mineiro', flag: '🔺' },
+      { id: 77, name: 'Campeonato Alagoano', shortName: 'Alagoano', flag: '🌴' },
     ],
   },
 ];
