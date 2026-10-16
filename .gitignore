@@ -16,12 +16,16 @@ coverage/
 
 # PocketBase Hooks (Contêm chaves de serviço)
 apps/brasil/pb_hooks/
+apps/copas/pb_hooks/
 apps/estaduais/pb_hooks/
 apps/europa/pb_hooks/
+**/pb_hooks/
 
 # Keystores e Senhas Android
 *.jks
 *.keystore
+**/*.jks
+**/*.keystore
 key.properties
 **/key.properties
 
@@ -47,6 +51,7 @@ build/
 flutter_*.log
 scratch/
 apps/api/scratch/
+**/scratch/
 
 # OS files
 .DS_Store
