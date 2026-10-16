@@ -1,6 +1,5 @@
 // ==============================================================================
 // ZAPSCORE POCKETBASE COPAS - BROADCAST & AGENT PUSH HOOK
-// Suporta: copadonordeste, copadobrasil, copalibertadores
 // Endpoint: POST /api/broadcast-push
 // ==============================================================================
 
@@ -58,35 +57,15 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
             try { if (!title) title = (c.FormValue("title") || "").toString().trim(); } catch (_) {}
         }
 
-        if (!appSlug || !body || !title) {
-            try {
-                if (c.request && c.request.url) {
-                    var rawQuery = "";
-                    if (typeof c.request.url.rawQuery === "string") rawQuery = c.request.url.rawQuery;
-                    else if (typeof c.request.url.RawQuery === "string") rawQuery = c.request.url.RawQuery;
-                    else if (typeof c.request.url.string === "function") {
-                        var fullUrl = c.request.url.string();
-                        if (fullUrl.indexOf("?") !== -1) rawQuery = fullUrl.split("?")[1];
-                    } else if (typeof c.request.url.String === "function") {
-                        var fullUrl = c.request.url.String();
-                        if (fullUrl.indexOf("?") !== -1) rawQuery = fullUrl.split("?")[1];
-                    }
-                    if (rawQuery) {
-                        var pairs = rawQuery.split("&");
-                        for (var p = 0; p < pairs.length; p++) {
-                            var kv = pairs[p].split("=");
-                            if (kv[0] === "appSlug" && kv[1] && !appSlug) appSlug = decodeURIComponent(kv[1]).toLowerCase().trim();
-                            if (kv[0] === "title" && kv[1] && !title) title = decodeURIComponent(kv[1]).trim();
-                            if (kv[0] === "body" && kv[1] && !body) body = decodeURIComponent(kv[1]).trim();
-                            if (kv[0] === "imageUrl" && kv[1] && !imageUrl) imageUrl = decodeURIComponent(kv[1]).trim();
-                        }
-                    }
-                }
-            } catch (_) {}
+        if (!appSlug) {
+            try { appSlug = (c.queryParam("appSlug") || "").toString().toLowerCase().trim(); } catch (_) {}
+            try { if (!appSlug) appSlug = (c.QueryParam("appSlug") || "").toString().toLowerCase().trim(); } catch (_) {}
+            try { if (!appSlug) appSlug = (c.formValue("appSlug") || "").toString().toLowerCase().trim(); } catch (_) {}
+            try { if (!appSlug) appSlug = (c.FormValue("appSlug") || "").toString().toLowerCase().trim(); } catch (_) {}
         }
 
         if (!appSlug) appSlug = "copadonordeste";
-        if (!title) title = "🏆 Alerta ZapScore Copas";
+        if (!title) title = "⚽ Alerta ZapScore";
 
         if (!body || body.trim() === "") {
             return c.json(400, {
@@ -361,7 +340,7 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
             var projectId = serviceAccount.project_id;
             var now = Math.floor(Date.now() / 1000);
 
-            if (_googleTokenCache[projectId] && _googleTokenCache[projectId].exp > now + 300) {
+            if (_googleTokenCache && _googleTokenCache[projectId] && _googleTokenCache[projectId].exp > now + 300) {
                 return _googleTokenCache[projectId].token;
             }
 
@@ -385,22 +364,25 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
             });
 
             if (res.statusCode === 200 && res.json && res.json.access_token) {
+                if (!_googleTokenCache) _googleTokenCache = {};
                 _googleTokenCache[projectId] = {
                     token: res.json.access_token,
                     exp: now + (res.json.expires_in || 3600)
                 };
                 return res.json.access_token;
             }
+            console.log("[OAUTH2 ERROR] Status: " + res.statusCode + " | Body: " + (res.raw || JSON.stringify(res.json)));
             return null;
         }
 
         function getFirebaseConfig(slug) {
-            if (_EMBEDDED_FIREBASE_CONFIGS[slug]) {
-                return _EMBEDDED_FIREBASE_CONFIGS[slug];
-            }
+            var s = (slug || "copadonordeste").toLowerCase().trim();
             var possibleFiles = [
-                "/pb_hooks/service_account_" + slug + ".json",
-                "/pb_hooks/service_account.json"
+                "/pb_hooks/service_account_" + s + ".json",
+                "/pb_hooks/service_account_copadonordeste.json",
+                "/pb_hooks/service_account.json",
+                "service_account_copadonordeste.json",
+                "service_account.json"
             ];
             for (var f = 0; f < possibleFiles.length; f++) {
                 try {
@@ -408,14 +390,13 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
                         var rawStr = $os.readFile(possibleFiles[f]);
                         if (rawStr) {
                             var parsed = JSON.parse(rawStr);
-                            if (parsed && parsed.private_key && !parsed.private_key.includes("...")) {
-                                return parsed;
-                            }
+                            if (parsed && parsed.private_key && !parsed.private_key.includes("...")) return parsed;
                         }
                     }
                 } catch (_) {}
             }
-            return null;
+            if (_EMBEDDED_FIREBASE_CONFIGS[s]) return _EMBEDDED_FIREBASE_CONFIGS[s];
+            return _EMBEDDED_FIREBASE_CONFIGS["copadonordeste"] || null;
         }
 
         // 2. Busca Assinantes Ativos
@@ -427,17 +408,15 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
                 subscribers = $app.dao().findRecordsByFilter("subscriptions", "app_slug = '" + appSlug + "'", "", 2000, 0);
             }
         } catch (errSubs) {
-            console.log("[BROADCAST COPAS ERROR] Falha ao buscar assinantes: " + errSubs);
+            console.log("[BROADCAST PUSH ERROR] Falha ao buscar assinantes: " + errSubs);
         }
 
         if (!subscribers || subscribers.length === 0) {
             return c.json(200, {
                 success: true,
-                appSlug: appSlug,
+                message: "Nenhum assinante ativo cadastrado para o app " + appSlug,
                 totalSubscribers: 0,
-                sentCount: 0,
-                failedCount: 0,
-                message: "Nenhum assinante ativo cadastrado para o app " + appSlug
+                sentCount: 0
             });
         }
 
@@ -445,7 +424,7 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
         if (!config) {
             return c.json(500, {
                 success: false,
-                error: "Configuração do Firebase (service_account.json) não encontrada para o app '" + appSlug + "'."
+                error: "Configuração do Firebase Service Account não encontrada para " + appSlug
             });
         }
 
@@ -453,46 +432,48 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
         if (!accessToken) {
             return c.json(500, {
                 success: false,
-                error: "Falha ao autenticar com a API do Google FCM OAuth2."
+                error: "Falha na autenticação OAuth2 com o Google Firebase."
             });
         }
 
         var sentCount = 0;
         var failedCount = 0;
-        var channelId = appSlug === "copadonordeste" ? "copadonordeste_live_channel" : (appSlug + "_live_channel");
+        var channelId = appSlug + "_live_channel";
 
         for (var i = 0; i < subscribers.length; i++) {
             var sub = subscribers[i];
-            var fcmToken = sub.getString ? sub.getString("fcm_token") : (sub.get ? sub.get("fcm_token") : sub.fcm_token);
-            if (!fcmToken) continue;
-
-            var mergedData = {
-                app_slug: appSlug,
-                click_action: "FLUTTER_NOTIFICATION_CLICK"
-            };
-            if (dataPayload && typeof dataPayload === "object") {
-                for (var key in dataPayload) {
-                    if (dataPayload.hasOwnProperty(key)) {
-                        mergedData[key] = String(dataPayload[key]);
-                    }
-                }
-            }
+            var token = sub.getString("fcm_token");
+            if (!token) continue;
 
             var payload = {
                 message: {
-                    token: fcmToken,
+                    token: token,
                     notification: {
                         title: title,
                         body: body,
-                        image: imageUrl || undefined
+                        image: imageUrl && imageUrl.trim() !== "" ? imageUrl : undefined
                     },
-                    data: mergedData,
+                    data: dataPayload || {},
                     android: {
-                        priority: "high",
+                        priority: "HIGH",
                         notification: {
+                            channel_id: channelId,
                             sound: "default",
-                            channel_id: channelId
+                            image: imageUrl && imageUrl.trim() !== "" ? imageUrl : undefined,
+                            default_vibrate_timings: true,
+                            default_light_settings: true
                         }
+                    },
+                    apns: {
+                        headers: { "apns-priority": "10" },
+                        payload: {
+                            aps: {
+                                sound: "default",
+                                badge: 1,
+                                "mutable-content": 1
+                            }
+                        },
+                        fcm_options: imageUrl && imageUrl.trim() !== "" ? { image: imageUrl } : undefined
                     }
                 }
             };
@@ -521,7 +502,7 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
             }
         }
 
-        console.log("[BROADCAST COPAS 🚀] Título: '" + title + "' | Enviados: " + sentCount + "/" + subscribers.length + " (App: " + appSlug + ")");
+        console.log("[POCKETBASE COPAS BROADCAST 🚀] Título: '" + title + "' | Enviados: " + sentCount + "/" + subscribers.length + " (App: " + appSlug + ")");
 
         return c.json(200, {
             success: true,
@@ -532,7 +513,7 @@ routerAdd("POST", "/api/broadcast-push", function(c) {
         });
 
     } catch (e) {
-        console.log("[BROADCAST COPAS FATAL] " + e);
+        console.log("[POCKETBASE COPAS BROADCAST FATAL] " + e);
         return c.json(500, { success: false, error: String(e) });
     }
 });
