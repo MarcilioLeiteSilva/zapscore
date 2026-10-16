@@ -20,6 +20,7 @@ import {
   Smartphone,
   Filter,
   RefreshCw,
+  Pencil,
 } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://zapscore-zapscore-api.gtalg3.easypanel.host';
@@ -544,6 +545,14 @@ export default function AdsDashboardPage() {
                           >
                             {camp.status === 'active' ? <Pause size={14} /> : <Play size={14} />}
                           </button>
+
+                          <Link
+                            href={`/adminpanel/ads/${camp.id}`}
+                            title="Editar Campanha e Apps Alvos"
+                            className="p-2 rounded-xl border border-sky-500/30 text-sky-400 hover:bg-sky-500/10 transition-all"
+                          >
+                            <Pencil size={14} />
+                          </Link>
 
                           <a
                             href={camp.destination_url}

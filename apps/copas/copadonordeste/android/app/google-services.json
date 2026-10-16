@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1008787570657",
+    "project_id": "copanordeste-4cf23",
+    "storage_bucket": "copanordeste-4cf23.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1008787570657:android:04935b6442b5b7dd235ca0",
+        "android_client_info": {
+          "package_name": "com.prolaser.copadonordestebr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHDbXcIJNq4KL7Jyj-J2Id1pKROaeUGfA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

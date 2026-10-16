@@ -124,6 +124,9 @@ const AVAILABLE_APPS = [
   { slug: 'campeonato_tocantinense', name: 'Tocantinense', flag: '🌞' },
   { slug: 'brasileirao', name: 'Brasileirão', flag: '🇧🇷' },
   { slug: 'europa', name: 'Suíte Europa', flag: '🇪🇺' },
+  { slug: 'copadonordeste', name: 'Copa do Nordeste', flag: '☀️' },
+  { slug: 'copadobrasil', name: 'Copa do Brasil', flag: '🇧🇷' },
+  { slug: 'copalibertadores', name: 'Copa Libertadores', flag: '🏆' },
 ];
 
 export default function NewAdCampaignPage() {
