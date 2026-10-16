@@ -11,7 +11,7 @@ class SearchCubit extends Cubit<SearchState> {
   final ApiClient apiClient;
   final Map<int, Team> _gauchoTeamsMap = {};
   final Set<String> _gauchoTeamNames = {};
-  static const List<int> gauchoIds = AppConfig.supportedLeagueIds; // [622, 853]
+  static const List<int> gauchoIds = AppConfig.supportedLeagueIds; // [477, 478]
 
   SearchCubit(this.apiClient) : super(SearchInitial());
 

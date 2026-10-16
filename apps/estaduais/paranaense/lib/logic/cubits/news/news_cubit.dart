@@ -24,7 +24,7 @@ class NewsCubit extends Cubit<NewsState> {
       final news = await apiClient.getNews(leagueId: leagueId, teamId: teamId, limit: limit);
       emit(NewsLoaded(news));
     } catch (e) {
-      emit(NewsError(e.toString()));
+      emit(NewsError('Não foi possível carregar as notícias.'));
     }
   }
 }

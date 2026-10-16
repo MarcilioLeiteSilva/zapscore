@@ -26,7 +26,7 @@ class AboutScreen extends StatelessWidget {
           const Gap(12),
           Center(
             child: Text(
-              '${AppText.appName} v1.0.0',
+              '${AppText.appName} v1.0.1',
               style: GoogleFonts.urbanist(
                 textStyle: context.textTheme.titleMedium!.copyWith(
                   fontWeight: FontWeight.bold,

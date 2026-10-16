@@ -131,7 +131,12 @@ class _FavoritePageState extends State<FavoritePage> {
                                           const Icon(Icons.emoji_events),
                                     ),
                                      title: Text(league.name, style: GoogleFonts.urbanist(color: Colors.white, fontWeight: FontWeight.w600)),
-                                     subtitle: Text(league.type ?? '', style: GoogleFonts.urbanist(color: Colors.white70)),
+                                     subtitle: Text(
+                                       (league.externalId == 2 || league.name.toLowerCase().contains('champions'))
+                                           ? 'Europa'
+                                           : (league.country ?? league.type ?? ''),
+                                       style: GoogleFonts.urbanist(color: Colors.white70),
+                                     ),
                                     trailing: const Icon(Icons.chevron_right),
                                     onTap: () {
                                       context.pushNamed(screenLeague,

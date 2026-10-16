@@ -59,7 +59,7 @@ class TableFixPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(15),
                     color: const Color(0xFF454444),
-                    border: isMatchGroup ? Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3), width: 1) : null,
+                    border: isMatchGroup ? Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3), width: 1) : null,
                   ),
                   child: Table(
                     columnWidths: const {
@@ -75,7 +75,7 @@ class TableFixPage extends StatelessWidget {
                         decoration: BoxDecoration(
                           border: Border(
                               bottom: BorderSide(
-                            color: (context.appColors.info ?? Colors.grey).withOpacity(0.2),
+                            color: (context.appColors.info ?? Colors.grey).withValues(alpha: 0.2),
                             width: 1,
                           )),
                         ),
@@ -110,11 +110,11 @@ class TableFixPage extends StatelessWidget {
                         TableRow(
                           decoration: BoxDecoration(
                             color: (item.teamId == homeTeamId || item.teamId == awayTeamId)
-                                ? Theme.of(context).primaryColor.withOpacity(0.1)
+                                ? Theme.of(context).primaryColor.withValues(alpha: 0.1)
                                 : null,
                             border: Border(
                                 bottom: BorderSide(
-                              color: (context.appColors.info ?? Colors.grey).withOpacity(0.1),
+                              color: (context.appColors.info ?? Colors.grey).withValues(alpha: 0.1),
                               width: 1,
                             )),
                           ),

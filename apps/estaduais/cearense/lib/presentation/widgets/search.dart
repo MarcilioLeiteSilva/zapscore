@@ -44,11 +44,11 @@ class CardSearchFixture extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor.withOpacity(0.8),
+              color: Theme.of(context).cardColor.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -84,7 +84,7 @@ class CardCheepTabSearch extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: select ? const Color(0xFF454444) : Theme.of(context).cardColor.withOpacity(0.5),
+          color: select ? const Color(0xFF454444) : Theme.of(context).cardColor.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20), // Reduzido de 30 para 20
         ),
         child: Center(
@@ -150,7 +150,7 @@ class PagePopularSearch extends StatelessWidget {
                           child: CachedNetworkImage(imageUrl: proxyImage(item.logo ?? ''), errorWidget: (_, __, ___) => const CardNoImage(radius: 5)),
                         ),
                         title: Text(item.name, style: GoogleFonts.urbanist(color: const Color(0xFF1F2937), fontWeight: FontWeight.w600)),
-                        subtitle: Text('competition'.tr(context), style: GoogleFonts.urbanist(color: const Color(0xFF1F2937).withOpacity(0.7))),
+                        subtitle: Text('competition'.tr(context), style: GoogleFonts.urbanist(color: const Color(0xFF1F2937).withValues(alpha: 0.7))),
                         trailing: BlocBuilder<FavoriteCubit, FavoriteState>(
                           builder: (context, favState) {
                             final isFav = context.read<FavoriteCubit>().isLeagueFavorite(item.externalId.toString());

@@ -40,7 +40,7 @@ class GeneralScreen extends StatelessWidget {
             onTap: () async {
               try {
                 await Share.share(
-                  'Acompanhe todos os jogos, gols e notícias da Liga dos Campeões em tempo real no ZapScore!\nhttps://play.google.com/store/apps/details?id=com.zapscore.championsleague',
+                  'Acompanhe todos os jogos, gols e notícias da Champions League em tempo real no ZapScore!\nhttps://play.google.com/store/apps/details?id=com.zapscore.championsleague',
                 );
               } catch (e) {
                 final Uri url = Uri.parse('https://play.google.com/store/apps/details?id=com.zapscore.championsleague');

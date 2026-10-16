@@ -20,6 +20,7 @@ export class NotificationsService {
   private readonly PB_BRASIL = 'https://zapscore-pocketbase-brasil.gtalg3.easypanel.host';
   private readonly PB_ESTADUAIS = 'https://zapscore-pocketbase-estaduais.gtalg3.easypanel.host';
   private readonly PB_EUROPA = 'https://zapscore-pocketbase-europa.gtalg3.easypanel.host';
+  private readonly PB_COPAS = 'https://zapscore-pocketbase-copas.gtalg3.easypanel.host';
 
   // Armazenamento em memória para PushQueue sem dependência de schema no PostgreSQL
   private inMemoryPushQueue: Array<{
@@ -62,9 +63,25 @@ export class NotificationsService {
     const slug = (appSlug || '').toLowerCase().trim();
     const id = leagueId ? Number(leagueId) : 0;
 
-    // Se for Copa (Libertadores, Copa do Brasil, Copa do Nordeste, etc.), não possui app nem PocketBase dedicado
-    if ([73, 612, 13, 1, 10].includes(id)) {
+    // 1. Competições sem aplicativo dedicado (Amistosos, Copa do Mundo, etc.)
+    if ([1, 10].includes(id)) {
       return null;
+    }
+
+    // 2. Copas (Copa do Nordeste, Copa do Brasil, Copa Libertadores)
+    const copasSlugs: Record<string, number> = {
+      copadonordeste: 612,
+      copadobrasil: 73,
+      copalibertadores: 13,
+    };
+    if (copasSlugs[slug] || [612, 73, 13].includes(id)) {
+      let resolvedSlug = slug;
+      if (!resolvedSlug) {
+        resolvedSlug = Object.keys(copasSlugs).find((k) => copasSlugs[k] === id) || '';
+      }
+      if (resolvedSlug) {
+        return { url: this.PB_COPAS, slug: resolvedSlug, name: 'PocketBase Copas' };
+      }
     }
 
     // 1. Brasil / Brasileirão
@@ -93,13 +110,33 @@ export class NotificationsService {
 
     // 3. Estaduais (Apenas ligas estaduais mapeadas)
     const estadualSlugs: Record<string, number[]> = {
-      campeonato_paulista: [475, 476, 610],
+      campeonato_paulista: [475, 476],
       campeonato_carioca: [624, 851],
       campeonato_mineiro: [629, 619],
-      campeonato_gaucho: [477, 478, 614, 622, 853],
-      campeonato_baiano: [602, 613, 617],
-      campeonato_paranaense: [606, 614, 616],
-      campeonato_cearense: [607, 609, 618, 620],
+      campeonato_gaucho: [477, 478, 853],
+      campeonato_baiano: [602, 613],
+      campeonato_paranaense: [606, 614],
+      campeonato_cearense: [609, 620],
+      campeonato_pernambucano: [622],
+      campeonato_paraibano: [603],
+      campeonato_maranhense: [608],
+      campeonato_catarinense: [604],
+      campeonato_capixaba: [611],
+      campeonato_goiano: [628],
+      campeonato_matogrossense: [630],
+      campeonato_sul_matogrossense: [623],
+      campeonato_brasiliense: [610],
+      campeonato_alagoano: [77],
+      campeonato_potiguar: [616],
+      campeonato_piauiense: [621],
+      campeonato_sergipano: [626],
+      campeonato_paraense: [627],
+      campeonato_amazonense: [522],
+      campeonato_acreano: [520],
+      campeonato_amapaense: [521],
+      campeonato_rondoniense: [615],
+      campeonato_roraimense: [607],
+      campeonato_tocantinense: [631],
     };
 
     if (estadualSlugs[slug]) {

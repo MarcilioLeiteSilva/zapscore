@@ -28,8 +28,8 @@ class PushNotificationService {
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'champions_league_live_channel',
-    'Alertas Liga dos Campeões',
-    description: 'Notificações ao vivo de gols, início e fim de partidas da Liga dos Campeões.',
+    'Alertas Champions League',
+    description: 'Notificações ao vivo de gols, início e fim de partidas da Champions League.',
     importance: Importance.max,
   );
 

@@ -18,7 +18,7 @@ class HomeNavBottom extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navBgColor = Theme.of(context).appBarTheme.backgroundColor ??
-        AppColor.appBarBackground.withOpacity(0.85);
+        AppColor.appBarBackground.withValues(alpha: 0.85);
 
     return ClipRect(
       child: BackdropFilter(
@@ -401,7 +401,7 @@ class _HomeAiPerformanceBannerState extends State<HomeAiPerformanceBanner> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: infoColor.withOpacity(0.15),
+                    color: infoColor.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

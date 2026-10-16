@@ -62,7 +62,7 @@ class ThemeScreen extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: themeColor.withOpacity(0.15),
+                      color: themeColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -87,7 +87,7 @@ class ThemeScreen extends StatelessWidget {
                         Text(
                           theme['desc'] as String,
                           style: TextStyle(
-                            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
                             fontSize: 13,
                           ),
                         ),

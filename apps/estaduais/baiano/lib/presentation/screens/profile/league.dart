@@ -68,19 +68,19 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
             ),
             body: Column(
               children: [
-                // 1. Seletor de Divisão: [Série A1] [Série A2]
+                // 1. Seletor de Divisão: [Série A] [Série B]
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  color: Theme.of(context).cardColor.withOpacity(0.4),
+                  color: Theme.of(context).cardColor.withValues(alpha: 0.4),
                   child: Row(
                     children: [
                       Expanded(
                         child: _DivisionButton(
-                          title: 'Série A1',
-                          isSelected: currentLeagueId == 624 || currentLeagueId != 851,
+                          title: 'Série A',
+                          isSelected: currentLeagueId == 602 || currentLeagueId != 613,
                           onTap: () {
-                            if (currentLeagueId != 624) {
-                              cubit.switchDivision(624);
+                            if (currentLeagueId != 602) {
+                              cubit.switchDivision(602);
                             }
                           },
                         ),
@@ -88,11 +88,11 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                       const Gap(10),
                       Expanded(
                         child: _DivisionButton(
-                          title: 'Série A2',
-                          isSelected: currentLeagueId == 851,
+                          title: 'Série B',
+                          isSelected: currentLeagueId == 613,
                           onTap: () {
-                            if (currentLeagueId != 851) {
-                              cubit.switchDivision(851);
+                            if (currentLeagueId != 613) {
+                              cubit.switchDivision(613);
                             }
                           },
                         ),
@@ -134,7 +134,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                               border: Border.all(
                                 color: isSelected
                                     ? AppColor.accent
-                                    : Theme.of(context).dividerColor.withOpacity(0.1),
+                                    : Theme.of(context).dividerColor.withValues(alpha: 0.1),
                               ),
                             ),
                             child: Center(
@@ -249,7 +249,7 @@ class _DivisionButton extends StatelessWidget {
           color: isSelected ? AppColor.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColor.accent : Theme.of(context).dividerColor.withOpacity(0.2),
+            color: isSelected ? AppColor.accent : Theme.of(context).dividerColor.withValues(alpha: 0.2),
           ),
         ),
         child: Center(

@@ -1,11 +1,11 @@
 {
-    "name": "bundesliga",
-    "short_name": "bundesliga",
+    "name": "Paranaense",
+    "short_name": "Paranaense",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1D965C",
+    "theme_color": "#1D965C",
+    "description": "App do Campeonato Paranaense.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

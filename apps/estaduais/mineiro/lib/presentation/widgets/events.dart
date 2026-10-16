@@ -48,7 +48,7 @@ class CardIndicatorThreeH2H extends StatelessWidget {
       return Container(
         height: 15,
         decoration: BoxDecoration(
-          color: (context.appColors.info ?? Colors.grey).withOpacity(0.3),
+          color: (context.appColors.info ?? Colors.grey).withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(15),
         ),
       );
@@ -198,7 +198,7 @@ class CardEventMatch extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: Theme.of(context).cardColor,
-          border: Border.all(color: AppColor.info.withOpacity(0.3), width: 1),
+          border: Border.all(color: AppColor.info.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(
           children: [
@@ -223,10 +223,10 @@ class CardEventMatch extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Theme.of(context).cardColor,
-        border: Border.all(color: AppColor.info.withOpacity(0.3), width: 1),
+        border: Border.all(color: AppColor.info.withValues(alpha: 0.3), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -312,7 +312,7 @@ class CardEventMatch extends StatelessWidget {
                 border: Border.all(color: AppColor.accent, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColor.accent.withOpacity(0.25),
+                    color: AppColor.accent.withValues(alpha: 0.25),
                     blurRadius: 4,
                     spreadRadius: 0.5,
                   ),
@@ -463,9 +463,9 @@ class CardEventMatch extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F4A2C).withOpacity(0.5),
+          color: const Color(0xFF0F4A2C).withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColor.info.withOpacity(0.2), width: 0.8),
+          border: Border.all(color: AppColor.info.withValues(alpha: 0.2), width: 0.8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1094,7 +1094,7 @@ class CardEventPossession extends StatelessWidget {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
-            color: Theme.of(context).cardColor.withOpacity(0.8),
+            color: Theme.of(context).cardColor.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(15),
         ),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 5),

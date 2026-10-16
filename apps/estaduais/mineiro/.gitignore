@@ -23,3 +23,4 @@ ios/ServiceDefinitions.json
 *.pbxuser
 *.perspectivev3
 *.log
+*-adminsdk-*.json

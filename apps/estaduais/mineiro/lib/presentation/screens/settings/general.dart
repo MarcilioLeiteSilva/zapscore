@@ -92,7 +92,7 @@ class GeneralScreen extends StatelessWidget {
                   content: Text(
                     'confirm_delete_data'.tr(dialogContext),
                     style: GoogleFonts.urbanist(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
                     ),
                   ),
                   actions: [

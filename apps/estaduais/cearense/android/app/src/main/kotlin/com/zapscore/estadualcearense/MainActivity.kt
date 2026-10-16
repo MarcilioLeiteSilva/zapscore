@@ -12,10 +12,16 @@ class MainActivity: FlutterActivity() {
             "cearenseNativeAdFactory",
             NativeAdFactorySmall(layoutInflater)
         )
+        GoogleMobileAdsPlugin.registerNativeAdFactory(
+            flutterEngine,
+            "cearenseNativeAdFactoryMedium",
+            NativeAdFactoryMedium(layoutInflater)
+        )
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         GoogleMobileAdsPlugin.unregisterNativeAdFactory(flutterEngine, "cearenseNativeAdFactory")
+        GoogleMobileAdsPlugin.unregisterNativeAdFactory(flutterEngine, "cearenseNativeAdFactoryMedium")
         super.cleanUpFlutterEngine(flutterEngine)
     }
 }

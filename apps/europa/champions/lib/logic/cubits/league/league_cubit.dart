@@ -29,7 +29,7 @@ class LeagueCubit extends Cubit<LeagueState> {
       final scorers = results[2] as List<Scorer>;
 
       // Obter nome da competição
-      String compName = 'Liga dos Campeões';
+      String compName = 'Champions League';
 
       // Normalizar via Motor de Competições
       final competition = CompetitionNormalizer.normalize(

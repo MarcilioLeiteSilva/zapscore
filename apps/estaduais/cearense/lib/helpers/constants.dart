@@ -4,7 +4,7 @@ abstract class AppText {
   static const String appName = "Campeonato Cearense";
 
   static const String avatar =
-      "https://media.licdn.com/dms/image/D4E03AQHd_Oq_clumNA/profile-displayphoto-shrink_800_800/0/1678101113406?e=2147483647&v=beta&t=v9Vh1YWSmXKvvVEufYcvLxGEuSsREBjpeN5IAQ6hEaU";
+      "https://ui-avatars.com/api/?name=Cearense&background=1D965C&color=ffffff&size=256";
 
   static const String report = """
 Campeonato Cearense coverage with live scores, standings, and match details.

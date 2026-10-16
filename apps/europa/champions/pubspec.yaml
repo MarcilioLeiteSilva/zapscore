@@ -2,7 +2,7 @@ name: zapscore_champions_league
 description: "App da Liga dos Campeões."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.11.4
@@ -55,18 +55,18 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "icones/icone_app_launcher.png"
+  image_path: "icones/icone-ch.png"
   adaptive_icon_background: "#081325"
-  adaptive_icon_foreground: "icones/icone_launcher_foreground.png"
+  adaptive_icon_foreground: "icones/icone-ch.png"
   min_sdk_android: 21
 
 flutter_native_splash:
   color: "#081325"
-  image: "icones/icone_splash_champions.png"
+  image: "icones/icone-ch.png"
   android_gravity: center
   ios_content_mode: center
   android_12:
-    image: "icones/icone_splash_champions.png"
+    image: "icones/icone-ch.png"
     color: "#081325"
   fullscreen: false
 

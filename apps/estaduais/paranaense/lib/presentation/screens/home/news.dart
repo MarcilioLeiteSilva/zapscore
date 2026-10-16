@@ -9,14 +9,12 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
-  String? selectedFilter;
 
   final List<Map<String, String?>> _categories = [
-    {'name': 'Todas', 'filter': null},
-    {'name': 'Campeonato Paranaense', 'filter': 'paranaense'},
-    {'name': 'Paranaense 2ª Divisão', 'filter': 'a2'},
-    
-    
+    {'name': 'Todas', 'type': 'all'},
+    {'name': 'Paranaense Série A', 'type': 'a1'},
+    {'name': 'Paranaense 2ª Div', 'type': 'b'},
+    {'name': 'Mercado da Bola', 'type': 'mercado'},
   ];
 
   @override
@@ -31,12 +29,114 @@ class _NewsPageState extends State<NewsPage> {
     context.read<NewsCubit>().fetchNews(leagueId: AppConfig.leagueId, limit: 100);
   }
 
-  bool _matchesFilter(News news, String? filter) {
-    if (filter == null || filter.isEmpty) return true;
-    final f = filter.toLowerCase();
-    return news.title.toLowerCase().contains(f) ||
-        news.description.toLowerCase().contains(f) ||
-        (news.source != null && news.source!.toLowerCase().contains(f));
+  static const List<String> _paranaenseA1Clubs = [
+    'athletico-pr', 'athletico paranaense', 'athletico pr', 'furacão', 'furacao',
+    'coritiba', 'coxa', 'coxa-branca',
+    'operário-pr', 'operario-pr', 'operário ferroviário', 'operario ferroviario', 'operario pr', 'operário pr', 'fantasma',
+    'maringá fc', 'maringa fc', 'maringá', 'maringa', 'dogão', 'dogao',
+    'cascavel', 'fc cascavel', 'serpente',
+    'cianorte', 'leão do vale',
+    'londrina', 'tubarão', 'tubarao',
+    'azuriz', 'gralha azul',
+    'andraus',
+    'pstc',
+    'são joseense', 'sao joseense',
+    'paraná clube', 'parana clube', 'tricolor da vila'
+  ];
+
+  static const List<String> _paranaenseBClubs = [
+    'rio branco-pr', 'rio branco de paranaguá', 'leão da estradinha',
+    'paranavaí', 'paranavai', 'acp',
+    'laranja mecânica', 'laranja mecanica',
+    'foz do iguaçu', 'foz do iguacu', 'azulão da fronteira',
+    'iguaçu', 'iguacu', 'pantera do vale',
+    'nacional-pr', 'nacional de rollândia',
+    'apucarana', 'dragão do norte',
+    'patriotas',
+    'grêmio maringá', 'gremio maringa'
+  ];
+
+  static const List<String> _excludedKeywords = [
+    'wsl', 'surf', 'trestles', 'fórmula 1', 'formula 1', 'motogp',
+    'stf', 'reforma tributária', 'reforma tributaria', 'senado', 'eleições', 'eleicoes'
+  ];
+
+  bool _hasClub(String text, List<String> clubs) {
+    for (final club in clubs) {
+      if (club.length <= 4) {
+        if (RegExp(r'\b' + RegExp.escape(club) + r'\b', caseSensitive: false).hasMatch(text)) {
+          return true;
+        }
+      } else {
+        if (text.contains(club)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _isA1News(String text) {
+    final hasExplicitA1 = text.contains('campeonato paranaense') ||
+        text.contains('paranaense série a') ||
+        text.contains('paranaense serie a') ||
+        text.contains('futebol paranaense') ||
+        text.contains('atletiba') ||
+        text.contains('pararatiba');
+    if (hasExplicitA1) return true;
+
+    return _hasClub(text, _paranaenseA1Clubs);
+  }
+
+  bool _isBNews(String text) {
+    final hasExplicitB = text.contains('paranaense 2ª divisão') ||
+        text.contains('paranaense 2a divisao') ||
+        text.contains('paranaense segunda divisão') ||
+        text.contains('paranaense segunda divisao') ||
+        text.contains('segunda divisão paranaense') ||
+        text.contains('segunda divisao paranaense') ||
+        text.contains('paranaense divisão de acesso') ||
+        text.contains('paranaense b');
+    if (hasExplicitB) return true;
+
+    return _hasClub(text, _paranaenseBClubs);
+  }
+
+  bool _matchesFilter(News news) {
+    final t = '${news.title} ${news.description}'.toLowerCase();
+
+    // Filtro negativo contra ruídos externos (política, outros esportes)
+    if (_excludedKeywords.any((kw) => t.contains(kw))) {
+      return false;
+    }
+
+    if (indexTab == 0) {
+      // Aba 'Todas'
+      return true;
+    } else if (indexTab == 1) {
+      // Aba 'Paranaense Série A'
+      return _isA1News(t);
+    } else if (indexTab == 2) {
+      // Aba 'Paranaense 2ª Div'
+      return _isBNews(t);
+    } else if (indexTab == 3) {
+      // Aba 'Mercado da Bola'
+      final isParanaenseFootball = _isA1News(t) ||
+          _isBNews(t) ||
+          _hasClub(t, _paranaenseA1Clubs) ||
+          _hasClub(t, _paranaenseBClubs) ||
+          t.contains('paranaense') ||
+          t.contains('futebol paranaense');
+      if (!isParanaenseFootball) return false;
+
+      final marketKeywords = [
+        'mercado', 'transferência', 'transferencia', 'reforço', 'reforco',
+        'contrata', 'contratação', 'contratacao', 'acerta', 'negocia',
+        'fechou', 'assina', 'proposta', 'rescinde', 'anuncia'
+      ];
+      return marketKeywords.any((kw) => t.contains(kw));
+    }
+    return true;
   }
 
   Widget _buildCompetitionFilters() {
@@ -57,9 +157,9 @@ class _NewsPageState extends State<NewsPage> {
               select: isSelected,
               label: cat['name']!,
               onTap: () {
+                if (indexTab == i) return;
                 setState(() {
                   indexTab = i;
-                  selectedFilter = cat['filter'];
                 });
               },
             );
@@ -84,7 +184,7 @@ class _NewsPageState extends State<NewsPage> {
             onPressed: () => context.pushNamed(screenSearch),
             icon: SvgPicture.asset(
               Assets.searchLine,
-              color: Theme.of(context).colorScheme.onSurface,
+              colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSurface, BlendMode.srcIn),
               height: 25,
             ),
           ),
@@ -101,7 +201,7 @@ class _NewsPageState extends State<NewsPage> {
               return Center(child: Text(state.message));
             }
             if (state is NewsLoaded) {
-              final filteredNews = state.news.where((n) => _matchesFilter(n, selectedFilter)).toList();
+              final filteredNews = state.news.where((n) => _matchesFilter(n)).toList();
               final carouselNews = filteredNews.take(5).toList();
               final listNews = filteredNews.skip(5).toList();
 

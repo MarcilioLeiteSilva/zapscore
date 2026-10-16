@@ -9,7 +9,6 @@
 ## Leitura Obrigatória de Contexto e Memória do Ecossistema
 - Antes de iniciar qualquer análise, diagnóstico ou edição de código, o agente DEVE consultar obrigatoriamente o arquivo `relatorios/ECOSYSTEM.md`.
 - Esse documento contém a topologia completa dos apps, credenciais do Firebase, mapeamento das ligas, funcionamento do backend PocketBase, o AdminPanel e regras de negócio de notificações push.
-- **Verificação de Tarefas Pendentes `[A FAZER]`:** O agente DEVE verificar as seções marcadas com a tag `[A FAZER]` no `ECOSYSTEM.md` (como o *Capítulo 10: Server-Side FCM Topics*) e, no início da conversa, perguntar proativamente ao usuário se deseja prosseguir com a implementação da funcionalidade pendente.
 
 ## Proibição Absoluta de Alteração no Código dos Crawlers
 - **Imutabilidade dos Motores de Crawling**: É **EXPRESSAMENTE PROIBIDO** alterar o código-fonte dos crawlers de notícias e vídeos (`apps/api/src/news/news-crawler.service.ts` e `apps/api/src/videos/video-crawler.service.ts`), bem como a lógica de extração e tratamento de imagens.

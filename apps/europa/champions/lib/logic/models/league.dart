@@ -20,11 +20,20 @@ class League {
   });
 
   factory League.fromJson(Map<String, dynamic> json) {
+    final extId = toInt(json['externalId']);
+    String name = json['name'] ?? '';
+    String? country = json['country'];
+
+    if (extId == 2 || name.toLowerCase().contains('champions')) {
+      name = 'Champions League';
+      country = 'Europa';
+    }
+
     return League(
       id: json['id']?.toString() ?? '',
-      externalId: toInt(json['externalId']),
-      name: json['name'] ?? '',
-      country: json['country'],
+      externalId: extId,
+      name: name,
+      country: country,
       logo: json['logo'],
       type: json['type'],
       season: json['season'] != null ? toInt(json['season']) : null,

@@ -46,7 +46,7 @@ class SettingsPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.userName ?? 'Usuário Liga dos Campeões',
+                      state.userName ?? 'Usuário Champions League',
                       style: GoogleFonts.urbanist(
                         textStyle: context.textTheme.headlineSmall!.copyWith(
                           fontWeight: FontWeight.bold,

@@ -14,7 +14,7 @@ class SettingsPage extends StatelessWidget {
             gradient: LinearGradient(
               colors: [
                 Theme.of(context).cardColor,
-                Theme.of(context).cardColor.withOpacity(0.8),
+                Theme.of(context).cardColor.withValues(alpha: 0.8),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -28,7 +28,7 @@ class SettingsPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border:
-                      Border.all(color: Colors.red, width: 2),
+                      Border.all(color: AppColor.accent, width: 2),
                   image: state.userPhoto != null
                       ? DecorationImage(
                           image: FileImage(File(state.userPhoto!)),
@@ -60,11 +60,11 @@ class SettingsPage extends StatelessWidget {
                 onPressed: () => context.pushNamed(screenEditInfo),
                 icon: CircleAvatar(
                   backgroundColor:
-                      Colors.red.withOpacity(0.15),
+                      AppColor.accent.withValues(alpha: 0.15),
                   child: SvgPicture.asset(
                     Assets.edit,
                     width: 18,
-                    color: Colors.red,
+                    color: AppColor.accent,
                   ),
                 ),
               ),
@@ -96,8 +96,8 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'profile'.tr(context),
             icon: Assets.accountLine,
-            color: Colors.red.withOpacity(.1),
-            iconColor: Colors.red,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenEditInfo);
             },
@@ -105,8 +105,8 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'theme'.tr(context),
             icon: Assets.eye,
-            color: Colors.red.withOpacity(.1),
-            iconColor: Colors.red,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenTheme);
             },
@@ -114,8 +114,8 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'notifications'.tr(context),
             icon: Assets.bell,
-            color: Colors.red.withOpacity(.1),
-            iconColor: Colors.red,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenEditNotification);
             },
@@ -123,8 +123,8 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'general'.tr(context),
             icon: Assets.general,
-            color: Colors.red.withOpacity(.1),
-            iconColor: Colors.red,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenGeneral);
             },
@@ -132,8 +132,8 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'about'.tr(context),
             icon: Assets.info,
-            color: Colors.red.withOpacity(.1),
-            iconColor: Colors.red,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
             onTap: () {
               context.pushNamed(screenAbout);
             },
@@ -141,8 +141,8 @@ class SettingsPage extends StatelessWidget {
           CardSettingItem(
             label: 'logout'.tr(context),
             icon: Assets.logout,
-            color: Colors.red.withOpacity(.1),
-            iconColor: Colors.red,
+            color: AppColor.logout.withValues(alpha: .1),
+            iconColor: AppColor.logout,
             onTap: () {
               showModalBottomSheet(
                   context: context, builder: (builder) => const SheetLogOut());

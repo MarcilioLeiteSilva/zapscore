@@ -167,7 +167,7 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
   final Map<int, bool> _loadingMap = {};
 
   final List<Map<String, dynamic>> _leagues = [
-    {'id': AppConfig.championsLeagueId, 'name': 'Liga dos Campeões'},
+    {'id': AppConfig.championsLeagueId, 'name': 'Champions League'},
   ];
 
   @override
@@ -686,6 +686,13 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
       return const SizedBox();
     }
     final comp = widget.competition!;
+    final isChampions = comp.league.externalId == 2 ||
+        comp.league.name.toLowerCase().contains('champions');
+    final leagueDisplayName =
+        isChampions ? 'Champions League' : comp.league.name;
+    final leagueDisplayCountry =
+        isChampions ? 'Europa' : (comp.league.country ?? '');
+
     return Ink(
       width: context.width,
       decoration: BoxDecoration(
@@ -733,7 +740,7 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                           children: [
                             Flexible(
                               child: Text(
-                                comp.league.name.toUpperCase(),
+                                leagueDisplayName,
                                 maxLines: 1,
                                 style: context.textTheme.bodySmall!.copyWith(
                                   fontWeight: FontWeight.bold,
@@ -744,9 +751,9 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                             ),
                           ],
                         ),
-                        if (comp.league.country != null)
+                        if (leagueDisplayCountry.isNotEmpty)
                           Text(
-                            comp.league.country!,
+                            leagueDisplayCountry,
                             style: context.textTheme.labelSmall,
                           ),
                       ],
@@ -1341,7 +1348,11 @@ class CardFixtureDetail extends StatelessWidget {
           Column(
             children: [
               Text(
-                fix.league?.name ?? 'Competition',
+                (fix.league?.externalId == 2 ||
+                        (fix.league?.name.toLowerCase().contains('champions') ??
+                            false))
+                    ? 'Champions League'
+                    : (fix.league?.name ?? 'Competition'),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1349,19 +1360,21 @@ class CardFixtureDetail extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (fix.league?.country != null) ...[
-                const Gap(4),
-                Text(
-                  fix.league!.country!,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.textTheme.bodySmall!.copyWith(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+              const Gap(4),
+              Text(
+                (fix.league?.externalId == 2 ||
+                        (fix.league?.name.toLowerCase().contains('champions') ??
+                            false))
+                    ? 'Europa'
+                    : (fix.league?.country ?? ''),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.textTheme.bodySmall!.copyWith(
+                  fontSize: 14,
+                  color: Colors.white70,
                 ),
-              ],
+              ),
             ],
           ),
           const Gap(12),

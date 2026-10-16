@@ -34,6 +34,9 @@ interface CompetitionOption {
 }
 
 const COMPETITIONS: CompetitionOption[] = [
+  { id: 612, name: "Copa do Nordeste", slug: "copadonordeste", country: "Brasil", cluster: "Copas" },
+  { id: 73, name: "Copa do Brasil", slug: "copadobrasil", country: "Brasil", cluster: "Copas" },
+  { id: 13, name: "Copa Libertadores", slug: "copalibertadores", country: "América do Sul", cluster: "Copas" },
   { id: 71, name: "Brasileirão Série A", slug: "brasileirao", country: "Brasil", cluster: "Brasil" },
   { id: 72, name: "Brasileirão Série B", slug: "brasileirao", country: "Brasil", cluster: "Brasil" },
   { id: 475, name: "Campeonato Paulista A1", slug: "campeonato_paulista", country: "Brasil", cluster: "Estaduais" },

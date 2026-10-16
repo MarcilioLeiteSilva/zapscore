@@ -186,9 +186,9 @@ class _SectionLabel extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColor.accent.withOpacity(0.12),
+          color: AppColor.accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColor.accent.withOpacity(0.3)),
+          border: Border.all(color: AppColor.accent.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,
@@ -277,7 +277,7 @@ class OverviewPage extends StatelessWidget {
                       color: Theme.of(context).cardColor,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

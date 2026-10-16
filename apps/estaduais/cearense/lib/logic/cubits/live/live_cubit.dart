@@ -30,7 +30,7 @@ class LiveCubit extends Cubit<LiveState> {
       emit(LiveLoaded(cearenseFixtures));
     } catch (e) {
       if (!isAutoRefresh) {
-        emit(LiveError(e.toString()));
+        emit(LiveError('Não foi possível carregar os jogos ao vivo. Verifique sua conexão.'));
       }
     }
   }

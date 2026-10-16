@@ -25,11 +25,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Zapscore Football',
+                'Campeonato Carioca',
                 style: GoogleFonts.urbanist(
                   textStyle: context.textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red,
+                    color: AppColor.accent,
                   ),
                 ),
               ),
@@ -48,7 +48,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               const Gap(12),
               Text(
                 '''1. INTRODUÇÃO
-O Zapscore Football está comprometido com a proteção da privacidade dos seus usuários. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos as suas informações ao utilizar nosso aplicativo.
+O Campeonato Carioca está comprometido com a proteção da privacidade dos seus usuários. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos as suas informações ao utilizar nosso aplicativo.
 
 2. INFORMAÇÕES COLETADAS
 - Dados de Dispositivo: Modelo, sistema operacional e identificador único de notificação (Token FCM).
@@ -68,10 +68,10 @@ Não vendemos nem compartilhamos seus dados pessoais com terceiros para fins com
 Empregamos medidas técnicas e organizacionais avançadas de criptografia para proteger seus dados contra acesso não autorizado.
 
 6. CONTATO E SUPORTE
-Dúvidas sobre nossa política de privacidade podem ser sanadas através dos canais oficiais de suporte do Zapscore Football.''',
+Dúvidas sobre nossa política de privacidade podem ser sanadas através dos canais oficiais de suporte do Campeonato Carioca.''',
                 style: GoogleFonts.urbanist(
                   textStyle: context.textTheme.bodySmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
                     fontSize: 12,
                     height: 1.55,
                   ),

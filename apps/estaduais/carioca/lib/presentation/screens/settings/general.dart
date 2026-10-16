@@ -16,7 +16,7 @@ class GeneralScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10),
         children: [
           ListTile(
-            leading: const Icon(Icons.language, color: Colors.red),
+            leading: const Icon(Icons.language, color: AppColor.accent),
             title: Text(
               'languages'.tr(context),
               style: GoogleFonts.urbanist(
@@ -29,7 +29,7 @@ class GeneralScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.share, color: Colors.red),
+            leading: const Icon(Icons.share, color: AppColor.accent),
             title: Text(
               'share'.tr(context),
               style: GoogleFonts.urbanist(
@@ -51,7 +51,7 @@ class GeneralScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.star_rate_rounded, color: Colors.red),
+            leading: const Icon(Icons.star_rate_rounded, color: AppColor.accent),
             title: Text(
               'rate'.tr(context),
               style: GoogleFonts.urbanist(
@@ -67,7 +67,7 @@ class GeneralScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+            leading: const Icon(Icons.delete_outline_rounded, color: AppColor.accent),
             title: Text(
               'delete_app_data'.tr(context),
               style: GoogleFonts.urbanist(

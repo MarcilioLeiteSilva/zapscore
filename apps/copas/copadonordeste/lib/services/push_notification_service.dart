@@ -128,7 +128,7 @@ class PushNotificationService {
 
   static bool _isSyncing = false;
 
-  /// Sincroniza o Token FCM e presença do dispositivo no PocketBase Europa
+  /// Sincroniza o Token FCM e presença do dispositivo no PocketBase Copas
   /// Garante que apenas 1 registro exista por aparelho (sem duplicação).
   static Future<void> syncDeviceWithPocketBase({
     List<int>? favoriteTeamIds,
@@ -220,7 +220,7 @@ class PushNotificationService {
         body: jsonEncode(payload),
       );
       if (createRes.statusCode == 200 || createRes.statusCode == 201) {
-        debugPrint('PocketBase Europa: Novo aparelho registrado com sucesso');
+        debugPrint('PocketBase Copas: Novo aparelho registrado com sucesso');
       } else {
         debugPrint('PocketBase Create Record Status: ${createRes.statusCode}');
       }

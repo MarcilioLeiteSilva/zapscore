@@ -93,7 +93,44 @@ class FixturePage extends StatelessWidget {
                           return const Center(child: CircularProgressIndicator());
                         }
                         if (liveState is LiveError) {
-                          return Center(child: Text(liveState.message));
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_off_rounded,
+                                    size: 52,
+                                    color: Colors.grey,
+                                  ),
+                                  const Gap(12),
+                                  Text(
+                                    liveState.message,
+                                    textAlign: TextAlign.center,
+                                    style: context.textTheme.bodyMedium?.copyWith(
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const Gap(16),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      context.read<LiveCubit>().fetchLiveFixtures();
+                                    },
+                                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                                    label: const Text('Tentar novamente'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColor.accent,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
                         }
                         if (liveState is LiveLoaded) {
                           if (liveState.fixtures.isEmpty) {
@@ -148,7 +185,44 @@ class FixturePage extends StatelessWidget {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (state is HomeError) {
-                        return Center(child: Text(state.message));
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.cloud_off_rounded,
+                                  size: 52,
+                                  color: Colors.grey,
+                                ),
+                                const Gap(12),
+                                Text(
+                                  state.message,
+                                  textAlign: TextAlign.center,
+                                  style: context.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const Gap(16),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    context.read<HomeCubit>().fetchHomeData();
+                                  },
+                                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                                  label: const Text('Tentar novamente'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColor.accent,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       }
                       if (state is HomeLoaded) {
                         final List<HomeCompetition> displayCompetitions = state.competitions.isNotEmpty
@@ -182,10 +256,13 @@ class FixturePage extends StatelessWidget {
                             if (i == displayCompetitions.length + 1) {
                               return const HomeNewsCarouselSection();
                             }
+                            if (i == displayCompetitions.length + 2) {
+                              return const AppNativeAdWidget(variant: NativeAdVariant.fixture);
+                            }
                             return const HomeVideoCarouselSection();
                           },
                           separatorBuilder: (_, i) => const Gap(12),
-                          itemCount: displayCompetitions.length + 3,
+                          itemCount: displayCompetitions.length + 4,
                         );
                       }
                       return const SizedBox();

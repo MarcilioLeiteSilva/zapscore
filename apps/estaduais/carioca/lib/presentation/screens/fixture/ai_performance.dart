@@ -198,7 +198,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       decoration: BoxDecoration(
         color: theme.cardColor,
         border: Border(
-          bottom: BorderSide(color: infoColor.withOpacity(0.2), width: 1),
+          bottom: BorderSide(color: infoColor.withValues(alpha: 0.2), width: 1),
         ),
       ),
       child: Row(
@@ -215,7 +215,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<League?>(
                   value: _selectedLeague,
-                  hint: Text('all_competitions'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
+                  hint: Text('all_competitions'.tr(context), style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 13)),
                   isExpanded: true,
                   dropdownColor: theme.cardColor,
                   icon: Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSurface),
@@ -300,10 +300,10 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: infoColor.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: infoColor.withValues(alpha: 0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -325,7 +325,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
                         hitRate: hitRate,
                         hitColor: Colors.green,
                         missColor: Colors.red,
-                        backgroundColor: Colors.white.withOpacity(0.08),
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
                   ),
@@ -375,7 +375,7 @@ class _AiPerformanceDashboardPageState extends State<AiPerformanceDashboardPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color: Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -538,8 +538,8 @@ class RecentAuditItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isHit 
-              ? Colors.green.withOpacity(0.2) 
-              : Colors.red.withOpacity(0.2),
+              ? Colors.green.withValues(alpha: 0.2) 
+              : Colors.red.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -683,8 +683,8 @@ class RecentAuditItem extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isHit 
-                      ? Colors.green.withOpacity(0.15) 
-                      : Colors.red.withOpacity(0.15),
+                      ? Colors.green.withValues(alpha: 0.15) 
+                      : Colors.red.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isHit ? Colors.green : Colors.red,

@@ -18,7 +18,7 @@ class CardSettingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? Colors.red;
+    final effectiveIconColor = iconColor ?? AppColor.accent;
     final effectiveTextColor = Theme.of(context).colorScheme.onSurface;
 
     return InkWell(

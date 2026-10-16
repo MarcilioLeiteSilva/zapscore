@@ -128,7 +128,7 @@ class PlayerSubstitutionItem extends StatelessWidget {
               height: 32,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor.withOpacity(0.5),
+                color: Theme.of(context).cardColor.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
               child: ClipRRect(
@@ -227,7 +227,7 @@ class PlayerSubstitutionPlayerItem extends StatelessWidget {
                 height: 35,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Theme.of(context).cardColor.withOpacity(0.5),
+                  color: Theme.of(context).cardColor.withValues(alpha: 0.5),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
@@ -432,7 +432,7 @@ class PlayerLineupItem extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isWhite ? Colors.white.withOpacity(0.2) : Theme.of(context).primaryColor.withOpacity(0.2),
+                  color: isWhite ? Colors.white.withValues(alpha: 0.2) : Theme.of(context).primaryColor.withValues(alpha: 0.2),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),

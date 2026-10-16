@@ -8,8 +8,6 @@ class MatchLeaguePage extends StatefulWidget {
 }
 
 class _MatchLeaguePageState extends State<MatchLeaguePage> {
-  int _tacaRioSubStage = 0; // 0: Semifinais, 1: Final
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LeagueCubit, LeagueState>(
@@ -20,79 +18,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
         if (state is LeagueLoaded) {
           final activePhase = state.activePhase;
 
-          // 1. Taça Rio: seletor com setas, exibe jogos agrupados por confronto (sem agregado)
-          if (activePhase != null && activePhase.id == 'taca_rio') {
-            // Separa ties de semi e final
-            final semiTies = activePhase.ties
-                .where((t) => t.id.contains('semi') || t.title.contains('Semifinal'))
-                .toList();
-            final finalTies = activePhase.ties
-                .where((t) => t.id.contains('final') && !t.id.contains('semi') && !t.title.contains('Semifinal'))
-                .toList();
-
-            final currentTies = _tacaRioSubStage == 0 ? semiTies : finalTies;
-
-            return ListView(
-              padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
-              children: [
-                // Card seletor com setas
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        onPressed: _tacaRioSubStage > 0 ? () => setState(() => _tacaRioSubStage = 0) : null,
-                        icon: Icon(Icons.arrow_back_ios, size: 18,
-                          color: _tacaRioSubStage > 0 ? null : Colors.white24),
-                      ),
-                      Expanded(
-                        child: Text(
-                          _tacaRioSubStage == 0 ? 'Taça Rio (Semifinais)' : 'Taça Rio (Final)',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.urbanist(fontSize: 15, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _tacaRioSubStage < 1 ? () => setState(() => _tacaRioSubStage = 1) : null,
-                        icon: Icon(Icons.arrow_forward_ios, size: 18,
-                          color: _tacaRioSubStage < 1 ? null : Colors.white24),
-                      ),
-                    ],
-                  ),
-                ),
-                // Exibe jogos agrupados por confronto (tie), sem placar agregado
-                if (currentTies.isEmpty)
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Text(
-                        'Confrontos a definir pelos eliminados das Quartas de Final.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.urbanist(color: Colors.white54, fontSize: 13),
-                      ),
-                    ),
-                  )
-                else
-                  for (final tie in currentTies) ...[
-                    _SectionLabel(label: tie.title),
-                    if (tie.leg1 != null) CardFixtureLeagueItem(fixture: tie.leg1!),
-                    if (tie.leg2 != null) ...[
-                      const Gap(10),
-                      CardFixtureLeagueItem(fixture: tie.leg2!),
-                    ],
-                    const Gap(16),
-                  ],
-              ],
-            );
-          }
-
-          // 2. Semifinais do Cearense: exibe jogos agrupados por confronto
+          // 1. Semifinais do Cearense: exibe jogos agrupados por confronto
           if (activePhase != null && activePhase.id == 'semi_finals_a1') {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
@@ -102,7 +28,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Text(
-                        'Semifinais definidas pelos vencedores das Quartas de Final.',
+                        'Semifinais definidas pelo 1º e 2º colocados dos Grupos C e D.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.urbanist(color: Colors.white54, fontSize: 13),
                       ),
@@ -122,7 +48,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             );
           }
 
-          // 3. Quartas de Final e Final: exibe cards de confronto (CompetitionBracketWidget)
+          // 2. Fases de Mata-Mata e Eliminatórias: exibe cards de confronto (CompetitionBracketWidget)
           if (activePhase != null && activePhase.isKnockout) {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
@@ -135,7 +61,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             );
           }
 
-          // 4. Fases Regulares (Taça Guanabara, Quadrangular de Rebaixamento)
+          // 3. Fases Regulares (1ª Fase, 2ª Fase, Quadrangular da Permanência)
           final List<Fixture> phaseFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
               ? activePhase.fixtures
               : state.fixtures;
@@ -186,9 +112,9 @@ class _SectionLabel extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColor.accent.withOpacity(0.12),
+          color: AppColor.accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColor.accent.withOpacity(0.3)),
+          border: Border.all(color: AppColor.accent.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,
@@ -277,7 +203,7 @@ class OverviewPage extends StatelessWidget {
                       color: Theme.of(context).cardColor,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -450,10 +376,25 @@ class TableLeaguePage extends StatelessWidget {
         if (state is LeagueLoaded) {
           final activePhase = state.activePhase;
 
-          // 1. Fase de Grupos (ex: Taça Guanabara - Grupo A e Grupo B)
+          // 1. Fase de Grupos (1ª Fase: Grupos A e B; 2ª Fase: Grupos C e D)
           if (activePhase != null && activePhase.isGroupStage && activePhase.groups.isNotEmpty) {
             final groupIndex = state.selectedGroupIndex.clamp(0, activePhase.groups.length - 1);
             final currentGroup = activePhase.groups[groupIndex];
+            final isSecondPhaseA1 = activePhase.id == 'segunda_fase_a1';
+            final isSerieB = activePhase.id == 'primeira_fase_b' || state.selectedLeagueId == 620 || state.selectedLeagueId == 617;
+
+            final int qualCount = isSecondPhaseA1 ? 2 : 3;
+            final int relCount = isSecondPhaseA1 ? 0 : 2;
+            final String qualDesc = isSecondPhaseA1
+                ? '1º e 2º colocados de C e D avançam para as Semifinais. 3º disputa o 5º lugar.'
+                : (isSerieB
+                    ? '1º colocado avança direto para a Semifinal. 2º e 3º disputam as Quartas de Final.'
+                    : 'Os 3 primeiros de cada grupo avançam para a 2ª Fase (Grupos C e D).');
+            final String? relDesc = isSecondPhaseA1
+                ? null
+                : (isSerieB
+                    ? '4º e 5º colocados disputam a permanência na Série B.'
+                    : '4º e 5º de cada grupo disputam o Quadrangular da Permanência.');
 
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
@@ -498,17 +439,18 @@ class TableLeaguePage extends StatelessWidget {
                 StandingsTableWidget(
                   standings: currentGroup.standings,
                   groupTitle: currentGroup.name,
-                  qualificationCount: 4,
-                  relegationCount: 2,
-                  qualificationDescription: '1º a 4º avançam para as Quartas de Final da Série A1.',
-                  relegationDescription: '5º e 6º disputam o Quadrangular do Rebaixamento.',
+                  qualificationCount: qualCount,
+                  relegationCount: relCount,
+                  qualificationDescription: qualDesc,
+                  relegationDescription: relDesc,
                 ),
               ],
             );
           }
 
-          // 2. Quadrangular do Rebaixamento
+          // 2. Quadrangular da Permanência / Rebaixamento
           if (activePhase != null && activePhase.isRelegation) {
+            final isSerieB = state.selectedLeagueId == 620 || state.selectedLeagueId == 617;
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
@@ -516,14 +458,16 @@ class TableLeaguePage extends StatelessWidget {
                   standings: activePhase.standings,
                   groupTitle: activePhase.name,
                   qualificationCount: 0,
-                  relegationCount: 1,
-                  relegationDescription: '4º colocado é rebaixado para a Série A2 de 2027.',
+                  relegationCount: 2,
+                  relegationDescription: isSerieB
+                      ? 'Os 2 últimos colocados são rebaixados para a Série C de 2027.'
+                      : 'Os 2 últimos colocados são rebaixados para a Série B de 2027.',
                 ),
               ],
             );
           }
 
-          // 3. Fases de Mata-Mata / Eliminatórias (Quartas, Semis, Final, Taça Rio)
+          // 3. Fases de Mata-Mata / Eliminatórias (Quartas, Semis, 5º Lugar, 3º Lugar, Final)
           if (activePhase != null && activePhase.isKnockout) {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
@@ -536,9 +480,9 @@ class TableLeaguePage extends StatelessWidget {
             );
           }
 
-          // 4. Pontos Corridos / Liga Única (ex: Taça Santos Dumont A2)
+          // 4. Pontos Corridos / Liga Única
           if (activePhase != null && activePhase.isLeague) {
-            final isA2 = state.selectedLeagueId == 851;
+            final isSerieB = state.selectedLeagueId == 620 || state.selectedLeagueId == 617;
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
@@ -546,9 +490,13 @@ class TableLeaguePage extends StatelessWidget {
                   standings: activePhase.standings.isNotEmpty ? activePhase.standings : state.standings,
                   groupTitle: activePhase.name,
                   qualificationCount: 4,
-                  relegationCount: isA2 ? 2 : 0,
-                  qualificationDescription: '1º a 4º colocados avançam para as Semifinais.',
-                  relegationDescription: isA2 ? '11º e 12º colocados são rebaixados para a Série B1 de 2027.' : null,
+                  relegationCount: 2,
+                  qualificationDescription: isSerieB
+                      ? '1º a 4º colocados avançam para as Semifinais (vale acesso à Série A de 2027).'
+                      : '1º a 4º colocados avançam para as Semifinais.',
+                  relegationDescription: isSerieB
+                      ? 'Os 2 últimos colocados são rebaixados para a Série C de 2027.'
+                      : 'Os 2 últimos colocados são rebaixados para a Série B de 2027.',
                 ),
               ],
             );
@@ -681,7 +629,7 @@ class RoundLeaguePage extends StatelessWidget {
             );
           }
 
-          // Para fases com rodadas (Taça Guanabara, Quadrangular, Taça Santos Dumont)
+          // Para fases com rodadas (1ª Fase, 2ª Fase, Quadrangular da Permanência)
           final availableFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
               ? activePhase.fixtures
               : state.fixtures;

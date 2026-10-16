@@ -71,7 +71,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                 // 1. Seletor de Divisão: [Série A] [Série B]
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  color: Theme.of(context).cardColor.withOpacity(0.4),
+                  color: Theme.of(context).cardColor.withValues(alpha: 0.4),
                   child: Row(
                     children: [
                       Expanded(
@@ -134,7 +134,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
                               border: Border.all(
                                 color: isSelected
                                     ? AppColor.accent
-                                    : Theme.of(context).dividerColor.withOpacity(0.1),
+                                    : Theme.of(context).dividerColor.withValues(alpha: 0.1),
                               ),
                             ),
                             child: Center(
@@ -249,7 +249,7 @@ class _DivisionButton extends StatelessWidget {
           color: isSelected ? AppColor.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColor.accent : Theme.of(context).dividerColor.withOpacity(0.2),
+            color: isSelected ? AppColor.accent : Theme.of(context).dividerColor.withValues(alpha: 0.2),
           ),
         ),
         child: Center(

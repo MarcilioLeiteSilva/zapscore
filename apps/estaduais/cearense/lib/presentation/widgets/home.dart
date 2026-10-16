@@ -18,7 +18,7 @@ class HomeNavBottom extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navBgColor = Theme.of(context).appBarTheme.backgroundColor ??
-        AppColor.appBarBackground.withOpacity(0.85);
+        AppColor.appBarBackground.withValues(alpha: 0.85);
 
     return ClipRect(
       child: BackdropFilter(
@@ -191,7 +191,7 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.sports_soccer_outlined, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.sports_soccer_outlined, color: AppColor.accent),
             title: Text(
               'rounds'.tr(context),
               style: GoogleFonts.urbanist(
@@ -215,7 +215,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.emoji_events_outlined, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.emoji_events_outlined, color: AppColor.accent),
             title: Text(
               'table'.tr(context),
               style: GoogleFonts.urbanist(
@@ -239,7 +239,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.military_tech_outlined, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.military_tech_outlined, color: AppColor.accent),
             title: Text(
               'top_scorers'.tr(context),
               style: GoogleFonts.urbanist(
@@ -254,7 +254,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.newspaper_outlined, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.newspaper_outlined, color: AppColor.accent),
             title: Text(
               'news'.tr(context),
               style: GoogleFonts.urbanist(
@@ -269,7 +269,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.play_circle_outline_rounded, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.play_circle_outline_rounded, color: AppColor.accent),
             title: Text(
               'videos'.tr(context),
               style: GoogleFonts.urbanist(
@@ -284,7 +284,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.auto_awesome, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.auto_awesome, color: AppColor.accent),
             title: Text(
               'ai_predictions'.tr(context),
               style: GoogleFonts.urbanist(
@@ -299,7 +299,7 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.settings_outlined, color: Color(0xFFDD0000)),
+            leading: const Icon(Icons.settings_outlined, color: AppColor.accent),
             title: Text(
               'account'.tr(context),
               style: GoogleFonts.urbanist(
@@ -401,7 +401,7 @@ class _HomeAiPerformanceBannerState extends State<HomeAiPerformanceBanner> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: infoColor.withOpacity(0.15),
+                    color: infoColor.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

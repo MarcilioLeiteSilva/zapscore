@@ -9,13 +9,12 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   int indexTab = 0;
-  String? selectedFilter;
 
   final List<Map<String, String?>> _categories = [
-    {'name': 'Todas', 'filter': null},
-    {'name': 'Campeonato Gaúcho', 'filter': 'gaúcho'},
-    {'name': 'Gauchão Série A', 'filter': 'gauchão'},
-    {'name': 'Divisão de Acesso', 'filter': 'acesso'},
+    {'name': 'Todas', 'type': 'all'},
+    {'name': 'Gauchão Série A', 'type': 'a1'},
+    {'name': 'Divisão de Acesso', 'type': 'a2'},
+    {'name': 'Mercado da Bola', 'type': 'mercado'},
   ];
 
   @override
@@ -30,12 +29,123 @@ class _NewsPageState extends State<NewsPage> {
     context.read<NewsCubit>().fetchNews(leagueId: AppConfig.leagueId, limit: 100);
   }
 
-  bool _matchesFilter(News news, String? filter) {
-    if (filter == null || filter.isEmpty) return true;
-    final f = filter.toLowerCase();
-    return news.title.toLowerCase().contains(f) ||
-        news.description.toLowerCase().contains(f) ||
-        (news.source != null && news.source!.toLowerCase().contains(f));
+  static const List<String> _gauchoA1Clubs = [
+    'grêmio', 'gremio', 'imortal', 'tricolor gaúcho', 'tricolor gaucho',
+    'internacional', 'inter', 'colorado',
+    'juventude', 'jaconero', 'papo',
+    'caxias', 'grená', 'grena',
+    'grenal',
+    'brasil de pelotas', 'xavante',
+    'ypiranga', 'canarinho',
+    'são josé', 'sao jose', 'zequinha',
+    'novo hamburgo', 'nóia', 'noia', 'anilado',
+    'avenida', 'periquito',
+    'santa cruz-rs', 'galo carijó',
+    'são luiz', 'sao luiz', 'rubro de ijuí',
+    'guarany de bagé', 'guarany de bage', 'índio',
+    'pelotas', 'lobo', 'águia da serra',
+    'monsoon'
+  ];
+
+  static const List<String> _gauchoA2Clubs = [
+    'passo fundo', 'tricolor do planalto',
+    'glória', 'gloria', 'leão da serra',
+    'veranópolis', 'veranopolis', 'pentacolor', 'vec',
+    'esportivo', 'alviazul',
+    'lajeadense', 'alviazul do vale',
+    'aimoré', 'aimore', 'índio capilé',
+    'gaúcho de passo fundo', 'periquito do planalto',
+    'cruzeiro-rs', 'estrelado',
+    'bagé', 'bage', 'jalde-negro',
+    'união frederiquense', 'uniao frederiquense',
+    'são gabriel', 'sao gabriel'
+  ];
+
+  static const List<String> _excludedKeywords = [
+    'wsl', 'surf', 'trestles', 'fórmula 1', 'formula 1', 'motogp',
+    'stf', 'reforma tributária', 'reforma tributaria', 'senado', 'eleições', 'eleicoes'
+  ];
+
+  bool _hasClub(String text, List<String> clubs) {
+    for (final club in clubs) {
+      if (club.length <= 4) {
+        if (RegExp(r'\b' + RegExp.escape(club) + r'\b', caseSensitive: false).hasMatch(text)) {
+          return true;
+        }
+      } else {
+        if (text.contains(club)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _isA1News(String text) {
+    final hasExplicitA1 = text.contains('campeonato gaúcho') ||
+        text.contains('campeonato gaucho') ||
+        text.contains('gauchão') ||
+        text.contains('gauchao') ||
+        text.contains('gauchão série a') ||
+        text.contains('gauchao serie a') ||
+        text.contains('futebol gaúcho') ||
+        text.contains('futebol gaucho');
+    if (hasExplicitA1) return true;
+
+    return _hasClub(text, _gauchoA1Clubs);
+  }
+
+  bool _isA2News(String text) {
+    final hasExplicitA2 = text.contains('divisão de acesso') ||
+        text.contains('divisao de acesso') ||
+        text.contains('gauchão série a2') ||
+        text.contains('gauchao serie a2') ||
+        text.contains('segunda divisão gaúcha') ||
+        text.contains('segunda divisao gaucha') ||
+        text.contains('gauchão b') ||
+        text.contains('gauchao b');
+    if (hasExplicitA2) return true;
+
+    return _hasClub(text, _gauchoA2Clubs);
+  }
+
+  bool _matchesFilter(News news) {
+    final t = '${news.title} ${news.description}'.toLowerCase();
+
+    // Filtro negativo contra ruídos externos (política, outros esportes)
+    if (_excludedKeywords.any((kw) => t.contains(kw))) {
+      return false;
+    }
+
+    if (indexTab == 0) {
+      // Aba 'Todas'
+      return true;
+    } else if (indexTab == 1) {
+      // Aba 'Gauchão Série A'
+      return _isA1News(t);
+    } else if (indexTab == 2) {
+      // Aba 'Divisão de Acesso'
+      return _isA2News(t);
+    } else if (indexTab == 3) {
+      // Aba 'Mercado da Bola'
+      final isGauchoFootball = _isA1News(t) ||
+          _isA2News(t) ||
+          _hasClub(t, _gauchoA1Clubs) ||
+          _hasClub(t, _gauchoA2Clubs) ||
+          t.contains('gaúcho') ||
+          t.contains('gaucho') ||
+          t.contains('gauchão') ||
+          t.contains('gauchao');
+      if (!isGauchoFootball) return false;
+
+      final marketKeywords = [
+        'mercado', 'transferência', 'transferencia', 'reforço', 'reforco',
+        'contrata', 'contratação', 'contratacao', 'acerta', 'negocia',
+        'fechou', 'assina', 'proposta', 'rescinde', 'anuncia'
+      ];
+      return marketKeywords.any((kw) => t.contains(kw));
+    }
+    return true;
   }
 
   Widget _buildCompetitionFilters() {
@@ -56,9 +166,9 @@ class _NewsPageState extends State<NewsPage> {
               select: isSelected,
               label: cat['name']!,
               onTap: () {
+                if (indexTab == i) return;
                 setState(() {
                   indexTab = i;
-                  selectedFilter = cat['filter'];
                 });
               },
             );
@@ -83,7 +193,7 @@ class _NewsPageState extends State<NewsPage> {
             onPressed: () => context.pushNamed(screenSearch),
             icon: SvgPicture.asset(
               Assets.searchLine,
-              color: Theme.of(context).colorScheme.onSurface,
+              colorFilter: ColorFilter.mode(Theme.of(context).colorScheme.onSurface, BlendMode.srcIn),
               height: 25,
             ),
           ),
@@ -100,7 +210,7 @@ class _NewsPageState extends State<NewsPage> {
               return Center(child: Text(state.message));
             }
             if (state is NewsLoaded) {
-              final filteredNews = state.news.where((n) => _matchesFilter(n, selectedFilter)).toList();
+              final filteredNews = state.news.where((n) => _matchesFilter(n)).toList();
               final carouselNews = filteredNews.take(5).toList();
               final listNews = filteredNews.skip(5).toList();
 

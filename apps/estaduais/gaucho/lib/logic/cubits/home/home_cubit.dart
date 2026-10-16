@@ -15,7 +15,12 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> fetchHomeData({DateTime? date}) async {
     emit(HomeLoading());
     try {
-      final leagues = await apiClient.getStoredLeagues();
+      List<League> leagues = [];
+      try {
+        leagues = await apiClient.getStoredLeagues();
+      } catch (e) {
+        // Se a busca de ligas falhar, usa as ligas fallback locais
+      }
       final List<HomeCompetition> competitions = [];
 
       final targetDate = date ?? DateTime.now();

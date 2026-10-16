@@ -22,3 +22,6 @@
 -keepattributes SourceFile,LineNumberTable
 -keep public class * extends java.lang.Exception
 -dontwarn java.lang.invoke.**
+
+# App Native Code & Factories (Prevent R8 stripping)
+-keep class com.zapscore.estadualbaiano.** { *; }

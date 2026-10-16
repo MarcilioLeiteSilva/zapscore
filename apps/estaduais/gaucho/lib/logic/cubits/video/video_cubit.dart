@@ -24,7 +24,7 @@ class VideoCubit extends Cubit<VideoState> {
       final videos = await apiClient.getVideos(leagueId: leagueId, teamId: teamId, limit: limit);
       emit(VideoLoaded(videos));
     } catch (e) {
-      emit(VideoError(e.toString()));
+      emit(VideoError('Não foi possível carregar os vídeos.'));
     }
   }
 }

@@ -127,8 +127,8 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isHit
-                  ? Colors.green.withOpacity(0.1)
-                  : Colors.red.withOpacity(0.1),
+                  ? Colors.green.withValues(alpha: 0.1)
+                  : Colors.red.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isHit ? Colors.green : Colors.red,
@@ -210,7 +210,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: Colors.green.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: Colors.green, width: 1),
                         ),
@@ -457,19 +457,19 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                   }
                 }
 
-                Color chipBgColor = context.appColors.info?.withOpacity(0.5) ?? Colors.white10;
+                Color chipBgColor = context.appColors.info?.withValues(alpha: 0.5) ?? Colors.white10;
                 Color chipTextColor = Theme.of(context).primaryColor;
-                Color chipBorderColor = Theme.of(context).primaryColor.withOpacity(0.3);
+                Color chipBorderColor = Theme.of(context).primaryColor.withValues(alpha: 0.3);
                 IconData? chipIcon;
 
                 if (isTipHit != null) {
                   if (isTipHit) {
-                    chipBgColor = Colors.green.withOpacity(0.15);
+                    chipBgColor = Colors.green.withValues(alpha: 0.15);
                     chipTextColor = Colors.green;
                     chipBorderColor = Colors.green;
                     chipIcon = Icons.check_circle_outline;
                   } else {
-                    chipBgColor = Colors.red.withOpacity(0.15);
+                    chipBgColor = Colors.red.withValues(alpha: 0.15);
                     chipTextColor = Colors.red;
                     chipBorderColor = Colors.red;
                     chipIcon = Icons.cancel_outlined;
@@ -546,7 +546,7 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                 Text(
                   commentary,
                   style: context.textTheme.labelSmall!.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.9),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
                     fontSize: 15,
                     height: 1.5,
                   ),
@@ -558,13 +558,13 @@ class _AiAnalysisFixPageState extends State<AiAnalysisFixPage> {
                     Text(
                       'ai_generated_analysis'.tr(context),
                       style: context.textTheme.labelSmall!.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                     ),
                     Icon(
                       Icons.auto_awesome,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                       size: 14,
                     ),
                   ],

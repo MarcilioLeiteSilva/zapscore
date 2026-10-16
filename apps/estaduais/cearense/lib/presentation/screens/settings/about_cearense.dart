@@ -52,7 +52,7 @@ class AboutScreen extends StatelessWidget {
           const Divider(),
           const Gap(10),
           ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined, color: Colors.red),
+            leading: const Icon(Icons.privacy_tip_outlined, color: AppColor.accent),
             title: Text(
               'privacy_policy'.tr(context),
               style: GoogleFonts.urbanist(
@@ -67,7 +67,7 @@ class AboutScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.security_outlined, color: Colors.red),
+            leading: const Icon(Icons.security_outlined, color: AppColor.accent),
             title: Text(
               'lgpd'.tr(context),
               style: GoogleFonts.urbanist(
@@ -82,7 +82,7 @@ class AboutScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.ads_click_outlined, color: Colors.red),
+            leading: const Icon(Icons.ads_click_outlined, color: AppColor.accent),
             title: Text(
               'Privacidade de Anúncios (Consentimento)',
               style: GoogleFonts.urbanist(

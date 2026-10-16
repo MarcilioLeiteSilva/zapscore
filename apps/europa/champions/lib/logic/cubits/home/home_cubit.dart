@@ -35,8 +35,8 @@ class HomeCubit extends Cubit<HomeState> {
           League(
             id: '2',
             externalId: 2,
-            name: 'Liga dos Campeões',
-            country: 'World',
+            name: 'Champions League',
+            country: 'Europa',
             logo: 'https://media.api-sports.io/football/leagues/2.png',
           ),
         ];

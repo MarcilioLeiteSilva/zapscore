@@ -90,7 +90,7 @@ class StandingsTableWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: Theme.of(context).dividerColor.withOpacity(0.2),
+                      color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -112,7 +112,7 @@ class StandingsTableWidget extends StatelessWidget {
           ),
           if (qualificationDescription != null || relegationDescription != null) ...[
             const Gap(14),
-            Divider(color: Theme.of(context).dividerColor.withOpacity(0.15)),
+            Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.15)),
             const Gap(8),
             if (qualificationDescription != null)
               _buildLegendItem(
@@ -145,7 +145,7 @@ class StandingsTableWidget extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).dividerColor.withOpacity(0.1),
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
             width: 1,
           ),
         ),

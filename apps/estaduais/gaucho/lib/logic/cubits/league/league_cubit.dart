@@ -28,7 +28,7 @@ class LeagueCubit extends Cubit<LeagueState> {
       final scorers = results[2] as List<Scorer>;
 
       // Obter nome da competição
-      String compName = leagueId == 853 ? 'Gaúcho - Divisão de Acesso' : 'Campeonato Gaúcho 2026';
+      String compName = leagueId == 478 ? 'Gaúcho - Divisão de Acesso' : 'Campeonato Gaúcho 2026';
 
       // Normalizar via Motor de Competições
       final competition = CompetitionNormalizer.normalize(

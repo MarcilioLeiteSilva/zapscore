@@ -32,7 +32,7 @@ class FavoriteTeamHomeCard extends StatelessWidget {
                 color: Theme.of(context).cardColor,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -107,7 +107,7 @@ class FavoriteTeamHomeCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: context.appColors.darkGreen?.withOpacity(0.15),
+                            color: context.appColors.darkGreen?.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -216,7 +216,7 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -279,7 +279,7 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
           Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.white10),
             ),
@@ -406,7 +406,7 @@ class _CardSlideLeagueHomeState extends State<CardSlideLeagueHome> {
                 label: Text(cat),
                 selected: isSelected,
                 selectedColor: Theme.of(context).primaryColor,
-                backgroundColor: Theme.of(context).cardColor.withOpacity(0.4),
+                backgroundColor: Theme.of(context).cardColor.withValues(alpha: 0.4),
                 labelStyle: TextStyle(
                   color: isSelected ? Colors.white : Colors.white70,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -442,7 +442,7 @@ class CheepLeagueItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(50),
       child: Ink(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor.withOpacity(0.5),
+          color: Theme.of(context).cardColor.withValues(alpha: 0.5),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
@@ -543,7 +543,7 @@ class CardCalendarHome extends StatelessWidget {
                   icon: SvgPicture.asset(
                     Assets.calendar,
                     height: 25,
-                    color: const Color(0xFFDD0000),
+                    colorFilter: const ColorFilter.mode(AppColor.accent, BlendMode.srcIn),
                   ),
                 ),
               ],
@@ -578,7 +578,7 @@ class CardLiveButton extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
-                  color: isSelected ? const Color(0xFFDD0000) : (isLive ? Colors.red.withOpacity(0.15) : Theme.of(context).cardColor.withOpacity(0.3)),
+                  color: isSelected ? const Color(0xFFDD0000) : (isLive ? Colors.red.withValues(alpha: 0.15) : Theme.of(context).cardColor.withValues(alpha: 0.3)),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -629,7 +629,7 @@ class CardCalendarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = select ? const Color(0xFFFCBF04) : Theme.of(context).colorScheme.onSurface;
+    final textColor = select ? Colors.white : Theme.of(context).colorScheme.onSurface;
 
     return InkWell(
       onTap: onTap,
@@ -637,7 +637,7 @@ class CardCalendarItem extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: select ? const Color(0xFFDD0000) : null,
+          color: select ? AppColor.accent : null,
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: 5,
@@ -692,7 +692,7 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -738,7 +738,7 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                                 style: context.textTheme.bodySmall!.copyWith(
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.5,
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                 ),
                               ),
                             ),
@@ -939,7 +939,7 @@ class CardFixtureItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.5),
+                  color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -1356,7 +1356,7 @@ class CardFormInfoFixture extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
-        color: Theme.of(context).cardColor.withOpacity(0.7),
+        color: Theme.of(context).cardColor.withValues(alpha: 0.7),
       ),
       child: Column(
         children: [
@@ -1445,7 +1445,7 @@ class CardFormMatch extends StatelessWidget {
       borderRadius: BorderRadius.circular(30),
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor.withOpacity(0.5),
+          color: Theme.of(context).cardColor.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(30),
         ),
         padding: const EdgeInsets.symmetric(
@@ -1536,3 +1536,178 @@ class _PulsingLiveIndicatorState extends State<PulsingLiveIndicator>
     );
   }
 }
+
+class CardWhereToWatch extends StatefulWidget {
+  const CardWhereToWatch({super.key, this.fixture});
+  final Fixture? fixture;
+
+  @override
+  State<CardWhereToWatch> createState() => _CardWhereToWatchState();
+}
+
+class _CardWhereToWatchState extends State<CardWhereToWatch> {
+  String _tvOpen = 'TV Band / SBT';
+  String _tvClosed = 'SporTV / Premiere';
+  String _streaming = 'Canal GOAT / CazéTV (YouTube)';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBroadcast();
+  }
+
+  @override
+  void didUpdateWidget(covariant CardWhereToWatch oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fixture?.externalId != widget.fixture?.externalId) {
+      _loadBroadcast();
+    }
+  }
+
+  Future<void> _loadBroadcast() async {
+    final fixtureId = widget.fixture?.externalId;
+    if (fixtureId == null || fixtureId == 0) return;
+
+    final data = await ApiClient().getMatchBroadcast(fixtureId);
+    if (data != null && mounted) {
+      setState(() {
+        if (data['tv_open'] != null &&
+            (data['tv_open'] as String).trim().isNotEmpty) {
+          _tvOpen = (data['tv_open'] as String).trim();
+        }
+        if (data['tv_closed'] != null &&
+            (data['tv_closed'] as String).trim().isNotEmpty) {
+          _tvClosed = (data['tv_closed'] as String).trim();
+        }
+        if (data['streaming'] != null &&
+            (data['streaming'] as String).trim().isNotEmpty) {
+          _streaming = (data['streaming'] as String).trim();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: context.width,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        color: AppColor.card,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.live_tv_rounded,
+                color: Color(0xFF38BDF8),
+                size: 20,
+              ),
+              const Gap(8),
+              Text(
+                'Onde Assistir',
+                style: context.textTheme.headlineSmall!.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF22C55E), width: 0.8),
+                ),
+                child: const Text(
+                  'Transmissão Oficial',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4ADE80),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Gap(14),
+          _buildBroadcastItem(
+            context,
+            type: 'TV Aberta',
+            channels: _tvOpen,
+            icon: Icons.tv_rounded,
+            badgeColor: const Color(0xFF0284C7),
+          ),
+          const Gap(10),
+          _buildBroadcastItem(
+            context,
+            type: 'TV por Assinatura',
+            channels: _tvClosed,
+            icon: Icons.connected_tv_rounded,
+            badgeColor: const Color(0xFF8B5CF6),
+          ),
+          const Gap(10),
+          _buildBroadcastItem(
+            context,
+            type: 'Streaming Online',
+            channels: _streaming,
+            icon: Icons.play_circle_filled_rounded,
+            badgeColor: const Color(0xFFEC4899),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBroadcastItem(
+    BuildContext context, {
+    required String type,
+    required String channels,
+    required IconData icon,
+    required Color badgeColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: badgeColor),
+          const Gap(10),
+          Text(
+            type,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              channels,
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

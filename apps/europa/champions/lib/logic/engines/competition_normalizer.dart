@@ -194,9 +194,9 @@ class CompetitionNormalizer {
     return Competition(
       id: leagueId.toString(),
       externalId: leagueId,
-      name: leagueName.isNotEmpty ? leagueName : 'Liga dos Campeões',
+      name: 'Champions League',
       logo: leagueLogo ?? 'https://media.api-sports.io/football/leagues/2.png',
-      country: 'World',
+      country: 'Europa',
       season: season,
       phases: phases,
     );

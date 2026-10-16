@@ -12,6 +12,10 @@ class InfoFixPage extends StatelessWidget {
             padding: const EdgeInsets.only(left: 10, right: 10, top: 0, bottom: 120),
             children: [
               CardBasicInfo(fixture: state.fixture),
+              const Gap(15),
+              CardWhereToWatch(fixture: state.fixture),
+              const Gap(15),
+              const AppNativeAdMediumWidget(),
             ],
           );
         }

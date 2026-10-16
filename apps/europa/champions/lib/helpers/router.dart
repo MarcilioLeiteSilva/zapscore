@@ -95,7 +95,7 @@ abstract class RouterApp {
             id: AppConfig.leagueId,
             externalId: AppConfig.externalLeagueId,
             name: AppConfig.appName,
-            country: 'World',
+            country: 'Europa',
             season: AppConfig.defaultSeason,
             logo: AppConfig.defaultLeagueLogo,
           );

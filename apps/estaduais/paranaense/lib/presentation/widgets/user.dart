@@ -124,7 +124,7 @@ class CardFollowItem extends StatelessWidget {
                 : false);
 
         final textColor = isFav ? Colors.white : const Color(0xFF1F2937);
-        final subtitleColor = isFav ? Colors.white70 : const Color(0xFF1F2937).withOpacity(0.7);
+        final subtitleColor = isFav ? Colors.white70 : const Color(0xFF1F2937).withValues(alpha: 0.7);
 
         return InkWell(
           onTap: onTap,
@@ -310,7 +310,7 @@ class CardNoImage extends StatelessWidget {
       height: context.height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        color: context.appColors.info?.withOpacity(.6),
+        color: context.appColors.info?.withValues(alpha: .6),
       ),
       padding: const EdgeInsets.all(10),
       child: Center(

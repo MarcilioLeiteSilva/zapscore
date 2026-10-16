@@ -120,6 +120,16 @@ export default function NewsPublisherAgentPage() {
     const country = (l?.country || '').trim();
     const nameLower = name.toLowerCase();
 
+    // 0. Copas (Copa do Nordeste, etc.)
+    if (extId === 612 || nameLower.includes('nordeste')) {
+      return {
+        leagueIdForPrisma: prismaId,
+        externalId: 612,
+        appSlug: 'copadonordeste',
+        appName: 'Copa do Nordeste',
+      };
+    }
+
     // 1. Brasil (Brasileirão Séries A e B, Copa do Brasil)
     if (
       extId === 71 ||
@@ -320,6 +330,7 @@ export default function NewsPublisherAgentPage() {
   };
 
   const defaultLeagues: League[] = [
+    { id: '612', name: 'Copa do Nordeste' },
     { id: 'carioca-a1', name: 'Campeonato Carioca (Série A)' },
     { id: 'carioca-a2', name: 'Carioca Série A2' },
     { id: 'paulista-a1', name: 'Campeonato Paulista' },
@@ -379,6 +390,12 @@ export default function NewsPublisherAgentPage() {
         name: 'Brasileirão Série B',
         icon: '🇧🇷',
         match: (item, info) => info.externalId === 72 || item.league?.name === 'Serie B',
+      },
+      {
+        key: 'copa-nordeste',
+        name: 'Copa do Nordeste',
+        icon: '☀️',
+        match: (item, info) => info.externalId === 612 || info.appSlug === 'copadonordeste' || (item.league?.name || '').toLowerCase().includes('nordeste'),
       },
       {
         key: 'copa-brasil',

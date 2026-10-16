@@ -26,8 +26,8 @@ class LeagueLoaded extends LeagueState {
     required this.rounds,
     required this.selectedRound,
     this.competition,
-    this.selectedLeagueId = 624,
-    this.selectedPhaseId = 'taca_guanabara',
+    this.selectedLeagueId = 606,
+    this.selectedPhaseId = 'primeira_fase_a1',
     this.selectedGroupIndex = 0,
   });
 

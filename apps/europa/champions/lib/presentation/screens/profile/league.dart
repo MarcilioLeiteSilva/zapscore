@@ -40,7 +40,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
 
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Liga dos Campeões'),
+              title: const Text('Champions League'),
               actions: [
                 BlocBuilder<FavoriteCubit, FavoriteState>(
                   builder: (context, favState) {
