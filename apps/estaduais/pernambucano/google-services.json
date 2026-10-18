@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "789824291344",
+    "project_id": "apppernambucano",
+    "storage_bucket": "apppernambucano.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:789824291344:android:7a4103d2058e4e17c8c095",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualpernambucano"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4eAFdw4tKkY33aDGdJWqIxdKvAFCrhfo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -436,14 +436,18 @@ export class SyncService {
     let totalSynced = 0;
     try {
       for (const competition of SUPPORTED_COMPETITIONS) {
-        const fixturesData = await this.apiFootball.getFixtures({ 
-           date: today,
-           league: competition.externalId,
-           season: 2026,
-           timezone: 'America/Sao_Paulo',
-        });
+        const seasons = competition.activeSeasons && competition.activeSeasons.length > 0
+          ? competition.activeSeasons
+          : [2026];
+        for (const season of seasons) {
+          const fixturesData = await this.apiFootball.getFixtures({ 
+             date: today,
+             league: competition.externalId,
+             season,
+             timezone: 'America/Sao_Paulo',
+          });
 
-        if (!fixturesData || fixturesData.length === 0) continue;
+          if (!fixturesData || fixturesData.length === 0) continue;
 
         for (const data of fixturesData) {
           try {
@@ -470,6 +474,7 @@ export class SyncService {
           } catch (err) {
             this.logger.error(`Error processing today fixture ${data.fixture.id}: ${err.message}`);
           }
+        }
         }
       }
       return { count: totalSynced };
@@ -508,6 +513,8 @@ export class SyncService {
         )) {
           continue;
         }
+
+        if (!item.team?.id) continue;
 
         const team = await this.prisma.team.findUnique({
           where: { externalId: item.team.id },

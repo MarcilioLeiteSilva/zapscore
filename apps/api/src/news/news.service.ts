@@ -23,15 +23,41 @@ export class NewsService implements OnModuleInit {
     if (leagueId) {
       const extId = parseInt(leagueId, 10);
       if (!isNaN(extId) && !leagueId.includes('-')) {
-        // Se for ID numérico (ex: "71", "72", "135"), filtra pela relação com League.externalId
+        // Se for ID numérico (ex: "71", "72", "622", "135")
         leagueFilter = {
-          league: {
-            externalId: extId,
-          },
+          OR: [
+            {
+              league: {
+                externalId: extId,
+              },
+            },
+            {
+              team: {
+                OR: [
+                  { standings: { some: { league: { externalId: extId } } } },
+                  { homeFixtures: { some: { league: { externalId: extId } } } },
+                  { awayFixtures: { some: { league: { externalId: extId } } } },
+                ],
+              },
+            },
+          ],
         };
       } else {
         // Se for UUID direto
-        leagueFilter = { leagueId };
+        leagueFilter = {
+          OR: [
+            { leagueId },
+            {
+              team: {
+                OR: [
+                  { standings: { some: { leagueId } } },
+                  { homeFixtures: { some: { leagueId } } },
+                  { awayFixtures: { some: { leagueId } } },
+                ],
+              },
+            },
+          ],
+        };
       }
     }
 
@@ -128,15 +154,40 @@ export class NewsService implements OnModuleInit {
 
   async reclassifyNews() {
     try {
-      const [serieABrasil, serieBBrasil, serieAItalia] = await Promise.all([
+      const [serieABrasil, serieBBrasil, serieAItalia, allLeagues, allTeams] = await Promise.all([
         this.prisma.league.findUnique({ where: { externalId: 71 } }),
         this.prisma.league.findUnique({ where: { externalId: 72 } }),
         this.prisma.league.findUnique({ where: { externalId: 135 } }),
+        this.prisma.league.findMany({ select: { id: true, name: true, externalId: true } }),
+        this.prisma.team.findMany({ select: { id: true, name: true } }),
       ]);
 
       if (!serieABrasil || !serieAItalia) {
         return { message: 'Ligas não encontradas para reclassificação' };
       }
+
+      const leaguesByExtId = new Map<number, any>();
+      for (const l of allLeagues) {
+        if (l.externalId) leaguesByExtId.set(l.externalId, l);
+      }
+
+      const regionalLeagueRules: Array<{ extId: number; keywords: string[] }> = [
+        { extId: 622, keywords: ['campeonato pernambucano', 'pernambucano', 'turno forró', 'turno forro', 'turno frevo', 'fpf-pe', 'futebol pernambucano'] },
+        { extId: 624, keywords: ['campeonato carioca', 'cariocão', 'cariocao', 'taça guanabara', 'taca guanabara', 'taça rio', 'taca rio', 'ferj'] },
+        { extId: 475, keywords: ['campeonato paulista', 'paulistão', 'paulistao', 'futebol paulista'] },
+        { extId: 629, keywords: ['campeonato mineiro', 'mineirão', 'mineirao', 'fmf'] },
+        { extId: 477, keywords: ['campeonato gaúcho', 'campeonato gaucho', 'gauchão', 'gauchao', 'futebol gaúcho', 'futebol gaucho', 'fgf'] },
+        { extId: 613, keywords: ['campeonato cearense', 'cearense', 'manjadinho', 'fcf'] },
+        { extId: 602, keywords: ['campeonato baiano', 'baianão', 'baianao', 'fbf'] },
+        { extId: 606, keywords: ['campeonato goiano', 'goianão', 'goianao'] },
+        { extId: 621, keywords: ['campeonato paranaense', 'paranaense'] },
+        { extId: 605, keywords: ['campeonato catarinense', 'catarinense'] },
+        { extId: 612, keywords: ['copa do nordeste', 'nordestão', 'nordestao', 'lampions'] },
+        { extId: 73, keywords: ['copa do brasil'] },
+      ];
+
+      // Ordena times por tamanho de nome decrescente para precisão
+      const sortedTeams = [...allTeams].sort((a, b) => b.name.length - a.name.length);
 
       const italianKeywords = [
         'football italia', 'serie a tim', 'calcio', 'scudetto', 'coppa italia',
@@ -175,29 +226,69 @@ export class NewsService implements OnModuleInit {
         const source = (item.source || '').toLowerCase();
 
         let targetLeagueId: string | null = null;
+        let targetTeamId: string | null = null;
 
-        // 1. Prioriza termos futebolísticos e clubes brasileiros no texto da matéria
-        const isBrazilianContext = brazilKeywords.some((kw) => fullText.includes(kw));
-        const isSerieBContext = brazilSerieBKeywords.some((kw) => fullText.includes(kw));
-        const isItalianContext = italianKeywords.some((kw) => fullText.includes(kw));
-
-        if (isBrazilianContext && !isItalianContext) {
-          targetLeagueId = isSerieBContext && serieBBrasil ? serieBBrasil.id : serieABrasil.id;
-        } else if (isItalianContext && !isBrazilianContext) {
-          targetLeagueId = serieAItalia.id;
-        } else if (isBrazilianContext && isItalianContext) {
-          // Se houver conflito, prioriza a fonte (fontes brasileiras -> Brasil)
-          if (source.includes('gazeta') || source.includes('globo') || source.includes('lance') || source.includes('uol')) {
-            targetLeagueId = serieABrasil.id;
-          } else {
-            targetLeagueId = serieAItalia.id;
+        // 1. Prioridade regional: se mencionar explicitamente torneio estadual/regional
+        for (const rule of regionalLeagueRules) {
+          if (rule.keywords.some((kw) => fullText.includes(kw))) {
+            const matchedLeague = leaguesByExtId.get(rule.extId);
+            if (matchedLeague) {
+              targetLeagueId = matchedLeague.id;
+              break;
+            }
           }
         }
 
+        // 2. Se não for regional específico, aplica a separação de Séries A/B e Itália
+        if (!targetLeagueId) {
+          const isBrazilianContext = brazilKeywords.some((kw) => fullText.includes(kw));
+          const isSerieBContext = brazilSerieBKeywords.some((kw) => fullText.includes(kw));
+          const isItalianContext = italianKeywords.some((kw) => fullText.includes(kw));
+
+          if (isBrazilianContext && !isItalianContext) {
+            targetLeagueId = isSerieBContext && serieBBrasil ? serieBBrasil.id : serieABrasil.id;
+          } else if (isItalianContext && !isBrazilianContext) {
+            targetLeagueId = serieAItalia.id;
+          } else if (isBrazilianContext && isItalianContext) {
+            if (source.includes('gazeta') || source.includes('globo') || source.includes('lance') || source.includes('uol')) {
+              targetLeagueId = serieABrasil.id;
+            } else {
+              targetLeagueId = serieAItalia.id;
+            }
+          }
+        }
+
+        // 3. Se a notícia não tiver time associado, tenta associar time mencionado
+        if (!item.teamId) {
+          for (const team of sortedTeams) {
+            const teamName = team.name.toLowerCase();
+            if (teamName.length > 4) {
+              if (fullText.includes(teamName)) {
+                targetTeamId = team.id;
+                break;
+              }
+            } else {
+              const regex = new RegExp(`\\b${teamName}\\b`, 'i');
+              if (regex.test(fullText)) {
+                targetTeamId = team.id;
+                break;
+              }
+            }
+          }
+        }
+
+        const updateData: any = {};
         if (targetLeagueId && targetLeagueId !== item.leagueId) {
+          updateData.leagueId = targetLeagueId;
+        }
+        if (targetTeamId && targetTeamId !== item.teamId) {
+          updateData.teamId = targetTeamId;
+        }
+
+        if (Object.keys(updateData).length > 0) {
           await this.prisma.news.update({
             where: { id: item.id },
-            data: { leagueId: targetLeagueId },
+            data: updateData,
           });
           updatedCount++;
         }

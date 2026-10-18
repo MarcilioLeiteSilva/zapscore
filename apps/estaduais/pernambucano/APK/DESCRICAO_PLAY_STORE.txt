@@ -1,0 +1,63 @@
+================================================================================
+FICHA TÉCNICA E DESCRIÇÃO COMPLETA PARA A GOOGLE PLAY STORE
+APLICATIVO: CAMPEONATO PERNAMBUCANO (PERNAMBUCANO)
+PACKAGE: com.zapscore.estadualpernambucano
+================================================================================
+
+1. TÍTULO DO APP (Máximo 30 caracteres)
+--------------------------------------------------------------------------------
+Pernambucano 2026: Jogos e Gols
+(Opção 2: Pernambucano: Futebol ao Vivo)
+(Opção 3: Campeonato Pernambucano 2026)
+
+
+2. BREVE DESCRIÇÃO / DESCRIÇÃO CURTA (Máximo 80 caracteres)
+--------------------------------------------------------------------------------
+Jogos ao vivo, gols em tempo real, tabela e notícias do Campeonato Pernambucano.
+(79 caracteres)
+
+
+3. DESCRIÇÃO COMPLETA (Até 4.000 caracteres)
+--------------------------------------------------------------------------------
+Viva toda a paixão e a tradição centenária do futebol pernambucano na palma da sua mão! O aplicativo oficial do Campeonato Pernambucano no ZapScore é a sua arquibancada digital completa para acompanhar cada lance, gol, rodada e clássico em tempo real, com máxima velocidade, estatísticas aprofundadas e cobertura exclusiva dos clubes de Pernambuco.
+
+Acompanhe cada segundo das grandes rivalidades nos palcos mais históricos: Ilha do Retiro, Aflitos, Arruda, Arena de Pernambuco e Lacerdão! Vibre lance a lance com o Clássico das Multidões, Clássico dos Clássicos, Clássico das Emoções e o Clássico Matuto, acompanhando Sport, Náutico, Santa Cruz, Retrô, Central de Caruaru, Maguary, Afogados da Ingazeira, Petrolina, Salgueiro, Flamengo de Arcoverde, Porto e muito mais!
+
+🔥 PRINCIPAIS FUNCIONALIDADES:
+
+⚽ NOTIFICAÇÕES INSTANTÂNEAS DE GOLS E PARTIDAS
+Receba alertas ultra rápidos no instante exato em que a rede balançar! Configure seus times favoritos para receber avisos automáticos de início de partida, gols, cartões, pênaltis, intervalo e apito final.
+
+📊 TABELA DE CLASSIFICAÇÃO E FASES AO VIVO
+Acompanhe a classificação do Pernambucano Série A1 atualizada minuto a minuto com critérios oficiais de desempate, pontuação, saldo de gols, chaveamento das quartas, semifinais, grande final e a disputa contra o rebaixamento. Acesso também à Série A2 do Pernambucano!
+
+📺 ONDE ASSISTIR (TRANSMISSÃO DOS JOGOS)
+Descubra rapidamente onde assistir a cada partida na TV Aberta (TV Globo Pernambuco), Streaming oficial (FPF TV no YouTube / Canal GOAT) ou canais por assinatura / Pay-per-view (Premiere) para não perder nenhum confronto decisivo.
+
+🧠 COMENTÁRIOS TÁTICOS E ANÁLISES COM IA AO VIVO
+Muito além do placar básico! Acompanhe a aba exclusiva de Comentários Táticos durante os jogos ao vivo, trazendo a leitura das fases do jogo, variações de postura tática e probabilidades dinâmicas geradas por inteligência artificial lance a lance.
+
+📋 ESCALAÇÕES OFICIAIS E HISTÓRICO H2H
+Confira as escalações confirmadas antes da bola rolar, com números de camisa, posicionamento tático no gramado, banco de reservas, comissão técnica e histórico completo de confrontos diretos (Head-to-Head) entre as equipes.
+
+🎯 ARTILHARIA E ESTATÍSTICAS COMPLETAS
+Ranking atualizado dos maiores artilheiros do Pernambucano, assistências, cartões e estatísticas detalhadas de cada partida (posse de bola, finalizações certas, escanteios, desarmes e faltas).
+
+📰 NOTÍCIAS E VÍDEOS DOS MELHORES MOMENTOS
+Feed inteligente com as últimas notícias, bastidores, mercado da bola e entrevistas do futebol de Pernambuco, além dos vídeos com os melhores lances e gols de cada duelo.
+
+⭐ CLUBES EM DESTAQUE:
+- Sport Club do Recife (Leão da Ilha)
+- Clube Náutico Capibaribe (Timbu)
+- Santa Cruz Futebol Clube (Cobra Coral)
+- Retrô Futebol Clube Brasil (Fênix)
+- Central Sport Club (Patativa do Agreste)
+- Sport Comércio e Salgueiro Atlético Clube (Carcará)
+- Maguary de Bonito
+- Afogados da Ingazeira Futebol Clube (Coruja do Sertão)
+- Petrolina Social Futebol Clube (Fera Sertaneja)
+- Clube Atlético do Porto
+- Flamengo Sport Club de Arcoverde
+
+Baixe agora o aplicativo do Campeonato Pernambucano e viva o futebol de Pernambuco onde quer que você esteja!
+================================================================================

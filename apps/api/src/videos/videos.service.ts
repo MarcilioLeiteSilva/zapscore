@@ -8,10 +8,50 @@ export class VideosService {
   async findAll(params: { leagueId?: string; teamId?: string; limit?: string }) {
     const { leagueId, teamId, limit } = params;
     const take = limit ? parseInt(limit) : 100;
+
+    let leagueFilter: any = undefined;
+    if (leagueId) {
+      const extId = parseInt(leagueId, 10);
+      if (!isNaN(extId) && !leagueId.includes('-')) {
+        leagueFilter = {
+          OR: [
+            {
+              league: {
+                externalId: extId,
+              },
+            },
+            {
+              team: {
+                OR: [
+                  { standings: { some: { league: { externalId: extId } } } },
+                  { homeFixtures: { some: { league: { externalId: extId } } } },
+                  { awayFixtures: { some: { league: { externalId: extId } } } },
+                ],
+              },
+            },
+          ],
+        };
+      } else {
+        leagueFilter = {
+          OR: [
+            { leagueId },
+            {
+              team: {
+                OR: [
+                  { standings: { some: { leagueId } } },
+                  { homeFixtures: { some: { leagueId } } },
+                  { awayFixtures: { some: { leagueId } } },
+                ],
+              },
+            },
+          ],
+        };
+      }
+    }
     
     return this.prisma.video.findMany({
       where: {
-        ...(leagueId && { leagueId }),
+        ...(leagueFilter ? leagueFilter : {}),
         ...(teamId && { teamId }),
       },
       orderBy: { createdAt: 'desc' },

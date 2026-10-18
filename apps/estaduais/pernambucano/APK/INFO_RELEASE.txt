@@ -1,0 +1,54 @@
+================================================================================
+ZAPSCORE - CAMPEONATO PERNAMBUCANO - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
+================================================================================
+
+Data: 25/09/2026
+Nome do App: Pernambucano
+Package / Application ID: com.zapscore.estadualpernambucano
+Versão: 1.0.0
+Version Code: 2 (1.0.0+2)
+
+--------------------------------------------------------------------------------
+1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
+--------------------------------------------------------------------------------
+- upload-keystore.jks             -> Chave de assinatura oficial exclusiva gerada do zero para este app
+- key.properties                  -> Arquivo de credenciais de assinatura do Gradle
+- INFO_RELEASE.txt                -> Este relatório técnico de auditoria e credenciais
+- DESCRICAO_PLAY_STORE.txt        -> Ficha técnica e descrições para publicação na Play Store
+
+--------------------------------------------------------------------------------
+2. DADOS DA CHAVE DE ASSINATURA (KEYSTORE)
+--------------------------------------------------------------------------------
+- Arquivo Keystore: upload-keystore.jks
+- Alias: upload
+- Senha da Keystore (storePassword): zapscore_pernambucano_key
+- Senha da Chave (keyPassword): zapscore_pernambucano_key
+- Algoritmo: RSA 2048 bits / SHA384withRSA
+- Validade: até 05/02/2054 (10.000 dias)
+- Proprietário: CN=ZapScore Pernambucano, OU=Mobile, O=ZapScore, L=Brasil, ST=Brasil, C=BR
+
+FINGERPRINTS DO CERTIFICADO:
+- SHA-1:
+  4C:22:5E:56:56:7B:C0:C7:6F:21:AC:A8:3B:CD:64:3B:2F:6E:A7:B8
+
+- SHA-256:
+  69:03:F1:D6:3E:54:53:AF:15:92:0C:26:BE:6F:74:13:82:E1:B5:9E:9B:85:7D:05:1C:80:A0:DD:46:3C:DB:98
+
+--------------------------------------------------------------------------------
+3. UNIDADES DE ANÚNCIOS GOOGLE ADMOB (PRODUÇÃO)
+--------------------------------------------------------------------------------
+- AdMob App ID (AndroidManifest.xml):
+  ca-app-pub-6887857057070736~6053390493
+
+- Banner Ad Unit:
+  ca-app-pub-6887857057070736/6192991294
+
+- Interstitial Ad Unit:
+  ca-app-pub-6887857057070736/5370864213
+
+- Native Ad Unit (Small & Medium):
+  ca-app-pub-6887857057070736/7805455863
+
+- Rewarded Ad Unit:
+  ca-app-pub-6887857057070736/1666213763
+================================================================================
