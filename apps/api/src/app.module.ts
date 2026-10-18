@@ -23,6 +23,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { LineupsModule } from './lineups/lineups.module';
 import { TacticalCommentsModule } from './tactical-comments/tactical-comments.module';
 import { AdsModule } from './ads/ads.module';
+import { StateScoutModule } from './state-scout/state-scout.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AdsModule } from './ads/ads.module';
     LineupsModule,
     TacticalCommentsModule,
     AdsModule,
+    StateScoutModule,
   ],
   controllers: [AppController],
   providers: [

@@ -31,6 +31,31 @@ export class SyncService {
     return parseInt(this.configService.get<string>('DEFAULT_SEASON', '2026'), 10);
   }
 
+  /**
+   * Proteção Não-Regressiva: impede que um sync atrasado com status 'NS'
+   * sobrescreva uma partida que já foi encerrada ('FT', 'AET', 'PEN') localmente.
+   */
+  private async safeUpsertFixture(fixtureMapped: any) {
+    const existing = await this.prisma.fixture.findUnique({
+      where: { externalId: fixtureMapped.externalId },
+      select: { statusShort: true, homeGoals: true, awayGoals: true },
+    });
+
+    let updatePayload = fixtureMapped;
+    if (existing && ['FT', 'AET', 'PEN'].includes(existing.statusShort || '')) {
+      if (fixtureMapped.statusShort === 'NS') {
+        const { statusShort, statusLong, elapsed, homeGoals, awayGoals, ...rest } = fixtureMapped;
+        updatePayload = rest;
+      }
+    }
+
+    return this.prisma.fixture.upsert({
+      where: { externalId: fixtureMapped.externalId },
+      update: updatePayload,
+      create: fixtureMapped as any,
+    });
+  }
+
   async bootstrap(leagueId?: number, season?: number) {
     const targetLeagues = leagueId ? [leagueId] : SUPPORTED_COMPETITIONS.map(c => c.externalId);
     const targetSeason = season || this.defaultSeason;
@@ -148,11 +173,7 @@ export class SyncService {
       }
       const fixtureMapped = ApiFootballMapper.toFixture(data, finalLeague.id, finalHome.id, finalAway.id);
       
-      await this.prisma.fixture.upsert({
-        where: { externalId: fixtureMapped.externalId },
-        update: fixtureMapped,
-        create: fixtureMapped as any,
-      });
+      await this.safeUpsertFixture(fixtureMapped);
 
       await this.syncFixtureDetail(externalId);
       return { success: true };
@@ -208,14 +229,10 @@ export class SyncService {
 
           const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
           
-          await this.prisma.fixture.upsert({
-            where: { externalId: fixtureMapped.externalId },
-            update: fixtureMapped,
-            create: fixtureMapped as any,
-          });
+          await this.safeUpsertFixture(fixtureMapped);
 
-          // Se o jogo está LIVE, FINISHED ou NS (para pegar escalações), sincronizamos os detalhes técnicos
-          if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN', 'NS', 'BT', 'SUSP', 'INT'].includes(data.fixture.status.short)) {
+          // Se o jogo está LIVE ou FINISHED, sincronizamos os detalhes técnicos
+          if (['1H', '2H', 'HT', 'FT', 'LIVE', 'AET', 'PEN', 'BT', 'SUSP', 'INT'].includes(data.fixture.status.short)) {
              await this.syncFixtureDetail(data.fixture.id);
           }
         } catch (err) {
@@ -391,11 +408,7 @@ export class SyncService {
           if (!homeTeam || !awayTeam) continue;
 
           const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
-          await this.prisma.fixture.upsert({
-            where: { externalId: fixtureMapped.externalId },
-            update: fixtureMapped,
-            create: fixtureMapped as any,
-          });
+          await this.safeUpsertFixture(fixtureMapped);
 
           await this.syncFixtureDetail(data.fixture.id);
           totalSynced++;
@@ -435,46 +448,47 @@ export class SyncService {
     
     let totalSynced = 0;
     try {
-      for (const competition of SUPPORTED_COMPETITIONS) {
-        const seasons = competition.activeSeasons && competition.activeSeasons.length > 0
-          ? competition.activeSeasons
-          : [2026];
-        for (const season of seasons) {
-          const fixturesData = await this.apiFootball.getFixtures({ 
-             date: today,
-             league: competition.externalId,
-             season,
-             timezone: 'America/Sao_Paulo',
-          });
+      const monitoredLeagueIds = new Set(SUPPORTED_COMPETITIONS.map(c => c.externalId));
 
-          if (!fixturesData || fixturesData.length === 0) continue;
+      // 1. Busca todas as partidas do dia globalmente em 1 única chamada à API-Football
+      const allTodayFixtures = await this.apiFootball.getFixtures({ 
+         date: today,
+         timezone: 'America/Sao_Paulo',
+      });
 
-        for (const data of fixturesData) {
-          try {
-            const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
-            if (!league) continue;
+      if (!allTodayFixtures || allTodayFixtures.length === 0) {
+        this.logger.log(`No fixtures found globally for ${today}`);
+        return { count: 0 };
+      }
 
-            const [homeTeam, awayTeam] = await Promise.all([
-              this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
-              this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
-            ]);
-            if (!homeTeam || !awayTeam) continue;
+      // 2. Filtra em memória apenas as partidas das nossas ligas monitoradas
+      const monitoredFixtures = allTodayFixtures.filter((data: any) =>
+        monitoredLeagueIds.has(data.league?.id)
+      );
 
-            const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
-            await this.prisma.fixture.upsert({
-              where: { externalId: fixtureMapped.externalId },
-              update: fixtureMapped,
-              create: fixtureMapped as any,
-            });
+      this.logger.log(`Found ${monitoredFixtures.length} matches today for our monitored leagues (out of ${allTodayFixtures.length} globally).`);
 
-            if (['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE'].includes(data.fixture.status.short)) {
-               await this.syncFixtureDetail(data.fixture.id);
-            }
-            totalSynced++;
-          } catch (err) {
-            this.logger.error(`Error processing today fixture ${data.fixture.id}: ${err.message}`);
+      for (const data of monitoredFixtures) {
+        try {
+          const league = await this.prisma.league.findUnique({ where: { externalId: data.league.id } });
+          if (!league) continue;
+
+          const [homeTeam, awayTeam] = await Promise.all([
+            this.prisma.team.findUnique({ where: { externalId: data.teams.home.id } }),
+            this.prisma.team.findUnique({ where: { externalId: data.teams.away.id } }),
+          ]);
+          if (!homeTeam || !awayTeam) continue;
+
+          const fixtureMapped = ApiFootballMapper.toFixture(data, league.id, homeTeam.id, awayTeam.id);
+          await this.safeUpsertFixture(fixtureMapped);
+
+          // Apenas sincroniza detalhes técnicos se a partida estiver ao vivo ou recém-finalizada
+          if (['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'FT'].includes(data.fixture.status.short)) {
+             await this.syncFixtureDetail(data.fixture.id);
           }
-        }
+          totalSynced++;
+        } catch (err) {
+          this.logger.error(`Error processing today fixture ${data.fixture.id}: ${err.message}`);
         }
       }
       return { count: totalSynced };

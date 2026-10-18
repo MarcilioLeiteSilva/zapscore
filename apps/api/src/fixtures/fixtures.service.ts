@@ -223,42 +223,94 @@ export class FixturesService {
       throw new Error(`External IDs missing for teams in fixture ${fixtureId}`);
     }
 
-    // 2. Buscar confrontos diretos na API-Football
-    const rawH2H = await this.apiFootball.getHeadToHead(
-      fixture.homeTeam.externalId,
-      fixture.awayTeam.externalId,
-    );
+    // 2. Buscar confrontos diretos na API-Football (com fallback resiliente ao banco local)
+    let rawH2H: any[] = [];
+    try {
+      rawH2H = (await this.apiFootball.getHeadToHead(
+        fixture.homeTeam.externalId,
+        fixture.awayTeam.externalId,
+      )) || [];
+    } catch (err: any) {
+      this.logger.warn(`API-Football H2H failed for fixture ${fixtureId}: ${err.message}. Using local DB fallback.`);
+    }
 
-    // 3. Mapear os resultados passados de forma limpa e desacoplada
-    const matches = (rawH2H || []).map((m: any) => ({
-      id: m.fixture.id,
-      externalId: m.fixture.id,
-      season: m.league.season,
-      date: m.fixture.date,
-      venueName: m.fixture.venue?.name,
-      venueCity: m.fixture.venue?.city,
-      round: m.league.round,
-      elapsed: m.fixture.status.elapsed,
-      league: {
-        externalId: m.league.id,
-        name: m.league.name,
-        logo: m.league.logo,
-      },
-      homeTeam: {
-        externalId: m.teams.home.id,
-        name: m.teams.home.name,
-        logo: m.teams.home.logo,
-      },
-      awayTeam: {
-        externalId: m.teams.away.id,
-        name: m.teams.away.name,
-        logo: m.teams.away.logo,
-      },
-      homeGoals: m.goals.home,
-      awayGoals: m.goals.away,
-      statusShort: m.fixture.status.short,
-      statusLong: m.fixture.status.long,
-    }));
+    let matches: any[] = [];
+    if (rawH2H && rawH2H.length > 0) {
+      // 3. Mapear os resultados passados de forma limpa e desacoplada
+      matches = rawH2H.map((m: any) => ({
+        id: m.fixture.id,
+        externalId: m.fixture.id,
+        season: m.league.season,
+        date: m.fixture.date,
+        venueName: m.fixture.venue?.name,
+        venueCity: m.fixture.venue?.city,
+        round: m.league.round,
+        elapsed: m.fixture.status.elapsed,
+        league: {
+          externalId: m.league.id,
+          name: m.league.name,
+          logo: m.league.logo,
+        },
+        homeTeam: {
+          externalId: m.teams.home.id,
+          name: m.teams.home.name,
+          logo: m.teams.home.logo,
+        },
+        awayTeam: {
+          externalId: m.teams.away.id,
+          name: m.teams.away.name,
+          logo: m.teams.away.logo,
+        },
+        homeGoals: m.goals.home,
+        awayGoals: m.goals.away,
+        statusShort: m.fixture.status.short,
+        statusLong: m.fixture.status.long,
+      }));
+    } else {
+      // Fallback local: busca partidas já disputadas entre os dois clubes no banco local
+      const localMatches = await this.prisma.fixture.findMany({
+        where: {
+          OR: [
+            { homeTeamId: fixture.homeTeamId, awayTeamId: fixture.awayTeamId },
+            { homeTeamId: fixture.awayTeamId, awayTeamId: fixture.homeTeamId },
+          ],
+          statusShort: { in: ['FT', 'AET', 'PEN'] },
+        },
+        orderBy: { date: 'desc' },
+        take: 10,
+        include: { homeTeam: true, awayTeam: true, league: true },
+      });
+
+      matches = localMatches.map((m: any) => ({
+        id: m.externalId || m.id,
+        externalId: m.externalId,
+        season: m.season,
+        date: m.date,
+        venueName: m.venueName,
+        venueCity: m.venueCity,
+        round: m.round,
+        elapsed: m.elapsed,
+        league: {
+          externalId: m.league?.externalId,
+          name: m.league?.name,
+          logo: m.league?.logo,
+        },
+        homeTeam: {
+          externalId: m.homeTeam?.externalId,
+          name: m.homeTeam?.name,
+          logo: m.homeTeam?.logo,
+        },
+        awayTeam: {
+          externalId: m.awayTeam?.externalId,
+          name: m.awayTeam?.name,
+          logo: m.awayTeam?.logo,
+        },
+        homeGoals: m.homeGoals,
+        awayGoals: m.awayGoals,
+        statusShort: m.statusShort,
+        statusLong: m.statusLong,
+      }));
+    }
 
     // 4. Calcular estatísticas de confrontos (Geral e Últimos 5)
     const homeTeamName = fixture.homeTeam.name;
@@ -338,8 +390,8 @@ export class FixturesService {
       matches: sortedMatches,
     };
 
-    // Cache por 1 hora (dados históricos de H2H não mudam com tanta frequência)
-    await this.redis.setJson(cacheKey, result, 3600);
+    // Cache por 24 horas (dados históricos de H2H não mudam com tanta frequência)
+    await this.redis.setJson(cacheKey, result, 86400);
 
     return result;
   }

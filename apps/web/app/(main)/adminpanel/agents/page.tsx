@@ -257,6 +257,24 @@ export default function AgentsHubPage() {
         { label: 'Proteção', value: 'Rate Limit Safe' },
       ],
       actionText: 'Ver Telemetria de Quota'
+    },
+    {
+      id: 'state-scout',
+      title: 'State League Scout',
+      subtitle: 'Monitor Autônomo de Calendário & Placares de Estaduais',
+      description: 'Varre portais de federações estaduais (FPF Pernambucano, FCF, FGF) e concilia autonomamente datas alteradas, locais, rodadas e encerramento de placares (FT) com proteção não-regressiva e zero consumo de cota.',
+      icon: Activity,
+      iconColor: 'text-emerald-400',
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20',
+      badge: '100% AUTÔNOMO • DRIVERS FEDERAÇÃO • ZERO COTA',
+      badgeColor: 'badge-live',
+      href: '/adminpanel/agents/state-scout',
+      stats: [
+        { label: 'Modo', value: '100% Autônomo' },
+        { label: 'Federações', value: 'Drivers Pluggable' },
+        { label: 'Cota API', value: '0 Consumo Extra' },
+      ],
+      actionText: 'Abrir State League Scout'
     }
   ];
 

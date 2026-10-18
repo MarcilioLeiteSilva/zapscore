@@ -8,13 +8,21 @@ export class ContentScoutController {
   constructor(private readonly scoutService: ContentScoutService) {}
 
   @Get('audit')
-  async audit() {
-    return this.scoutService.audit();
+  async audit(@Query('leagueId') leagueId?: string) {
+    const extId = leagueId ? parseInt(leagueId, 10) : undefined;
+    return this.scoutService.audit(!isNaN(extId as number) ? extId : undefined);
   }
 
   @Post('heal')
   async heal() {
     return this.scoutService.heal();
+  }
+
+  @Post('sanitize')
+  async sanitize(
+    @Body() body?: { purgeNonCompliant?: boolean; leagueExternalId?: number; maxItems?: number }
+  ) {
+    return this.scoutService.sanitize(body);
   }
 
   @Get('leagues')

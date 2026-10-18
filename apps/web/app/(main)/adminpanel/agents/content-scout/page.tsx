@@ -10,17 +10,14 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   ShieldCheck, 
-  ExternalLink, 
-  Layers, 
-  Flame, 
-  Search, 
   Trash2, 
   ArrowRight,
+  Search,
   Filter,
   Check,
   Globe,
   SlidersHorizontal,
-  Bot
+  ShieldAlert
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://zapscore-zapscore-api.gtalg3.easypanel.host";
@@ -33,7 +30,7 @@ interface FlaggedItem {
   currentLeagueName: string;
   suggestedLeagueExternalId: number | null;
   suggestedLeagueName: string;
-  violationType: 'ITALIAN_IN_BRAZIL' | 'BRAZIL_IN_ITALY' | 'SERIE_B_IN_SERIE_A' | 'GENERIC_MISMATCH';
+  violationType: 'ITALIAN_IN_BRAZIL' | 'BRAZIL_IN_ITALY' | 'SERIE_B_IN_SERIE_A' | 'CROSS_LEAGUE_MISMATCH' | 'NON_COMPLIANT_IRRELEVANT' | 'GENERIC_MISMATCH';
   severity: 'HIGH' | 'MEDIUM';
   detectedTokens: string[];
   createdAt: string;
@@ -54,6 +51,7 @@ interface AuditData {
     totalNews: number;
     totalAudited: number;
     contaminatedCount: number;
+    nonCompliantCount: number;
     healthyCount: number;
     complianceRate: number;
     lastAuditTimestamp: string;
@@ -66,16 +64,16 @@ export default function ContentScoutDashboardPage() {
   const [auditData, setAuditData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [healing, setHealing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'flagged' | 'leagues' | 'manual'>('flagged');
+  const [activeTab, setActiveTab] = useState<'flagged' | 'leagues'>('flagged');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [reassigningId, setReassigningId] = useState<string | null>(null);
-  const [selectedTargetLeague, setSelectedTargetLeague] = useState<string>('');
+  const [selectedLeagueFilter, setSelectedLeagueFilter] = useState<string>('');
 
-  const fetchAudit = async () => {
+  const fetchAudit = async (leagueExtId?: string) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/content-scout/audit`);
+      const queryParam = leagueExtId ? `?leagueId=${leagueExtId}` : '';
+      const res = await fetch(`${API_URL}/content-scout/audit${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         setAuditData(data);
@@ -90,29 +88,39 @@ export default function ContentScoutDashboardPage() {
   };
 
   useEffect(() => {
-    fetchAudit();
-  }, []);
+    fetchAudit(selectedLeagueFilter);
+  }, [selectedLeagueFilter]);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), 6000);
   };
 
-  const handleHealAll = async () => {
+  const handleSanitizeAndHeal = async (purge: boolean = true) => {
     try {
       setHealing(true);
-      const res = await fetch(`${API_URL}/content-scout/heal`, {
+      const res = await fetch(`${API_URL}/content-scout/sanitize`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purgeNonCompliant: purge,
+          leagueExternalId: selectedLeagueFilter ? Number(selectedLeagueFilter) : undefined,
+          maxItems: 2000,
+        }),
       });
       if (res.ok) {
         const result = await res.json();
-        showNotification('success', `Faxina concluída! ${result.fixedCount} matérias foram reclassificadas e organizadas com sucesso.`);
-        await fetchAudit();
+        const parts: string[] = [];
+        if (result.reclassifiedCount > 0) parts.push(`${result.reclassifiedCount} reclassificadas`);
+        if (result.purgedCount > 0) parts.push(`${result.purgedCount} expurgadas`);
+        const summaryText = parts.length > 0 ? parts.join(' e ') : '0 alterações necessárias (base limpa)';
+        showNotification('success', `Sanitização concluída com sucesso: ${summaryText}.`);
+        await fetchAudit(selectedLeagueFilter);
       } else {
-        showNotification('error', 'Erro ao executar faxina e reclassificação');
+        showNotification('error', 'Erro ao executar sanitização e expurgo.');
       }
     } catch (err: any) {
-      showNotification('error', `Erro na execução do heal: ${err.message}`);
+      showNotification('error', `Erro na execução do Content Scout: ${err.message}`);
     } finally {
       setHealing(false);
     }
@@ -127,10 +135,9 @@ export default function ContentScoutDashboardPage() {
       });
       if (res.ok) {
         showNotification('success', 'Liga da notícia reatribuída com sucesso!');
-        await fetchAudit();
-        setReassigningId(null);
+        await fetchAudit(selectedLeagueFilter);
       } else {
-        showNotification('error', 'Falha ao reatribuir liga');
+        showNotification('error', 'Falha ao reatribuir liga.');
       }
     } catch (err: any) {
       showNotification('error', `Erro: ${err.message}`);
@@ -138,14 +145,14 @@ export default function ContentScoutDashboardPage() {
   };
 
   const handleRemoveNews = async (newsId: string) => {
-    if (!confirm('Deseja realmente remover esta notícia do sistema?')) return;
+    if (!confirm('Deseja realmente expurgar esta notícia do banco de dados?')) return;
     try {
       const res = await fetch(`${API_URL}/content-scout/news/${newsId}`, {
         method: 'DELETE',
       });
       if (res.ok) {
-        showNotification('success', 'Notícia excluída com sucesso.');
-        await fetchAudit();
+        showNotification('success', 'Notícia não conforme expurgada com sucesso.');
+        await fetchAudit(selectedLeagueFilter);
       } else {
         showNotification('error', 'Falha ao excluir notícia.');
       }
@@ -161,6 +168,8 @@ export default function ContentScoutDashboardPage() {
     return (
       item.title.toLowerCase().includes(term) ||
       (item.source && item.source.toLowerCase().includes(term)) ||
+      item.currentLeagueName.toLowerCase().includes(term) ||
+      item.suggestedLeagueName.toLowerCase().includes(term) ||
       item.detectedTokens.some(t => t.toLowerCase().includes(term))
     );
   }) || [];
@@ -174,6 +183,23 @@ export default function ContentScoutDashboardPage() {
     if (c.includes('germany') || c.includes('alemanha') || extId === 78) return '🇩🇪';
     if (c.includes('france') || c.includes('frança') || extId === 61) return '🇫🇷';
     return '🌐';
+  };
+
+  const renderViolationBadge = (type: FlaggedItem['violationType']) => {
+    switch (type) {
+      case 'ITALIAN_IN_BRAZIL':
+        return <span className="badge badge-warning text-[10px]">🇮🇹 Calcio no Brasileirão</span>;
+      case 'BRAZIL_IN_ITALY':
+        return <span className="badge badge-warning text-[10px]">🇧🇷 Brasil na Itália</span>;
+      case 'SERIE_B_IN_SERIE_A':
+        return <span className="badge badge-warning text-[10px]">🇧🇷 Série B na Série A</span>;
+      case 'CROSS_LEAGUE_MISMATCH':
+        return <span className="badge badge-warning text-[10px]">🔄 Contaminação Cruzada</span>;
+      case 'NON_COMPLIANT_IRRELEVANT':
+        return <span className="badge badge-danger text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/20">🚫 Não Conforme / Expurgo</span>;
+      default:
+        return <span className="badge badge-secondary text-[10px]">⚠️ Incompatibilidade</span>;
+    }
   };
 
   return (
@@ -201,8 +227,8 @@ export default function ContentScoutDashboardPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="badge badge-live">• ONLINE • CRON 30M</span>
-              <span className="text-xs font-mono text-[var(--text-muted)]">GUARDIÃO DE CONTEÚDO</span>
+              <span className="badge badge-live">• ONLINE • AUTO-HEAL 30M</span>
+              <span className="text-xs font-mono text-[var(--text-muted)]">GUARDIÃO DE CONTEÚDO & SANITIZAÇÃO</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black text-white flex items-center gap-3">
               <Newspaper className="text-blue-400" size={28} />
@@ -211,10 +237,27 @@ export default function ContentScoutDashboardPage() {
           </div>
         </div>
 
-        {/* Global Action Button */}
-        <div className="flex items-center gap-3">
+        {/* Global Action Buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* League Filter */}
+          <div className="flex items-center gap-2 bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-3 py-1.5">
+            <Filter size={14} className="text-[var(--text-muted)]" />
+            <select
+              value={selectedLeagueFilter}
+              onChange={(e) => setSelectedLeagueFilter(e.target.value)}
+              className="bg-transparent text-xs text-white focus:outline-none"
+            >
+              <option value="" className="bg-[var(--surface)] text-white">Todas as Ligas</option>
+              {auditData?.leagues.map((l) => (
+                <option key={l.id} value={l.externalId} className="bg-[var(--surface)] text-white">
+                  {l.name} (#{l.externalId})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
-            onClick={fetchAudit}
+            onClick={() => fetchAudit(selectedLeagueFilter)}
             disabled={loading}
             className="btn btn-secondary flex items-center gap-2 text-xs py-2.5 px-4"
           >
@@ -223,19 +266,19 @@ export default function ContentScoutDashboardPage() {
           </button>
 
           <button
-            onClick={handleHealAll}
+            onClick={() => handleSanitizeAndHeal(true)}
             disabled={healing}
             className="btn btn-primary flex items-center gap-2 text-xs py-2.5 px-5 shadow-lg shadow-blue-500/10 font-bold"
           >
             {healing ? (
               <>
                 <RefreshCw size={16} className="animate-spin" />
-                <span>Higienizando Base...</span>
+                <span>Sanitizando Base...</span>
               </>
             ) : (
               <>
                 <Sparkles size={16} />
-                <span>Executar Faxina e Reclassificação</span>
+                <span>Executar Sanitização & Expurgo</span>
               </>
             )}
           </button>
@@ -254,7 +297,7 @@ export default function ContentScoutDashboardPage() {
             {auditData ? `${auditData.summary.complianceRate}%` : '---'}
           </div>
           <p className="text-[11px] text-[var(--text-muted)] mt-1">
-            {auditData ? `${auditData.summary.healthyCount} matérias auditadas e conformes` : 'Carregando métricas...'}
+            {auditData ? `${auditData.summary.healthyCount} matérias conformes` : 'Carregando métricas...'}
           </p>
           <div className="w-full bg-[var(--surface-hover)] h-1.5 rounded-full mt-3 overflow-hidden">
             <div 
@@ -264,47 +307,49 @@ export default function ContentScoutDashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Contaminações Detectadas */}
+        {/* Card 2: Contaminações Cruzadas */}
         <div className="card p-5 relative overflow-hidden border border-[var(--border)]">
           <div className="flex items-center justify-between text-[var(--text-muted)] mb-2">
             <span className="text-xs font-bold uppercase tracking-wider">Contaminações Cruzadas</span>
-            <AlertTriangle size={18} className={auditData?.summary.contaminatedCount ? 'text-rose-400' : 'text-emerald-400'} />
+            <AlertTriangle size={18} className={auditData?.summary.contaminatedCount ? 'text-amber-400' : 'text-emerald-400'} />
           </div>
-          <div className={`text-3xl font-black font-mono ${auditData?.summary.contaminatedCount ? 'text-rose-400' : 'text-emerald-400'}`}>
+          <div className={`text-3xl font-black font-mono ${auditData?.summary.contaminatedCount ? 'text-amber-400' : 'text-emerald-400'}`}>
             {auditData ? auditData.summary.contaminatedCount : '---'}
           </div>
           <p className="text-[11px] text-[var(--text-muted)] mt-1">
             {auditData?.summary.contaminatedCount 
-              ? 'Detectadas fora de contexto (ex: Itália no BR)' 
+              ? 'Matérias em ligas homônimas ou incorretas' 
               : 'Zero contaminação ativa na base'}
           </p>
         </div>
 
-        {/* Card 3: Brasileirão Série A (ID 71) */}
+        {/* Card 3: Não Conformes / Expurgo */}
         <div className="card p-5 relative overflow-hidden border border-[var(--border)]">
           <div className="flex items-center justify-between text-[var(--text-muted)] mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Brasileirão Série A</span>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">ID 71</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Não Conformes / Expurgo</span>
+            <ShieldAlert size={18} className={auditData?.summary.nonCompliantCount ? 'text-rose-400' : 'text-emerald-400'} />
           </div>
-          <div className="text-3xl font-black text-white font-mono">
-            {auditData?.leagues.find(l => l.externalId === 71)?.totalNews || 0}
+          <div className={`text-3xl font-black font-mono ${auditData?.summary.nonCompliantCount ? 'text-rose-400' : 'text-emerald-400'}`}>
+            {auditData ? auditData.summary.nonCompliantCount : '---'}
           </div>
-          <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-semibold">
-            <Check size={13} /> Filtro defensivo ativo no endpoint
+          <p className="text-[11px] text-[var(--text-muted)] mt-1">
+            {auditData?.summary.nonCompliantCount 
+              ? 'Matérias irrelevantes, spam ou fora de contexto' 
+              : 'Nenhum lixo ou spam detectado'}
           </p>
         </div>
 
-        {/* Card 4: Serie A Italiana (ID 135) */}
+        {/* Card 4: Volume Total Auditado */}
         <div className="card p-5 relative overflow-hidden border border-[var(--border)]">
           <div className="flex items-center justify-between text-[var(--text-muted)] mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Serie A Italiana</span>
-            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ID 135</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Amostra Auditada</span>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">DB POSTGRES</span>
           </div>
           <div className="text-3xl font-black text-white font-mono">
-            {auditData?.leagues.find(l => l.externalId === 135)?.totalNews || 0}
+            {auditData?.summary.totalAudited || 0}
           </div>
           <p className="text-[11px] text-[var(--text-muted)] mt-1">
-            Notícias do Calcio isoladas de forma estrita
+            de {auditData?.summary.totalNews || 0} notícias totais registradas
           </p>
         </div>
       </div>
@@ -320,7 +365,7 @@ export default function ContentScoutDashboardPage() {
           }`}
         >
           <AlertTriangle size={15} />
-          <span>Matérias Suspeitas / Alertas ({auditData?.flaggedItems.length || 0})</span>
+          <span>Matérias para Sanitização ({auditData?.flaggedItems.length || 0})</span>
         </button>
 
         <button
@@ -341,9 +386,9 @@ export default function ContentScoutDashboardPage() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Casos de Contaminação Identificados pelo Agente</h2>
+              <h2 className="text-lg font-bold text-white">Casos de Não Conformidade & Contaminação</h2>
               <p className="text-xs text-[var(--text-muted)]">
-                Matérias associadas a ligas incorretas devido a homonímia textual ("Serie A") ou ruídos nos feeds RSS.
+                O Content Scout identifica notícias contaminadas (para reclassificação) e notícias irrelevantes/spam (para expurgo).
               </p>
             </div>
 
@@ -363,9 +408,9 @@ export default function ContentScoutDashboardPage() {
           {filteredFlagged.length === 0 ? (
             <div className="card p-12 text-center border border-[var(--border)]">
               <CheckCircle2 size={48} className="mx-auto text-emerald-400 mb-3" />
-              <h3 className="text-base font-bold text-white">Nenhuma Contaminação Pendente</h3>
+              <h3 className="text-base font-bold text-white">Base Totalmente Sanitizada</h3>
               <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto mt-1">
-                Todas as notícias auditadas estão perfeitamente alinhadas com suas respectivas competições. O Brasileirão Série A está 100% livre de matérias italianas.
+                Todas as notícias auditadas estão perfeitamente alinhadas com suas respectivas competições. Zero contaminação ou conteúdo não conforme pendente.
               </p>
             </div>
           ) : (
@@ -376,16 +421,17 @@ export default function ContentScoutDashboardPage() {
                     <tr className="border-b border-[var(--border)] text-[var(--text-muted)] bg-[var(--surface-hover)]">
                       <th className="py-3 px-4">Notícia / Manchete</th>
                       <th className="py-3 px-4">Fonte</th>
+                      <th className="py-3 px-4">Diagnóstico</th>
                       <th className="py-3 px-4">Liga Atual</th>
-                      <th className="py-3 px-4">Destino Correto</th>
-                      <th className="py-3 px-4">Tokens Detectados</th>
-                      <th className="py-3 px-4 text-right">Ação Corretiva</th>
+                      <th className="py-3 px-4">Destino / Sugestão</th>
+                      <th className="py-3 px-4">Tokens</th>
+                      <th className="py-3 px-4 text-right">Ação Cirúrgica</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredFlagged.map((item) => (
                       <tr key={item.id} className="border-b border-[var(--border)]/50 hover:bg-[var(--surface-hover)] transition-colors">
-                        <td className="py-3 px-4 max-w-sm">
+                        <td className="py-3 px-4 max-w-xs">
                           <p className="font-semibold text-white truncate" title={item.title}>
                             {item.title}
                           </p>
@@ -401,15 +447,25 @@ export default function ContentScoutDashboardPage() {
                         </td>
 
                         <td className="py-3 px-4">
+                          {renderViolationBadge(item.violationType)}
+                        </td>
+
+                        <td className="py-3 px-4">
                           <span className="badge badge-warning text-[10px]">
                             {item.currentLeagueName}
                           </span>
                         </td>
 
                         <td className="py-3 px-4">
-                          <span className="badge badge-live text-[10px] flex items-center gap-1 w-fit">
-                            <ArrowRight size={11} /> {item.suggestedLeagueName}
-                          </span>
+                          {item.suggestedLeagueExternalId ? (
+                            <span className="badge badge-live text-[10px] flex items-center gap-1 w-fit">
+                              <ArrowRight size={11} /> {item.suggestedLeagueName}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-rose-400 font-semibold flex items-center gap-1">
+                              <Trash2 size={11} /> Expurgo Obrigatório
+                            </span>
+                          )}
                         </td>
 
                         <td className="py-3 px-4">
@@ -424,26 +480,29 @@ export default function ContentScoutDashboardPage() {
 
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => {
-                                const targetLeague = auditData?.leagues.find(l => l.externalId === item.suggestedLeagueExternalId);
-                                if (targetLeague) {
-                                  handleReassign(item.id, targetLeague.id);
-                                }
-                              }}
-                              className="btn btn-secondary text-[11px] py-1.5 px-3 flex items-center gap-1.5 hover:bg-emerald-500/20 hover:text-emerald-300"
-                              title="Mover para a liga correta sugerida"
-                            >
-                              <Sparkles size={12} />
-                              <span>Transferir</span>
-                            </button>
+                            {item.suggestedLeagueExternalId ? (
+                              <button
+                                onClick={() => {
+                                  const targetLeague = auditData?.leagues.find(l => l.externalId === item.suggestedLeagueExternalId);
+                                  if (targetLeague) {
+                                    handleReassign(item.id, targetLeague.id);
+                                  }
+                                }}
+                                className="btn btn-secondary text-[11px] py-1.5 px-3 flex items-center gap-1.5 hover:bg-emerald-500/20 hover:text-emerald-300"
+                                title="Mover para a liga correta sugerida"
+                              >
+                                <Sparkles size={12} />
+                                <span>Transferir</span>
+                              </button>
+                            ) : null}
 
                             <button
                               onClick={() => handleRemoveNews(item.id)}
-                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors"
-                              title="Remover notícia do banco"
+                              className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors flex items-center gap-1 text-[11px] px-2.5 font-semibold"
+                              title="Expurgar do banco de dados"
                             >
                               <Trash2 size={13} />
+                              <span>Expurgar</span>
                             </button>
                           </div>
                         </td>

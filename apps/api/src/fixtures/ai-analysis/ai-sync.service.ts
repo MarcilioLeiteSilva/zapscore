@@ -171,49 +171,49 @@ export class AiSyncService {
       };
     });
 
-    // 6. Buscar Odds de mercado da API-Football
+    // 6. Buscar Odds de mercado (Prioriza banco local, busca na API-Football se ainda não tiver)
     let odds: any = null;
-    try {
-      if (fixture.externalId) {
-        const rawOdds = await this.apiFootball.getOdds(fixture.externalId);
-        if (rawOdds && rawOdds.length > 0) {
-          const bookmakers = rawOdds[0].bookmakers;
-          const bookmaker = bookmakers?.find((b: any) => b.id === 1) || bookmakers?.[0];
-          const bet = bookmaker?.bets?.find((b: any) => b.id === 1); // 1 = Match Winner (1X2)
-          if (bet && bet.values) {
-            const hOdd = bet.values.find((v: any) => v.value === 'Home')?.odd;
-            const dOdd = bet.values.find((v: any) => v.value === 'Draw')?.odd;
-            const aOdd = bet.values.find((v: any) => v.value === 'Away')?.odd;
-            if (hOdd && dOdd && aOdd) {
-              odds = {
-                home: parseFloat(hOdd),
-                draw: parseFloat(dOdd),
-                away: parseFloat(aOdd),
-              };
-              
-              // Salvar no banco local
-              await this.prisma.fixture.update({
-                where: { id: fixture.id },
-                data: {
-                  oddsHome: odds.home,
-                  oddsDraw: odds.draw,
-                  oddsAway: odds.away,
-                },
-              });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      this.logger.error(`Error fetching real odds for AI Sync: ${err.message}`);
-    }
-
-    if (!odds && fixture.oddsHome !== null && fixture.oddsDraw !== null && fixture.oddsAway !== null) {
+    if (fixture.oddsHome !== null && fixture.oddsDraw !== null && fixture.oddsAway !== null) {
       odds = {
         home: fixture.oddsHome,
         draw: fixture.oddsDraw,
         away: fixture.oddsAway,
       };
+    } else {
+      try {
+        if (fixture.externalId) {
+          const rawOdds = await this.apiFootball.getOdds(fixture.externalId);
+          if (rawOdds && rawOdds.length > 0) {
+            const bookmakers = rawOdds[0].bookmakers;
+            const bookmaker = bookmakers?.find((b: any) => b.id === 1) || bookmakers?.[0];
+            const bet = bookmaker?.bets?.find((b: any) => b.id === 1); // 1 = Match Winner (1X2)
+            if (bet && bet.values) {
+              const hOdd = bet.values.find((v: any) => v.value === 'Home')?.odd;
+              const dOdd = bet.values.find((v: any) => v.value === 'Draw')?.odd;
+              const aOdd = bet.values.find((v: any) => v.value === 'Away')?.odd;
+              if (hOdd && dOdd && aOdd) {
+                odds = {
+                  home: parseFloat(hOdd),
+                  draw: parseFloat(dOdd),
+                  away: parseFloat(aOdd),
+                };
+                
+                // Salvar no banco local
+                await this.prisma.fixture.update({
+                  where: { id: fixture.id },
+                  data: {
+                    oddsHome: odds.home,
+                    oddsDraw: odds.draw,
+                    oddsAway: odds.away,
+                  },
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        this.logger.error(`Error fetching real odds for AI Sync: ${err.message}`);
+      }
     }
 
     // 7. Buscar lesões/suspensões confirmadas da API-Football
