@@ -30,14 +30,26 @@ export class AiAnalysisController {
     @Param('id') id: string,
     @Query('lang') lang?: string,
   ) {
+    let resolvedFixtureId = id;
+    const numId = parseInt(id, 10);
+    if (!isNaN(numId) && !id.includes('-')) {
+      const fixture = await this.prisma.fixture.findUnique({
+        where: { externalId: numId },
+        select: { id: true },
+      });
+      if (fixture) {
+        resolvedFixtureId = fixture.id;
+      }
+    }
+
     let analysis = await this.prisma.fixtureAiAnalysis.findUnique({
-      where: { fixtureId: id },
+      where: { fixtureId: resolvedFixtureId },
     });
 
     if (!analysis) {
       try {
         // Tenta gerar sob demanda caso ainda não esteja no cache do banco de dados
-        analysis = await this.aiSyncService.syncFixtureAnalysis(id);
+        analysis = await this.aiSyncService.syncFixtureAnalysis(resolvedFixtureId);
       } catch (err) {
         throw new NotFoundException('Análise da IA não disponível para esta partida.');
       }
@@ -54,6 +66,17 @@ export class AiAnalysisController {
   @UseGuards(ApiKeyGuard)
   async syncAnalysis(@Param('id') id: string, @Query('force') force?: string) {
     const forceUpdate = force === 'true';
-    return this.aiSyncService.syncFixtureAnalysis(id, forceUpdate);
+    let resolvedFixtureId = id;
+    const numId = parseInt(id, 10);
+    if (!isNaN(numId) && !id.includes('-')) {
+      const fixture = await this.prisma.fixture.findUnique({
+        where: { externalId: numId },
+        select: { id: true },
+      });
+      if (fixture) {
+        resolvedFixtureId = fixture.id;
+      }
+    }
+    return this.aiSyncService.syncFixtureAnalysis(resolvedFixtureId, forceUpdate);
   }
 }

@@ -9,11 +9,11 @@ import { PocketbaseCommentsClient } from './providers/pocketbase-comments.client
 export class TacticalCommentsSchedulerService {
   private readonly logger = new Logger(TacticalCommentsSchedulerService.name);
 
-  // Ligas homologadas para comentários táticos: Brasileirão Série A (71) e Série B (72)
-  private readonly TARGET_LEAGUES = [71, 72];
+  // Ligas homologadas para comentários táticos: Brasileirão Série A (71), Série B (72) e Campeonato Pernambucano (622)
+  private readonly TARGET_LEAGUES = [71, 72, 622];
 
-  // Ligas homologadas para ingestão automática de "Onde Assistir": Brasileirão Série A (71), Série B (72) e Champions League (2)
-  private readonly BROADCAST_TARGET_LEAGUES = [71, 72, 2];
+  // Ligas homologadas para ingestão automática de "Onde Assistir": Brasileirão Série A (71), Série B (72), Champions League (2) e Campeonato Pernambucano (622)
+  private readonly BROADCAST_TARGET_LEAGUES = [71, 72, 2, 622];
 
   // Travas para evitar sobreposição de execuções
   private isRunning = false;

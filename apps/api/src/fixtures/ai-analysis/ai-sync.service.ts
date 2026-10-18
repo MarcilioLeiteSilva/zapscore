@@ -16,9 +16,12 @@ export class AiSyncService {
   async syncFixtureAnalysis(fixtureId: string, forceUpdate: boolean = false): Promise<any> {
     this.logger.log(`Starting AI prediction sync for fixture ${fixtureId}`);
 
+    const numId = parseInt(fixtureId, 10);
+    const isNumeric = !isNaN(numId) && !fixtureId.includes('-');
+
     // 1. Carregar os dados básicos da partida
     const fixture = await this.prisma.fixture.findUnique({
-      where: { id: fixtureId },
+      where: isNumeric ? { externalId: numId } : { id: fixtureId },
       include: {
         homeTeam: true,
         awayTeam: true,
