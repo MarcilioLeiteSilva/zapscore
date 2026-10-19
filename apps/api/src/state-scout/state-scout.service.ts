@@ -5,6 +5,7 @@ import { FixturesGateway } from '../fixtures/fixtures.gateway';
 import { FpfDriver } from './drivers/fpf.driver';
 import { FederationDriver, StateScoutMatch, StateScoutTelemetry } from './interfaces/state-scout.interface';
 import { ApiFootballService } from '../integrations/api-football/api-football.service';
+import { resolveTeamAlias, normalizeTeamString } from './config/team-aliases.config';
 
 @Injectable()
 export class StateLeagueScoutService implements OnApplicationBootstrap {
@@ -83,22 +84,36 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
   }
 
   /**
-   * Normaliza strings de nomes de clubes para correspondência aproximada robusta
+   * Normaliza strings de nomes de clubes com proteção de stopwords
    */
   private cleanTeamName(name: string): string {
-    return (name || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // remove acentos
-      .replace(/\b(pe|sc|fc|ec|de|do|da|futebol|clube|associacao|atletico|gremio|sport|centro)\b/g, '')
-      .replace(/[^a-z0-9]/g, '')
+    const norm = normalizeTeamString(name);
+    const withoutStopwords = norm
+      .replace(/\b(pe|sc|fc|ec|de|do|da|futebol|clube|associacao)\b/g, '')
+      .replace(/\s+/g, ' ')
       .trim();
+    return withoutStopwords.length >= 3 ? withoutStopwords : norm;
   }
 
   /**
-   * Verifica se o nome do time da federação corresponde ao nome do time no banco
+   * Verifica se o nome do time da federação/GE corresponde ao nome do time no banco
+   * Suporta resolução determinística por catálogo de aliases, siglas e fallback seguro.
    */
-  private matchesTeam(fedName: string, dbName: string): boolean {
+  private matchesTeam(fedName: string, dbName: string, leagueExternalId?: number): boolean {
+    // 1. Tenta resolver via catálogo canônico de aliases e siglas
+    const tFed = resolveTeamAlias(fedName, leagueExternalId);
+    const tDb = resolveTeamAlias(dbName, leagueExternalId);
+
+    if (tFed && tDb && tFed.externalId === tDb.externalId) return true;
+    if (tFed && normalizeTeamString(dbName) === normalizeTeamString(tFed.canonicalName)) return true;
+    if (tDb && normalizeTeamString(fedName) === normalizeTeamString(tDb.canonicalName)) return true;
+
+    // 2. Normalização direta exata
+    const nFed = normalizeTeamString(fedName);
+    const nDb = normalizeTeamString(dbName);
+    if (nFed === nDb) return true;
+
+    // 3. Fallback inteligente sem perda de stopwords curtas
     const cFed = this.cleanTeamName(fedName);
     const cDb = this.cleanTeamName(dbName);
 
@@ -137,10 +152,10 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
         });
 
         for (const fedMatch of fedMatches) {
-          // Localiza a partida correspondente no banco
+          // Localiza a partida correspondente no banco com suporte a aliases
           const matchingFixture = dbFixtures.find(f =>
-            this.matchesTeam(fedMatch.homeTeamName, f.homeTeam.name) &&
-            this.matchesTeam(fedMatch.awayTeamName, f.awayTeam.name)
+            this.matchesTeam(fedMatch.homeTeamName, f.homeTeam.name, driver.leagueExternalId) &&
+            this.matchesTeam(fedMatch.awayTeamName, f.awayTeam.name, driver.leagueExternalId)
           );
 
           if (!matchingFixture) continue;
@@ -219,8 +234,8 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
         for (const fixture of pendingFixtures) {
           // 1. Tenta obter placar oficial da Federação
           const fedMatch = fedMatches.find(m =>
-            this.matchesTeam(m.homeTeamName, fixture.homeTeam.name) &&
-            this.matchesTeam(m.awayTeamName, fixture.awayTeam.name)
+            this.matchesTeam(m.homeTeamName, fixture.homeTeam.name, driver.leagueExternalId) &&
+            this.matchesTeam(m.awayTeamName, fixture.awayTeam.name, driver.leagueExternalId)
           );
 
           let settledHomeGoals: number | null = null;
