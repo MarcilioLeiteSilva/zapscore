@@ -50,7 +50,8 @@ export class CompetitionsController {
     @Param('id', ParseIntPipe) id: number,
     @Query('season') season?: string,
   ) {
-    const targetSeason = season ? parseInt(season, 10) : 2026;
+    const comp = this.competitionsService.findOneByExternalId(id);
+    const targetSeason = season ? parseInt(season, 10) : (comp ? comp.activeSeasons[0] : 2026);
     return this.scorerAgentService.aggregateLeagueScorers(id, targetSeason);
   }
 

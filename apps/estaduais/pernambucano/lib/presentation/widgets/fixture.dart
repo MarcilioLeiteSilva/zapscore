@@ -168,7 +168,6 @@ class _HomeTopScorersCardState extends State<HomeTopScorersCard> {
 
   final List<Map<String, dynamic>> _leagues = [
     {'id': AppConfig.pernambucanoSerieAId, 'name': 'Série A1'},
-    {'id': AppConfig.pernambucanoSerieBId, 'name': 'Série A2'},
   ];
 
   @override

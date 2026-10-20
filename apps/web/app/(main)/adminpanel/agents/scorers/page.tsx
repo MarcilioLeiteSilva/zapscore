@@ -49,10 +49,12 @@ export default function ScorerAgentDashboardPage() {
   const [athletesList, setAthletesList] = useState<any[]>([]);
   const [loadingAthletes, setLoadingAthletes] = useState(false);
 
+  const getLeagueSeason = (id: number) => (id === 622 ? 2027 : 2026);
+
   const fetchAthletesForLeague = async (leagueId: number) => {
     setLoadingAthletes(true);
     try {
-      const res = await fetch(`${API_URL}/competitions/${leagueId}/scorers?season=2026`);
+      const res = await fetch(`${API_URL}/competitions/${leagueId}/scorers?season=${getLeagueSeason(leagueId)}`);
       if (res.ok) {
         const data = await res.json();
         setAthletesList(Array.isArray(data) ? data : []);
@@ -96,7 +98,7 @@ export default function ScorerAgentDashboardPage() {
       // Consulta os scorers de cada liga em paralelo (com limite controlado)
       const promises = allLeagues.map(async (item) => {
         try {
-          const res = await fetch(`${API_URL}/competitions/${item.league.id}/scorers?season=2026`);
+          const res = await fetch(`${API_URL}/competitions/${item.league.id}/scorers?season=${getLeagueSeason(item.league.id)}`);
           let count = 0;
           let topScorer = undefined;
           let topScorerGoals = undefined;
@@ -160,7 +162,7 @@ export default function ScorerAgentDashboardPage() {
   const handleSyncSingleLeague = async (leagueId: number) => {
     try {
       setSyncingLeagueId(leagueId);
-      const res = await fetch(`${API_URL}/competitions/${leagueId}/scorers/auto-sync?season=2026`, {
+      const res = await fetch(`${API_URL}/competitions/${leagueId}/scorers/auto-sync?season=${getLeagueSeason(leagueId)}`, {
         method: 'POST',
       });
 

@@ -87,6 +87,13 @@ export default function EstaduaisLeagueDetailPage() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [scorers, setScorers] = useState<ScorerItem[]>([]);
+
+  // Temporada Selecionada para Artilharia (Pernambucano padrão 2027)
+  const defaultSeason = (leagueIdStr === "622" || leagueIdNum === 622) ? 2027 : 2026;
+  const [selectedSeason, setSelectedSeason] = useState<number>(defaultSeason);
+  const [availableSeasons, setAvailableSeasons] = useState<number[]>(
+    (leagueIdStr === "622" || leagueIdNum === 622) ? [2027, 2026] : [2026]
+  );
   
   // Loading states
   const [loadingNews, setLoadingNews] = useState(false);
@@ -163,7 +170,7 @@ export default function EstaduaisLeagueDetailPage() {
 
     fetchNews(resolvedUuid);
     fetchVideos(resolvedUuid);
-    fetchScorers();
+    fetchScorers(defaultSeason);
   };
 
   // Carregar Notícias filtradas por Liga
@@ -202,11 +209,36 @@ export default function EstaduaisLeagueDetailPage() {
     }
   };
 
+  // Buscar temporadas disponíveis da liga
+  useEffect(() => {
+    const fetchSeasons = async () => {
+      try {
+        const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/seasons`);
+        if (res.ok) {
+          const seasons = await res.json();
+          if (Array.isArray(seasons) && seasons.length > 0) {
+            setAvailableSeasons(seasons);
+            if (!seasons.includes(selectedSeason)) {
+              setSelectedSeason(seasons[0]);
+              fetchScorers(seasons[0]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao buscar temporadas da competição:", err);
+      }
+    };
+    if (leagueIdStr) {
+      fetchSeasons();
+    }
+  }, [leagueIdStr]);
+
   // Carregar Artilharia da Liga
-  const fetchScorers = async () => {
+  const fetchScorers = async (seasonToFetch?: number) => {
     try {
       setLoadingScorers(true);
-      const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/scorers?season=2026`);
+      const targetSeason = seasonToFetch ?? selectedSeason;
+      const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/scorers?season=${targetSeason}`);
       if (res.ok) {
         const data = await res.json();
         setScorers(Array.isArray(data) ? data : []);
@@ -216,6 +248,11 @@ export default function EstaduaisLeagueDetailPage() {
     } finally {
       setLoadingScorers(false);
     }
+  };
+
+  const handleSelectSeason = (season: number) => {
+    setSelectedSeason(season);
+    fetchScorers(season);
   };
 
   // --- HANDLERS DE VÍDEO ---
@@ -379,7 +416,7 @@ export default function EstaduaisLeagueDetailPage() {
         teamLogo: scorerFormData.teamLogo || null,
         goals: Number(scorerFormData.goals),
         leagueId: leagueUuid || leagueIdStr,
-        season: 2026,
+        season: selectedSeason,
       };
 
       const res = await fetch(url, {
@@ -390,7 +427,7 @@ export default function EstaduaisLeagueDetailPage() {
 
       if (res.ok) {
         setIsScorerModalOpen(false);
-        fetchScorers();
+        fetchScorers(selectedSeason);
       } else {
         alert("Erro ao salvar artilheiro na API.");
       }
@@ -406,7 +443,7 @@ export default function EstaduaisLeagueDetailPage() {
     if (!confirm("Tem certeza que deseja remover este artilheiro?")) return;
     try {
       const res = await fetch(`${API_URL}/competitions/scorers/${id}`, { method: "DELETE" });
-      if (res.ok) fetchScorers();
+      if (res.ok) fetchScorers(selectedSeason);
     } catch (e) {
       alert("Erro ao excluir artilheiro.");
     }
@@ -770,19 +807,40 @@ export default function EstaduaisLeagueDetailPage() {
       {/* --- ABA ARTILHARIA --- */}
       {activeTab === "artilharia" && (
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Trophy size={20} className="text-amber-400" />
                 <span>Artilharia Principal ({leagueName})</span>
               </h2>
               <p className="text-xs text-[var(--text-muted)]">
-                Ranking de marcadores de gols da temporada atual
+                Ranking de marcadores de gols da temporada {selectedSeason}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {availableSeasons.length > 1 && (
+                <div className="flex items-center gap-1.5 bg-[var(--surface-hover)] border border-[var(--border)] p-1 rounded-xl">
+                  <span className="text-[11px] text-[var(--text-muted)] font-semibold px-2 uppercase tracking-wider">
+                    Temporada:
+                  </span>
+                  {availableSeasons.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => handleSelectSeason(s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        selectedSeason === s
+                          ? "bg-amber-500 text-black shadow-md font-extrabold"
+                          : "text-[var(--text-muted)] hover:text-white"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
-                onClick={fetchScorers}
+                onClick={() => fetchScorers(selectedSeason)}
                 className="p-3 bg-[var(--surface-hover)] hover:bg-[var(--border)] text-white rounded-xl transition-all border border-[var(--border)]"
                 title="Atualizar Artilharia"
               >
@@ -899,7 +957,7 @@ export default function EstaduaisLeagueDetailPage() {
               <div className="flex items-center gap-2.5">
                 <Trophy size={20} className="text-amber-400" />
                 <h3 className="text-base font-bold text-white">
-                  {currentScorerId ? "Editar Artilheiro" : `Novo Artilheiro — ${leagueName}`}
+                  {currentScorerId ? "Editar Artilheiro" : `Novo Artilheiro (Temporada ${selectedSeason}) — ${leagueName}`}
                 </h3>
               </div>
               <button
