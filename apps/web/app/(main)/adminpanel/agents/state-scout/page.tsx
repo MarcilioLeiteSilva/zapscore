@@ -40,6 +40,9 @@ interface StateScoutTelemetry {
   lastResultsReconciledCount: number;
   totalDatesCorrected: number;
   totalResultsSettled: number;
+  totalSumulasParsed?: number;
+  lastMatchdayLiveTimestamp?: string | null;
+  activeLiveMatchesCount?: number;
   activeDrivers: TelemetryDriver[];
   recentLogs: TelemetryLog[];
 }
@@ -128,14 +131,40 @@ export default function StateScoutAgentDashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={fetchTelemetry}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm font-medium hover:bg-slate-800 transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Atualizar Telemetria
+              Atualizar
+            </button>
+            <button
+              onClick={() => triggerAction('reconcile/past-games', 'Reconciliar Jogos Passados')}
+              disabled={actionLoading !== null}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shadow-lg shadow-indigo-900/30"
+              title="Varre todas as partidas já disputadas da temporada, baixa súmulas oficiais, popula escalações e artilharia"
+            >
+              {actionLoading === 'Reconciliar Jogos Passados' ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Cpu className="w-4 h-4" />
+              )}
+              Reconciliar Jogos Passados
+            </button>
+            <button
+              onClick={() => triggerAction('reconcile/live', 'Matchday Live 60s')}
+              disabled={actionLoading !== null}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium transition-colors shadow-lg shadow-amber-900/30"
+              title="Dispara a varredura ao vivo da rodada para detectar gols e atualizar placares em tempo real"
+            >
+              {actionLoading === 'Matchday Live 60s' ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Activity className="w-4 h-4" />
+              )}
+              Matchday Live 60s
             </button>
             <button
               onClick={() => triggerAction('reconcile', 'Conciliação Completa')}
@@ -147,7 +176,7 @@ export default function StateScoutAgentDashboardPage() {
               ) : (
                 <Sparkles className="w-4 h-4" />
               )}
-              Conciliação Completa Agora
+              Conciliação Completa
             </button>
           </div>
         </div>
@@ -169,7 +198,7 @@ export default function StateScoutAgentDashboardPage() {
         )}
 
         {/* Metricas Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-semibold uppercase tracking-wider">Status do Agente</span>
@@ -180,46 +209,72 @@ export default function StateScoutAgentDashboardPage() {
             </div>
             <div className="text-xs text-slate-500 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              Último ciclo: {telemetry?.lastRunTimestamp ? new Date(telemetry.lastRunTimestamp).toLocaleTimeString('pt-BR') : 'Aguardando inicialização'}
+              Último ciclo: {telemetry?.lastRunTimestamp ? new Date(telemetry.lastRunTimestamp).toLocaleTimeString('pt-BR') : 'Aguardando'}
             </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Datas / Locais Corrigidos</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Datas / Locais</span>
               <Calendar className="w-4 h-4 text-cyan-400" />
             </div>
             <div className="text-2xl font-bold text-white">
               {telemetry?.totalDatesCorrected || 0}
             </div>
             <div className="text-xs text-slate-500">
-              Auto-alinhados com federações
+              Alinhados com federação
             </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Placares FT Encerrados</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Placares FT</span>
               <Trophy className="w-4 h-4 text-amber-400" />
             </div>
             <div className="text-2xl font-bold text-white">
               {telemetry?.totalResultsSettled || 0}
             </div>
             <div className="text-xs text-slate-500">
-              Standings recalculados & push emitido
+              Standings recalculados
             </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-semibold uppercase tracking-wider">Proteção Não-Regressiva</span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Súmulas Lidas</span>
+              <Layers className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="text-2xl font-bold text-white">
+              {telemetry?.totalSumulasParsed || 0}
+            </div>
+            <div className="text-xs text-slate-500">
+              Escalações & Gols CBF/FPF
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Matchday Live</span>
+              <Activity className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="text-2xl font-bold text-white">
+              {telemetry?.activeLiveMatchesCount ? `${telemetry.activeLiveMatchesCount} jogos` : 'Em espera'}
+            </div>
+            <div className="text-xs text-slate-500">
+              {telemetry?.activeLiveMatchesCount ? 'Varredura 60s ativa' : '0% CPU fora de jogos'}
+            </div>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-semibold uppercase tracking-wider">Trava Não-Regressiva</span>
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-2xl font-bold text-emerald-400">
               100% Blindado
             </div>
             <div className="text-xs text-slate-500">
-              API-Football atrasada não reverte FT
+              APIs externas não revertem FT
             </div>
           </div>
         </div>

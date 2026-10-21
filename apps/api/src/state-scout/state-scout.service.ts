@@ -6,6 +6,8 @@ import { FpfDriver } from './drivers/fpf.driver';
 import { FederationDriver, StateScoutMatch, StateScoutTelemetry } from './interfaces/state-scout.interface';
 import { ApiFootballService } from '../integrations/api-football/api-football.service';
 import { resolveTeamAlias, normalizeTeamString } from './config/team-aliases.config';
+import { SumulaParserService } from './services/sumula-parser.service';
+import { ScorerAgentService } from '../competitions/scorer-agent.service';
 
 @Injectable()
 export class StateLeagueScoutService implements OnApplicationBootstrap {
@@ -19,6 +21,9 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
     lastResultsReconciledCount: 0,
     totalDatesCorrected: 0,
     totalResultsSettled: 0,
+    totalSumulasParsed: 0,
+    lastMatchdayLiveTimestamp: null,
+    activeLiveMatchesCount: 0,
     activeDrivers: [],
     recentLogs: [],
   };
@@ -28,6 +33,8 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
     private readonly fixturesGateway: FixturesGateway,
     private readonly apiFootball: ApiFootballService,
     private readonly fpfDriver: FpfDriver,
+    private readonly sumulaParser: SumulaParserService,
+    private readonly scorerAgent: ScorerAgentService,
   ) {
     // Registra drivers disponíveis
     this.registerDriver(this.fpfDriver);
@@ -55,6 +62,24 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
   @Cron('*/15 * * * *')
   async cronReconcileResults() {
     await this.reconcileMatchResults();
+  }
+
+  /**
+   * Cron Autônomo 3: Matchday Live Daemon (A cada 60s)
+   * Monitora rodadas ativas minuto a minuto. Se não houver jogos na janela de hoje, dorme imediatamente.
+   */
+  @Cron('* * * * *')
+  async cronMatchdayLive() {
+    await this.processMatchdayLive();
+  }
+
+  /**
+   * Cron Autônomo 4: Conciliação Deslizante de Jogos Passados (A cada 2 horas)
+   * Elimina a espera de 24h, buscando súmulas, escalações e artilharia de jogos recentes.
+   */
+  @Cron('0 */2 * * *')
+  async cronPastGames() {
+    await this.reconcilePastGames();
   }
 
   registerDriver(driver: FederationDriver) {
@@ -295,6 +320,16 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
 
             // Recalcula a tabela de classificação local de forma atômica
             await this.recalculateStandings(fixture.leagueId, driver.season);
+            await this.scorerAgent.aggregateLeagueScorers(driver.leagueExternalId, driver.season);
+
+            if (fedMatch?.sumulaUrl) {
+              await this.parseAndIngestSumula(
+                fixture.id,
+                fedMatch.sumulaUrl,
+                fixture.homeTeam.externalId,
+                fixture.awayTeam.externalId,
+              );
+            }
           }
         }
       } catch (err: any) {
@@ -426,6 +461,320 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
     } catch (e: any) {
       this.logger.error(`[STATE-SCOUT] Falha ao recalcular standings: ${e.message}`);
     }
+  }
+
+  /**
+   * Baixa a súmula oficial em PDF e faz a ingestão cirúrgica de atletas e gols
+   */
+  async parseAndIngestSumula(
+    fixtureId: string,
+    sumulaUrl: string,
+    homeTeamExtId: number,
+    awayTeamExtId: number,
+  ): Promise<boolean> {
+    try {
+      const existingLineups = await this.prisma.fixtureLineup.count({ where: { fixtureId } });
+      if (existingLineups > 0) return false;
+
+      const parsed = await this.sumulaParser.parseFromUrl(sumulaUrl);
+      if (!parsed || (parsed.homeTeam.starters.length === 0 && parsed.awayTeam.starters.length === 0)) {
+        return false;
+      }
+
+      const lineupsToCreate: Array<{
+        fixtureId: string;
+        teamId: number;
+        player: string;
+        number?: number;
+        pos?: string;
+        isStart: boolean;
+      }> = [];
+
+      for (let idx = 0; idx < parsed.homeTeam.starters.length; idx++) {
+        const p = parsed.homeTeam.starters[idx];
+        lineupsToCreate.push({
+          fixtureId,
+          teamId: homeTeamExtId,
+          player: p.name,
+          number: p.number,
+          pos: idx === 0 ? 'G' : 'M',
+          isStart: true,
+        });
+      }
+      for (const p of parsed.homeTeam.substitutes) {
+        lineupsToCreate.push({
+          fixtureId,
+          teamId: homeTeamExtId,
+          player: p.name,
+          number: p.number,
+          pos: 'M',
+          isStart: false,
+        });
+      }
+
+      for (let idx = 0; idx < parsed.awayTeam.starters.length; idx++) {
+        const p = parsed.awayTeam.starters[idx];
+        lineupsToCreate.push({
+          fixtureId,
+          teamId: awayTeamExtId,
+          player: p.name,
+          number: p.number,
+          pos: idx === 0 ? 'G' : 'M',
+          isStart: true,
+        });
+      }
+      for (const p of parsed.awayTeam.substitutes) {
+        lineupsToCreate.push({
+          fixtureId,
+          teamId: awayTeamExtId,
+          player: p.name,
+          number: p.number,
+          pos: 'M',
+          isStart: false,
+        });
+      }
+
+      for (const item of lineupsToCreate) {
+        await this.prisma.fixtureLineup.create({ data: item });
+      }
+
+      // Ingestão de gols da súmula se a partida não tiver eventos
+      const existingEvents = await this.prisma.fixtureEvent.count({ where: { fixtureId } });
+      if (existingEvents === 0 && parsed.goals.length > 0) {
+        for (const g of parsed.goals) {
+          const isHome = this.matchesTeam(g.teamName, parsed.homeTeam.name);
+          const targetTeamId = isHome ? homeTeamExtId : awayTeamExtId;
+          let elapsed = parseInt(g.minute.replace('+', ''), 10);
+          if (isNaN(elapsed)) elapsed = 45;
+          if (g.half === '2' || g.half === '2T') elapsed = Math.max(elapsed, 45);
+
+          await this.prisma.fixtureEvent.create({
+            data: {
+              fixtureId,
+              teamId: targetTeamId,
+              time: elapsed,
+              player: g.playerName,
+              type: 'Goal',
+              detail: 'Normal Goal',
+            },
+          });
+        }
+      }
+
+      if (this.telemetry.totalSumulasParsed !== undefined) {
+        this.telemetry.totalSumulasParsed++;
+      }
+      this.logger.log(`[STATE-SCOUT] Súmula oficial ingerida com sucesso para fixture ${fixtureId} (${lineupsToCreate.length} atletas).`);
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`[STATE-SCOUT] Falha ao ingerir súmula de ${sumulaUrl}: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Loop 3: Matchday Live Daemon (Executado a cada 60s)
+   * Avalia partidas na janela ativa de hoje: 15 min antes até 135 min após início.
+   */
+  async processMatchdayLive(): Promise<{ liveScannedCount: number; deltaCount: number }> {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - 135 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + 15 * 60 * 1000);
+
+    const activeFixtures = await this.prisma.fixture.findMany({
+      where: {
+        league: { externalId: { in: Array.from(this.drivers.keys()) } },
+        date: { gte: windowStart, lte: windowEnd },
+        statusShort: { in: ['NS', '1H', '2H', 'HT', 'LIVE'] },
+      },
+      include: {
+        homeTeam: true,
+        awayTeam: true,
+        league: true,
+      },
+    });
+
+    this.telemetry.lastMatchdayLiveTimestamp = now.toISOString();
+    this.telemetry.activeLiveMatchesCount = activeFixtures.length;
+
+    if (activeFixtures.length === 0) {
+      return { liveScannedCount: 0, deltaCount: 0 };
+    }
+
+    this.logger.log(`[STATE-SCOUT Matchday Live ⚽] Avaliando ${activeFixtures.length} partidas ativas na janela...`);
+    let deltaCount = 0;
+
+    for (const driver of this.drivers.values()) {
+      try {
+        const liveMatches = driver.fetchLiveScores
+          ? await driver.fetchLiveScores()
+          : await driver.fetchSchedule();
+
+        for (const fixture of activeFixtures.filter((f) => f.league.externalId === driver.leagueExternalId)) {
+          const match = liveMatches.find((m) =>
+            this.matchesTeam(m.homeTeamName, fixture.homeTeam.name, driver.leagueExternalId) &&
+            this.matchesTeam(m.awayTeamName, fixture.awayTeam.name, driver.leagueExternalId),
+          );
+
+          if (!match) continue;
+
+          if (match.homeScore !== null && match.awayScore !== null) {
+            const scoreChanged =
+              fixture.homeGoals !== match.homeScore || fixture.awayGoals !== match.awayScore;
+            const newStatus = match.isFinished ? 'FT' : 'LIVE';
+            const statusChanged = fixture.statusShort !== newStatus;
+
+            if (scoreChanged || statusChanged) {
+              const updated = await this.prisma.fixture.update({
+                where: { id: fixture.id },
+                data: {
+                  homeGoals: match.homeScore,
+                  awayGoals: match.awayScore,
+                  statusShort: newStatus,
+                  statusLong: match.isFinished ? 'Match Finished' : 'In Progress',
+                  ...(match.isFinished && { elapsed: 90 }),
+                },
+                include: { homeTeam: true, awayTeam: true, league: true },
+              });
+
+              deltaCount++;
+              const deltaMsg = `[LIVE DELTA] ${fixture.homeTeam.name} ${match.homeScore} x ${match.awayScore} ${fixture.awayTeam.name} (${newStatus})`;
+              this.logger.log(`[STATE-SCOUT] ${deltaMsg}`);
+              this.addLog('INFO', deltaMsg);
+
+              // Emite atualização via WebSocket para os apps móveis
+              this.fixturesGateway.emitFixtureUpdate(updated.id, updated);
+              this.fixturesGateway.emitLeagueUpdate(driver.leagueExternalId, updated);
+
+              // Se a partida encerrou agora
+              if (match.isFinished) {
+                await this.recalculateStandings(fixture.leagueId, driver.season);
+                await this.scorerAgent.aggregateLeagueScorers(driver.leagueExternalId, driver.season);
+                if (match.sumulaUrl) {
+                  await this.parseAndIngestSumula(
+                    fixture.id,
+                    match.sumulaUrl,
+                    fixture.homeTeam.externalId,
+                    fixture.awayTeam.externalId,
+                  );
+                }
+              }
+            }
+          }
+        }
+      } catch (err: any) {
+        this.logger.error(`[STATE-SCOUT] Erro no Matchday Live do driver ${driver.name}: ${err.message}`);
+      }
+    }
+
+    return { liveScannedCount: activeFixtures.length, deltaCount };
+  }
+
+  /**
+   * Loop 4: Conciliação de Jogos Passados (Elimina a espera de 24h)
+   * Varre todas as partidas FT da temporada, baixa súmulas oficiais, popula escalações,
+   * eventos de gols, e atualiza classificação e artilharia.
+   */
+  async reconcilePastGames(targetLeagueId?: number): Promise<{
+    processedMatchesCount: number;
+    lineupsPopulatedCount: number;
+    goalsRecordedCount: number;
+    details: string[];
+  }> {
+    this.logger.log(`[STATE-SCOUT] 🚀 Iniciando conciliação rápida de jogos passados (sem espera de 24h)...`);
+    let processedCount = 0;
+    let lineupsCount = 0;
+    let goalsCount = 0;
+    const details: string[] = [];
+
+    const driversToRun = targetLeagueId
+      ? (this.drivers.has(targetLeagueId) ? [this.drivers.get(targetLeagueId)!] : [])
+      : Array.from(this.drivers.values());
+
+    for (const driver of driversToRun) {
+      try {
+        const fedMatches = await driver.fetchSchedule();
+        if (fedMatches.length === 0) continue;
+
+        const fixtures = await this.prisma.fixture.findMany({
+          where: {
+            league: { externalId: driver.leagueExternalId },
+            season: driver.season,
+          },
+          include: {
+            homeTeam: true,
+            awayTeam: true,
+            lineups: true,
+            events: true,
+          },
+        });
+
+        for (const fedMatch of fedMatches) {
+          const fixture = fixtures.find((f) =>
+            this.matchesTeam(fedMatch.homeTeamName, f.homeTeam.name, driver.leagueExternalId) &&
+            this.matchesTeam(fedMatch.awayTeamName, f.awayTeam.name, driver.leagueExternalId),
+          );
+
+          if (!fixture) continue;
+
+          // Se a partida está finalizada na federação, garante placar e FT
+          if (fedMatch.isFinished && fedMatch.homeScore !== null && fedMatch.awayScore !== null) {
+            if (
+              fixture.statusShort !== 'FT' ||
+              fixture.homeGoals !== fedMatch.homeScore ||
+              fixture.awayGoals !== fedMatch.awayScore
+            ) {
+              await this.prisma.fixture.update({
+                where: { id: fixture.id },
+                data: {
+                  statusShort: 'FT',
+                  statusLong: 'Match Finished',
+                  elapsed: 90,
+                  homeGoals: fedMatch.homeScore,
+                  awayGoals: fedMatch.awayScore,
+                },
+              });
+              details.push(
+                `Placar consolidado para FT: ${fixture.homeTeam.name} ${fedMatch.homeScore} x ${fedMatch.awayScore} ${fixture.awayTeam.name}`,
+              );
+            }
+          }
+
+          // Se tiver link de súmula e a partida ainda não tem escalação no banco
+          if (fedMatch.sumulaUrl && fixture.lineups.length === 0) {
+            const ingested = await this.parseAndIngestSumula(
+              fixture.id,
+              fedMatch.sumulaUrl,
+              fixture.homeTeam.externalId,
+              fixture.awayTeam.externalId,
+            );
+            if (ingested) {
+              lineupsCount++;
+              details.push(
+                `Escalação oficial inserida via súmula: ${fixture.homeTeam.name} x ${fixture.awayTeam.name}`,
+              );
+            }
+          }
+
+          processedCount++;
+        }
+
+        // Recalcula classificação dos grupos e artilharia oficial
+        if (fixtures.length > 0) {
+          await this.recalculateStandings(fixtures[0].leagueId, driver.season);
+          await this.scorerAgent.aggregateLeagueScorers(driver.leagueExternalId, driver.season);
+        }
+      } catch (err: any) {
+        this.addLog('ERROR', `Erro na conciliação de jogos passados do driver ${driver.name}: ${err.message}`);
+      }
+    }
+
+    return {
+      processedMatchesCount: processedCount,
+      lineupsPopulatedCount: lineupsCount,
+      goalsRecordedCount: goalsCount,
+      details,
+    };
   }
 
   /**

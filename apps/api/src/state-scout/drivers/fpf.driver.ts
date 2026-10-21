@@ -107,10 +107,15 @@ export class FpfDriver implements FederationDriver {
         awayScore: raw.awayScore,
         isFinished: raw.homeScore !== null && raw.awayScore !== null,
         sourceId: raw.jogoId,
+        sumulaUrl: raw.jogoId ? `https://conteudo.cbf.com.br/federacoes/9/sumulas/2026/${raw.jogoId}.pdf` : undefined,
       });
     }
 
     return parsedMatches;
+  }
+
+  async fetchLiveScores(): Promise<StateScoutMatch[]> {
+    return this.fetchSchedule();
   }
 
   private async resolveTeamNames(jogoId: string): Promise<{ home: string; away: string }> {

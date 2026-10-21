@@ -29,4 +29,15 @@ export class StateScoutController {
     const extId = leagueId ? parseInt(leagueId, 10) : undefined;
     return this.scoutService.reconcileMatchResults(extId);
   }
+
+  @Post('reconcile/past-games')
+  async reconcilePastGames(@Query('leagueId') leagueId?: string) {
+    const extId = leagueId ? parseInt(leagueId, 10) : undefined;
+    return this.scoutService.reconcilePastGames(extId);
+  }
+
+  @Post('reconcile/live')
+  async reconcileLive() {
+    return this.scoutService.processMatchdayLive();
+  }
 }

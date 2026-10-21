@@ -8,6 +8,7 @@ export interface StateScoutMatch {
   awayScore?: number | null;
   isFinished: boolean;
   sourceId?: string;
+  sumulaUrl?: string;
 }
 
 export interface FederationDriver {
@@ -15,6 +16,7 @@ export interface FederationDriver {
   readonly leagueExternalId: number;
   readonly season: number;
   fetchSchedule(): Promise<StateScoutMatch[]>;
+  fetchLiveScores?(): Promise<StateScoutMatch[]>;
 }
 
 export interface StateScoutTelemetry {
@@ -24,6 +26,9 @@ export interface StateScoutTelemetry {
   lastResultsReconciledCount: number;
   totalDatesCorrected: number;
   totalResultsSettled: number;
+  totalSumulasParsed?: number;
+  lastMatchdayLiveTimestamp?: string | null;
+  activeLiveMatchesCount?: number;
   activeDrivers: Array<{
     name: string;
     leagueExternalId: number;
