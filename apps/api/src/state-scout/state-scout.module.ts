@@ -7,11 +7,12 @@ import { StateScoutController } from './state-scout.controller';
 import { StateLeagueScoutService } from './state-scout.service';
 import { FpfDriver } from './drivers/fpf.driver';
 import { SumulaParserService } from './services/sumula-parser.service';
+import { ContingencyScoreService } from './services/contingency-score.service';
 
 @Module({
   imports: [PrismaModule, FixturesModule, ApiFootballModule, CompetitionsModule],
   controllers: [StateScoutController],
-  providers: [StateLeagueScoutService, FpfDriver, SumulaParserService],
+  providers: [StateLeagueScoutService, FpfDriver, SumulaParserService, ContingencyScoreService],
   exports: [StateLeagueScoutService],
 })
 export class StateScoutModule {}

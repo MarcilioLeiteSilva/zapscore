@@ -7,6 +7,7 @@ import { FederationDriver, StateScoutMatch, StateScoutTelemetry } from './interf
 import { ApiFootballService } from '../integrations/api-football/api-football.service';
 import { resolveTeamAlias, normalizeTeamString } from './config/team-aliases.config';
 import { SumulaParserService } from './services/sumula-parser.service';
+import { ContingencyScoreService } from './services/contingency-score.service';
 import { ScorerAgentService } from '../competitions/scorer-agent.service';
 
 @Injectable()
@@ -34,6 +35,7 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
     private readonly apiFootball: ApiFootballService,
     private readonly fpfDriver: FpfDriver,
     private readonly sumulaParser: SumulaParserService,
+    private readonly contingencyScore: ContingencyScoreService,
     private readonly scorerAgent: ScorerAgentService,
   ) {
     // Registra drivers disponíveis
@@ -253,6 +255,7 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
             homeTeam: true,
             awayTeam: true,
             league: true,
+            events: true,
           },
         });
 
@@ -287,6 +290,40 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
               }
             } catch (e: any) {
               // Silencioso para não onerar logs
+            }
+
+            // 3. Fallback: Camada de Contingência de Placar Rápido (SuperPlacar, OGol, GE)
+            if (settledHomeGoals === null) {
+              try {
+                const fallback = await this.contingencyScore.findFallbackScore(
+                  fixture.homeTeam.name,
+                  fixture.awayTeam.name,
+                  fixture.date,
+                );
+                if (fallback && typeof fallback.homeScore === 'number' && typeof fallback.awayScore === 'number') {
+                  settledHomeGoals = fallback.homeScore;
+                  settledAwayGoals = fallback.awayScore;
+                  settledSource = `${fallback.source} (Contingência)`;
+
+                  if (fallback.goals && fallback.goals.length > 0 && fixture.events.length === 0) {
+                    for (const g of fallback.goals) {
+                      const teamExtId = g.team === 'home' ? fixture.homeTeam.externalId : fixture.awayTeam.externalId;
+                      await this.prisma.fixtureEvent.create({
+                        data: {
+                          fixtureId: fixture.id,
+                          time: g.minute,
+                          type: 'Goal',
+                          detail: 'Normal Goal',
+                          player: g.player,
+                          teamId: teamExtId,
+                        },
+                      });
+                    }
+                  }
+                }
+              } catch (e: any) {
+                this.logger.warn(`[STATE-SCOUT] Falha na contingência rápida: ${e.message}`);
+              }
             }
           }
 
@@ -757,6 +794,62 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
           }
 
           processedCount++;
+        }
+
+        // Varredura de Contingência para partidas passadas que a federação ainda deixou com placar em branco
+        for (const fixture of fixtures) {
+          if (fixture.statusShort === 'FT') continue;
+
+          const matchTime = new Date(fixture.date).getTime();
+          const isPastMatch = Date.now() - matchTime > 105 * 60 * 1000;
+
+          if (isPastMatch) {
+            const fallback = await this.contingencyScore.findFallbackScore(
+              fixture.homeTeam.name,
+              fixture.awayTeam.name,
+              fixture.date,
+            );
+
+            if (fallback && typeof fallback.homeScore === 'number' && typeof fallback.awayScore === 'number') {
+              const updated = await this.prisma.fixture.update({
+                where: { id: fixture.id },
+                data: {
+                  statusShort: 'FT',
+                  statusLong: 'Match Finished',
+                  elapsed: 90,
+                  homeGoals: fallback.homeScore,
+                  awayGoals: fallback.awayScore,
+                },
+                include: { homeTeam: true, awayTeam: true, league: true },
+              });
+
+              details.push(
+                `Placar consolidado via ${fallback.source} (Contingência): ${fixture.homeTeam.name} ${fallback.homeScore} x ${fallback.awayScore} ${fixture.awayTeam.name}`,
+              );
+
+              // Emite WebSocket para os apps móveis
+              this.fixturesGateway.emitFixtureUpdate(updated.id, updated);
+              this.fixturesGateway.emitLeagueUpdate(driver.leagueExternalId, updated);
+
+              if (fallback.goals && fallback.goals.length > 0 && fixture.events.length === 0) {
+                for (const g of fallback.goals) {
+                  const teamExtId = g.team === 'home' ? fixture.homeTeam.externalId : fixture.awayTeam.externalId;
+                  await this.prisma.fixtureEvent.create({
+                    data: {
+                      fixtureId: fixture.id,
+                      time: g.minute,
+                      type: 'Goal',
+                      detail: 'Normal Goal',
+                      player: g.player,
+                      teamId: teamExtId,
+                    },
+                  });
+                  goalsCount++;
+                }
+              }
+              processedCount++;
+            }
+          }
         }
 
         // Recalcula classificação dos grupos e artilharia oficial
