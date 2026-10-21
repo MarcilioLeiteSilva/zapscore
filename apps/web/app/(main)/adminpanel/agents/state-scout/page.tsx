@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Cpu,
   Layers,
-  Sparkles
+  Sparkles,
+  Camera
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://zapscore-zapscore-api.gtalg3.easypanel.host";
@@ -165,6 +166,19 @@ export default function StateScoutAgentDashboardPage() {
                 <Activity className="w-4 h-4" />
               )}
               Matchday Live 60s
+            </button>
+            <button
+              onClick={() => triggerAction('sync/player-photos', 'Buscar Fotos OGol (1x/Dia)')}
+              disabled={actionLoading !== null}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium transition-colors shadow-lg shadow-purple-900/30"
+              title="Varre atletas sem foto na artilharia/escalação e busca no OGol com cache permanente"
+            >
+              {actionLoading === 'Buscar Fotos OGol (1x/Dia)' ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+              Buscar Fotos OGol
             </button>
             <button
               onClick={() => triggerAction('reconcile', 'Conciliação Completa')}

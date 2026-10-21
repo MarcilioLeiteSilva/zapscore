@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Query, Logger } from '@nestjs/common';
 import { StateLeagueScoutService } from './state-scout.service';
+import { PlayerPhotoAgentService } from './services/player-photo-agent.service';
 
 @Controller('state-scout')
 export class StateScoutController {
   private readonly logger = new Logger(StateScoutController.name);
 
-  constructor(private readonly scoutService: StateLeagueScoutService) {}
+  constructor(
+    private readonly scoutService: StateLeagueScoutService,
+    private readonly playerPhotoAgent: PlayerPhotoAgentService,
+  ) {}
 
   @Get('status')
   async getStatus() {
@@ -39,5 +43,10 @@ export class StateScoutController {
   @Post('reconcile/live')
   async reconcileLive() {
     return this.scoutService.processMatchdayLive();
+  }
+
+  @Post('sync/player-photos')
+  async syncPlayerPhotos() {
+    return this.playerPhotoAgent.syncMissingPlayerPhotos();
   }
 }
