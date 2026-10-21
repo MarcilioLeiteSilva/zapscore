@@ -9,6 +9,7 @@ import { FpfDriver } from './drivers/fpf.driver';
 import { SumulaParserService } from './services/sumula-parser.service';
 import { ContingencyScoreService } from './services/contingency-score.service';
 import { PlayerPhotoAgentService } from './services/player-photo-agent.service';
+import { OgolLineupScoutService } from './services/ogol-lineup-scout.service';
 
 @Module({
   imports: [PrismaModule, FixturesModule, ApiFootballModule, CompetitionsModule],
@@ -19,7 +20,8 @@ import { PlayerPhotoAgentService } from './services/player-photo-agent.service';
     SumulaParserService,
     ContingencyScoreService,
     PlayerPhotoAgentService,
+    OgolLineupScoutService,
   ],
-  exports: [StateLeagueScoutService, PlayerPhotoAgentService],
+  exports: [StateLeagueScoutService, PlayerPhotoAgentService, OgolLineupScoutService],
 })
 export class StateScoutModule {}

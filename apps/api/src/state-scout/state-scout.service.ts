@@ -241,15 +241,15 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
       try {
         const fedMatches = await driver.fetchSchedule();
 
-        // Busca partidas pendentes cujo horário já passou (início há pelo menos 90 min)
-        const ninetyMinutesAgo = new Date(Date.now() - 90 * 60 * 1000);
+        // Busca partidas cujo horário já começou (início há pelo menos 45 min para cobrir andamento e encerramento)
+        const fortyFiveMinutesAgo = new Date(Date.now() - 45 * 60 * 1000);
 
         const pendingFixtures = await this.prisma.fixture.findMany({
           where: {
             league: { externalId: driver.leagueExternalId },
             season: driver.season,
             statusShort: { in: ['NS', '1H', '2H', 'HT', 'LIVE'] },
-            date: { lte: ninetyMinutesAgo },
+            date: { lte: fortyFiveMinutesAgo },
           },
           include: {
             homeTeam: true,
@@ -300,7 +300,17 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
                   fixture.awayTeam.name,
                   fixture.date,
                 );
-                if (fallback && typeof fallback.homeScore === 'number' && typeof fallback.awayScore === 'number') {
+
+                const elapsedFromKickoff = Date.now() - fixture.date.getTime();
+                const isDurationEligibleForFT = elapsedFromKickoff >= 120 * 60 * 1000;
+
+                if (
+                  fallback &&
+                  fallback.isFinished &&
+                  isDurationEligibleForFT &&
+                  typeof fallback.homeScore === 'number' &&
+                  typeof fallback.awayScore === 'number'
+                ) {
                   settledHomeGoals = fallback.homeScore;
                   settledAwayGoals = fallback.awayScore;
                   settledSource = `${fallback.source} (Contingência)`;
@@ -319,6 +329,36 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
                         },
                       });
                     }
+                  }
+                } else if (
+                  fallback &&
+                  !fallback.isFinished &&
+                  typeof fallback.homeScore === 'number' &&
+                  typeof fallback.awayScore === 'number'
+                ) {
+                  // Partida em andamento: atualiza placar ao vivo mantendo status ativo (2H)
+                  const scoreChanged =
+                    fixture.homeGoals !== fallback.homeScore ||
+                    fixture.awayGoals !== fallback.awayScore;
+                  const statusNeedsUpdate = !['1H', '2H', 'HT', 'LIVE'].includes(fixture.statusShort || '');
+
+                  if (scoreChanged || statusNeedsUpdate) {
+                    const liveUpdated = await this.prisma.fixture.update({
+                      where: { id: fixture.id },
+                      data: {
+                        homeGoals: fallback.homeScore,
+                        awayGoals: fallback.awayScore,
+                        statusShort: '2H',
+                        statusLong: '2nd Half',
+                      },
+                      include: { homeTeam: true, awayTeam: true, league: true },
+                    });
+                    this.fixturesGateway.emitFixtureUpdate(liveUpdated.id, liveUpdated);
+                    this.fixturesGateway.emitLeagueUpdate(driver.leagueExternalId, liveUpdated);
+                    const liveMsg = `[AO VIVO] Placar em andamento via ${fallback.source}: ${fixture.homeTeam.name} ${fallback.homeScore} x ${fallback.awayScore} ${fixture.awayTeam.name} (2H)`;
+                    details.push(liveMsg);
+                    this.addLog('INFO', liveMsg);
+                    this.logger.log(`[STATE-SCOUT] ${liveMsg}`);
                   }
                 }
               } catch (e: any) {
@@ -805,7 +845,7 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
           if (fixture.statusShort === 'FT') continue;
 
           const matchTime = new Date(fixture.date).getTime();
-          const isPastMatch = Date.now() - matchTime > 105 * 60 * 1000;
+          const isPastMatch = Date.now() - matchTime > 120 * 60 * 1000;
 
           if (isPastMatch) {
             const fallback = await this.contingencyScore.findFallbackScore(
@@ -814,7 +854,12 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
               fixture.date,
             );
 
-            if (fallback && typeof fallback.homeScore === 'number' && typeof fallback.awayScore === 'number') {
+            if (
+              fallback &&
+              fallback.isFinished &&
+              typeof fallback.homeScore === 'number' &&
+              typeof fallback.awayScore === 'number'
+            ) {
               const updated = await this.prisma.fixture.update({
                 where: { id: fixture.id },
                 data: {

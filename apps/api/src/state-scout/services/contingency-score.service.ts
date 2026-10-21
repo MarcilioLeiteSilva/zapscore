@@ -159,10 +159,18 @@ export class ContingencyScoreService {
               }
             });
 
+          // Valida rigorosamente se a partida está de fato encerrada no SuperPlacar
+          const statusText = $(el).find('.status').text().trim().toLowerCase();
+          const isEncerrado =
+            $(el).hasClass('encerrado') ||
+            statusText.includes('encerrado') ||
+            statusText.includes('fim') ||
+            statusText.includes('final');
+
           matchFound = {
             homeScore,
             awayScore,
-            isFinished: true,
+            isFinished: isEncerrado,
             source: 'SuperPlacar',
             goals,
           };

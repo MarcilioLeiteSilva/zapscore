@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Query, Logger, Body } from '@nestjs/common';
 import { StateLeagueScoutService } from './state-scout.service';
-import { PlayerPhotoAgentService } from './services/player-photo-agent.service';
+import { PlayerPhotoAgentService, PhotoSyncFrequency } from './services/player-photo-agent.service';
+import { OgolLineupScoutService } from './services/ogol-lineup-scout.service';
 
 @Controller('state-scout')
 export class StateScoutController {
@@ -9,11 +10,22 @@ export class StateScoutController {
   constructor(
     private readonly scoutService: StateLeagueScoutService,
     private readonly playerPhotoAgent: PlayerPhotoAgentService,
+    private readonly ogolLineupScout: OgolLineupScoutService,
   ) {}
 
   @Get('status')
   async getStatus() {
     return this.scoutService.getTelemetry();
+  }
+
+  @Get('player-photos/config')
+  async getPlayerPhotosConfig() {
+    return this.playerPhotoAgent.getConfig();
+  }
+
+  @Post('player-photos/config')
+  async setPlayerPhotosConfig(@Body() body: { frequency: PhotoSyncFrequency }) {
+    return this.playerPhotoAgent.setFrequency(body.frequency);
   }
 
   @Post('reconcile')
@@ -48,5 +60,11 @@ export class StateScoutController {
   @Post('sync/player-photos')
   async syncPlayerPhotos() {
     return this.playerPhotoAgent.syncMissingPlayerPhotos();
+  }
+
+  @Post('sync/ogol-lineups')
+  async syncOgolLineups(@Query('leagueId') leagueId?: string) {
+    const extId = leagueId ? parseInt(leagueId, 10) : 622;
+    return this.ogolLineupScout.syncUpcomingLineups(extId);
   }
 }
