@@ -510,13 +510,13 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
     awayTeamExtId: number,
   ): Promise<boolean> {
     try {
-      const existingLineups = await this.prisma.fixtureLineup.count({ where: { fixtureId } });
-      if (existingLineups > 0) return false;
-
       const parsed = await this.sumulaParser.parseFromUrl(sumulaUrl);
       if (!parsed || (parsed.homeTeam.starters.length === 0 && parsed.awayTeam.starters.length === 0)) {
         return false;
       }
+
+      // Purga alinhamentos anteriores da partida para garantir substituição limpa e sem inconsistências
+      await this.prisma.fixtureLineup.deleteMany({ where: { fixtureId } });
 
       const lineupsToCreate: Array<{
         fixtureId: string;
@@ -777,8 +777,12 @@ export class StateLeagueScoutService implements OnApplicationBootstrap {
             }
           }
 
-          // Se tiver link de súmula e a partida ainda não tem escalação no banco
-          if (fedMatch.sumulaUrl && fixture.lineups.length === 0) {
+          // Se tiver link de súmula e a partida ainda não tem escalação ou falta escalação de um dos times
+          const hasBothTeamsLineups =
+            fixture.lineups.some((l) => l.teamId === fixture.homeTeam.externalId) &&
+            fixture.lineups.some((l) => l.teamId === fixture.awayTeam.externalId);
+
+          if (fedMatch.sumulaUrl && !hasBothTeamsLineups) {
             const ingested = await this.parseAndIngestSumula(
               fixture.id,
               fedMatch.sumulaUrl,

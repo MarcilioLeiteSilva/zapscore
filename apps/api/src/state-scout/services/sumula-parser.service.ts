@@ -102,56 +102,87 @@ export class SumulaParserService {
         el.trim().toLowerCase().includes('relacao de jogadores'),
     );
 
-    if (relacaoIdx !== -1) {
-      // Nome do Mandante
-      result.homeTeam.name = (allTextElements[relacaoIdx + 1] || '').trim();
+    const comissaoIdx = allTextElements.findIndex(
+      (el, i) => i > relacaoIdx && el.toLowerCase().includes('comissão técnica'),
+    );
 
-      let i = relacaoIdx + 8; // Pula os cabeçalhos da tabela do mandante
-      let currentTeam = result.homeTeam;
+    const awayTeamIdx = allTextElements.findIndex(
+      (el, i) =>
+        i > relacaoIdx + 5 &&
+        (comissaoIdx === -1 || i < comissaoIdx) &&
+        (/\s*\/\s*[A-Z]{2}\b/.test(el) || el.includes('/ PE') || el.includes('/PE')),
+    );
 
-      while (i < allTextElements.length) {
+    const parseTeamPlayers = (startIdx: number, endIdx: number): ParsedSumulaPlayer[] => {
+      const players: ParsedSumulaPlayer[] = [];
+      let i = startIdx;
+      while (i < endIdx) {
         const val = (allTextElements[i] || '').trim();
-
-        // Identifica o início da equipe visitante
-        if (
-          val &&
-          (val.includes('/ PE') ||
-            val.includes('/PE') ||
-            val.toLowerCase().includes('comissão técnica') ||
-            val.toLowerCase().includes('comissao tecnica'))
-        ) {
-          if (val.toLowerCase().includes('comiss')) break;
-          result.awayTeam.name = val;
-          currentTeam = result.awayTeam;
-          i += 7; // Pula o cabeçalho da tabela do visitante
-          continue;
-        }
-
         const num = parseInt(val, 10);
-        if (!isNaN(num) && num > 0 && num <= 99) {
-          const apelido = (allTextElements[i + 1] || '').trim();
-          const nomeCompleto = (allTextElements[i + 2] || apelido).trim().replace(/\s*\.\.\.$/, '');
-
-          // Em súmulas CBF/FPF os primeiros 11 atletas listados de cada equipe são sempre os titulares
-          const isStarter = currentTeam.starters.length < 11;
-
-          const player: ParsedSumulaPlayer = {
-            number: num,
-            nickname: apelido,
-            name: nomeCompleto,
-            isStarter,
-          };
-
-          if (isStarter) {
-            currentTeam.starters.push(player);
-          } else {
-            currentTeam.substitutes.push(player);
+        if (!isNaN(num) && num > 0 && num <= 99 && val.length <= 2) {
+          let name = '';
+          let nickname = '';
+          let j = i + 1;
+          while (j < endIdx) {
+            const nextVal = (allTextElements[j] || '').trim();
+            const nextNum = parseInt(nextVal, 10);
+            if (!isNaN(nextNum) && nextNum > 0 && nextNum <= 99 && nextVal.length <= 2) {
+              break;
+            }
+            if (
+              nextVal === 'T' ||
+              nextVal === 'R' ||
+              nextVal === 'P' ||
+              nextVal === 'A' ||
+              nextVal === 'Nº' ||
+              nextVal === 'Apelido' ||
+              nextVal === 'Nome Completo' ||
+              nextVal === 'T/R' ||
+              nextVal === 'P/A' ||
+              nextVal === 'CBF' ||
+              /^\d{5,7}$/.test(nextVal)
+            ) {
+              // Metadata token
+            } else if (/[a-zA-ZÀ-ÿ]/.test(nextVal)) {
+              if (!name) {
+                name = nextVal.replace(/\s*\.\.\.$/, '');
+              } else if (!nickname) {
+                nickname = name;
+                name = nextVal.replace(/\s*\.\.\.$/, '');
+              }
+            }
+            j++;
           }
-          i += 6;
+          const isStarter = players.length < 11;
+          players.push({
+            number: num,
+            name: name || `Jogador #${num}`,
+            nickname: nickname || name,
+            isStarter,
+          });
+          i = j;
         } else {
           i++;
         }
       }
+      return players;
+    };
+
+    if (relacaoIdx !== -1 && awayTeamIdx !== -1) {
+      result.homeTeam.name = (allTextElements[relacaoIdx + 1] || '').trim();
+      result.awayTeam.name = (allTextElements[awayTeamIdx] || '').trim();
+
+      const homeEnd = awayTeamIdx;
+      const awayEnd = comissaoIdx !== -1 ? comissaoIdx : allTextElements.length;
+
+      const homePlayers = parseTeamPlayers(relacaoIdx, homeEnd);
+      const awayPlayers = parseTeamPlayers(awayTeamIdx, awayEnd);
+
+      result.homeTeam.starters = homePlayers.filter((p) => p.isStarter);
+      result.homeTeam.substitutes = homePlayers.filter((p) => !p.isStarter);
+
+      result.awayTeam.starters = awayPlayers.filter((p) => p.isStarter);
+      result.awayTeam.substitutes = awayPlayers.filter((p) => !p.isStarter);
     }
 
     // 2. Extração dos Gols Oficiais da Partida
