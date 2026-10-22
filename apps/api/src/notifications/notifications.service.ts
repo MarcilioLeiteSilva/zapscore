@@ -198,12 +198,29 @@ export class NotificationsService {
   /**
    * Gera o resumo conciso e direto de placares da última rodada finalizada de uma liga
    */
-  async getRoundSummary(leagueId: number, season: number = 2026) {
+  async getRoundSummary(leagueId: number, season?: number) {
     try {
+      let targetSeason = season ? Number(season) : undefined;
+
+      // Se a temporada não foi informada, resolve dinamicamente a temporada ativa da competição
+      if (!targetSeason) {
+        const comp = SUPPORTED_COMPETITIONS.find((c) => c.externalId === Number(leagueId));
+        if (comp && comp.activeSeasons && comp.activeSeasons.length > 0) {
+          targetSeason = comp.activeSeasons[0];
+        } else {
+          const latestFixture = await this.prisma.fixture.findFirst({
+            where: { league: { externalId: Number(leagueId) } },
+            orderBy: { date: 'desc' },
+            select: { season: true },
+          });
+          targetSeason = latestFixture?.season || 2026;
+        }
+      }
+
       const fixtures = await this.prisma.fixture.findMany({
         where: {
           league: { externalId: Number(leagueId) },
-          season: Number(season),
+          season: targetSeason,
           statusShort: { in: ['FT', 'AET', 'PEN', '1H', '2H', 'HT', 'LIVE'] },
         },
         include: {
@@ -321,7 +338,7 @@ export class NotificationsService {
    * Enfileira o resumo de placares de uma rodada finalizada para aprovação do operador
    * e agenda o disparo automático de fallback para +60 minutos.
    */
-  async enqueueRoundSummary(leagueId: number, season: number = 2026) {
+  async enqueueRoundSummary(leagueId: number, season?: number) {
     try {
       const summary = await this.getRoundSummary(leagueId, season);
       if (!summary.success || !summary.round) {

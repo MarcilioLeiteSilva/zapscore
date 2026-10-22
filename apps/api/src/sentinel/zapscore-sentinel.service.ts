@@ -191,6 +191,7 @@ export class ZapScoreSentinelService {
             id: true,
             statusShort: true,
             round: true,
+            season: true,
           },
         });
 
@@ -200,7 +201,8 @@ export class ZapScoreSentinelService {
         const allFinished = todayFixtures.every((f) => ['FT', 'AET', 'PEN'].includes(f.statusShort || ''));
 
         if (allFinished) {
-          const result = await this.notificationsService.enqueueRoundSummary(comp.externalId, 2026);
+          const targetSeason = todayFixtures[0]?.season || comp.activeSeasons?.[0] || 2026;
+          const result = await this.notificationsService.enqueueRoundSummary(comp.externalId, targetSeason);
           if (result.success && result.queueItem) {
             completedRoundsCount++;
             this.logger.log(`[Sentinel] 🏁 Todas as ${todayFixtures.length} partidas de hoje da liga ${comp.name} foram concluídas (FT). Resumo pronto no Agente Push.`);

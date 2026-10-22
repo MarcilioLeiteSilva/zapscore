@@ -15,7 +15,7 @@ export class NotificationsController {
     @Query('leagueId') leagueId: number,
     @Query('season') season?: number,
   ) {
-    return this.notificationsService.getRoundSummary(Number(leagueId), season ? Number(season) : 2026);
+    return this.notificationsService.getRoundSummary(Number(leagueId), season ? Number(season) : undefined);
   }
 
   @Get('lineups-alert')
@@ -56,7 +56,7 @@ export class NotificationsController {
     @Body('leagueId') leagueId: number,
     @Body('season') season?: number,
   ) {
-    return this.notificationsService.enqueueRoundSummary(Number(leagueId), season ? Number(season) : 2026);
+    return this.notificationsService.enqueueRoundSummary(Number(leagueId), season ? Number(season) : undefined);
   }
 
   @Post('queue/:id/dispatch')
