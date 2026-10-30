@@ -28,10 +28,14 @@ class TableFixPage extends StatelessWidget {
         
         final groupKeys = groups.keys.toList()..sort();
 
-        return ListView.builder(
-          padding: const EdgeInsets.only(left: 10, right: 10, top: 12, bottom: 120),
-          itemCount: groupKeys.length,
-          itemBuilder: (context, index) {
+        return Column(
+          children: [
+            const AdBannerWidget(),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.only(left: 10, right: 10, top: 12, bottom: 120),
+                itemCount: groupKeys.length,
+                itemBuilder: (context, index) {
             final groupName = groupKeys[index];
             final standings = groups[groupName]!;
             final isMatchGroup = standings.any((s) => s.teamId == homeTeamId || s.teamId == awayTeamId);
@@ -168,8 +172,11 @@ class TableFixPage extends StatelessWidget {
               ],
             );
           },
-        );
-      },
+        ),
+      ),
+    ],
+  );
+},
     );
   }
 }

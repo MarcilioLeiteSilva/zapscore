@@ -257,7 +257,10 @@ class FixturePage extends StatelessWidget {
                               return const HomeNewsCarouselSection();
                             }
                             if (i == displayCompetitions.length + 2) {
-                              return const AppNativeAdWidget(variant: NativeAdVariant.fixture);
+                              return const AppNativeAdWidget(
+                                key: ValueKey('home_native_ad_fixture'),
+                                variant: NativeAdVariant.fixture,
+                              );
                             }
                             return const HomeVideoCarouselSection();
                           },

@@ -2,15 +2,21 @@
 ZAPSCORE - CAMPEONATO PERNAMBUCANO - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
 ================================================================================
 
-Data: 25/09/2026
+Data: 29/10/2026
 Nome do App: Pernambucano
 Package / Application ID: com.zapscore.estadualpernambucano
-Versão: 1.0.0
-Version Code: 2 (1.0.0+2)
+Versão: 1.0.2
+Version Code: 4 (1.0.2+4)
 
 --------------------------------------------------------------------------------
 1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
 --------------------------------------------------------------------------------
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.2+4)
+- zapscore_pernambucano_v1.0.2+4.aab -> Cópia nomeada do App Bundle para versionamento (Versão 4)
+- zapscore_pernambucano_v1.0.1+3.aab -> Cópia nomeada do App Bundle anterior (Versão 3)
+- zapscore_pernambucano_v1.0.0+2.aab -> Cópia nomeada do App Bundle anterior (Versão 2)
+- zapscore_pernambucano_v1.0.0+1.aab -> Cópia nomeada do App Bundle inicial (Versão 1)
+- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8
 - upload-keystore.jks             -> Chave de assinatura oficial exclusiva gerada do zero para este app
 - key.properties                  -> Arquivo de credenciais de assinatura do Gradle
 - INFO_RELEASE.txt                -> Este relatório técnico de auditoria e credenciais

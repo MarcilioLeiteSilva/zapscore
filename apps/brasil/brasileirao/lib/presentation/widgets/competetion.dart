@@ -449,13 +449,14 @@ class TableLeaguePage extends StatelessWidget {
         }
         if (state is LeagueLoaded) {
           final activePhase = state.activePhase;
+          Widget content;
 
           // 1. Fase de Grupos (ex: Taça Guanabara - Grupo A e Grupo B)
           if (activePhase != null && activePhase.isGroupStage && activePhase.groups.isNotEmpty) {
             final groupIndex = state.selectedGroupIndex.clamp(0, activePhase.groups.length - 1);
             final currentGroup = activePhase.groups[groupIndex];
 
-            return ListView(
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 // Switcher [Grupo A] [Grupo B]
@@ -505,11 +506,9 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
-          }
-
-          // 2. Quadrangular do Rebaixamento
-          if (activePhase != null && activePhase.isRelegation) {
-            return ListView(
+          } else if (activePhase != null && activePhase.isRelegation) {
+            // 2. Quadrangular do Rebaixamento
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 StandingsTableWidget(
@@ -521,11 +520,9 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
-          }
-
-          // 3. Fases de Mata-Mata / Eliminatórias (Quartas, Semis, Final, Taça Rio)
-          if (activePhase != null && activePhase.isKnockout) {
-            return ListView(
+          } else if (activePhase != null && activePhase.isKnockout) {
+            // 3. Fases de Mata-Mata / Eliminatórias (Quartas, Semis, Final, Taça Rio)
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 CompetitionBracketWidget(
@@ -534,12 +531,10 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
-          }
-
-          // 4. Pontos Corridos / Liga Única (Brasileirão Série A / Série B)
-          if (activePhase != null && activePhase.isLeague) {
+          } else if (activePhase != null && activePhase.isLeague) {
+            // 4. Pontos Corridos / Liga Única (Brasileirão Série A / Série B)
             final isSerieB = state.selectedLeagueId == AppConfig.brasileiraoSerieBId;
-            return ListView(
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 StandingsTableWidget(
@@ -556,16 +551,23 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
+          } else {
+            // 5. Fallback padrão
+            content = ListView(
+              padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+              children: [
+                StandingsTableWidget(
+                  standings: state.standings,
+                  groupTitle: 'Classificação Geral',
+                ),
+              ],
+            );
           }
 
-          // 5. Fallback padrão
-          return ListView(
-            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+          return Column(
             children: [
-              StandingsTableWidget(
-                standings: state.standings,
-                groupTitle: 'Classificação Geral',
-              ),
+              const AdBannerWidget(),
+              Expanded(child: content),
             ],
           );
         }

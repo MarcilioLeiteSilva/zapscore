@@ -319,6 +319,7 @@ class TableLeaguePage extends StatelessWidget {
         }
         if (state is LeagueLoaded) {
           final activePhase = state.activePhase;
+          Widget content;
 
           // 1. Fase de Grupos (1ª Fase: Grupos A e B; 2ª Fase: Grupos C e D)
           if (activePhase != null && activePhase.isGroupStage && activePhase.groups.isNotEmpty) {
@@ -348,7 +349,7 @@ class TableLeaguePage extends StatelessWidget {
                     ? '4º e 5º colocados disputam a permanência na Série B.'
                     : '4º e 5º de cada grupo disputam o Quadrangular da Permanência.');
 
-            return ListView(
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 HouseHeaderSponsor(leagueId: state.selectedLeagueId),
@@ -406,12 +407,10 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
-          }
-
-          // 2. Quadrangular da Permanência / Rebaixamento
-          if (activePhase != null && activePhase.isRelegation) {
+          } else if (activePhase != null && activePhase.isRelegation) {
+            // 2. Quadrangular da Permanência / Rebaixamento
             final isSerieB = state.selectedLeagueId == AppConfig.pernambucanoSerieBId;
-            return ListView(
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 HouseHeaderSponsor(leagueId: state.selectedLeagueId),
@@ -426,11 +425,9 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
-          }
-
-          // 3. Fases de Mata-Mata / Eliminatórias (Quartas, Semis, 5º Lugar, 3º Lugar, Final)
-          if (activePhase != null && activePhase.isKnockout) {
-            return ListView(
+          } else if (activePhase != null && activePhase.isKnockout) {
+            // 3. Fases de Mata-Mata / Eliminatórias (Quartas, Semis, 5º Lugar, 3º Lugar, Final)
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 HouseHeaderSponsor(leagueId: state.selectedLeagueId),
@@ -440,14 +437,12 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
-          }
-
-          // 4. Pontos Corridos / Liga Única (Quadrangular Final ou Turno Frevo)
-          if (activePhase != null && activePhase.isLeague) {
+          } else if (activePhase != null && activePhase.isLeague) {
+            // 4. Pontos Corridos / Liga Única (Quadrangular Final ou Turno Frevo)
             final isSerieB = state.selectedLeagueId == AppConfig.pernambucanoSerieBId;
             final isFrevo = activePhase.id == 'turno_frevo';
             final isQuadrangular = activePhase.id == 'quadrangular_forro';
-            return ListView(
+            content = ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 HouseHeaderSponsor(leagueId: state.selectedLeagueId),
@@ -463,17 +458,24 @@ class TableLeaguePage extends StatelessWidget {
                 ),
               ],
             );
+          } else {
+            // 5. Fallback padrão
+            content = ListView(
+              padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+              children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
+                StandingsTableWidget(
+                  standings: state.standings,
+                  groupTitle: 'Classificação Geral',
+                ),
+              ],
+            );
           }
 
-          // 5. Fallback padrão
-          return ListView(
-            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+          return Column(
             children: [
-              HouseHeaderSponsor(leagueId: state.selectedLeagueId),
-              StandingsTableWidget(
-                standings: state.standings,
-                groupTitle: 'Classificação Geral',
-              ),
+              const AdBannerWidget(),
+              Expanded(child: content),
             ],
           );
         }

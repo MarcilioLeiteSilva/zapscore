@@ -34,10 +34,16 @@ class _AdBannerWidgetState extends State<AdBannerWidget> with AutomaticKeepAlive
 
     AdSize size = widget.adSize ?? AdSize.banner;
     if (widget.adSize == null) {
-      final width = MediaQuery.of(context).size.width.truncate();
-      final adaptiveSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
-      if (adaptiveSize != null) {
-        size = adaptiveSize;
+      try {
+        final width = MediaQuery.of(context).size.width.truncate();
+        if (width > 0) {
+          final adaptiveSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+          if (adaptiveSize != null) {
+            size = adaptiveSize;
+          }
+        }
+      } catch (e) {
+        debugPrint('[AdBannerWidget] Erro ao calcular tamanho adaptativo: $e');
       }
     }
 
@@ -49,6 +55,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> with AutomaticKeepAlive
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
+          debugPrint('[AdBannerWidget] ✅ Banner carregado com sucesso (${ad.adUnitId})');
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
@@ -56,6 +63,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> with AutomaticKeepAlive
           }
         },
         onAdFailedToLoad: (ad, error) {
+          debugPrint('[AdBannerWidget] ❌ Falha ao carregar banner (${ad.adUnitId}): code=${error.code}, message=${error.message}');
           ad.dispose();
           if (mounted) {
             setState(() {

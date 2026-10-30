@@ -46,9 +46,14 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
     AdSize size = widget.adSize ?? AdSize.banner;
     if (widget.adSize == null) {
       final width = MediaQuery.of(context).size.width.truncate();
-      final adaptiveSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
-      if (adaptiveSize != null) {
-        size = adaptiveSize;
+      if (width <= 0) return;
+      try {
+        final adaptiveSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+        if (adaptiveSize != null) {
+          size = adaptiveSize;
+        }
+      } catch (e) {
+        debugPrint('[AdBannerWidget] Erro ao obter adaptive banner size: $e');
       }
     }
 
@@ -60,6 +65,7 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
+          debugPrint('[AdBannerWidget] ✅ Banner carregado com sucesso');
           if (mounted) {
             setState(() {
               _isAdMobLoaded = true;
@@ -68,6 +74,7 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
           }
         },
         onAdFailedToLoad: (ad, error) {
+          debugPrint('[AdBannerWidget] ❌ Falha ao carregar banner: ${error.message} (code: ${error.code})');
           ad.dispose();
           if (mounted) {
             setState(() {

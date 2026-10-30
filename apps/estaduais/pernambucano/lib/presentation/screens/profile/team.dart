@@ -61,6 +61,7 @@ class _TeamProfileScreenState extends State<TeamProfileScreen> {
         ),
         body: Column(
           children: [
+            const AdBannerWidget(),
             Container(
               padding: const EdgeInsets.all(20),
               child: Column(

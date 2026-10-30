@@ -35,6 +35,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 // Card seletor com setas
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
@@ -97,6 +98,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 if (activePhase.ties.isEmpty && activePhase.fixtures.isEmpty)
                   Center(
                     child: Padding(
@@ -127,6 +129,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -458,6 +461,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 // Switcher [Grupo A] [Grupo B]
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -512,6 +516,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 StandingsTableWidget(
                   standings: activePhase.standings,
                   groupTitle: activePhase.name,
@@ -528,6 +533,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -542,6 +548,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 StandingsTableWidget(
                   standings: activePhase.standings.isNotEmpty ? activePhase.standings : state.standings,
                   groupTitle: activePhase.name,
@@ -558,6 +565,7 @@ class TableLeaguePage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             children: [
+              HouseHeaderSponsor(leagueId: state.selectedLeagueId),
               StandingsTableWidget(
                 standings: state.standings,
                 groupTitle: 'Classificação Geral',

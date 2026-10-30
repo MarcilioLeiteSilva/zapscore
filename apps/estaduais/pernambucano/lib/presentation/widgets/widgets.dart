@@ -37,8 +37,10 @@ import 'standings_table.dart';
 import 'competition_bracket.dart';
 import 'house_header_sponsor.dart';
 import 'house_native_match_card.dart';
+import 'ad_banner.dart';
 import '../../services/ad_service.dart';
 
+export 'ad_banner.dart';
 export 'house_header_sponsor.dart';
 export 'house_native_match_card.dart';
 export 'house_popup_launch.dart';

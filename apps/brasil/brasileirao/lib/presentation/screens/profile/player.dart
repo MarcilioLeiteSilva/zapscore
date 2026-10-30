@@ -60,6 +60,8 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                       // Header Card
                       _buildHeader(),
                       const Gap(15),
+                      const AdBannerWidget(),
+                      const Gap(15),
                       // Personal Info Card
                       _buildPersonalInfo(),
                       const Gap(15),

@@ -14,7 +14,7 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/6300978111'
           : 'ca-app-pub-3940256099942544/2934735716';
     }
-    return 'ca-app-pub-6887857057070736/4013175503';
+    return 'ca-app-pub-6887857057070736/7795754521';
   }
 
   static String get interstitialAdUnitId {
