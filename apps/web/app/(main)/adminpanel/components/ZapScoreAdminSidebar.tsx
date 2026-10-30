@@ -14,7 +14,8 @@ import {
   Bot,
   PanelLeftClose,
   PanelLeftOpen,
-  Megaphone
+  Megaphone,
+  MapPin
 } from 'lucide-react';
 import { ECOSYSTEM_MODULES } from '../registry';
 
@@ -257,6 +258,39 @@ export default function ZapScoreAdminSidebar({
               {!isCollapsed && (
                 <span className="badge badge-ft text-[9px] px-2 py-0.5 font-bold shrink-0">
                   SCOUT
+                </span>
+              )}
+            </Link>
+          </div>
+        </div>
+
+        {/* Audiência & Telemetria */}
+        <div className="border-t border-[var(--border)] pt-4">
+          {!isCollapsed && (
+            <p className="px-3 text-[10px] font-bold uppercase tracking-widest mb-3 text-[var(--text-muted)]">
+              Audiência & Telemetria
+            </p>
+          )}
+          <div className="space-y-2">
+            <Link
+              href="/adminpanel/heatmap"
+              style={{
+                background: isActive('/adminpanel/heatmap') ? 'rgba(255, 31, 31, 0.15)' : 'transparent',
+                borderColor: isActive('/adminpanel/heatmap') ? 'var(--primary)' : 'transparent',
+                color: isActive('/adminpanel/heatmap') ? '#ffffff' : 'var(--text-muted)',
+              }}
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-bold transition-all border hover:text-white hover:bg-[var(--surface-hover)] ${
+                isActive('/adminpanel/heatmap') ? 'border-l-4 border-l-[var(--primary)]' : ''
+              } ${isCollapsed ? 'justify-center px-0' : 'justify-between'}`}
+              title={isCollapsed ? 'Mapa de Calor' : undefined}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <MapPin size={18} className="shrink-0 text-amber-400" />
+                {!isCollapsed && <span className="truncate">Mapa de Calor</span>}
+              </div>
+              {!isCollapsed && (
+                <span className="badge badge-ft text-[9px] px-2 py-0.5 font-bold shrink-0">
+                  GEO
                 </span>
               )}
             </Link>
