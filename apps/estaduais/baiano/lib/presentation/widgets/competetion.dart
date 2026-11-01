@@ -23,6 +23,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                const AdBannerWidget(),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -49,6 +50,15 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
             itemBuilder: (_, i) {
               final fix = phaseFixtures[i];
+              if (i == 0) {
+                return Column(
+                  children: [
+                    const AdBannerWidget(),
+                    const Gap(10),
+                    CardFixtureLeagueItem(fixture: fix),
+                  ],
+                );
+              }
               if (i > 0 && i % 4 == 0) {
                 return Column(
                   children: [
@@ -351,6 +361,8 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -365,6 +377,8 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 StandingsTableWidget(
                   standings: activePhase.standings.isNotEmpty ? activePhase.standings : state.standings,
                   groupTitle: activePhase.name,
@@ -382,6 +396,8 @@ class TableLeaguePage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             children: [
+              const AdBannerWidget(),
+              HouseHeaderSponsor(leagueId: state.selectedLeagueId),
               StandingsTableWidget(
                 standings: state.standings,
                 groupTitle: 'Classificação Geral',
@@ -503,7 +519,18 @@ class RoundLeaguePage extends StatelessWidget {
             }
             return ListView.separated(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
-              itemBuilder: (_, i) => CardFixtureLeagueItem(fixture: fixtures[i]),
+              itemBuilder: (_, i) {
+                if (i == 0) {
+                  return Column(
+                    children: [
+                      const AdBannerWidget(),
+                      const Gap(10),
+                      CardFixtureLeagueItem(fixture: fixtures[i]),
+                    ],
+                  );
+                }
+                return CardFixtureLeagueItem(fixture: fixtures[i]);
+              },
               separatorBuilder: (_, i) => const Gap(10),
               itemCount: fixtures.length,
             );
@@ -529,6 +556,7 @@ class RoundLeaguePage extends StatelessWidget {
 
           return Column(
             children: [
+              const AdBannerWidget(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -669,25 +697,43 @@ class TopScoresList extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state is LeagueLoaded) {
-          return ListView.separated(
-            shrinkWrap: true,
-            physics: const ScrollPhysics(),
-            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
-            itemBuilder: (_, i) {
-              final scorer = state.scorers[i];
-              return Ink(
-                width: context.width,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(15),
+          if (state.scorers.isEmpty) {
+            return Column(
+              children: [
+                const AdBannerWidget(),
+                Expanded(
+                  child: Center(child: Text('no_data_found'.tr(context))),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-                child: CardTopScores(scorer: scorer, rank: i + 1),
-              );
-            },
-            separatorBuilder: (_, i) => const Gap(15),
-            itemCount: state.scorers.length,
+              ],
+            );
+          }
+
+          return Column(
+            children: [
+              const AdBannerWidget(),
+              Expanded(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const ScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+                  itemBuilder: (_, i) {
+                    final scorer = state.scorers[i];
+                    return Ink(
+                      width: context.width,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+                      child: CardTopScores(scorer: scorer, rank: i + 1),
+                    );
+                  },
+                  separatorBuilder: (_, i) => const Gap(15),
+                  itemCount: state.scorers.length,
+                ),
+              ),
+            ],
           );
         }
         return const SizedBox();

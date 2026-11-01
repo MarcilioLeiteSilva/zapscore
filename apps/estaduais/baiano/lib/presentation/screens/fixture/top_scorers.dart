@@ -62,6 +62,7 @@ class _TopScorersScreenState extends State<TopScorersScreen> {
       ),
       body: Column(
         children: [
+          const AdBannerWidget(),
           // Seletor de Abas Série A e Série A2
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

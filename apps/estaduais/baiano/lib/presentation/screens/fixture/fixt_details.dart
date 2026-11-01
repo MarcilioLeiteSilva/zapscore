@@ -113,21 +113,28 @@ class _FixtureDetailsState extends State<FixtureDetails> {
               body: MediaQuery.removePadding(
                 context: context,
                 removeTop: true,
-                child: state is FixtureLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : [
-                        const InfoFixPage(),
-                        const SummaryFixPage(),
-                        TacticalCommentsFixPage(fixture: currentFixture),
-                        AiAnalysisFixPage(fixture: currentFixture),
-                        ReportFixPage(
-                          leagueId: currentFixture.leagueId,
-                        ),
-                        const StatsFixPage(),
-                        const LineupsFixPage(),
-                        const TableFixPage(),
-                        const H2hFixPage(),
-                      ][indexTab],
+                child: Column(
+                  children: [
+                    const AdBannerWidget(),
+                    Expanded(
+                      child: state is FixtureLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : [
+                              const InfoFixPage(),
+                              const SummaryFixPage(),
+                              TacticalCommentsFixPage(fixture: currentFixture),
+                              AiAnalysisFixPage(fixture: currentFixture),
+                              ReportFixPage(
+                                leagueId: currentFixture.leagueId,
+                              ),
+                              const StatsFixPage(),
+                              const LineupsFixPage(),
+                              const TableFixPage(),
+                              const H2hFixPage(),
+                            ][indexTab],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

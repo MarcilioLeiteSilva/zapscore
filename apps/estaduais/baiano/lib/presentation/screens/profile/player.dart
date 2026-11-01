@@ -63,6 +63,8 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                       // Personal Info Card
                       _buildPersonalInfo(),
                       const Gap(15),
+                      const AdBannerWidget(),
+                      const Gap(15),
                       // Stats Card
                       if (player!.statistics.isNotEmpty) ...[
                         for (int i = 0; i < (player!.statistics.length > 2 ? 2 : player!.statistics.length); i++)

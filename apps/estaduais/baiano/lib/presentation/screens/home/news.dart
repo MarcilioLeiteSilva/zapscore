@@ -212,7 +212,7 @@ class _NewsPageState extends State<NewsPage> {
                     if (carouselNews.isNotEmpty)
                       SizedBox(
                         width: context.width,
-                        height: context.height * .35,
+                        height: context.height * .36,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 10),

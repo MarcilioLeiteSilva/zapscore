@@ -780,9 +780,16 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
           AnimatedCrossFade(
             firstChild: Column(
               children: [
-                if (comp.matches.isNotEmpty)
-                  ...comp.matches.map((match) => CardFixtureItem(fixture: match))
-                else
+                if (comp.matches.isNotEmpty) ...[
+                  for (int idx = 0; idx < comp.matches.length; idx++) ...[
+                    CardFixtureItem(fixture: comp.matches[idx]),
+                    if (idx == 1 || (comp.matches.length == 1 && idx == 0))
+                      HouseNativeMatchCard(
+                        leagueId: int.tryParse(comp.league.id),
+                        margin: const EdgeInsets.only(right: 15, top: 6, bottom: 6),
+                      ),
+                  ],
+                ] else
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
                     child: Center(

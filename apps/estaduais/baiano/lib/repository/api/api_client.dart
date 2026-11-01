@@ -121,8 +121,9 @@ class ApiClient {
     }
   }
 
-  Future<List<Fixture>> getRecentFixtures(int leagueId, {int limit = 1}) async {
-    final response = await http.get(Uri.parse('$baseUrl/fixtures?leagueId=$leagueId&limit=$limit'));
+  Future<List<Fixture>> getRecentFixtures(int leagueId, {int limit = 1, int? season}) async {
+    final seasonParam = season != null ? '&season=$season' : '';
+    final response = await http.get(Uri.parse('$baseUrl/fixtures?leagueId=$leagueId&limit=$limit$seasonParam'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is List) {
@@ -145,9 +146,9 @@ class ApiClient {
       // Ignore and try recent
     }
 
-    // 2. Try recent (last match)
+    // 2. Try recent (last match) da temporada 2027
     try {
-      final recent = await getRecentFixtures(leagueId, limit: 1);
+      final recent = await getRecentFixtures(leagueId, limit: 1, season: 2027);
       if (recent.isNotEmpty) {
         return recent.first;
       }
@@ -159,7 +160,7 @@ class ApiClient {
   }
 
   Future<List<Standing>> getStandings(int leagueId, {int? season}) async {
-    final response = await http.get(Uri.parse('$baseUrl/standings?leagueId=$leagueId&season=${season ?? 2026}'));
+    final response = await http.get(Uri.parse('$baseUrl/standings?leagueId=$leagueId&season=${season ?? 2027}'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is List) {
@@ -171,7 +172,7 @@ class ApiClient {
   }
 
   Future<List<Scorer>> getScorers(int leagueId, {int? season}) async {
-    final response = await http.get(Uri.parse('$baseUrl/competitions/$leagueId/scorers?season=${season ?? 2026}'));
+    final response = await http.get(Uri.parse('$baseUrl/competitions/$leagueId/scorers?season=${season ?? 2027}'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is List) {

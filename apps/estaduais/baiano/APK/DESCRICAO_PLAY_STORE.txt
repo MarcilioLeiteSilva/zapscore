@@ -1,0 +1,66 @@
+================================================================================
+FICHA TÉCNICA E DESCRIÇÃO COMPLETA PARA A GOOGLE PLAY STORE
+APLICATIVO: BAIANÃO (CAMPEONATO BAIANO)
+PACKAGE: com.zapscore.estadualbaiano
+================================================================================
+
+1. TÍTULO DO APP (Máximo 30 caracteres)
+--------------------------------------------------------------------------------
+Baianão 2026: Tabela e Jogos
+(Opção 2: Baianão: Futebol em Tempo Real)
+(Opção 3: Baianão: Jogos e Notícias)
+
+
+2. BREVE DESCRIÇÃO (Máximo 80 caracteres)
+--------------------------------------------------------------------------------
+Jogos ao vivo, gols em tempo real, tabela e notícias do Campeonato Baiano.
+(74 caracteres)
+
+
+3. DESCRIÇÃO COMPLETA (Até 4.000 caracteres)
+--------------------------------------------------------------------------------
+Viva toda a vibração e a paixão do futebol da Bahia na palma da sua mão! O aplicativo oficial do Baianão é a sua arquibancada digital completa para acompanhar tudo o que acontece no Campeonato Baiano em tempo real, com a máxima velocidade de atualização, dados aprofundados e cobertura de ponta a ponta dos seus clubes favoritos.
+
+Acompanhe cada detalhe do histórico e tradicional clássico Ba-Vi na Arena Fonte Nova e no Barradão, e vibre em cada rodada com Esporte Clube Bahia, Esporte Clube Vitória, Jacuipense, Juazeirense, Barcelona de Ilhéus, Jequié, Atlético de Alagoinhas, Itabuna, Jacobina, Bahia de Feira, Fluminense de Feira e muito mais!
+
+🔥 PRINCIPAIS FUNCIONALIDADES:
+
+⚽ NOTIFICAÇÕES INSTANTÂNEAS DE GOLS E PARTIDAS
+Receba alertas rápidos em tempo real no instante em que a rede balançar! Configure seus clubes favoritos para receber notificações automáticas de início de jogo, gols, cartões, pênaltis, intervalo e apito final.
+
+📊 TABELA DE CLASSIFICAÇÃO E FASES AO VIVO
+Acompanhe a tabela do Baianão Série A atualizada minuto a minuto com critérios oficiais de desempate, pontuação, saldo de gols, zonas de classificação para as Semifinais e Grande Final, e luta contra o descenso. Acesso completo também à Série B do Baianão!
+
+📺 ONDE ASSISTIR (TRANSMISSÃO DOS JOGOS)
+Descubra onde assistir a cada partida na TV Aberta (TVE Bahia), TV Fechada / PPV (Premiere / SporTV) ou Streaming (YouTube TVE Bahia e FBF TV) para nunca perder nenhum lance decisivo.
+
+🧠 COMENTÁRIOS TÁTICOS E ANÁLISES COM IA AO VIVO
+Muito além do placar básico! Acompanhe a aba exclusiva de Comentários Táticos durante os jogos ao vivo, trazendo a leitura das fases do jogo, variações de postura tática e probabilidades geradas por inteligência artificial em tempo real.
+
+📋 ESCALAÇÕES OFICIAIS E HISTÓRICO H2H
+Acesse as escalações confirmadas antes de a bola rolar, com números de camisa, formação no gramado, banco de reservas, técnicos e histórico de confrontos diretos (Head-to-Head) entre as equipes.
+
+🎯 ARTILHARIA E ESTATÍSTICAS COMPLETAS
+Ranking dos artilheiros do Baianão, assistências, cartões e estatísticas detalhadas de cada partida (posse de bola, finalizações certas, escanteios e faltas).
+
+📰 NOTÍCIAS E VÍDEOS DE MELHORES MOMENTOS
+Feed completo com as últimas notícias, bastidores, contratações e entrevistas do futebol baiano, além de vídeos dos gols e melhores momentos de cada confronto.
+
+⭐ CLUBES EM DESTAQUE:
+- Bahia
+- Vitória
+- Jacuipense
+- Juazeirense
+- Barcelona de Ilhéus
+- Jequié
+- Atlético de Alagoinhas
+- Itabuna
+- Jacobina
+- Doce Mel
+- Bahia de Feira
+- Fluminense de Feira
+- Galícia
+- Grapiúna
+
+Baixe agora o aplicativo do Baianão e tenha o melhor do futebol baiano sempre com você!
+================================================================================

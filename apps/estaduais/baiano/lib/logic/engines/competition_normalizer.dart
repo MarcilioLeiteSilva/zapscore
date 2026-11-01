@@ -2,9 +2,9 @@ import '../models/competition.dart';
 import '../models/competition_phase.dart';
 import '../models/fixture.dart';
 import '../models/standing.dart';
-import '../models/tie.dart';
 import 'standings_engine.dart';
 import 'bracket_engine.dart';
+import '../data/baiano_2027_schedule.dart';
 
 class CompetitionNormalizer {
   /// Normaliza dados brutos de API em uma estrutura completa e tipada de Competition
@@ -48,7 +48,7 @@ class CompetitionNormalizer {
   }
 
   // =======================================================
-  // --- 🏆 SÉRIE A: CAMPEONATO BAIANO 2026 (ID 602) ---
+  // --- 🏆 SÉRIE A: CAMPEONATO BAIANO (ID 602) ---
   // =======================================================
   // 1ª Fase (10 clubes, turno único, 9 rodadas) -> Semifinais (Jogo Único) -> Final (Jogo Único)
   static Competition _buildBaianoA1({
@@ -59,15 +59,19 @@ class CompetitionNormalizer {
     required List<Standing> rawStandings,
     required List<Fixture> rawFixtures,
   }) {
-    // 1. 1ª Fase: Classificação (9 Rodadas)
-    final firstPhaseFixtures = rawFixtures.where((f) {
+    // Se for 2027 e dados remotos estiverem vazios/incompletos, usa tabela oficial da FBF
+    final bool is2027 = season >= 2027;
+
+    List<Fixture> firstPhaseFixtures = rawFixtures.where((f) {
+      if (is2027 && f.season != 2027) return false;
       final r = (f.round ?? '').toLowerCase();
-      return r.contains('regular season') ||
-          r.contains('1st phase') ||
-          r.contains('primeira fase') ||
-          r.contains('classificatória') ||
-          r.contains('fase de grupos');
+      final isKnockout = r.contains('semi') || r.contains('final') || r.contains('decisão');
+      return !isKnockout;
     }).toList();
+
+    if (is2027 && firstPhaseFixtures.length < 10) {
+      firstPhaseFixtures = Baiano2027Schedule.getOfficialFirstPhaseFixtures();
+    }
 
     firstPhaseFixtures.sort((a, b) {
       final numA = _extractRoundNumber(a.round);
@@ -76,19 +80,32 @@ class CompetitionNormalizer {
       return a.date.compareTo(b.date);
     });
 
-    final sortedStandings = StandingsEngine.sortStandings(rawStandings);
+    List<Standing> sortedStandings = StandingsEngine.sortStandings(rawStandings);
+    if (is2027 && (sortedStandings.isEmpty || sortedStandings.every((s) => s.played == 0))) {
+      final calculated = StandingsEngine.calculateStandingsFromFixtures(firstPhaseFixtures);
+      if (calculated.isNotEmpty && calculated.any((s) => s.played > 0)) {
+        sortedStandings = calculated;
+      } else {
+        sortedStandings = Baiano2027Schedule.getOfficialInitialStandings();
+      }
+    }
+
     final firstPhaseRounds = _extractRounds(firstPhaseFixtures, 9);
 
     final primeiraFasePhase = CompetitionPhase(
-      id: 'primeira_fase_a1',
+      id: is2027 ? 'primeira_fase_2027' : 'primeira_fase_a1',
       name: '1ª Fase (Classificação)',
       type: PhaseType.league,
       legs: 1,
       rounds: firstPhaseRounds,
       fixtures: firstPhaseFixtures,
       standings: sortedStandings,
-      qualificationRuleDescription: '1º ao 4º colocados avançam para as Semifinais. 9º e 10º colocados são rebaixados para a Série B de 2027.',
-      relegationRuleDescription: '9º e 10º colocados são rebaixados para a Série B de 2027.',
+      qualificationRuleDescription: is2027
+          ? '1º ao 4º colocados avançam para as Semifinais. 9º e 10º colocados são rebaixados para a Série B de 2028.'
+          : '1º ao 4º colocados avançam para as Semifinais. 9º e 10º colocados são rebaixados para a Série B de 2027.',
+      relegationRuleDescription: is2027
+          ? '9º e 10º colocados são rebaixados para a Série B de 2028.'
+          : '9º e 10º colocados são rebaixados para a Série B de 2027.',
     );
 
     // 2. Semifinais (Jogo Único: 1º × 4º e 2º × 3º)

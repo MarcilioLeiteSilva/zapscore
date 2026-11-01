@@ -1,0 +1,85 @@
+================================================================================
+ZAPSCORE - BAIANÃO (CAMPEONATO BAIANO) - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
+================================================================================
+
+Data: 01/11/2026
+Nome do App: Baianão
+Package / Application ID: com.zapscore.estadualbaiano
+Versão: 1.0.1
+Version Code: 2 (1.0.1+2)
+
+--------------------------------------------------------------------------------
+1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
+--------------------------------------------------------------------------------
+- app-release.aab             -> Android App Bundle (.aab) oficial assinado para a Google Play Store (53.5 MB)
+- zapscore_baiano_v1.0.1+2.aab -> Cópia nomeada oficial do App Bundle (Versão 2)
+- zapscore_baiano_v1.0.0+1.aab -> Cópia nomeada do App Bundle anterior (Versão 1)
+- mapping.txt                 -> Mapeamento e desofuscação de símbolos ProGuard/R8 para o Play Console
+- upload-keystore.jks         -> Chave de assinatura oficial utilizada para assinar o release
+- baiano-upload-keystore.jks  -> Cópia de segurança da chave com prefixo do app
+- key.properties              -> Arquivo de credenciais de assinatura do Gradle
+- tabela/                     -> Pasta com a tabela básica oficial FBF (baianao_basica_seriea_2027_211026.pdf)
+- DESCRICAO_PLAY_STORE.txt    -> Ficha técnica com títulos, descrição curta e completa para a Play Store
+- INFO_RELEASE.txt            -> Este relatório técnico de auditoria e credenciais
+
+--------------------------------------------------------------------------------
+2. DADOS DA CHAVE DE ASSINATURA (KEYSTORE)
+--------------------------------------------------------------------------------
+- Arquivo Keystore: upload-keystore.jks / baiano-upload-keystore.jks
+- Alias: upload
+- Senha da Keystore (storePassword): zapscore_laliga_key
+- Senha da Chave (keyPassword): zapscore_laliga_key
+- Algoritmo: RSA 2048 bits / SHA384withRSA
+- Validade: até 23/12/2053 (10.000 dias)
+- Proprietário: CN=ZapScore LaLiga, OU=Mobile, O=ZapScore, L=Madrid, ST=Madrid, C=ES
+
+FINGERPRINTS DO CERTIFICADO:
+- SHA-1:
+  C5:6D:ED:47:E3:2D:5F:F4:5B:79:58:E5:0E:44:5C:66:4F:05:36:66
+
+- SHA-256:
+  29:0C:38:B3:23:FB:7A:24:FB:CA:56:08:74:8C:F4:86:55:D0:77:6A:4E:67:75:EA:F3:FF:90:D9:E5:FC:18:17
+
+--------------------------------------------------------------------------------
+3. UNIDADES DE ANÚNCIOS GOOGLE ADMOB (PRODUÇÃO)
+--------------------------------------------------------------------------------
+- AdMob App ID (AndroidManifest.xml):
+  ca-app-pub-6887857057070736~9793644781
+
+- Banner Ad Unit:
+  ca-app-pub-6887857057070736/6890375773
+
+- Interstitial Ad Unit:
+  ca-app-pub-6887857057070736/8288991422
+
+- Native Ad Unit (Small & Medium):
+  ca-app-pub-6887857057070736/4541318106
+
+- Rewarded Ad Unit:
+  ca-app-pub-6887857057070736/1666213763
+
+--------------------------------------------------------------------------------
+4. CHANGELOG DESTA VERSÃO (1.0.1+2 - 01/11/2026)
+--------------------------------------------------------------------------------
+- Atualização Oficial da Temporada 2027 (FBF - Federação Bahiana de Futebol):
+  * Estrutura completa da Série A 2027 com 10 clubes: Bahia, Vitória, Barcelona de Ilhéus,
+    Jequié, Juazeirense, Jacuipense, Fluminense de Feira (promovido), Porto Sport Club (promovido),
+    Galícia (promovido) e SSA FC (promovido).
+  * 45 confrontos da 1ª Fase (9 rodadas de pontos corridos) com chaveamentos oficiais.
+  * Regras de classificação: G4 avança para as Semifinais (1º vs 4º, 2º vs 3º em ida e volta);
+    Z2 (9º e 10º colocados) rebaixados para o Baianão Série B 2028.
+  * Tabela offline de contingência em Baiano2027Schedule e sincronização via API backend.
+
+- Padronização AdMob Oficial ZapScore:
+  * Posicionamento estratégico e unificado de banners (Detalhes do Jogo, Perfil do Clube,
+    Favoritos, Classificação, Rodadas, Jogos, Artilharia e Perfil do Jogador).
+  * Tratamento de altura e respiro no Carrossel de Notícias eliminando sobreposições.
+
+- Integração com a Rede Própria House Ads (ZapScore Ads Network):
+  * Inserção dos 4 formatos de monetização direta:
+    1. HouseAdBanner (banners híbridos com fallback dinâmico entre AdMob e House Ads)
+    2. HouseHeaderSponsor (patrocinador master oficial do Baianão no topo da tabela)
+    3. HouseNativeMatchCard (inserção nativa de anúncios intercalados na lista de jogos)
+    4. HousePopupLaunch (pop-up modal de abertura com controle diário de frequência)
+  * Registro de impressões e cliques em tempo real no backend ZapScore.
+================================================================================

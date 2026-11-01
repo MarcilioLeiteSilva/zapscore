@@ -215,7 +215,7 @@ class CardNewsCarouselItem extends StatelessWidget {
     final date = isVideo ? video?.date : news?.date;
 
     final double cardWidth = onlyThumb ? context.width * .65 : context.width * .95;
-    final double cardHeight = onlyThumb ? 130 : context.height * .22;
+    final double cardHeight = onlyThumb ? 130 : context.height * .19;
 
     return Ink(
       width: cardWidth,
