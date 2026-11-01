@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Logger, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { SyncService } from './sync.service';
+import { Cearense2027SeederService } from './cearense-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -13,7 +14,13 @@ export class SyncController {
     private readonly syncService: SyncService,
     private readonly newsCrawler: NewsCrawlerService,
     private readonly videoCrawler: VideoCrawlerService,
+    private readonly cearenseSeeder: Cearense2027SeederService,
   ) {}
+
+  @Post('seed-cearense-2027')
+  async seedCearense2027() {
+    return this.cearenseSeeder.seedCearense2027();
+  }
 
   @Post('bootstrap')
   async syncBootstrap(@Body() body: { leagueId?: number; season?: number }) {
