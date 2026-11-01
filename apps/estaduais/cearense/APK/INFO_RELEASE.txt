@@ -2,17 +2,19 @@
 ZAPSCORE - CAMPEONATO CEARENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
 ================================================================================
 
-Data: 17/10/2026
+Data: 01/11/2026
 Nome do App: Cearense
 Package / Application ID: com.zapscore.estadualcearense
-Versão: 1.0.1
-Version Code: 2 (1.0.1+2)
+Versão: 1.0.2
+Version Code: 3 (1.0.2+3)
 
 --------------------------------------------------------------------------------
 1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
 --------------------------------------------------------------------------------
 - app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store
-- zapscore_cearense_v1.0.1+2.aab  -> Cópia nomeada do App Bundle para versionamento
+- zapscore_cearense_v1.0.2+3.aab  -> Cópia nomeada do App Bundle para versionamento (Versão 3)
+- zapscore_cearense_v1.0.1+2.aab  -> Cópia nomeada do App Bundle anterior (Versão 2)
+- zapscore_cearense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle anterior (Versão 1)
 - mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8
 - upload-keystore.jks             -> Chave de assinatura oficial utilizada para assinar o release
 - cearense-upload-keystore.jks    -> Cópia de segurança da chave com prefixo do app

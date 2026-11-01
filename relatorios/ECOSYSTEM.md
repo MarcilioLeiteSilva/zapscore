@@ -555,13 +555,55 @@ A gerência de estado e sincronização com a API nos aplicativos Flutter segue 
 
 ### 6.4 Monetização com Google Mobile Ads (AdMob)
 Estruturado através do `AdService` (`lib/services/ad_service.dart`) e `AdBannerWidget`:
-* **Banner Fixo na Home**: Posicionado logo acima do menu inferior (`HomeNavBottom`).
-* **Banners Inline em Listas**:
-  * Lista de Jogos: 1 banner a cada 5 partidas.
-  * Notícias e Vídeos: 1 banner a cada 3 itens.
-  * Aba de IA (`ai_analysis.dart`): 1 banner entre os palpites rápidos e a análise técnica.
-* **Anúncios Intersticiais (Tela Cheia)**:
-  * Exibidos na transição de leitura de notícias (`NewsContentScreen`), player de vídeos (`WatchContentScreen`) e Dashboard de IA (`AiPerformanceDashboardPage`).
+
+#### 📐 Padrão Oficial e Obrigatório de Posicionamento de Banners AdMob (Ecossistema ZapScore)
+Homologado e validado em dispositivo físico (App Cearense como molde de referência oficial), este é o gabarito que **DEVE** ser rigorosamente replicado em todos os aplicativos estaduais, copas e nacionais:
+
+1. **Detalhes da Partida (`fixt_details.dart`)**:
+   * **Posicionamento**: Banner fixo logo abaixo das pílulas de navegação horizontais (`Info`, `Resumo`, `Minuto a Minuto`, `IA`, `Estatísticas`, `Escalações`, `Tabela`, `H2H`), permanecendo visível durante toda a navegação entre as abas.
+   * **Implementação**: Envolver o conteúdo do `body` do `NestedScrollView` em `Column(children: [ const AdBannerWidget(), Expanded(child: ...) ])`.
+   * **Regra de Ouro (Anti-Duplicação)**: A tela de tabela interna da partida (`TableFixPage` em `table.dart`) **NÃO** deve instanciar `AdBannerWidget()`, evitando a exibição de 2 banners empilhados ao clicar na pílula "Tabela".
+
+2. **Detalhes do Clube / Time (`team.dart`)**:
+   * **Posicionamento**: Banner no topo absoluto do corpo da tela, **acima do escudo/logo do clube** e do seletor de abas (`Visão Geral`, `Jogos`, `Tabela`, `Elenco`, `Notícias`).
+   * **Implementação**: Primeiro elemento dentro do `body: Column(children: [ const AdBannerWidget(), Container(escudo e nome), ... ])`.
+   * **Efeito**: Fica fixo no topo, cobrindo e permanecendo visível durante toda a navegação pelas abas do clube.
+
+3. **Favoritos (`favourite.dart`)**:
+   * **Posicionamento**: Banner no topo do corpo da tela.
+   * **Implementação**: Inserido como primeiro item em `FavoriteLoaded` (`Column(children: [ const AdBannerWidget(), const Gap(10), Expanded(...) ])`).
+   * **Efeito**: Cobre o topo de todas as abas de favoritos (`Partidas`, `Competições`, `Times`).
+
+4. **Home (`home.dart`)**:
+   * **Posicionamento**: Banner no rodapé fixo (`bottom`), posicionado imediatamente acima do menu inferior (`HomeNavBottom`).
+   * **Implementação**: `Positioned(bottom: 0, left: 0, right: 0, child: Column(mainAxisSize: MainAxisSize.min, children: [ const AdBannerWidget(), HomeNavBottom(...) ]))`.
+   * **Proteção de Conteúdo (Anti-Overlap)**: O container pai com as páginas deve obrigatoriamente possuir `padding: const EdgeInsets.only(bottom: 145)` para garantir que nenhum card de partida, notícia ou botão seja encoberto pelo banner.
+
+5. **Aba da Competição / Liga (`competetion.dart`)**:
+   * O banner deve ser exibido obrigatoriamente no topo de **todas as 4 pílulas principais**:
+     * **Classificação (`TableLeaguePage`)**: `const AdBannerWidget()` no topo da lista em todas as fases.
+     * **Rodadas (`RoundLeaguePage`)**: `const AdBannerWidget()` no topo do seletor de rodada com setas (acima de `Container(padding: ...)`).
+     * **Jogos (`MatchLeaguePage`)**: `const AdBannerWidget()` no topo da lista de confrontos (acima dos blocos agrupados por rodadas `_RoundHeader`).
+     * **Artilharia (`TopScoresList` / `TopScoreAllPage`)**: `const AdBannerWidget()` no topo da lista de goleadores.
+
+6. **Perfil do Jogador (`player.dart`)**:
+   * **Posicionamento**: Banner logo abaixo do card de informações pessoais do atleta (`_buildPersonalInfo()`) e antes dos cards de estatísticas da temporada (`_buildStats()`).
+
+7. **Tela Dedicada de Artilharia (`top_scorers.dart`)**:
+   * **Posicionamento**: `const AdBannerWidget()` no topo do `body: Column`, antes do seletor de divisão.
+
+8. **Carrossel de Notícias (`news.dart`)**:
+   * Para evitar erros visuais de estouro (*RenderFlex overflow on the bottom*) causados por fontes ampliadas no Android ou títulos longos de 2 linhas, a proporção do carrossel deve seguir:
+     * `cardHeight = onlyThumb ? 130 : context.height * .19` (no widget `CardNewsCarouselItem`).
+     * Container horizontal do carrossel com `height: context.height * .36` (na tela `NewsPage`).
+
+#### 📰 Banners Inline e Anúncios Nativos em Listas
+* **Listas de Notícias (`news.dart`) e Vídeos (`watch.dart`)**: 1 anúncio nativo médio/pequeno (`AppNativeAdWidget`) a cada 6 itens (`i > 0 && i % 6 == 0`).
+* **Aba de IA (`ai_analysis.dart`)**: 1 anúncio nativo entre os palpites rápidos e a análise técnica.
+
+#### 🎬 Anúncios Intersticiais e Vídeos Premiados
+* **Intersticiais (Tela Cheia)**: Cooldown mínimo de 15 segundos (`_minIntervalSeconds = 15;`) gerenciado pelo `AdService`. Exibidos a cada 3 acessos a detalhes de partida ou transições de leitura de notícias/vídeos.
+* **Rewarded (Vídeo Premiado)**: Usado para desbloquear recursos premium de IA ou conteúdo exclusivo.
 
 ---
 
@@ -1002,6 +1044,8 @@ Inter:    ca-app-pub-6887857057070736/5501307878
 Nativo:   ca-app-pub-6887857057070736/4063163773
 Rewarded: ca-app-pub-6887857057070736/1666213763
 ```
+
+> 📌 **Gabarito Oficial de Posicionamento:** Ao configurar os banners e anúncios no novo aplicativo, siga obrigatoriamente as diretrizes de posicionamento homologadas na [Seção 6.4](#-padrão-oficial-e-obrigatório-de-posicionamento-de-banners-admob-ecossistema-zapscore) (Detalhes da Partida, Detalhes do Time, Favoritos, Home, Tabela, Rodadas, Jogos, Artilharia e Perfil do Jogador).
 
 ---
 

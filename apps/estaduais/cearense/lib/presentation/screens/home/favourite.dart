@@ -82,6 +82,7 @@ class _FavoritePageState extends State<FavoritePage> {
             if (state is FavoriteLoaded) {
               return Column(
                 children: [
+                  const AdBannerWidget(),
                   const Gap(10),
                   Expanded(
                     child: [

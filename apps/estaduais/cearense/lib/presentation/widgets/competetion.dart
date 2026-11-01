@@ -23,6 +23,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                const AdBannerWidget(),
                 if (activePhase.ties.isEmpty && activePhase.fixtures.isEmpty)
                   Center(
                     child: Padding(
@@ -53,6 +54,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                const AdBannerWidget(),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -61,7 +63,7 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             );
           }
 
-          // 3. Fases Regulares (1ª Fase, 2ª Fase, Quadrangular da Permanência)
+          // 3. Fases Regulares (1ª Fase com Grupo Único / Jogos agrupados em Rodadas)
           final List<Fixture> phaseFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
               ? activePhase.fixtures
               : state.fixtures;
@@ -75,27 +77,86 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             );
           }
 
-          return ListView.separated(
+          // Agrupar partidas por rodada
+          final Map<String, List<Fixture>> groupedByRound = {};
+          for (final fix in phaseFixtures) {
+            final roundKey = fix.round ?? 'Jogos';
+            groupedByRound.putIfAbsent(roundKey, () => []).add(fix);
+          }
+
+          // Ordenar chaves das rodadas numericamente
+          final sortedRoundKeys = groupedByRound.keys.toList()
+            ..sort((a, b) {
+              final numA = _extractRoundNum(a);
+              final numB = _extractRoundNum(b);
+              if (numA != numB) return numA.compareTo(numB);
+              return a.compareTo(b);
+            });
+
+          return ListView(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
-            itemBuilder: (_, i) {
-              final fix = phaseFixtures[i];
-              if (i > 0 && i % 4 == 0) {
-                return Column(
-                  children: [
-                    const AppNativeAdWidget(variant: NativeAdVariant.fixture),
-                    const Gap(10),
-                    CardFixtureLeagueItem(fixture: fix),
-                  ],
-                );
-              }
-              return CardFixtureLeagueItem(fixture: fix);
-            },
-            separatorBuilder: (_, i) => const Gap(10),
-            itemCount: phaseFixtures.length,
+            children: [
+              const AdBannerWidget(),
+              for (final roundKey in sortedRoundKeys) ...[
+                _RoundHeader(title: formatRound(roundKey, context)),
+                const Gap(4),
+                for (int i = 0; i < (groupedByRound[roundKey] ?? []).length; i++) ...[
+                  CardFixtureLeagueItem(fixture: (groupedByRound[roundKey] ?? [])[i]),
+                  if (i < (groupedByRound[roundKey] ?? []).length - 1) const Gap(10),
+                ],
+                const Gap(12),
+              ],
+            ],
           );
         }
         return const SizedBox();
       },
+    );
+  }
+}
+
+int _extractRoundNum(String r) {
+  final match = RegExp(r'\d+').firstMatch(r);
+  return match != null ? (int.tryParse(match.group(0)!) ?? 999) : 999;
+}
+
+class _RoundHeader extends StatelessWidget {
+  final String title;
+  const _RoundHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColor.accent.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AppColor.accent,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const Gap(10),
+            Text(
+              title,
+              style: GoogleFonts.urbanist(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -399,6 +460,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
                 // Switcher [Grupo A] [Grupo B]
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -454,6 +516,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
                 StandingsTableWidget(
                   standings: activePhase.standings,
                   groupTitle: activePhase.name,
@@ -486,6 +549,7 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
                 StandingsTableWidget(
                   standings: activePhase.standings.isNotEmpty ? activePhase.standings : state.standings,
                   groupTitle: activePhase.name,
@@ -506,6 +570,7 @@ class TableLeaguePage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             children: [
+              const AdBannerWidget(),
               StandingsTableWidget(
                 standings: state.standings,
                 groupTitle: 'Classificação Geral',
@@ -614,41 +679,64 @@ class RoundLeaguePage extends StatelessWidget {
           if (activePhase != null && activePhase.isKnockout) {
             final fixtures = activePhase.fixtures;
             if (fixtures.isEmpty) {
-              return Center(
-                child: Text(
-                  'Confrontos definidos pelo chaveamento.',
-                  style: GoogleFonts.urbanist(color: Colors.white70),
-                ),
+              return Column(
+                children: [
+                  const AdBannerWidget(),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        'Confrontos definidos pelo chaveamento.',
+                        style: GoogleFonts.urbanist(color: Colors.white70),
+                      ),
+                    ),
+                  ),
+                ],
               );
             }
-            return ListView.separated(
-              padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
-              itemBuilder: (_, i) => CardFixtureLeagueItem(fixture: fixtures[i]),
-              separatorBuilder: (_, i) => const Gap(10),
-              itemCount: fixtures.length,
+            return Column(
+              children: [
+                const AdBannerWidget(),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
+                    itemBuilder: (_, i) => CardFixtureLeagueItem(fixture: fixtures[i]),
+                    separatorBuilder: (_, i) => const Gap(10),
+                    itemCount: fixtures.length,
+                  ),
+                ),
+              ],
             );
           }
 
-          // Para fases com rodadas (1ª Fase, 2ª Fase, Quadrangular da Permanência)
+          // Para fases com rodadas (1ª Fase, etc.)
           final availableFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
               ? activePhase.fixtures
               : state.fixtures;
 
-          final roundFixtures = availableFixtures
-              .where((f) => f.round == state.selectedRound)
-              .toList();
+          final roundFixtures = availableFixtures.where((f) {
+            if (f.round == state.selectedRound) return true;
+            final fNum = _extractRoundNum(f.round ?? '');
+            final sNum = _extractRoundNum(state.selectedRound);
+            return fNum != 999 && fNum == sNum;
+          }).toList();
 
           final displayFixtures = roundFixtures.isNotEmpty
               ? roundFixtures
               : (availableFixtures.isNotEmpty ? availableFixtures : <Fixture>[]);
 
           final phaseRounds = cubit.currentPhaseRounds;
-          final currentIndex = phaseRounds.indexOf(state.selectedRound);
+          final currentIndex = phaseRounds.indexWhere((r) {
+            if (r == state.selectedRound) return true;
+            final rNum = _extractRoundNum(r);
+            final sNum = _extractRoundNum(state.selectedRound);
+            return rNum != 999 && rNum == sNum;
+          });
           final hasPrev = currentIndex > 0;
           final hasNext = currentIndex != -1 && currentIndex < phaseRounds.length - 1;
 
           return Column(
             children: [
+              const AdBannerWidget(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -660,7 +748,7 @@ class RoundLeaguePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      onPressed: hasPrev ? cubit.prevRound : null,
+                      onPressed: hasPrev ? () => cubit.changeRound(phaseRounds[currentIndex - 1]) : null,
                       icon: Icon(
                         Icons.arrow_back_ios,
                         size: 18,
@@ -678,7 +766,7 @@ class RoundLeaguePage extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      onPressed: hasNext ? cubit.nextRound : null,
+                      onPressed: hasNext ? () => cubit.changeRound(phaseRounds[currentIndex + 1]) : null,
                       icon: Icon(
                         Icons.arrow_forward_ios,
                         size: 18,
@@ -789,10 +877,14 @@ class TopScoresList extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state is LeagueLoaded) {
-          return ListView.separated(
-            shrinkWrap: true,
-            physics: const ScrollPhysics(),
-            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+          return Column(
+            children: [
+              const AdBannerWidget(),
+              Expanded(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const ScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             itemBuilder: (_, i) {
               final scorer = state.scorers[i];
               return Ink(
@@ -808,8 +900,11 @@ class TopScoresList extends StatelessWidget {
             },
             separatorBuilder: (_, i) => const Gap(15),
             itemCount: state.scorers.length,
-          );
-        }
+          ),
+        ),
+      ],
+    );
+  }
         return const SizedBox();
       },
     );
