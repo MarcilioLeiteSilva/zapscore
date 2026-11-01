@@ -73,7 +73,7 @@ class Fixture {
       id: '',
       externalId: 0,
       leagueId: '',
-      season: 2026,
+      season: 2027,
       date: DateTime.now(),
       homeTeamId: '',
       awayTeamId: '',

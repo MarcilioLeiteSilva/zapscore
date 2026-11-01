@@ -3,6 +3,8 @@ import '../models/competition_phase.dart';
 import '../models/fixture.dart';
 import '../models/standing.dart';
 import '../models/tie.dart';
+import '../models/team.dart';
+import '../data/cearense_2027_schedule.dart';
 import 'standings_engine.dart';
 import 'bracket_engine.dart';
 
@@ -17,6 +19,16 @@ class CompetitionNormalizer {
     required List<Fixture> rawFixtures,
   }) {
     if (leagueId == 609 || leagueId == 607) {
+      if (season >= 2027) {
+        return _buildCearenseA1_2027(
+          leagueId: leagueId,
+          leagueName: leagueName,
+          leagueLogo: leagueLogo,
+          season: season,
+          rawStandings: rawStandings,
+          rawFixtures: rawFixtures,
+        );
+      }
       return _buildCearenseA1(
         leagueId: leagueId,
         leagueName: leagueName,
@@ -45,6 +57,259 @@ class CompetitionNormalizer {
       rawStandings: rawStandings,
       rawFixtures: rawFixtures,
     );
+  }
+
+  // =========================================================================
+  // --- 🏆 SÉRIE A: CAMPEONATO CEARENSE 2027 (TABELA OFICIAL FCF) ---
+  // =========================================================================
+  // 1ª Fase (10 clubes em Grupo Único, 9 rodadas em turno único - 45 jogos)
+  // Semifinais (1º × 4º e 2º × 3º em Jogo Único - 21/02/2027)
+  // Disputa do 3º Lugar (Perdedores Semis em Jogo Único - 28/02/2027)
+  // Grande Final (Ida e Volta - 28/02 e 07/03/2027)
+  static Competition _buildCearenseA1_2027({
+    required int leagueId,
+    required String leagueName,
+    String? leagueLogo,
+    required int season,
+    required List<Standing> rawStandings,
+    required List<Fixture> rawFixtures,
+  }) {
+    // 1. Obter ou completar jogos da 1ª Fase com a tabela oficial da FCF
+    final officialFcfFixtures = Cearense2027Schedule.getOfficialFirstPhaseFixtures();
+
+    final apiFirstPhaseFixtures = rawFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      final isKnockout = r.contains('semi') || r.contains('final') || r.contains('3rd') || r.contains('terceiro');
+      return !isKnockout;
+    }).toList();
+
+    final List<Fixture> firstPhaseFixtures = apiFirstPhaseFixtures.length >= 10
+        ? apiFirstPhaseFixtures
+        : officialFcfFixtures;
+
+    firstPhaseFixtures.sort((a, b) {
+      final numA = _extractRoundNumber(a.round);
+      final numB = _extractRoundNumber(b.round);
+      if (numA != numB) return numA.compareTo(numB);
+      return a.date.compareTo(b.date);
+    });
+
+    // 2. Classificação: Grupo Único (10 clubes)
+    List<Standing> standings;
+    if (rawStandings.isNotEmpty && rawStandings.any((s) => s.played > 0)) {
+      standings = StandingsEngine.sortStandings(rawStandings);
+    } else {
+      final calculated = StandingsEngine.calculateStandingsFromFixtures(firstPhaseFixtures, group: 'Grupo Único');
+      if (calculated.isNotEmpty && calculated.any((s) => s.played > 0)) {
+        standings = calculated;
+      } else {
+        standings = Cearense2027Schedule.getOfficialInitialStandings();
+      }
+    }
+
+    final firstPhaseRounds = _extractRounds(firstPhaseFixtures, 9, prefix: 'Rodada ');
+
+    final primeiraFasePhase = CompetitionPhase(
+      id: 'primeira_fase_2027',
+      name: '1ª Fase (Grupo Único)',
+      type: PhaseType.groupStage,
+      legs: 1,
+      groups: [
+        PhaseGroup(
+          id: 'grupo_unico',
+          name: 'Classificação Geral',
+          standings: standings,
+        ),
+      ],
+      rounds: firstPhaseRounds,
+      fixtures: firstPhaseFixtures,
+      standings: standings,
+      qualificationRuleDescription: 'Os 4 primeiros colocados avançam diretamente para as Semifinais (1º × 4º e 2º × 3º em jogo único).',
+      relegationRuleDescription: 'Os 2 últimos colocados (9º e 10º) são rebaixados para a Série B de 2028.',
+    );
+
+    // -------------------------------------------------------------
+    // 2. Semifinais (Jogo Único - 21/02/2027: 1º × 4º e 2º × 3º)
+    // -------------------------------------------------------------
+    final semiFixtures = rawFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return r.contains('semi') && !r.contains('quarter') && !r.contains('regular');
+    }).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    final semiTies = _generateCearense2027SemiFinals(standings, semiFixtures);
+
+    final semifinaisPhase = CompetitionPhase(
+      id: 'semi_finals_2027',
+      name: 'Semifinais (Jogo Único - 21/02)',
+      type: PhaseType.knockout,
+      legs: 1,
+      fixtures: semiFixtures,
+      ties: semiTies,
+      qualificationRuleDescription: 'Disputadas em jogo único (1º × 4º e 2º × 3º). O mandante é o clube de melhor campanha. Os vencedores avançam para a Grande Final.',
+    );
+
+    // -------------------------------------------------------------
+    // 3. Disputa do 3º Lugar (Jogo Único - 28/02/2027)
+    // -------------------------------------------------------------
+    final thirdFixtures = rawFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return r.contains('3rd') || r.contains('third') || r.contains('terceiro') || r.contains('3º');
+    }).toList();
+
+    final thirdTies = _generateCearense2027ThirdPlace(semiTies, thirdFixtures);
+
+    final terceiroLugarPhase = CompetitionPhase(
+      id: 'third_place_2027',
+      name: 'Disputa do 3º Lugar (Jogo Único - 28/02)',
+      type: PhaseType.playoff,
+      legs: 1,
+      fixtures: thirdFixtures,
+      ties: thirdTies,
+      qualificationRuleDescription: 'Disputada em jogo único entre os eliminados nas semifinais.',
+    );
+
+    // -------------------------------------------------------------
+    // 4. Grande Final (Ida e Volta - 28/02 e 07/03/2027)
+    // -------------------------------------------------------------
+    final finalFixtures = rawFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return (r.contains('final') || r.contains('decisão')) &&
+          !r.contains('semi') &&
+          !r.contains('quarter') &&
+          !r.contains('3rd') &&
+          !r.contains('third') &&
+          !r.contains('terceiro');
+    }).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    final finalTies = _generateCearense2027Final(semiTies, finalFixtures);
+
+    final finalPhase = CompetitionPhase(
+      id: 'final_2027',
+      name: 'Grande Final (Ida e Volta)',
+      type: PhaseType.finalStage,
+      legs: 2,
+      fixtures: finalFixtures,
+      ties: finalTies,
+      qualificationRuleDescription: 'Disputada em dois jogos (ida em 28/02 e volta em 07/03). O clube com melhor campanha acumulada decide em casa. O vencedor é o Campeão Cearense 2027.',
+    );
+
+    return Competition(
+      id: leagueId.toString(),
+      externalId: leagueId,
+      name: leagueName,
+      logo: leagueLogo,
+      season: season,
+      country: 'Brazil',
+      division: DivisionLevel.a1,
+      phases: [
+        primeiraFasePhase,
+        semifinaisPhase,
+        terceiroLugarPhase,
+        finalPhase,
+      ],
+    );
+  }
+
+  static List<Tie> _generateCearense2027SemiFinals(
+    List<Standing> standings,
+    List<Fixture> semiFixtures,
+  ) {
+    if (semiFixtures.isNotEmpty) {
+      final built = BracketEngine.buildTiesFromFixtures(
+        'semi_finals_2027',
+        semiFixtures,
+        isTwoLegged: false,
+        defaultSeedPairs: ['1º Grupo Único x 4º Grupo Único', '2º Grupo Único x 3º Grupo Único'],
+      );
+      if (built.length >= 2) return built.sublist(0, 2);
+    }
+
+    Team? teamFromStanding(Standing? s) {
+      if (s == null) return null;
+      return Team(
+        id: s.teamId.toString(),
+        externalId: s.teamId,
+        name: s.teamName,
+        logo: s.teamLogo,
+      );
+    }
+
+    final t1 = standings.isNotEmpty ? teamFromStanding(standings[0]) : null;
+    final t4 = standings.length > 3 ? teamFromStanding(standings[3]) : null;
+    final t2 = standings.length > 1 ? teamFromStanding(standings[1]) : null;
+    final t3 = standings.length > 2 ? teamFromStanding(standings[2]) : null;
+
+    return [
+      Tie(
+        id: 'sf_2027_0',
+        phaseId: 'semi_finals_2027',
+        title: 'Semifinal 1 (21/02 - Jogo Único)',
+        seedHome: '1º Grupo Único',
+        seedAway: '4º Grupo Único',
+        homeTeam: t1,
+        awayTeam: t4,
+      ),
+      Tie(
+        id: 'sf_2027_1',
+        phaseId: 'semi_finals_2027',
+        title: 'Semifinal 2 (21/02 - Jogo Único)',
+        seedHome: '2º Grupo Único',
+        seedAway: '3º Grupo Único',
+        homeTeam: t2,
+        awayTeam: t3,
+      ),
+    ];
+  }
+
+  static List<Tie> _generateCearense2027ThirdPlace(
+    List<Tie> sfTies,
+    List<Fixture> thirdPlaceFixtures,
+  ) {
+    if (thirdPlaceFixtures.isNotEmpty) {
+      final built = BracketEngine.buildTiesFromFixtures(
+        'third_place_2027',
+        thirdPlaceFixtures,
+        isTwoLegged: false,
+        defaultSeedPairs: ['Perdedor Semifinal 1 x Perdedor Semifinal 2'],
+      );
+      if (built.isNotEmpty) return [built.first];
+    }
+
+    return [
+      Tie(
+        id: 'third_place_2027_0',
+        phaseId: 'third_place_2027',
+        title: 'Disputa do 3º Lugar (28/02 - Jogo Único)',
+        seedHome: 'Perdedor Semifinal 1',
+        seedAway: 'Perdedor Semifinal 2',
+      ),
+    ];
+  }
+
+  static List<Tie> _generateCearense2027Final(
+    List<Tie> sfTies,
+    List<Fixture> finalFixtures,
+  ) {
+    if (finalFixtures.isNotEmpty) {
+      final built = BracketEngine.buildTiesFromFixtures(
+        'final_2027',
+        finalFixtures,
+        isTwoLegged: true,
+      );
+      if (built.isNotEmpty) return [built.first];
+    }
+
+    return [
+      Tie(
+        id: 'final_2027_0',
+        phaseId: 'final_2027',
+        title: 'Grande Final (Ida e Volta)',
+        seedHome: 'Vencedor Semifinal 1',
+        seedAway: 'Vencedor Semifinal 2',
+      ),
+    ];
   }
 
   // =========================================================================

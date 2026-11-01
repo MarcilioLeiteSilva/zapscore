@@ -159,7 +159,7 @@ class ApiClient {
   }
 
   Future<List<Standing>> getStandings(int leagueId, {int? season}) async {
-    final response = await http.get(Uri.parse('$baseUrl/standings?leagueId=$leagueId&season=${season ?? 2026}'));
+    final response = await http.get(Uri.parse('$baseUrl/standings?leagueId=$leagueId&season=${season ?? 2027}'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is List) {
@@ -171,7 +171,7 @@ class ApiClient {
   }
 
   Future<List<Scorer>> getScorers(int leagueId, {int? season}) async {
-    final response = await http.get(Uri.parse('$baseUrl/competitions/$leagueId/scorers?season=${season ?? 2026}'));
+    final response = await http.get(Uri.parse('$baseUrl/competitions/$leagueId/scorers?season=${season ?? 2027}'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is List) {
@@ -281,8 +281,8 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> getTeamStats(String teamId, int leagueId) async {
-    final response = await http.get(Uri.parse('$baseUrl/teams/statistics?teamId=$teamId&leagueId=$leagueId&season=2026'));
+  Future<Map<String, dynamic>> getTeamStats(String teamId, int leagueId, {int? season}) async {
+    final response = await http.get(Uri.parse('$baseUrl/teams/statistics?teamId=$teamId&leagueId=$leagueId&season=${season ?? 2027}'));
     if (response.statusCode == 200) {
       final data = _decodeResponse(response);
       if (data is Map<String, dynamic>) {

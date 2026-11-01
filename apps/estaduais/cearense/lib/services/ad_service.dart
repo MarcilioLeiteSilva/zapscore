@@ -14,7 +14,7 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/6300978111'
           : 'ca-app-pub-3940256099942544/2934735716';
     }
-    return 'ca-app-pub-6887857057070736/9959084752';
+    return 'ca-app-pub-6887857057070736/7148007983';
   }
 
   static String get interstitialAdUnitId {
@@ -23,7 +23,7 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/1033173712'
           : 'ca-app-pub-3940256099942544/4411468910';
     }
-    return 'ca-app-pub-6887857057070736/1645480468';
+    return 'ca-app-pub-6887857057070736/4974552048';
   }
 
   static String get nativeAdUnitId {
@@ -32,7 +32,7 @@ class AdService {
           ? 'ca-app-pub-3940256099942544/2247696110'
           : 'ca-app-pub-3940256099942544/3986624511';
     }
-    return 'ca-app-pub-6887857057070736/4532709708';
+    return 'ca-app-pub-6887857057070736/9670229544';
   }
 
   static String get rewardedAdUnitId {

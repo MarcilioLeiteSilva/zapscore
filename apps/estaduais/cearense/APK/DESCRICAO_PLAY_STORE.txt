@@ -1,0 +1,66 @@
+================================================================================
+FICHA TÉCNICA E DESCRIÇÃO COMPLETA PARA A GOOGLE PLAY STORE
+APLICATIVO: CAMPEONATO CEARENSE (CEARENSE)
+PACKAGE: com.zapscore.estadualcearense
+================================================================================
+
+1. TÍTULO DO APP (Máximo 30 caracteres)
+--------------------------------------------------------------------------------
+Cearense 2026: Tabela e Jogos
+(Opção 2: Cearense: Futebol ao Vivo)
+(Opção 3: Campeonato Cearense: Jogos)
+
+
+2. BREVE DESCRIÇÃO / DESCRIÇÃO CURTA (Máximo 80 caracteres)
+--------------------------------------------------------------------------------
+Jogos ao vivo, gols em tempo real, tabela e notícias do Campeonato Cearense.
+(77 caracteres)
+
+
+3. DESCRIÇÃO COMPLETA (Até 4.000 caracteres)
+--------------------------------------------------------------------------------
+Viva toda a emoção e a tradição do futebol cearense na palma da sua mão! O aplicativo do Campeonato Cearense é a sua arquibancada digital completa para acompanhar cada lance, gol e rodada do estadual mais disputado do Nordeste em tempo real, com a máxima velocidade, dados aprofundados e cobertura exclusiva dos seus clubes favoritos.
+
+Acompanhe cada segundo do eletrizante Clássico-Rei na Arena Castelão e no Presidente Vargas (PV), e vibre rodada a rodada com Fortaleza, Ceará, Ferroviário, Floresta, Iguatu, Maracanã, Horizonte, Tirol, Barbalha, Caucaia, Quixadá, Maranguape, Icasa, Guarani de Juazeiro e muito mais!
+
+🔥 PRINCIPAIS FUNCIONALIDADES:
+
+⚽ NOTIFICAÇÕES INSTANTÂNEAS DE GOLS E PARTIDAS
+Receba alertas ultra rápidos no instante exato em que a rede balançar! Configure seus times do coração para receber avisos automáticos de início de partida, gols, cartões, pênaltis, intervalo e apito final.
+
+📊 TABELA DE CLASSIFICAÇÃO E FASES AO VIVO
+Acompanhe a classificação do Cearense Série A atualizada minuto a minuto com critérios oficiais de desempate, pontuação, saldo de gols, chaveamento das semifinais, grande final e a batalha contra o rebaixamento. Acesso completo também à Série B do Cearense!
+
+📺 ONDE ASSISTIR (TRANSMISSÃO DOS JOGOS)
+Descubra rapidamente onde assistir a cada partida na TV Aberta (TV Verdes Mares / TV Ceará), Streaming gratuito (Canal GOAT / FCF TV) ou canais por assinatura / Pay-per-view (Premiere) para nunca perder nenhum confronto decisivo.
+
+🧠 COMENTÁRIOS TÁTICOS E ANÁLISES COM IA AO VIVO
+Muito além do placar básico! Acompanhe a aba exclusiva de Comentários Táticos durante os jogos ao vivo, trazendo a leitura das fases do jogo, variações de postura tática e probabilidades dinâmicas geradas por inteligência artificial lance a lance.
+
+📋 ESCALAÇÕES OFICIAIS E HISTÓRICO H2H
+Confira as escalações confirmadas antes da bola rolar, com números de camisa, esquema tático no gramado, banco de reservas, comissão técnica e histórico completo de confrontos diretos (Head-to-Head) entre os clubes.
+
+🎯 ARTILHARIA E ESTATÍSTICAS COMPLETAS
+Ranking atualizado dos artilheiros do Cearense, garçons de assistências, cartões e estatísticas detalhadas de cada partida (posse de bola, finalizações certas, escanteios, desarmes e faltas).
+
+📰 NOTÍCIAS E VÍDEOS DOS MELHORES MOMENTOS
+Feed inteligente com as últimas notícias, bastidores, mercado da bola e entrevistas do futebol cearense, além dos vídeos com os melhores lances e gols de cada duelo.
+
+⭐ CLUBES EM DESTAQUE:
+- Fortaleza Esporte Clube
+- Ceará Sporting Club
+- Ferroviário Atlético Clube
+- Floresta Esporte Clube
+- Associação Desportiva Iguatu
+- Maracanã Esporte Clube
+- Horizonte Futebol Clube
+- Grêmio Pague Menos / Tirol
+- Barbalha Futebol Clube
+- Caucaia Esporte Clube
+- Quixadá Futebol Clube
+- Maranguape Futebol Clube
+- Icasa
+- Guarani de Juazeiro
+
+Baixe agora o aplicativo do Campeonato Cearense e sinta a paixão do futebol do Ceará em tempo real onde você estiver!
+================================================================================
