@@ -43,7 +43,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
               title: Text(
                 currentLeagueId == 620
                     ? 'Cearense - Série B'
-                    : 'Campeonato Cearense 2026',
+                    : 'Campeonato Cearense 2027',
               ),
               actions: [
                 BlocBuilder<FavoriteCubit, FavoriteState>(

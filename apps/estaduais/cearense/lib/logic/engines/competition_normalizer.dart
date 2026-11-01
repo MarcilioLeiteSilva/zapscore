@@ -78,6 +78,7 @@ class CompetitionNormalizer {
     final officialFcfFixtures = Cearense2027Schedule.getOfficialFirstPhaseFixtures();
 
     final apiFirstPhaseFixtures = rawFixtures.where((f) {
+      if (f.season != 2027) return false;
       final r = (f.round ?? '').toLowerCase();
       final isKnockout = r.contains('semi') || r.contains('final') || r.contains('3rd') || r.contains('terceiro');
       return !isKnockout;
@@ -96,10 +97,13 @@ class CompetitionNormalizer {
 
     // 2. Classificação: Grupo Único (10 clubes)
     List<Standing> standings;
-    if (rawStandings.isNotEmpty && rawStandings.any((s) => s.played > 0)) {
+    if (rawStandings.isNotEmpty && rawStandings.any((s) => s.played > 0 && (s.group == null || s.group!.contains('Único') || s.group!.contains('Unico')))) {
       standings = StandingsEngine.sortStandings(rawStandings);
     } else {
-      final calculated = StandingsEngine.calculateStandingsFromFixtures(firstPhaseFixtures, group: 'Grupo Único');
+      final calculated = StandingsEngine.calculateStandingsFromFixtures(
+        firstPhaseFixtures.where((f) => f.season == 2027).toList(),
+        group: 'Grupo Único',
+      );
       if (calculated.isNotEmpty && calculated.any((s) => s.played > 0)) {
         standings = calculated;
       } else {
@@ -132,6 +136,7 @@ class CompetitionNormalizer {
     // 2. Semifinais (Jogo Único - 21/02/2027: 1º × 4º e 2º × 3º)
     // -------------------------------------------------------------
     final semiFixtures = rawFixtures.where((f) {
+      if (f.season != 2027) return false;
       final r = (f.round ?? '').toLowerCase();
       return r.contains('semi') && !r.contains('quarter') && !r.contains('regular');
     }).toList()
@@ -153,6 +158,7 @@ class CompetitionNormalizer {
     // 3. Disputa do 3º Lugar (Jogo Único - 28/02/2027)
     // -------------------------------------------------------------
     final thirdFixtures = rawFixtures.where((f) {
+      if (f.season != 2027) return false;
       final r = (f.round ?? '').toLowerCase();
       return r.contains('3rd') || r.contains('third') || r.contains('terceiro') || r.contains('3º');
     }).toList();
@@ -173,6 +179,7 @@ class CompetitionNormalizer {
     // 4. Grande Final (Ida e Volta - 28/02 e 07/03/2027)
     // -------------------------------------------------------------
     final finalFixtures = rawFixtures.where((f) {
+      if (f.season != 2027) return false;
       final r = (f.round ?? '').toLowerCase();
       return (r.contains('final') || r.contains('decisão')) &&
           !r.contains('semi') &&

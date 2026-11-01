@@ -190,7 +190,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Cearense Série A',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2024, 2025, 2026, 2027],
+    activeSeasons: [2027],
   },
   {
     code: 'BR_CEARENSE_2',
@@ -198,7 +198,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Cearense Série B',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2024, 2025, 2026, 2027],
+    activeSeasons: [2027],
   },
   {
     code: 'BR_PARAIBANO_1',

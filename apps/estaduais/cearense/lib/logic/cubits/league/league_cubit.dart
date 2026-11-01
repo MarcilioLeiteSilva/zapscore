@@ -18,7 +18,7 @@ class LeagueCubit extends Cubit<LeagueState> {
     emit(LeagueLoading());
     try {
       final results = await Future.wait([
-        apiClient.getRecentFixtures(leagueId, limit: 500),
+        apiClient.getRecentFixtures(leagueId, limit: 500, season: season),
         apiClient.getStandings(leagueId, season: season),
         apiClient.getScorers(leagueId, season: season),
       ]);
