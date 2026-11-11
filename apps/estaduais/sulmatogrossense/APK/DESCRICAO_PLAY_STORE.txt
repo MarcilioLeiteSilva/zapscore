@@ -1,0 +1,62 @@
+================================================================================
+FICHA TÉCNICA E DESCRIÇÃO COMPLETA PARA A GOOGLE PLAY STORE
+APLICATIVO: CAMPEONATO SUL-MATO-GROSSENSE (SUL-MATO-GROSSENSE)
+PACKAGE: com.zapscore.estadualsulmatogrossense
+================================================================================
+
+1. TÍTULO DO APP (Máximo 30 caracteres)
+--------------------------------------------------------------------------------
+Sul-Mato-Grossense 2026
+(Opção 2: Sul-Mato-Grossense: Futebol ao Vivo)
+(Opção 3: Sul-Mato-Grossense: Jogos e Tabela)
+
+
+2. BREVE DESCRIÇÃO / DESCRIÇÃO CURTA (Máximo 80 caracteres)
+--------------------------------------------------------------------------------
+Jogos ao vivo, gols em tempo real, tabela e notícias do Sul-Mato-Grossense.
+(75 caracteres)
+
+
+3. DESCRIÇÃO COMPLETA (Até 4.000 caracteres)
+--------------------------------------------------------------------------------
+Viva toda a emoção e a tradição de a força e as tradições inesquecíveis do futebol do Pantanal sul na palma da sua mão! O aplicativo do Campeonato Sul-Mato-Grossense é a sua arquibancada digital completa para acompanhar cada lance, gol e rodada do estadual em tempo real, com a máxima velocidade, dados aprofundados e cobertura exclusiva dos seus clubes favoritos.
+
+Acompanhe cada segundo no Estádio Universitário Pedro Pedrossian (Morenão), Estádio Jacques da Luz e Douradão, e vibre com o histórico e eletrizante clássico Comer-Operário (Comer-Fer: Comercial x Operário-MS) e rodada a rodada com todos os clubes que constroem a história deste grande campeonato!
+
+🔥 PRINCIPAIS FUNCIONALIDADES:
+
+⚽ NOTIFICAÇÕES INSTANTÂNEAS DE GOLS E PARTIDAS
+Receba alertas ultra rápidos no instante exato em que a rede balançar! Configure seus times do coração para receber avisos automáticos de início de partida, gols, cartões, pênaltis, intervalo e apito final.
+
+📊 TABELA DE CLASSIFICAÇÃO E FASES AO VIVO
+Acompanhe a classificação do Campeonato Sul-Mato-Grossense atualizada minuto a minuto com critérios oficiais de desempate, pontuação, saldo de gols, chaveamento do mata-mata, grande final e a batalha contra o rebaixamento.
+
+📺 ONDE ASSISTIR (TRANSMISSÃO DOS JOGOS)
+Descubra rapidamente onde assistir a cada partida na TV Aberta, canais por assinatura, Pay-per-view ou Streaming oficial na web para nunca perder nenhum confronto decisivo.
+
+🧠 COMENTÁRIOS TÁTICOS E ANÁLISES COM IA AO VIVO
+Muito além do placar básico! Acompanhe a aba exclusiva de Comentários Táticos durante os jogos ao vivo, trazendo a leitura das fases do jogo, variações de postura tática e probabilidades dinâmicas geradas por inteligência artificial lance a lance.
+
+📋 ESCALAÇÕES OFICIAIS E HISTÓRICO H2H
+Confira as escalações confirmadas antes da bola rolar, com números de camisa, esquema tático no gramado, banco de reservas, comissão técnica e histórico completo de confrontos diretos (Head-to-Head) entre os clubes.
+
+🎯 ARTILHARIA E ESTATÍSTICAS COMPLETAS
+Ranking atualizado dos artilheiros do campeonato, garçons de assistências, cartões e estatísticas detalhadas de cada partida (posse de bola, finalizações certas, escanteios, desarmes e faltas).
+
+📰 NOTÍCIAS E VÍDEOS DOS MELHORES MOMENTOS
+Feed inteligente com as últimas notícias, bastidores, mercado da bola e entrevistas do futebol local, além dos vídeos com os melhores lances e gols de cada duelo.
+
+⭐ CLUBES EM DESTAQUE:
+- Operário Futebol Clube (Galo de Campo Grande)
+- Esporte Clube Comercial (Colorado)
+- Costa Rica Esporte Clube (CREC)
+- Dourados Atlético Clube (DAC)
+- Aquidauanense Futebol Clube (Azulão da Princesa)
+- Coxim Atlético Clube
+- Associação Atlética Portuguesa (MS)
+- Corumbaense Futebol Clube (Carijó da Avenida)
+- Ivinhema Futebol Clube
+- Novo Futebol Clube
+
+Baixe agora o aplicativo do Campeonato Sul-Mato-Grossense e sinta a paixão do futebol em tempo real onde você estiver!
+================================================================================

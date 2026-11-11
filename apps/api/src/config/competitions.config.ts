@@ -254,7 +254,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Sul-Matogrossense',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2027],
   },
   {
     code: 'BR_BRASILIENSE_1',
