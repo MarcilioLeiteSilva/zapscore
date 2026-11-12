@@ -399,6 +399,8 @@ export class ZapScoreSentinelService implements OnApplicationBootstrap {
       ? SUPPORTED_COMPETITIONS.filter((c) => c.externalId === targetLeagueExternalId)
       : SUPPORTED_COMPETITIONS;
 
+    const auditDiagnostics: Array<any> = [];
+
     for (const comp of leaguesToCheck) {
       for (const season of comp.activeSeasons) {
         try {
@@ -414,7 +416,10 @@ export class ZapScoreSentinelService implements OnApplicationBootstrap {
           });
 
           // Se a liga não tem jogos locais cadastrados ainda nesta temporada, pula
-          if (localTotal === 0) continue;
+          if (localTotal === 0) {
+            auditDiagnostics.push({ league: comp.name, externalId: comp.externalId, season, status: 'NO_LOCAL_FIXTURES' });
+            continue;
+          }
 
           // Partidas nos últimos 30 dias
           const recentGamesCount = await this.prisma.fixture.count({
@@ -443,11 +448,13 @@ export class ZapScoreSentinelService implements OnApplicationBootstrap {
           const isDuePeriodic = !cached || (now.getTime() - cached.lastCheckedAt) > 24 * 60 * 60 * 1000;
 
           if (!isTargeted && !hasScheduleGap && !isDuePeriodic) {
+            auditDiagnostics.push({ league: comp.name, externalId: comp.externalId, season, localTotal, upcomingGamesCount, status: 'SKIPPED_NORMAL' });
             continue;
           }
 
           // Se há buraco na grade, mas checamos há menos de 1 hora e a API tinha o mesmo total do banco local, poupa cota
           if (!isTargeted && cached && cached.lastApiTotal === localTotal && (now.getTime() - cached.lastCheckedAt) < 60 * 60 * 1000) {
+            auditDiagnostics.push({ league: comp.name, externalId: comp.externalId, season, localTotal, status: 'SKIPPED_THROTTLED' });
             continue;
           }
 
@@ -464,12 +471,24 @@ export class ZapScoreSentinelService implements OnApplicationBootstrap {
             lastCheckedAt: now.getTime(),
           });
 
+          const diagEntry: any = {
+            league: comp.name,
+            externalId: comp.externalId,
+            season,
+            localTotal,
+            upcomingGamesCount,
+            recentGamesCount,
+            apiTotal,
+            discrepancy: apiTotal > localTotal,
+          };
+
           // Se a API externa tem mais jogos que o banco local -> DISCREPÂNCIA DETECTADA!
           if (apiTotal > localTotal) {
             const diff = apiTotal - localTotal;
             this.logger.warn(`[Sentinel] 🚨 Discrepância de cobertura em ${comp.name} (${season}): API possui ${apiTotal} jogos vs ${localTotal} locais (+${diff} novos jogos). Sincronizando grade...`);
 
-            await this.syncService.syncFixtures(comp.externalId, season);
+            const syncResult = await this.syncService.syncFixtures(comp.externalId, season);
+            diagEntry.syncResult = syncResult;
             autoSyncedLeaguesCount++;
             syncedDetails.push({
               league: comp.name,
@@ -487,8 +506,11 @@ export class ZapScoreSentinelService implements OnApplicationBootstrap {
               autoHealed: true,
             });
           }
+
+          auditDiagnostics.push(diagEntry);
         } catch (err: any) {
           this.logger.error(`[Sentinel] Falha ao auditar cobertura da liga ${comp.name} (${comp.externalId}): ${err.message}`);
+          auditDiagnostics.push({ league: comp.name, externalId: comp.externalId, season, error: err.message });
         }
       }
     }
@@ -498,6 +520,7 @@ export class ZapScoreSentinelService implements OnApplicationBootstrap {
       status: 'OK',
       autoSyncedLeaguesCount,
       syncedDetails,
+      auditDiagnostics,
       timestamp: new Date().toISOString(),
     };
   }
