@@ -91,7 +91,8 @@ class CompetitionNormalizer {
           r.contains('round of 16') ||
           r.contains('playoff') ||
           r.contains('quadrangular');
-      return !isKnockout;
+      final is2027 = f.date.year >= 2027;
+      return !isKnockout && !is2027;
     }).toList();
 
     forroFixtures.sort((a, b) {
@@ -164,7 +165,8 @@ class CompetitionNormalizer {
           r.contains('round of 16') ||
           r.contains('1/8') ||
           r.contains('semi');
-      return isOitavas && !r.contains('regular');
+      final is2027 = f.date.year >= 2027;
+      return isOitavas && !r.contains('regular') && !is2027;
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     final oitavasTies = BracketEngine.generatePernambucanoOitavas(
@@ -193,7 +195,8 @@ class CompetitionNormalizer {
           r.contains('quartas') ||
           r.contains('1/4') ||
           (r.contains('final') && !r.contains('semi') && !r.contains('quadrangular'));
-      return isQuartas && !r.contains('regular');
+      final is2027 = f.date.year >= 2027;
+      return isQuartas && !r.contains('regular') && !is2027;
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     final quartasTies = BracketEngine.generatePernambucanoQuartas(quartasFixtures);
@@ -212,7 +215,8 @@ class CompetitionNormalizer {
     // 4. Quadrangular Final (Turno Forró)
     final quadrangularFixtures = rawFixtures.where((f) {
       final r = (f.round ?? '').toLowerCase();
-      return (r.contains('quadrangular') || r.contains('final four')) && !r.contains('regular');
+      final is2027 = f.date.year >= 2027;
+      return (r.contains('quadrangular') || r.contains('final four')) && !r.contains('regular') && !is2027;
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     final quadrangularStandings = StandingsEngine.calculateStandingsFromFixtures(
@@ -241,20 +245,226 @@ class CompetitionNormalizer {
     // 5. 2º Turno — Turno Frevo (Janeiro/2027)
     final frevoFixtures = rawFixtures.where((f) {
       final r = (f.round ?? '').toLowerCase();
-      return r.contains('frevo') || r.contains('2º turno') || r.contains('segundo turno');
+      final isFrevo = r.contains('frevo') || r.contains('2º turno') || r.contains('segundo turno');
+      final is2027 = f.date.year >= 2027;
+      return isFrevo || is2027;
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
+    // Rodadas estruturadas do Turno Frevo (9 rodadas de pontos corridos com 10 clubes)
+    final List<PhaseRound> frevoRounds = frevoFixtures.isNotEmpty
+        ? _extractRounds(frevoFixtures, 9, prefix: 'Rodada ')
+        : List.generate(9, (index) {
+            final rNum = index + 1;
+            return PhaseRound(
+              id: 'frevo_rodada_$rNum',
+              number: rNum,
+              name: 'Rodada $rNum',
+              fixtures: const [],
+            );
+          });
+
+    final frevoTeam8 = quadrangularStandings.isNotEmpty
+        ? Standing(
+            rank: 8,
+            teamId: quadrangularStandings[0].teamId,
+            teamName: quadrangularStandings[0].teamName,
+            teamLogo: quadrangularStandings[0].teamLogo,
+            points: 0,
+            played: 0,
+            win: 0,
+            draw: 0,
+            lose: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalsDiff: 0,
+            description: 'Campeão do Turno Forró',
+          )
+        : const Standing(
+            rank: 8,
+            teamId: 0,
+            teamName: '1º Colocado (Turno Forró)',
+            points: 0,
+            played: 0,
+            win: 0,
+            draw: 0,
+            lose: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalsDiff: 0,
+            description: 'Campeão Turno Forró',
+          );
+
+    final frevoTeam9 = quadrangularStandings.length > 1
+        ? Standing(
+            rank: 9,
+            teamId: quadrangularStandings[1].teamId,
+            teamName: quadrangularStandings[1].teamName,
+            teamLogo: quadrangularStandings[1].teamLogo,
+            points: 0,
+            played: 0,
+            win: 0,
+            draw: 0,
+            lose: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalsDiff: 0,
+            description: 'Vice-campeão Turno Forró',
+          )
+        : const Standing(
+            rank: 9,
+            teamId: 0,
+            teamName: '2º Colocado (Turno Forró)',
+            points: 0,
+            played: 0,
+            win: 0,
+            draw: 0,
+            lose: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalsDiff: 0,
+            description: 'Vice-campeão Turno Forró',
+          );
+
+    final frevoTeam10 = quadrangularStandings.length > 2
+        ? Standing(
+            rank: 10,
+            teamId: quadrangularStandings[2].teamId,
+            teamName: quadrangularStandings[2].teamName,
+            teamLogo: quadrangularStandings[2].teamLogo,
+            points: 0,
+            played: 0,
+            win: 0,
+            draw: 0,
+            lose: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalsDiff: 0,
+            description: '3º Colocado Turno Forró',
+          )
+        : const Standing(
+            rank: 10,
+            teamId: 0,
+            teamName: '3º Colocado (Turno Forró)',
+            points: 0,
+            played: 0,
+            win: 0,
+            draw: 0,
+            lose: 0,
+            goalsFor: 0,
+            goalsAgainst: 0,
+            goalsDiff: 0,
+            description: '3º Colocado Turno Forró',
+          );
+
     final frevoStandings = [
-      const Standing(rank: 1, teamId: 198, teamName: 'Sport', teamLogo: 'https://media.api-sports.io/football/teams/198.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 2, teamId: 219, teamName: 'Náutico', teamLogo: 'https://media.api-sports.io/football/teams/219.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 3, teamId: 202, teamName: 'Santa Cruz', teamLogo: 'https://media.api-sports.io/football/teams/202.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 4, teamId: 7856, teamName: 'Retrô', teamLogo: 'https://media.api-sports.io/football/teams/7856.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 5, teamId: 19782, teamName: 'Maguary', teamLogo: 'https://media.api-sports.io/football/teams/19782.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 6, teamId: 7837, teamName: 'Decisão', teamLogo: 'https://media.api-sports.io/football/teams/7837.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 7, teamId: 7838, teamName: 'Vitória', teamLogo: 'https://media.api-sports.io/football/teams/7838.png', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Série A1 2026'),
-      const Standing(rank: 8, teamId: 0, teamName: '1º Colocado (Turno Forró)', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Campeão Turno Forró'),
-      const Standing(rank: 9, teamId: 0, teamName: '2º Colocado (Turno Forró)', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: 'Vice-campeão Turno Forró'),
-      const Standing(rank: 10, teamId: 0, teamName: '3º Colocado (Turno Forró)', points: 0, played: 0, win: 0, draw: 0, lose: 0, goalsFor: 0, goalsAgainst: 0, goalsDiff: 0, description: '3º Colocado Turno Forró'),
+      const Standing(
+        rank: 1,
+        teamId: 123,
+        teamName: 'Sport Recife',
+        teamLogo: 'https://media.api-sports.io/football/teams/123.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      const Standing(
+        rank: 2,
+        teamId: 755,
+        teamName: 'Náutico',
+        teamLogo: 'https://media.api-sports.io/football/teams/755.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      const Standing(
+        rank: 3,
+        teamId: 753,
+        teamName: 'Santa Cruz',
+        teamLogo: 'https://media.api-sports.io/football/teams/753.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      const Standing(
+        rank: 4,
+        teamId: 13098,
+        teamName: 'Retrô',
+        teamLogo: 'https://media.api-sports.io/football/teams/13098.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      const Standing(
+        rank: 5,
+        teamId: 20781,
+        teamName: 'Maguary',
+        teamLogo: 'https://media.api-sports.io/football/teams/20781.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      const Standing(
+        rank: 6,
+        teamId: 13097,
+        teamName: 'Decisão',
+        teamLogo: 'https://media.api-sports.io/football/teams/13097.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      const Standing(
+        rank: 7,
+        teamId: 7818,
+        teamName: 'Vitória',
+        teamLogo: 'https://media.api-sports.io/football/teams/7818.png',
+        points: 0,
+        played: 0,
+        win: 0,
+        draw: 0,
+        lose: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        goalsDiff: 0,
+        description: 'Série A1 2026',
+      ),
+      frevoTeam8,
+      frevoTeam9,
+      frevoTeam10,
     ];
 
     final turnoFrevoPhase = CompetitionPhase(
@@ -262,10 +472,13 @@ class CompetitionNormalizer {
       name: 'Turno Frevo (2º Turno)',
       type: PhaseType.league,
       legs: 1,
+      rounds: frevoRounds,
       fixtures: frevoFixtures,
-      standings: frevoStandings,
+      standings: frevoFixtures.isNotEmpty
+          ? StandingsEngine.calculateStandingsFromFixtures(frevoFixtures, group: 'Turno Frevo')
+          : frevoStandings,
       qualificationRuleDescription:
-          'Etapa decisiva que definirá o Campeão Pernambucano 2027. Reúne 10 clubes: 7 já garantidos da Série A1 e os 3 melhores colocados do Turno Forró.',
+          'Etapa decisiva que definirá o Campeão Pernambucano 2027. Disputada em turno único de 9 rodadas pelos 10 clubes (7 da Série A1 + 3 classificados do Turno Forró). Os 4 melhores avançam para as Semifinais.',
     );
 
     return Competition(

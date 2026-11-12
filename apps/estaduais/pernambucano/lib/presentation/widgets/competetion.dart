@@ -32,16 +32,49 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             );
           }
 
-          // 3. Fases Regulares (1ª Fase, 2ª Fase, Quadrangular da Permanência)
-          final List<Fixture> phaseFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
+          // 3. Fases Regulares (1ª Fase, 2ª Fase, Quadrangular da Permanência, Turno Frevo)
+          final List<Fixture> phaseFixtures = activePhase != null
               ? activePhase.fixtures
               : state.fixtures;
 
           if (phaseFixtures.isEmpty) {
+            final isFrevo = activePhase?.id == 'turno_frevo';
             return Center(
-              child: Text(
-                'Nenhum jogo disponível nesta fase.',
-                style: GoogleFonts.urbanist(color: Colors.white70),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isFrevo ? Icons.calendar_month_outlined : Icons.event_busy,
+                      size: 48,
+                      color: isFrevo ? AppColor.accent : Colors.white38,
+                    ),
+                    const Gap(16),
+                    Text(
+                      isFrevo
+                          ? 'Tabela do Turno Frevo em Definição'
+                          : 'Nenhum jogo disponível nesta fase.',
+                      style: GoogleFonts.urbanist(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (isFrevo) ...[
+                      const Gap(8),
+                      Text(
+                        'O Turno Frevo reunirá os 10 clubes na etapa principal do Estadual (9 rodadas em turno único). Os jogos e datas oficiais serão homologados pela FPF para Janeiro/2027.',
+                        style: GoogleFonts.urbanist(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             );
           }
@@ -595,18 +628,26 @@ class RoundLeaguePage extends StatelessWidget {
             );
           }
 
-          // Para fases com rodadas (1ª Fase, 2ª Fase, Quadrangular da Permanência)
-          final availableFixtures = (activePhase != null && activePhase.fixtures.isNotEmpty)
+          // Para fases com rodadas (1ª Fase, 2ª Fase, Quadrangular da Permanência, Turno Frevo)
+          final availableFixtures = activePhase != null
               ? activePhase.fixtures
               : state.fixtures;
 
-          final roundFixtures = availableFixtures
-              .where((f) => f.round == state.selectedRound)
-              .toList();
+          int extractNum(String? r) {
+            if (r == null) return 999;
+            final m = RegExp(r'\d+').firstMatch(r);
+            return m != null ? (int.tryParse(m.group(0)!) ?? 999) : 999;
+          }
 
-          final displayFixtures = roundFixtures.isNotEmpty
-              ? roundFixtures
-              : (availableFixtures.isNotEmpty ? availableFixtures : <Fixture>[]);
+          final selectedNum = extractNum(state.selectedRound);
+
+          final roundFixtures = availableFixtures
+              .where((f) {
+                if (f.round == state.selectedRound) return true;
+                final fNum = extractNum(f.round);
+                return fNum != 999 && fNum == selectedNum;
+              })
+              .toList();
 
           final phaseRounds = cubit.currentPhaseRounds;
           final currentIndex = phaseRounds.indexOf(state.selectedRound);
@@ -655,17 +696,53 @@ class RoundLeaguePage extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: displayFixtures.isEmpty
+                child: roundFixtures.isEmpty
                     ? Center(
-                        child: Text(
-                          'Nenhum jogo nesta rodada.',
-                          style: GoogleFonts.urbanist(color: Colors.white70),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                activePhase?.id == 'turno_frevo'
+                                    ? Icons.schedule
+                                    : Icons.event_busy,
+                                size: 40,
+                                color: activePhase?.id == 'turno_frevo'
+                                    ? AppColor.accent
+                                    : Colors.white38,
+                              ),
+                              const Gap(12),
+                              Text(
+                                activePhase?.id == 'turno_frevo'
+                                    ? 'Confrontos da ${formatRound(state.selectedRound, context)} a definir'
+                                    : 'Nenhum jogo nesta rodada.',
+                                style: GoogleFonts.urbanist(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (activePhase?.id == 'turno_frevo') ...[
+                                const Gap(6),
+                                Text(
+                                  'A FPF homologará os confrontos das 9 rodadas do Turno Frevo para disputa a partir de Janeiro/2027.',
+                                  style: GoogleFonts.urbanist(
+                                    color: Colors.white60,
+                                    fontSize: 13,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
                         itemBuilder: (_, i) {
-                          final fix = displayFixtures[i];
+                          final fix = roundFixtures[i];
                           if (i > 0 && i % 4 == 0) {
                             return Column(
                               children: [
@@ -678,7 +755,7 @@ class RoundLeaguePage extends StatelessWidget {
                           return CardFixtureLeagueItem(fixture: fix);
                         },
                         separatorBuilder: (_, i) => const Gap(10),
-                        itemCount: displayFixtures.length,
+                        itemCount: roundFixtures.length,
                       ),
               ),
             ],
