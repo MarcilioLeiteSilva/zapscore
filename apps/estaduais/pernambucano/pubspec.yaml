@@ -2,7 +2,7 @@ name: zapscore_campeonato_pernambucano
 description: "App do Campeonato Pernambucano."
 publish_to: 'none'
 
-version: 1.0.2+4
+version: 1.0.3+5
 
 environment:
   sdk: ^3.11.4
