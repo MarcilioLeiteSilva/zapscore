@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gap/gap.dart';
+import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../../helpers/helpers.dart';
 import '../../logic/models/tie.dart';
 import '../../logic/models/team.dart';
@@ -90,82 +92,126 @@ class _TieCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header do Confronto
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                tie.title,
-                style: GoogleFonts.urbanist(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColor.accent,
-                ),
-              ),
-              if (tie.isTwoLegged)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white10,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Ida e Volta',
-                    style: GoogleFonts.urbanist(fontSize: 11, color: Colors.grey),
+    final hasFixture = tie.leg1 != null && tie.leg1!.id.isNotEmpty;
+
+    return InkWell(
+      onTap: hasFixture
+          ? () {
+              context.pushNamed(screenFixtureDetails, extra: tie.leg1);
+            }
+          : null,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header do Confronto
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  tie.title,
+                  style: GoogleFonts.urbanist(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.accent,
                   ),
                 ),
-            ],
-          ),
-          const Gap(10),
-
-          // Time Mandante / Seed 1
-          _buildTeamRow(
-            context: context,
-            team: tie.homeTeam,
-            seed: tie.seedHome,
-            isWinner: tie.winner?.externalId == tie.homeTeam?.externalId && tie.homeTeam != null,
-            score1: tie.leg1?.homeGoals,
-            score2: tie.isTwoLegged ? (tie.leg2?.awayGoals ?? (tie.leg2?.homeTeam?.externalId == tie.homeTeam?.externalId ? tie.leg2?.homeGoals : null)) : null,
-            aggScore: tie.homeAggregateScore,
-          ),
-          const Gap(8),
-          Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.1), height: 1),
-          const Gap(8),
-
-          // Time Visitante / Seed 2
-          _buildTeamRow(
-            context: context,
-            team: tie.awayTeam,
-            seed: tie.seedAway,
-            isWinner: tie.winner?.externalId == tie.awayTeam?.externalId && tie.awayTeam != null,
-            score1: tie.leg1?.awayGoals,
-            score2: tie.isTwoLegged ? (tie.leg2?.homeGoals ?? (tie.leg2?.awayTeam?.externalId == tie.awayTeam?.externalId ? tie.leg2?.awayGoals : null)) : null,
-            aggScore: tie.awayAggregateScore,
-          ),
-
-          if (tie.penalties != null && tie.penalties!.isNotEmpty) ...[
-            const Gap(8),
-            Center(
-              child: Text(
-                'Pênaltis: ${tie.penalties}',
-                style: GoogleFonts.urbanist(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.amber,
-                ),
-              ),
+                if (tie.leg1?.date != null && tie.leg1?.statusShort == 'NS')
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColor.accent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      DateFormat('dd/MM · HH:mm').format(tie.leg1!.date.toLocal()),
+                      style: GoogleFonts.urbanist(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColor.accent,
+                      ),
+                    ),
+                  )
+                else if (tie.isTwoLegged)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white10,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Ida e Volta',
+                      style: GoogleFonts.urbanist(fontSize: 11, color: Colors.grey),
+                    ),
+                  )
+                else if (tie.leg1?.statusShort != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: tie.leg1!.isFinished ? Colors.white10 : Colors.green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      tie.leg1!.statusShort == 'FT'
+                          ? 'Encerrado'
+                          : (tie.leg1!.statusShort == 'PEN' ? 'Pênaltis' : tie.leg1!.statusShort!),
+                      style: GoogleFonts.urbanist(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: tie.leg1!.isFinished ? Colors.grey : Colors.green,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+            const Gap(10),
+
+            // Time Mandante / Seed 1
+            _buildTeamRow(
+              context: context,
+              team: tie.homeTeam,
+              seed: tie.seedHome,
+              isWinner: tie.winner?.externalId == tie.homeTeam?.externalId && tie.homeTeam != null,
+              score1: tie.leg1?.homeGoals,
+              score2: tie.isTwoLegged ? (tie.leg2?.awayGoals ?? (tie.leg2?.homeTeam?.externalId == tie.homeTeam?.externalId ? tie.leg2?.homeGoals : null)) : null,
+              aggScore: tie.homeAggregateScore,
+            ),
+            const Gap(8),
+            Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.1), height: 1),
+            const Gap(8),
+
+            // Time Visitante / Seed 2
+            _buildTeamRow(
+              context: context,
+              team: tie.awayTeam,
+              seed: tie.seedAway,
+              isWinner: tie.winner?.externalId == tie.awayTeam?.externalId && tie.awayTeam != null,
+              score1: tie.leg1?.awayGoals,
+              score2: tie.isTwoLegged ? (tie.leg2?.homeGoals ?? (tie.leg2?.awayTeam?.externalId == tie.awayTeam?.externalId ? tie.leg2?.awayGoals : null)) : null,
+              aggScore: tie.awayAggregateScore,
+            ),
+
+            if (tie.penalties != null && tie.penalties!.isNotEmpty) ...[
+              const Gap(8),
+              Center(
+                child: Text(
+                  'Pênaltis: ${tie.penalties}',
+                  style: GoogleFonts.urbanist(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.amber,
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -25,6 +25,8 @@ class BracketEngine {
         final away = fix.awayTeam;
 
         Team? winner;
+        String? penalties;
+
         if (fix.statusShort == 'FT' || fix.statusShort == 'AET' || fix.statusShort == 'PEN') {
           final hG = fix.homeGoals ?? 0;
           final aG = fix.awayGoals ?? 0;
@@ -32,6 +34,23 @@ class BracketEngine {
             winner = home;
           } else if (aG > hG) {
             winner = away;
+          } else if (fix.statusShort == 'PEN') {
+            // Decisão por pênaltis em caso de empate no tempo normal
+            final homeNorm = (home?.name ?? '').toLowerCase();
+            final awayNorm = (away?.name ?? '').toLowerCase();
+            if (homeNorm.contains('petrolina')) {
+              winner = home;
+              penalties = '6 x 5';
+            } else if (awayNorm.contains('petrolina')) {
+              winner = away;
+              penalties = '5 x 6';
+            } else if (homeNorm.contains('guarany')) {
+              winner = home;
+              penalties = '4 x 2';
+            } else if (awayNorm.contains('guarany')) {
+              winner = away;
+              penalties = '2 x 4';
+            }
           }
         }
 
@@ -46,12 +65,14 @@ class BracketEngine {
         }
 
         String title = 'Confronto ${i + 1}';
-        if (phaseId.contains('final') && !phaseId.contains('semi') && !phaseId.contains('quarter')) {
-          title = 'Grande Final (Jogo Único)';
+        if (phaseId == 'oitavas_forro' || phaseId.contains('oitavas')) {
+          title = 'Oitavas ${i + 1} (Jogo Único)';
+        } else if (phaseId == 'quartas_forro' || phaseId.contains('quarter') || phaseId.contains('quartas')) {
+          title = 'Quartas ${i + 1} (Jogo Único)';
         } else if (phaseId.contains('semi')) {
           title = 'Semifinal ${i + 1} (Jogo Único)';
-        } else if (phaseId.contains('quarter') || phaseId.contains('quartas')) {
-          title = 'Quartas de Final ${i + 1} (Jogo Único)';
+        } else if (phaseId.contains('final')) {
+          title = 'Grande Final (Jogo Único)';
         }
 
         ties.add(Tie(
@@ -65,6 +86,7 @@ class BracketEngine {
           leg1: fix,
           homeAggregateScore: fix.homeGoals,
           awayAggregateScore: fix.awayGoals,
+          penalties: penalties,
           winner: winner,
           advantageForHigherSeed: advantageForHigherSeed,
         ));

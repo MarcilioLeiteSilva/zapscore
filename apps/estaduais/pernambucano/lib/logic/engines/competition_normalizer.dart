@@ -157,10 +157,14 @@ class CompetitionNormalizer {
           'Os 4 melhores colocados de cada grupo (16 clubes no total) avançam para as Oitavas de Final do Turno Forró.',
     );
 
-    // 2. Oitavas de Final (Jogo Único)
+    // 2. Oitavas de Final (Jogo Único) - 8 confrontos jogados em 10/11 e 11/11 (rotulados como 'Semi-finals' ou 'Oitavas')
     final oitavasFixtures = rawFixtures.where((f) {
       final r = (f.round ?? '').toLowerCase();
-      return (r.contains('oitavas') || r.contains('round of 16') || r.contains('1/8')) && !r.contains('regular');
+      final isOitavas = r.contains('oitavas') ||
+          r.contains('round of 16') ||
+          r.contains('1/8') ||
+          r.contains('semi');
+      return isOitavas && !r.contains('regular');
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     final oitavasTies = BracketEngine.generatePernambucanoOitavas(
@@ -182,10 +186,14 @@ class CompetitionNormalizer {
           '16 clubes em 8 confrontos de jogo único com mando da equipe de melhor campanha (1ºA × 4ºB, 2ºA × 3ºB, 1ºB × 4ºA, 2ºB × 3ºA, 1ºC × 4ºD, 2ºC × 3ºD, 1ºD × 4ºC, 2ºD × 3ºC). Os vencedores avançam para as Quartas de Final.',
     );
 
-    // 3. Quartas de Final (Jogo Único)
+    // 3. Quartas de Final (Jogo Único) - 4 confrontos marcados para 14/11 e 15/11 (rotulados como 'Final' ou 'Quartas')
     final quartasFixtures = rawFixtures.where((f) {
       final r = (f.round ?? '').toLowerCase();
-      return (r.contains('quarter') || r.contains('quartas') || r.contains('1/4')) && !r.contains('regular');
+      final isQuartas = r.contains('quarter') ||
+          r.contains('quartas') ||
+          r.contains('1/4') ||
+          (r.contains('final') && !r.contains('semi') && !r.contains('quadrangular'));
+      return isQuartas && !r.contains('regular');
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     final quartasTies = BracketEngine.generatePernambucanoQuartas(quartasFixtures);
