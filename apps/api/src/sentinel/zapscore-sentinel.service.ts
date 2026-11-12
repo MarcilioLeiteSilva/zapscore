@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ApiFootballService } from '../integrations/api-football/api-football.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,8 +8,10 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
 
 @Injectable()
-export class ZapScoreSentinelService {
+export class ZapScoreSentinelService implements OnApplicationBootstrap {
   private readonly logger = new Logger(ZapScoreSentinelService.name);
+  private readonly leagueCoverageCache = new Map<string, { lastApiTotal: number; lastCheckedAt: number }>();
+  private lastCoverageAuditAt = 0;
 
   constructor(
     private readonly apiFootball: ApiFootballService,
@@ -18,6 +20,15 @@ export class ZapScoreSentinelService {
     private readonly alertService: SentinelAlertService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  async onApplicationBootstrap() {
+    this.logger.log('[Sentinel] Inicializando auditoria autônoma de cobertura de grade no startup...');
+    setTimeout(() => {
+      this.auditFixturesCompleteness().catch((err: any) => {
+        this.logger.warn(`[Sentinel] Startup auditFixturesCompleteness falhou: ${err.message}`);
+      });
+    }, 5000);
+  }
 
   /**
    * Monitoramento contínuo — roda a cada 5 minutos.
@@ -31,8 +42,16 @@ export class ZapScoreSentinelService {
       const anomaliesResults = await this.auditScheduleAndStatusAnomalies();
       const timezoneResults = await this.auditTimezoneConsistency();
       const roundsResults = await this.checkFinishedRounds();
-      this.logger.log(`[Sentinel] Auditoria concluída. Live Anomalias: ${results.anomaliesCount}, Agenda/Status Anomalias: ${anomaliesResults.anomaliesCount} (Auto-healed: ${anomaliesResults.autoHealedCount}), Rodadas Concluídas: ${roundsResults.completedRoundsCount}`);
-      return { live: results, anomalies: anomaliesResults, timezone: timezoneResults, rounds: roundsResults };
+
+      // Auditoria de cobertura de grade com throttle de 30 minutos
+      let coverageResults: any = { status: 'SKIPPED_THROTTLED' };
+      const nowMs = Date.now();
+      if (nowMs - this.lastCoverageAuditAt >= 30 * 60 * 1000) {
+        coverageResults = await this.auditFixturesCompleteness();
+      }
+
+      this.logger.log(`[Sentinel] Auditoria concluída. Live Anomalias: ${results.anomaliesCount}, Agenda/Status Anomalias: ${anomaliesResults.anomaliesCount} (Auto-healed: ${anomaliesResults.autoHealedCount}), Rodadas Concluídas: ${roundsResults.completedRoundsCount}, Cobertura Grade: ${coverageResults.autoSyncedLeaguesCount || 0} ligas sincronizadas`);
+      return { live: results, anomalies: anomaliesResults, timezone: timezoneResults, rounds: roundsResults, coverage: coverageResults };
     } catch (err: any) {
       this.logger.error(`[Sentinel] Erro durante auditoria: ${err.message}`, err.stack);
       await this.alertService.sendAlert({
@@ -343,6 +362,12 @@ export class ZapScoreSentinelService {
             completedRoundsCount++;
             this.logger.log(`[Sentinel] 🏁 Todas as ${todayFixtures.length} partidas de hoje da liga ${comp.name} foram concluídas (FT). Resumo pronto no Agente Push.`);
           }
+
+          // Gatilho Reativo: Limpa cache e audita a cobertura da liga para detectar a próxima fase/rodada
+          this.leagueCoverageCache.delete(`${comp.externalId}:${targetSeason}`);
+          this.auditFixturesCompleteness(comp.externalId).catch((err: any) => {
+            this.logger.warn(`[Sentinel] Gatilho pós-rodada de cobertura falhou para ${comp.name}: ${err.message}`);
+          });
         }
       } catch (err: any) {
         this.logger.error(`[Sentinel] Erro ao auditar encerramento de rodada para ${comp.name}: ${err.message}`);
@@ -350,6 +375,131 @@ export class ZapScoreSentinelService {
     }
 
     return { completedRoundsCount };
+  }
+
+  /**
+   * Auditoria Autônoma de Cobertura de Grade e Detecção de Novas Fases (Mata-Mata / Rodadas)
+   * 1. Varre o banco local (Custo ZERO de API):
+   *    - Identifica ligas com jogos recentes (últimos 30 dias) mas SEM nenhum jogo futuro agendado ('NS').
+   * 2. Quando detecta anomalia de cobertura ou transição de fase:
+   *    - Consulta a API-Football (1 requisição) para verificar o total de partidas da temporada.
+   *    - Se a API possuir mais jogos do que o banco local (ex: 72 vs 50), executa auto-sync imediato.
+   *    - Envia alerta informativo no Sentinela com tag autoHealed: true.
+   */
+  async auditFixturesCompleteness(targetLeagueExternalId?: number) {
+    this.lastCoverageAuditAt = Date.now();
+    this.logger.log('[Sentinel] Iniciando auditoria de cobertura de grade e transição de fases...');
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    let autoSyncedLeaguesCount = 0;
+    const syncedDetails: Array<{ league: string; externalId: number; season: number; localBefore: number; apiTotal: number }> = [];
+
+    const leaguesToCheck = targetLeagueExternalId
+      ? SUPPORTED_COMPETITIONS.filter((c) => c.externalId === targetLeagueExternalId)
+      : SUPPORTED_COMPETITIONS;
+
+    for (const comp of leaguesToCheck) {
+      for (const season of comp.activeSeasons) {
+        try {
+          const cacheKey = `${comp.externalId}:${season}`;
+          const cached = this.leagueCoverageCache.get(cacheKey);
+
+          // 1. Varredura Local (Custo ZERO de API)
+          const localTotal = await this.prisma.fixture.count({
+            where: {
+              league: { externalId: comp.externalId },
+              season,
+            },
+          });
+
+          // Se a liga não tem jogos locais cadastrados ainda nesta temporada, pula
+          if (localTotal === 0) continue;
+
+          // Partidas nos últimos 30 dias
+          const recentGamesCount = await this.prisma.fixture.count({
+            where: {
+              league: { externalId: comp.externalId },
+              season,
+              date: { gte: thirtyDaysAgo, lte: now },
+            },
+          });
+
+          // Partidas futuras agendadas
+          const upcomingGamesCount = await this.prisma.fixture.count({
+            where: {
+              league: { externalId: comp.externalId },
+              season,
+              statusShort: 'NS',
+              date: { gte: now },
+            },
+          });
+
+          // CONDIÇÃO DE INVESTIGAÇÃO (Buraco na Grade / Transição de Fase):
+          // A liga teve partidas recentes (está em andamento), mas não tem NENHUM jogo futuro agendado ('NS')
+          // OU se targetLeagueExternalId foi solicitado explicitamente
+          const isTargeted = !!targetLeagueExternalId;
+          const hasScheduleGap = recentGamesCount > 0 && upcomingGamesCount === 0;
+          const isDuePeriodic = !cached || (now.getTime() - cached.lastCheckedAt) > 24 * 60 * 60 * 1000;
+
+          if (!isTargeted && !hasScheduleGap && !isDuePeriodic) {
+            continue;
+          }
+
+          // Se há buraco na grade, mas checamos há menos de 1 hora e a API tinha o mesmo total do banco local, poupa cota
+          if (!isTargeted && cached && cached.lastApiTotal === localTotal && (now.getTime() - cached.lastCheckedAt) < 60 * 60 * 1000) {
+            continue;
+          }
+
+          // 2. Consulta Externa de Verificação (1 requisição)
+          this.logger.log(`[Sentinel] Investigando grade externa para ${comp.name} (${comp.externalId}/${season}). Local: ${localTotal} jogos, Futuros: ${upcomingGamesCount}...`);
+          const apiFixtures = (await this.apiFootball.getFixtures({
+            league: comp.externalId,
+            season,
+          })) || [];
+
+          const apiTotal = apiFixtures.length;
+          this.leagueCoverageCache.set(cacheKey, {
+            lastApiTotal: apiTotal,
+            lastCheckedAt: now.getTime(),
+          });
+
+          // Se a API externa tem mais jogos que o banco local -> DISCREPÂNCIA DETECTADA!
+          if (apiTotal > localTotal) {
+            const diff = apiTotal - localTotal;
+            this.logger.warn(`[Sentinel] 🚨 Discrepância de cobertura em ${comp.name} (${season}): API possui ${apiTotal} jogos vs ${localTotal} locais (+${diff} novos jogos). Sincronizando grade...`);
+
+            await this.syncService.syncFixtures(comp.externalId, season);
+            autoSyncedLeaguesCount++;
+            syncedDetails.push({
+              league: comp.name,
+              externalId: comp.externalId,
+              season,
+              localBefore: localTotal,
+              apiTotal,
+            });
+
+            await this.alertService.sendAlert({
+              title: 'Auto-Recuperação de Grade Executada (Nova Fase/Rodada)',
+              severity: 'INFO',
+              fixtureInfo: `${comp.name} (${season})`,
+              description: `Detectados ${diff} novos jogos na API externa (fase mata-mata ou nova rodada). Grade sincronizada automaticamente com sucesso. Total de jogos: ${apiTotal}.`,
+              autoHealed: true,
+            });
+          }
+        } catch (err: any) {
+          this.logger.error(`[Sentinel] Falha ao auditar cobertura da liga ${comp.name} (${comp.externalId}): ${err.message}`);
+        }
+      }
+    }
+
+    this.logger.log(`[Sentinel] Auditoria de cobertura finalizada. ${autoSyncedLeaguesCount} ligas auto-sincronizadas.`);
+    return {
+      status: 'OK',
+      autoSyncedLeaguesCount,
+      syncedDetails,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
 

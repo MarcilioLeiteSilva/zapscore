@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ZapScoreSentinelService } from './zapscore-sentinel.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
 
@@ -25,6 +25,15 @@ export class ZapScoreSentinelController {
         error: err.message,
       };
     }
+  }
+
+  /**
+   * Auditoria de cobertura de grade e sincronização automática de novas fases (Mata-mata/Rodadas)
+   */
+  @Get('audit-coverage')
+  async auditCoverage(@Query('leagueId') leagueId?: string) {
+    const numericId = leagueId ? parseInt(leagueId, 10) : undefined;
+    return await this.sentinelService.auditFixturesCompleteness(numericId);
   }
 
   /**
