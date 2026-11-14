@@ -2,18 +2,19 @@
 ZAPSCORE - CAMPEONATO TOCANTINENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
 ================================================================================
 
-Data: 27/09/2026
+Data: 14/11/2026
 Nome do App: Tocantinense
 Package / Application ID: com.zapscore.estadualtocantinense
-Versão: 1.0.0
-Version Code: 1 (1.0.0+1)
+Versão: 1.0.1
+Version Code: 2 (1.0.1+2)
 
 --------------------------------------------------------------------------------
 1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
 --------------------------------------------------------------------------------
-- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store
-- zapscore_tocantinense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle para versionamento
-- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.1+2)
+- zapscore_tocantinense_v1.0.1+2.aab -> Cópia versionada da release v1.0.1+2
+- zapscore_tocantinense_v1.0.0+1.aab -> Cópia de versionamento da release anterior v1.0.0+1
+- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8 atualizado
 - upload-keystore.jks             -> Chave de assinatura oficial utilizada para assinar o release
 - tocantinense-upload-keystore.jks    -> Cópia de segurança da chave com prefixo do app
 - key.properties                  -> Arquivo de credenciais de assinatura do Gradle
