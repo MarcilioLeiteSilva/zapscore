@@ -2,6 +2,7 @@ import '../models/fixture.dart';
 import '../models/team.dart';
 import '../models/tie.dart';
 import '../models/standing.dart';
+import 'standings_engine.dart';
 
 class BracketEngine {
   /// Agrupa partidas de uma fase eliminatória em confrontos (Ties)
