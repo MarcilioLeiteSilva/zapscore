@@ -1,0 +1,58 @@
+================================================================================
+ZAPSCORE - CAMPEONATO TOCANTINENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
+================================================================================
+
+Data: 27/09/2026
+Nome do App: Tocantinense
+Package / Application ID: com.zapscore.estadualtocantinense
+Versão: 1.0.0
+Version Code: 1 (1.0.0+1)
+
+--------------------------------------------------------------------------------
+1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
+--------------------------------------------------------------------------------
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store
+- zapscore_tocantinense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle para versionamento
+- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8
+- upload-keystore.jks             -> Chave de assinatura oficial utilizada para assinar o release
+- tocantinense-upload-keystore.jks    -> Cópia de segurança da chave com prefixo do app
+- key.properties                  -> Arquivo de credenciais de assinatura do Gradle
+- INFO_RELEASE.txt                -> Este relatório técnico de auditoria e credenciais
+- DESCRICAO_PLAY_STORE.txt        -> Ficha técnica e descrições para publicação na Play Store
+
+--------------------------------------------------------------------------------
+2. DADOS DA CHAVE DE ASSINATURA (KEYSTORE)
+--------------------------------------------------------------------------------
+- Arquivo Keystore: upload-keystore.jks / tocantinense-upload-keystore.jks
+- Alias: upload
+- Senha da Keystore (storePassword): zapscore_tocantinense_key
+- Senha da Chave (keyPassword): zapscore_tocantinense_key
+- Algoritmo: RSA 2048 bits / SHA256withRSA
+- Validade: 10.000 dias
+- Proprietário: CN=ZapScore Tocantinense, OU=Mobile, O=ZapScore, L=Palmas, ST=Tocantins, C=BR
+
+FINGERPRINTS DO CERTIFICADO:
+- SHA-1:
+  D7:B7:FF:65:93:C6:15:26:65:84:D3:0F:BD:18:8C:F9:59:41:96:AB
+
+- SHA-256:
+  26:AC:2E:D6:2D:27:BD:32:9D:2C:19:63:63:45:0A:5B:A0:26:2A:75:DB:DA:BD:A2:2F:1B:F2:B8:21:45:60:48
+
+--------------------------------------------------------------------------------
+3. UNIDADES DE ANÚNCIOS GOOGLE ADMOB (PRODUÇÃO)
+--------------------------------------------------------------------------------
+- AdMob App ID (AndroidManifest.xml):
+  ca-app-pub-6887857057070736~4232487452
+
+- Banner Ad Unit:
+  ca-app-pub-6887857057070736/2938752932
+
+- Interstitial Ad Unit:
+  ca-app-pub-6887857057070736/4940342157
+
+- Native Ad Unit (Small & Medium):
+  ca-app-pub-6887857057070736/5960502093
+
+- Rewarded Ad Unit:
+  ca-app-pub-6887857057070736/1666213763
+================================================================================

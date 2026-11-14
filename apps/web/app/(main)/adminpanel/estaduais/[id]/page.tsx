@@ -16,7 +16,12 @@ import {
   ExternalLink, 
   RefreshCw,
   Search,
-  Globe
+  Globe,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  Camera,
+  Image as ImageIcon
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { ECOSYSTEM_MODULES, LeagueConfig } from "../../registry";
@@ -65,6 +70,19 @@ interface ScorerItem {
   };
 }
 
+interface PlayerItem {
+  id: number;
+  name: string;
+  number?: number | null;
+  position?: string;
+  age?: number | null;
+  photo?: string | null;
+  teamId?: string;
+  teamExternalId?: number;
+  teamName?: string;
+  teamLogo?: string | null;
+}
+
 export default function EstaduaisLeagueDetailPage() {
   const params = useParams();
   const leagueIdStr = (params?.id as string) || "";
@@ -80,25 +98,36 @@ export default function EstaduaisLeagueDetailPage() {
   const leagueFlag = leagueInfo?.flag || "🇧🇷";
   const leagueCountry = leagueInfo?.country || "Brasil";
 
-  // Estado da Aba Ativa: 'noticias' | 'videos' | 'artilharia'
-  const [activeTab, setActiveTab] = useState<"noticias" | "videos" | "artilharia">("noticias");
+  // Estado da Aba Ativa: 'noticias' | 'videos' | 'artilharia' | 'jogadores'
+  const [activeTab, setActiveTab] = useState<"noticias" | "videos" | "artilharia" | "jogadores">("noticias");
 
   // Estados de Dados
   const [news, setNews] = useState<NewsItem[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [scorers, setScorers] = useState<ScorerItem[]>([]);
+  const [players, setPlayers] = useState<PlayerItem[]>([]);
 
-  // Temporada Selecionada para Artilharia (Pernambucano padrão 2027)
-  const defaultSeason = (leagueIdStr === "622" || leagueIdNum === 622) ? 2027 : 2026;
+  // Temporada Selecionada (Padrão 2027 para Pernambucano, Tocantinense, Baiano, Cearense, Sul-Matogrossense)
+  const is2027League = ["622", "631", "602", "609", "623"].includes(leagueIdStr) || [622, 631, 602, 609, 623].includes(leagueIdNum);
+  const defaultSeason = is2027League ? 2027 : 2026;
   const [selectedSeason, setSelectedSeason] = useState<number>(defaultSeason);
   const [availableSeasons, setAvailableSeasons] = useState<number[]>(
-    (leagueIdStr === "622" || leagueIdNum === 622) ? [2027, 2026] : [2026]
+    is2027League ? [2027, 2026] : [2026]
   );
   
   // Loading states
   const [loadingNews, setLoadingNews] = useState(false);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [loadingScorers, setLoadingScorers] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+
+  // Estados e Filtros de Jogadores
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>("all");
+  const [onlyMissingPhotos, setOnlyMissingPhotos] = useState<boolean>(false);
+  const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<PlayerItem | null>(null);
+  const [playerPhotoInput, setPlayerPhotoInput] = useState("");
+  const [submittingPlayerPhoto, setSubmittingPlayerPhoto] = useState(false);
 
   // Busca e Filtros gerais
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,6 +200,7 @@ export default function EstaduaisLeagueDetailPage() {
     fetchNews(resolvedUuid);
     fetchVideos(resolvedUuid);
     fetchScorers(defaultSeason);
+    fetchPlayers(defaultSeason);
   };
 
   // Carregar Notícias filtradas por Liga
@@ -250,9 +280,66 @@ export default function EstaduaisLeagueDetailPage() {
     }
   };
 
+  // Carregar Jogadores da Liga
+  const fetchPlayers = async (seasonToFetch?: number) => {
+    try {
+      setLoadingPlayers(true);
+      const targetSeason = seasonToFetch ?? selectedSeason;
+      const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/players?season=${targetSeason}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPlayers(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("Erro ao buscar jogadores:", e);
+    } finally {
+      setLoadingPlayers(false);
+    }
+  };
+
   const handleSelectSeason = (season: number) => {
     setSelectedSeason(season);
     fetchScorers(season);
+    fetchPlayers(season);
+  };
+
+  // --- HANDLERS DE JOGADORES ---
+  const handleOpenEditPlayerModal = (player: PlayerItem) => {
+    setEditingPlayer(player);
+    setPlayerPhotoInput(player.photo || "");
+    setIsPlayerModalOpen(true);
+  };
+
+  const handleSavePlayerPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlayer) return;
+    try {
+      setSubmittingPlayerPhoto(true);
+      const res = await fetch(`${API_URL}/competitions/players/${editingPlayer.id}/photo`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photo: playerPhotoInput.trim(),
+          teamExternalId: editingPlayer.teamExternalId,
+          playerName: editingPlayer.name,
+        }),
+      });
+      if (res.ok) {
+        setPlayers((prev) =>
+          prev.map((p) =>
+            p.id === editingPlayer.id
+              ? { ...p, photo: playerPhotoInput.trim() || null }
+              : p
+          )
+        );
+        setIsPlayerModalOpen(false);
+        setEditingPlayer(null);
+      }
+    } catch (e) {
+      console.error("Erro ao salvar foto do atleta:", e);
+    } finally {
+      setSubmittingPlayerPhoto(false);
+    }
   };
 
   // --- HANDLERS DE VÍDEO ---
@@ -463,6 +550,22 @@ export default function EstaduaisLeagueDetailPage() {
     return pName.toLowerCase().includes(q) || tName.toLowerCase().includes(q);
   });
 
+  const filteredPlayers = players.filter((player) => {
+    if (selectedTeamFilter !== "all" && player.teamName !== selectedTeamFilter) {
+      return false;
+    }
+    if (onlyMissingPhotos && player.photo && player.photo.trim().length > 5) {
+      return false;
+    }
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      player.name.toLowerCase().includes(q) ||
+      (player.teamName && player.teamName.toLowerCase().includes(q)) ||
+      (player.position && player.position.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="space-y-[30px]" style={{ fontFamily: "var(--font-outfit)" }}>
       {/* Topo / Voltar */}
@@ -510,6 +613,10 @@ export default function EstaduaisLeagueDetailPage() {
           <div className="px-4 py-2 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] text-center">
             <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Artilheiros</p>
             <p className="text-lg font-black text-amber-400">{scorers.length}</p>
+          </div>
+          <div className="px-4 py-2 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] text-center">
+            <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Jogadores</p>
+            <p className="text-lg font-black text-blue-400">{players.length}</p>
           </div>
         </div>
       </div>
@@ -559,6 +666,21 @@ export default function EstaduaisLeagueDetailPage() {
             <span>Artilharia</span>
             <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-black/20 font-mono">
               {scorers.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("jogadores")}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+              activeTab === "jogadores"
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                : "bg-[var(--surface-hover)] text-[var(--text-muted)] hover:text-white border border-[var(--border)]"
+            }`}
+          >
+            <Users size={18} />
+            <span>Jogadores</span>
+            <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-black/20 font-mono">
+              {players.length}
             </span>
           </button>
         </div>
@@ -949,6 +1071,223 @@ export default function EstaduaisLeagueDetailPage() {
         </div>
       )}
 
+      {/* --- ABA JOGADORES --- */}
+      {activeTab === "jogadores" && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Users size={20} className="text-blue-400" />
+                <span>Plantel e Fotos dos Atletas</span>
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Gestão dos elencos, conferência de fotos oficiais e inserção manual para enriquecimento de cards.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Seleção de Temporada */}
+              {availableSeasons.length > 1 && (
+                <div className="flex items-center gap-1 bg-[var(--surface-hover)] p-1 rounded-xl border border-[var(--border)]">
+                  {availableSeasons.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSelectSeason(s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        selectedSeason === s
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                          : "text-[var(--text-muted)] hover:text-white"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Botão de Atualizar Lista */}
+              <button
+                onClick={() => fetchPlayers()}
+                disabled={loadingPlayers}
+                className="btn-ghost text-xs flex items-center gap-1.5 px-3 py-2 bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl hover:text-white"
+                title="Recarregar atletas"
+              >
+                <RefreshCw size={14} className={loadingPlayers ? "animate-spin" : ""} />
+                <span>Atualizar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filtros de Clubes e Fotos */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Seletor de Clube */}
+              <select
+                value={selectedTeamFilter}
+                onChange={(e) => setSelectedTeamFilter(e.target.value)}
+                className="bg-[var(--surface-hover)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">Todos os Clubes ({players.length} atletas)</option>
+                {Array.from(new Set(players.map((p) => p.teamName).filter(Boolean))).map((tName) => {
+                  const count = players.filter((p) => p.teamName === tName).length;
+                  return (
+                    <option key={tName} value={tName as string}>
+                      {tName} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+
+              {/* Filtro Sem Foto */}
+              <button
+                onClick={() => setOnlyMissingPhotos(!onlyMissingPhotos)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                  onlyMissingPhotos
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                    : "bg-[var(--surface-hover)] text-[var(--text-muted)] border-[var(--border)] hover:text-white"
+                }`}
+              >
+                <AlertCircle size={14} />
+                <span>Apenas Sem Foto</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px]">
+                  {players.filter((p) => !p.photo).length}
+                </span>
+              </button>
+            </div>
+
+            <div className="text-xs text-[var(--text-muted)] font-mono self-center">
+              Mostrando {filteredPlayers.length} de {players.length} atletas
+            </div>
+          </div>
+
+          {/* Tabela de Jogadores */}
+          <div className="card overflow-hidden">
+            <div className="table-responsive">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--border)] text-[10px] text-[var(--text-muted)] uppercase tracking-wider bg-[var(--surface-hover)]/50">
+                    <th className="p-4 w-16 text-center">Foto</th>
+                    <th className="p-4">Atleta</th>
+                    <th className="p-4">Clube</th>
+                    <th className="p-4">Posição</th>
+                    <th className="p-4">Idade</th>
+                    <th className="p-4 text-center">Status Foto</th>
+                    <th className="p-4 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {loadingPlayers ? (
+                    <tr>
+                      <td colSpan={7} className="p-12 text-center text-[var(--text-muted)]">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <Loader2 size={24} className="animate-spin text-blue-500" />
+                          <p className="text-xs font-medium">Carregando plantel da competição...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredPlayers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-12 text-center text-[var(--text-muted)]">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Users size={32} className="opacity-40" />
+                          <p className="text-sm font-bold text-white">Nenhum jogador encontrado</p>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            {onlyMissingPhotos
+                              ? "Todos os jogadores deste filtro possuem fotos cadastradas."
+                              : "Nenhum atleta corresponde aos critérios de busca ou a liga ainda não possui plantéis sincronizados."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPlayers.map((player) => {
+                      const hasPhoto = Boolean(player.photo && player.photo.trim().length > 5);
+                      return (
+                        <tr key={player.id} className="hover:bg-[var(--surface-hover)]/30 transition-colors">
+                          <td className="p-4 text-center">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--surface-hover)] border border-[var(--border)] mx-auto flex items-center justify-center shrink-0">
+                              {hasPhoto ? (
+                                <img
+                                  src={player.photo!}
+                                  alt={player.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <span className="font-bold text-xs text-[var(--text-muted)]">
+                                  {player.name.substring(0, 2).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-white text-sm flex items-center gap-1.5">
+                                {player.name}
+                                {player.number && (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-zinc-300">
+                                    #{player.number}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                                ID: {player.id}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              {player.teamLogo && (
+                                <img src={player.teamLogo} alt="" className="w-5 h-5 object-contain" />
+                              )}
+                              <span className="text-[var(--text-muted)] text-xs font-medium">
+                                {player.teamName || "—"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-xs px-2.5 py-1 rounded-md bg-[var(--surface-hover)] border border-[var(--border)] text-zinc-300 font-medium">
+                              {player.position}
+                            </span>
+                          </td>
+                          <td className="p-4 text-xs font-mono text-[var(--text-muted)]">
+                            {player.age ? `${player.age} anos` : "—"}
+                          </td>
+                          <td className="p-4 text-center">
+                            {hasPhoto ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                                <CheckCircle2 size={12} />
+                                <span>Com Foto</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                                <AlertCircle size={12} />
+                                <span>Sem Foto</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => handleOpenEditPlayerModal(player)}
+                              className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5"
+                            >
+                              <Camera size={14} />
+                              <span>{hasPhoto ? "Alterar Foto" : "Inserir Foto"}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- MODAL DE INSERIR / EDITAR ARTILHEIRO --- */}
       {isScorerModalOpen && (
         <div className="modal-overlay">
@@ -1282,6 +1621,110 @@ export default function EstaduaisLeagueDetailPage() {
                   className="bg-[var(--primary)] text-black px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg disabled:opacity-50"
                 >
                   {submittingNews ? "SALVANDO..." : "SALVAR NOTÍCIA"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL EDITAR FOTO DO JOGADOR --- */}
+      {isPlayerModalOpen && editingPlayer && (
+        <div className="modal-overlay">
+          <div className="modal-container animate-in fade-in zoom-in duration-200 max-w-md">
+            <div className="modal-header">
+              <div className="flex items-center gap-2.5">
+                <Camera size={20} className="text-blue-400" />
+                <h3 className="text-base font-bold text-white">Editar Foto do Atleta</h3>
+              </div>
+              <button
+                onClick={() => setIsPlayerModalOpen(false)}
+                className="p-1.5 hover:bg-[var(--surface-hover)] rounded-lg text-[var(--text-muted)] hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePlayerPhoto} className="flex flex-col flex-1 min-h-0">
+              <div className="modal-body space-y-4">
+                {/* Perfil Rápido do Jogador */}
+                <div className="p-3.5 rounded-xl bg-[var(--surface-hover)] border border-[var(--border)] flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-black/40 border border-[var(--border)] shrink-0 flex items-center justify-center">
+                    {playerPhotoInput.trim() ? (
+                      <img
+                        src={playerPhotoInput.trim()}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span className="font-bold text-sm text-[var(--text-muted)]">
+                        {editingPlayer.name.substring(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{editingPlayer.name}</h4>
+                    <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5 mt-0.5">
+                      {editingPlayer.teamLogo && (
+                        <img src={editingPlayer.teamLogo} alt="" className="w-3.5 h-3.5 object-contain" />
+                      )}
+                      <span>{editingPlayer.teamName}</span> • <span>{editingPlayer.position}</span>
+                      {editingPlayer.number && <span>(#{editingPlayer.number})</span>}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="admin-label">URL da Foto Oficial *</label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://www.ogol.com.br/img/jogadores/... ou https://..."
+                    className="admin-input font-mono text-xs"
+                    value={playerPhotoInput}
+                    onChange={(e) => setPlayerPhotoInput(e.target.value)}
+                  />
+                  <p className="text-[11px] text-[var(--text-muted)] mt-1.5">
+                    Insira a URL direta da foto oficial (ex: do oGol, Federação ou CDN). A imagem será atualizada imediatamente no card do atleta e escalações.
+                  </p>
+                </div>
+
+                {/* Pré-visualização da imagem */}
+                {playerPhotoInput.trim() && (
+                  <div className="p-3.5 rounded-xl bg-black/30 border border-[var(--border)] text-center">
+                    <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase mb-2">Pré-visualização</p>
+                    <div className="w-20 h-20 rounded-xl overflow-hidden mx-auto border border-blue-500/40 shadow-lg">
+                      <img
+                        src={playerPhotoInput.trim()}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%23222"/><text x="40" y="45" font-size="10" fill="%23999" text-anchor="middle">URL Inválida</text></svg>';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setIsPlayerModalOpen(false)}
+                  className="px-5 py-2.5 text-xs text-[var(--text-muted)] font-bold hover:text-white transition-colors"
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingPlayerPhoto || !playerPhotoInput.trim()}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {submittingPlayerPhoto && <Loader2 size={14} className="animate-spin" />}
+                  <span>{submittingPlayerPhoto ? "SALVANDO..." : "SALVAR FOTO"}</span>
                 </button>
               </div>
             </form>

@@ -75,4 +75,22 @@ export class CompetitionsController {
   deleteScorer(@Param('id') id: string) {
     return this.competitionsService.deleteScorer(id);
   }
+
+  @Get(':id/players')
+  async getPlayers(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('season') season?: string,
+  ) {
+    const comp = this.competitionsService.findOneByExternalId(id);
+    const targetSeason = season ? parseInt(season, 10) : (comp ? comp.activeSeasons[0] : 2026);
+    return this.competitionsService.getCompetitionPlayers(id, targetSeason);
+  }
+
+  @Put('players/:playerId/photo')
+  async updatePlayerPhoto(
+    @Param('playerId', ParseIntPipe) playerId: number,
+    @Body() body: { photo: string; teamExternalId?: number; playerName?: string },
+  ) {
+    return this.competitionsService.updatePlayerPhoto(playerId, body);
+  }
 }

@@ -3,6 +3,7 @@ import { SyncService } from './sync.service';
 import { Cearense2027SeederService } from './cearense-2027-seeder.service';
 import { Baiano2027SeederService } from './baiano-2027-seeder.service';
 import { Sulmatogrossense2027SeederService } from './sulmatogrossense-2027-seeder.service';
+import { Tocantinense2027SeederService } from './tocantinense-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -19,6 +20,7 @@ export class SyncController {
     private readonly cearenseSeeder: Cearense2027SeederService,
     private readonly baianoSeeder: Baiano2027SeederService,
     private readonly sulmatogrossenseSeeder: Sulmatogrossense2027SeederService,
+    private readonly tocantinenseSeeder: Tocantinense2027SeederService,
   ) {}
 
   @Post('seed-cearense-2027')
@@ -34,6 +36,11 @@ export class SyncController {
   @Post('seed-sulmatogrossense-2027')
   async seedSulmatogrossense2027() {
     return this.sulmatogrossenseSeeder.seedSulmatogrossense2027();
+  }
+
+  @Post('seed-tocantinense-2027')
+  async seedTocantinense2027() {
+    return this.tocantinenseSeeder.seedTocantinense2027();
   }
 
   @Post('bootstrap')

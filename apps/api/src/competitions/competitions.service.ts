@@ -114,4 +114,157 @@ export class CompetitionsService {
     await this.redis.delPattern('topscorers:*');
     return deleted;
   }
+
+  /**
+   * Lista todos os jogadores dos clubes de uma competição para gestão no AdminPanel
+   */
+  async getCompetitionPlayers(leagueExternalId: number, season: number = 2026) {
+    const league = await this.prisma.league.findUnique({
+      where: { externalId: leagueExternalId },
+    });
+
+    if (!league) return [];
+
+    // Busca times presentes na classificação ou partidas da liga
+    const standings = await this.prisma.standing.findMany({
+      where: { leagueId: league.id, season },
+      include: { team: true },
+      orderBy: { rank: 'asc' },
+    });
+
+    let teams = standings.map((s) => s.team);
+
+    // Fallback: se standings ainda não estiver populado, busca times pelas fixtures
+    if (teams.length === 0) {
+      const fixtures = await this.prisma.fixture.findMany({
+        where: { leagueId: league.id, season },
+        include: { homeTeam: true, awayTeam: true },
+        take: 30,
+      });
+      const teamMap = new Map<number, any>();
+      for (const f of fixtures) {
+        if (f.homeTeam) teamMap.set(f.homeTeam.externalId, f.homeTeam);
+        if (f.awayTeam) teamMap.set(f.awayTeam.externalId, f.awayTeam);
+      }
+      teams = Array.from(teamMap.values());
+    }
+
+    const allPlayers: Array<{
+      id: number;
+      name: string;
+      number: number | null;
+      position: string;
+      age: number | null;
+      photo: string | null;
+      teamId: string;
+      teamExternalId: number;
+      teamName: string;
+      teamLogo: string | null;
+    }> = [];
+
+    for (const team of teams) {
+      try {
+        const squadRecord = await (this.prisma as any).teamSquad.findUnique({
+          where: { teamExternalId: team.externalId },
+        });
+
+        if (squadRecord && squadRecord.squadJson) {
+          const players = JSON.parse(squadRecord.squadJson);
+          if (Array.isArray(players)) {
+            for (const p of players) {
+              allPlayers.push({
+                id: p.id,
+                name: p.name,
+                number: p.number ?? null,
+                position: p.position || 'Player',
+                age: p.age ?? null,
+                photo: p.photo || null,
+                teamId: team.id,
+                teamExternalId: team.externalId,
+                teamName: team.name,
+                teamLogo: team.logo,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Continua para o próximo time
+      }
+    }
+
+    return allPlayers;
+  }
+
+  /**
+   * Atualização manual cirúrgica da foto de um atleta com propagação em cascata (TeamSquad, Player, Scorer, Lineup)
+   */
+  async updatePlayerPhoto(
+    playerId: number,
+    data: { photo: string; teamExternalId?: number; playerName?: string },
+  ) {
+    const photoUrl = (data.photo || '').trim();
+
+    // 1. Atualizar ou Criar registro na tabela Player
+    try {
+      await this.prisma.player.upsert({
+        where: { externalId: playerId },
+        update: { photo: photoUrl || null },
+        create: {
+          externalId: playerId,
+          name: data.playerName || 'Jogador',
+          photo: photoUrl || null,
+        },
+      });
+    } catch (_) {}
+
+    // 2. Atualizar no TeamSquad do clube
+    if (data.teamExternalId) {
+      try {
+        const squadRecord = await (this.prisma as any).teamSquad.findUnique({
+          where: { teamExternalId: data.teamExternalId },
+        });
+
+        if (squadRecord && squadRecord.squadJson) {
+          const squad = JSON.parse(squadRecord.squadJson);
+          if (Array.isArray(squad)) {
+            let updated = false;
+            for (const p of squad) {
+              if (
+                p.id === playerId ||
+                (data.playerName && p.name.toLowerCase() === data.playerName.toLowerCase())
+              ) {
+                p.photo = photoUrl || null;
+                updated = true;
+              }
+            }
+            if (updated) {
+              await (this.prisma as any).teamSquad.update({
+                where: { teamExternalId: data.teamExternalId },
+                data: { squadJson: JSON.stringify(squad) },
+              });
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Atualizar nas tabelas de artilharia e súmulas
+    if (data.playerName) {
+      try {
+        await this.prisma.scorer.updateMany({
+          where: { playerName: data.playerName },
+          data: { playerPhoto: photoUrl || null },
+        });
+      } catch (_) {}
+
+      try {
+        await this.prisma.fixtureLineup.updateMany({
+          where: { player: data.playerName },
+          data: { playerPhoto: photoUrl || null },
+        });
+      } catch (_) {}
+    }
+
+    return { success: true, playerId, photo: photoUrl };
+  }
 }
