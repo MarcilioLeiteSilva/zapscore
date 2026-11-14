@@ -67,7 +67,10 @@ class AdService {
               await MobileAds.instance.initialize();
               if (kDebugMode) {
                 await MobileAds.instance.updateRequestConfiguration(
-                  RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
+                  RequestConfiguration(testDeviceIds: [
+                    '009A55C88C73C446B985FB6F333F961B',
+                    '447AA0DFA3C3CD8724DBF89DBA08C946',
+                  ]),
                 );
               }
               preloadInterstitial();
@@ -79,7 +82,10 @@ class AdService {
           await MobileAds.instance.initialize();
           if (kDebugMode) {
             await MobileAds.instance.updateRequestConfiguration(
-              RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
+              RequestConfiguration(testDeviceIds: [
+                '009A55C88C73C446B985FB6F333F961B',
+                '447AA0DFA3C3CD8724DBF89DBA08C946',
+              ]),
             );
           }
           preloadInterstitial();
@@ -90,7 +96,10 @@ class AdService {
       await MobileAds.instance.initialize();
       if (kDebugMode) {
         await MobileAds.instance.updateRequestConfiguration(
-          RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
+          RequestConfiguration(testDeviceIds: [
+            '009A55C88C73C446B985FB6F333F961B',
+            '447AA0DFA3C3CD8724DBF89DBA08C946',
+          ]),
         );
       }
       preloadInterstitial();
