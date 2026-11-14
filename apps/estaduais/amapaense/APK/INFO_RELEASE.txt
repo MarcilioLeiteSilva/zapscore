@@ -2,23 +2,34 @@
 ZAPSCORE - CAMPEONATO AMAPAENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
 ================================================================================
 
-Data: 27/09/2026
+Data: 14/11/2026
 Nome do App: Amapaense
 Package / Application ID: com.zapscore.estadualamapaense
-Versão: 1.0.0
-Version Code: 1 (1.0.0+1)
+Versão: 1.0.1
+Version Code: 2 (1.0.1+2)
 
 --------------------------------------------------------------------------------
 1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
 --------------------------------------------------------------------------------
-- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store
-- zapscore_amapaense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle para versionamento
-- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.1+2)
+- zapscore_amapaense_v1.0.1+2.aab  -> Cópia nomeada do App Bundle atualizado (v1.0.1+2)
+- zapscore_amapaense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle anterior (v1.0.0+1)
+- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8 atualizado
 - upload-keystore.jks             -> Chave de assinatura oficial utilizada para assinar o release
 - amapaense-upload-keystore.jks    -> Cópia de segurança da chave com prefixo do app
 - key.properties                  -> Arquivo de credenciais de assinatura do Gradle
 - INFO_RELEASE.txt                -> Este relatório técnico de auditoria e credenciais
 - DESCRICAO_PLAY_STORE.txt        -> Ficha técnica e descrições para publicação na Play Store
+
+--------------------------------------------------------------------------------
+2. NOVIDADES E ALTERAÇÕES DESTA VERSÃO (v1.0.1+2)
+--------------------------------------------------------------------------------
+- Atualização e suporte oficial para o Amapazão Série A 2027 (Federação Amapaense de Futebol - FAF).
+- Correção de travamento no Native Ad (substituição de AppCompatButton por Button compatível no layout).
+- Inclusão de Banners AdMob em todas as telas: Competição (Classificação, Rodadas, Jogos, Artilharia), Detalhes da Partida (todas as abas), Perfil do Time e Perfil do Jogador.
+- Escudos reais em alta resolução obtidos no oGol e FAF para todos os 8 clubes oficiais: Santos-AP, São José-AP, Oratório, Independente-AP, Trem, Ypiranga-AP, Portuguesa-AP e Rio Norte.
+- Tabela oficial completa com as 28 partidas da 1ª Fase Classificatória integrada ao app e ao seeder do banco de dados da API.
+- Configuração de chaves e testes AdMob para o dispositivo desenvolvedor.
 
 --------------------------------------------------------------------------------
 2. DADOS DA CHAVE DE ASSINATURA (KEYSTORE)
