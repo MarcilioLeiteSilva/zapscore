@@ -126,18 +126,26 @@ export class CompetitionsService {
     if (!league) return [];
 
     // Busca times presentes na classificação ou partidas da liga
-    const standings = await this.prisma.standing.findMany({
+    let standings = await this.prisma.standing.findMany({
       where: { leagueId: league.id, season },
       include: { team: true },
       orderBy: { rank: 'asc' },
     });
+
+    if (standings.length === 0 && season !== 2027) {
+      standings = await this.prisma.standing.findMany({
+        where: { leagueId: league.id, season: 2027 },
+        include: { team: true },
+        orderBy: { rank: 'asc' },
+      });
+    }
 
     let teams = standings.map((s) => s.team);
 
     // Fallback: se standings ainda não estiver populado, busca times pelas fixtures
     if (teams.length === 0) {
       const fixtures = await this.prisma.fixture.findMany({
-        where: { leagueId: league.id, season },
+        where: { leagueId: league.id },
         include: { homeTeam: true, awayTeam: true },
         take: 30,
       });

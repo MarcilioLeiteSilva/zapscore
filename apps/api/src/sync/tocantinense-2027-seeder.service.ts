@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -223,6 +224,21 @@ export class Tocantinense2027SeederService implements OnApplicationBootstrap {
       ],
     };
 
+    try {
+      await this.prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "TeamSquad" (
+          "id" TEXT PRIMARY KEY,
+          "teamExternalId" INTEGER NOT NULL UNIQUE,
+          "squadJson" TEXT NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS "TeamSquad_teamExternalId_idx" ON "TeamSquad"("teamExternalId");
+      `);
+    } catch (tblErr: any) {
+      this.logger.warn(`[TOCANTINENSE-2027-SEEDER] Aviso ao garantir tabela TeamSquad: ${tblErr.message}`);
+    }
+
     for (const [teamExtId, squadList] of Object.entries(SQUADS_DEF)) {
       const extIdNum = parseInt(teamExtId, 10);
       try {
@@ -232,6 +248,7 @@ export class Tocantinense2027SeederService implements OnApplicationBootstrap {
         if (!existing) {
           await (this.prisma as any).teamSquad.create({
             data: {
+              id: randomUUID(),
               teamExternalId: extIdNum,
               squadJson: JSON.stringify(squadList),
             },
