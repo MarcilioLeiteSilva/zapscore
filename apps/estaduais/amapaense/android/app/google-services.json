@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "314240345886",
+    "project_id": "appamapaense",
+    "storage_bucket": "appamapaense.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:314240345886:android:297433660edd39e7e90b0f",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualamapaense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpRSSrIEOcKt_fTjeKKqPIL5_aPq1qqOI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

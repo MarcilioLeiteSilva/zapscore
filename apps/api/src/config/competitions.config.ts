@@ -326,7 +326,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Amapaense',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2026, 2027],
   },
   {
     code: 'BR_RONDONIENSE_1',
