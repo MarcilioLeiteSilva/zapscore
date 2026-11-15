@@ -752,13 +752,13 @@ export default function EstaduaisLeagueDetailPage() {
 
   // Lista Canônica de Clubes do Amapaense (ID 521)
   const AMAPAENSE_CANONICAL_CLUBS = [
-    { externalId: 2224, name: "Trem" },
-    { externalId: 7785, name: "Santos-AP" },
-    { externalId: 10858, name: "Ypiranga-AP" },
-    { externalId: 10861, name: "Santana" },
-    { externalId: 7848, name: "Macapá" },
-    { externalId: 270734, name: "Oratório" },
-    { externalId: 78216, name: "Independente-AP" },
+    { externalId: 2224, name: "Trem Desportivo Clube" },
+    { externalId: 7785, name: "Santos Futebol Clube do Amapá" },
+    { externalId: 10858, name: "Oratório Recreativo Clube" },
+    { externalId: 10861, name: "Independente Esporte Clube" },
+    { externalId: 7848, name: "Ypiranga Clube" },
+    { externalId: 270734, name: "Portuguesa de Desporto do Amapá" },
+    { externalId: 78216, name: "Rio Norte Futebol Clube" },
     { externalId: 15622, name: "SER São José" },
   ];
 
