@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiFootballService } from '../integrations/api-football/api-football.service';
 import { SUPPORTED_COMPETITIONS } from '../config/competitions.config';
+import { CompetitionsService } from '../competitions/competitions.service';
 
 @Injectable()
 export class TeamsService {
@@ -65,6 +66,11 @@ export class TeamsService {
   }>> {
     let cachedSquad: any = null;
 
+    // 0. Cache em memória recente (inserções e edições no Admin)
+    if (CompetitionsService.memorySquads?.has(teamExternalId)) {
+      return CompetitionsService.memorySquads.get(teamExternalId)! as any;
+    }
+
     // 1. Safe check for database cache
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -85,6 +91,9 @@ export class TeamsService {
       if (!raw || raw.length === 0) {
         if (cachedSquad) {
           try { return JSON.parse(cachedSquad.squadJson); } catch (_) {}
+        }
+        if (CompetitionsService.CANONICAL_AMAPAENSE_SQUADS?.[teamExternalId]) {
+          return CompetitionsService.CANONICAL_AMAPAENSE_SQUADS[teamExternalId] as any;
         }
         return [];
       }

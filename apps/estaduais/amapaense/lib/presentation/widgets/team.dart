@@ -852,10 +852,10 @@ class TeamSquadPage extends StatelessWidget {
                               CircleAvatar(
                                 radius: 22,
                                 backgroundColor: context.appColors.info ?? Colors.black26,
-                                backgroundImage: player.photo != null
-                                    ? NetworkImage(proxyImage(player.photo!))
+                                backgroundImage: (player.photo != null && player.photo!.trim().length > 5)
+                                    ? CachedNetworkImageProvider(proxyImage(player.photo!))
                                     : null,
-                                child: player.photo == null
+                                child: (player.photo == null || player.photo!.trim().length <= 5)
                                     ? const Icon(Icons.person, color: Colors.white54)
                                     : null,
                               ),
@@ -979,8 +979,12 @@ class TeamSquadPage extends StatelessWidget {
                   leading: CircleAvatar(
                     radius: 22,
                     backgroundColor: context.appColors.info ?? Colors.black26,
-                    backgroundImage: player.playerPhoto != null ? NetworkImage(proxyImage(player.playerPhoto!)) : null,
-                    child: player.playerPhoto == null ? const Icon(Icons.person, color: Colors.white54) : null,
+                    backgroundImage: (player.playerPhoto != null && player.playerPhoto!.trim().length > 5)
+                        ? CachedNetworkImageProvider(proxyImage(player.playerPhoto!))
+                        : null,
+                    child: (player.playerPhoto == null || player.playerPhoto!.trim().length <= 5)
+                        ? const Icon(Icons.person, color: Colors.white54)
+                        : null,
                   ),
                   title: Text(player.player,
                       style: context.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),

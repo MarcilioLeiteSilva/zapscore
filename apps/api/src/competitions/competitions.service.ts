@@ -6,7 +6,7 @@ import { SUPPORTED_COMPETITIONS, CompetitionConfig } from '../config/competition
 
 @Injectable()
 export class CompetitionsService {
-  private static readonly memorySquads = new Map<number, any[]>();
+  public static readonly memorySquads = new Map<number, any[]>();
   private static teamSquadTableEnsured = false;
 
   /**
@@ -32,14 +32,14 @@ export class CompetitionsService {
   }
 
   static readonly CANONICAL_AMAPAENSE_CLUBS = [
-    { externalId: 2224, name: 'Trem Desportivo Clube', logo: 'https://media.api-sports.io/football/teams/2224.png' },
-    { externalId: 7785, name: 'Santos Futebol Clube do Amapá', logo: 'https://media.api-sports.io/football/teams/7785.png' },
-    { externalId: 10858, name: 'Oratório Recreativo Clube', logo: 'https://media.api-sports.io/football/teams/10858.png' },
-    { externalId: 10861, name: 'Independente Esporte Clube', logo: 'https://media.api-sports.io/football/teams/10861.png' },
-    { externalId: 7848, name: 'Ypiranga Clube', logo: 'https://media.api-sports.io/football/teams/7848.png' },
-    { externalId: 270734, name: 'Portuguesa de Desporto do Amapá', logo: 'https://media.api-sports.io/football/teams/270734.png' },
-    { externalId: 78216, name: 'Rio Norte Futebol Clube', logo: 'https://media.api-sports.io/football/teams/78216.png' },
-    { externalId: 15622, name: 'SER São José', logo: 'https://media.api-sports.io/football/teams/15622.png' },
+    { externalId: 2224, name: 'Trem Desportivo Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/3498_imgbank_1783433513.png' },
+    { externalId: 7785, name: 'Santos Futebol Clube do Amapá', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/3454_imgbank_1709044764.png' },
+    { externalId: 10858, name: 'Oratório Recreativo Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/32994_imgbank.png' },
+    { externalId: 10861, name: 'Independente Esporte Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/3288_imgbank_1738173340.png' },
+    { externalId: 7848, name: 'Ypiranga Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/3539_imgbank.png' },
+    { externalId: 270734, name: 'Portuguesa de Desporto do Amapá', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/270734_imgbank_1783433065.png' },
+    { externalId: 78216, name: 'Rio Norte Futebol Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/78216_imgbank_1778018787.png' },
+    { externalId: 15622, name: 'SER São José', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/40/4940_logo_sao_jose_ap_20260219162415.png' },
   ];
 
   static readonly CANONICAL_AMAPAENSE_SQUADS: Record<number, any[]> = {
@@ -165,7 +165,7 @@ export class CompetitionsService {
     private readonly prisma: PrismaService,
     private readonly apiFootball: ApiFootballService,
     private readonly redis: RedisService,
-  ) {}
+  ) { }
 
   findAll(): CompetitionConfig[] {
     return SUPPORTED_COMPETITIONS;
@@ -214,7 +214,7 @@ export class CompetitionsService {
     if (scorers.length > 0) {
       await this.redis.setJson(cacheKey, scorers, 3600);
     }
-    
+
     return scorers;
   }
 
@@ -323,7 +323,7 @@ export class CompetitionsService {
             dbTeam = await this.prisma.team.findUnique({
               where: { externalId: ct.externalId },
             });
-          } catch (_) {}
+          } catch (_) { }
           if (dbTeam) {
             teams.push(dbTeam);
           } else {
@@ -373,7 +373,7 @@ export class CompetitionsService {
               squadList = parsed;
             }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
 
       // 3. Se for Amapaense (521) e elenco estiver vazio, usa os atletas canônicos
@@ -387,7 +387,7 @@ export class CompetitionsService {
               update: { squadJson: JSON.stringify(squadList) },
               create: { teamExternalId: team.externalId, squadJson: JSON.stringify(squadList) },
             });
-          } catch (_) {}
+          } catch (_) { }
         }
       }
 
@@ -410,9 +410,9 @@ export class CompetitionsService {
                 update: { squadJson: JSON.stringify(squadList) },
                 create: { teamExternalId: team.externalId, squadJson: JSON.stringify(squadList) },
               });
-            } catch (_) {}
+            } catch (_) { }
           }
-        } catch (_) {}
+        } catch (_) { }
       }
 
       // 5. Atualiza o cache em memória
@@ -483,7 +483,7 @@ export class CompetitionsService {
         const parsed = JSON.parse(record.squadJson);
         if (Array.isArray(parsed) && parsed.length > 0) squad = parsed;
       }
-    } catch (_) {}
+    } catch (_) { }
 
     squad.push(newPlayer);
     CompetitionsService.memorySquads.set(teamExternalId, squad);
@@ -513,7 +513,7 @@ export class CompetitionsService {
           age: newPlayer.age,
         },
       });
-    } catch (_) {}
+    } catch (_) { }
 
     return { success: true, player: newPlayer };
   }
@@ -546,7 +546,7 @@ export class CompetitionsService {
           const parsed = JSON.parse(squadRecord.squadJson);
           if (Array.isArray(parsed) && parsed.length > 0) squad = parsed;
         }
-      } catch (_) {}
+      } catch (_) { }
 
       let found = false;
       for (const p of squad) {
@@ -569,7 +569,7 @@ export class CompetitionsService {
             where: { teamExternalId: tId },
             data: { squadJson: JSON.stringify(squad) },
           });
-        } catch (_) {}
+        } catch (_) { }
       }
     } else {
       // Se teamExternalId não foi passado, procura em todos os squads
@@ -602,7 +602,7 @@ export class CompetitionsService {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Propaga em Player, Scorer e FixtureLineup
@@ -621,7 +621,7 @@ export class CompetitionsService {
           age: data.age ? Number(data.age) : null,
         },
       });
-    } catch (_) {}
+    } catch (_) { }
 
     if (data.name || data.photo !== undefined) {
       const pName = data.name ? data.name.trim() : undefined;
@@ -636,7 +636,7 @@ export class CompetitionsService {
             where: { player: pName },
             data: { ...(pPhoto && { playerPhoto: pPhoto }) },
           });
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
@@ -660,7 +660,7 @@ export class CompetitionsService {
           const parsed = JSON.parse(squadRecord.squadJson);
           if (Array.isArray(parsed) && parsed.length > 0) squad = parsed;
         }
-      } catch (_) {}
+      } catch (_) { }
 
       const initialLen = squad.length;
       const filtered = squad.filter((p: any) => p.id !== playerId);
@@ -672,7 +672,7 @@ export class CompetitionsService {
             where: { teamExternalId: tId },
             data: { squadJson: JSON.stringify(filtered) },
           });
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
@@ -700,7 +700,7 @@ export class CompetitionsService {
           photo: photoUrl || null,
         },
       });
-    } catch (_) {}
+    } catch (_) { }
 
     // 2. Atualizar no TeamSquad e no cache em memória do clube
     if (data.teamExternalId) {
@@ -714,7 +714,7 @@ export class CompetitionsService {
           const parsed = JSON.parse(squadRecord.squadJson);
           if (Array.isArray(parsed) && parsed.length > 0) squad = parsed;
         }
-      } catch (_) {}
+      } catch (_) { }
 
       let updated = false;
       for (const p of squad) {
@@ -734,7 +734,7 @@ export class CompetitionsService {
             where: { teamExternalId: tId },
             data: { squadJson: JSON.stringify(squad) },
           });
-        } catch (_) {}
+        } catch (_) { }
       }
     }
 
@@ -745,14 +745,14 @@ export class CompetitionsService {
           where: { playerName: data.playerName },
           data: { playerPhoto: photoUrl || null },
         });
-      } catch (_) {}
+      } catch (_) { }
 
       try {
         await this.prisma.fixtureLineup.updateMany({
           where: { player: data.playerName },
           data: { playerPhoto: photoUrl || null },
         });
-      } catch (_) {}
+      } catch (_) { }
     }
 
     return { success: true, playerId, photo: photoUrl };

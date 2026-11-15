@@ -761,16 +761,16 @@ export default function EstaduaisLeagueDetailPage() {
     }
   };
 
-  // Lista Canônica de Clubes do Amapaense (ID 521)
+  // Lista Canônica de Clubes do Amapaense (ID 521) com Escudos Oficiais
   const AMAPAENSE_CANONICAL_CLUBS = [
-    { externalId: 2224, name: "Trem Desportivo Clube" },
-    { externalId: 7785, name: "Santos Futebol Clube do Amapá" },
-    { externalId: 10858, name: "Oratório Recreativo Clube" },
-    { externalId: 10861, name: "Independente Esporte Clube" },
-    { externalId: 7848, name: "Ypiranga Clube" },
-    { externalId: 270734, name: "Portuguesa de Desporto do Amapá" },
-    { externalId: 78216, name: "Rio Norte Futebol Clube" },
-    { externalId: 15622, name: "SER São José" },
+    { externalId: 2224, name: "Trem Desportivo Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/3498_imgbank_1783433513.png" },
+    { externalId: 7785, name: "Santos Futebol Clube do Amapá", logo: "https://cdn-img.staticzz.com/img/logos/equipas/3454_imgbank_1709044764.png" },
+    { externalId: 10858, name: "Oratório Recreativo Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/32994_imgbank.png" },
+    { externalId: 10861, name: "Independente Esporte Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/3288_imgbank_1738173340.png" },
+    { externalId: 7848, name: "Ypiranga Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/3539_imgbank.png" },
+    { externalId: 270734, name: "Portuguesa de Desporto do Amapá", logo: "https://cdn-img.staticzz.com/img/logos/equipas/270734_imgbank_1783433065.png" },
+    { externalId: 78216, name: "Rio Norte Futebol Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/78216_imgbank_1778018787.png" },
+    { externalId: 15622, name: "SER São José", logo: "https://cdn-img.staticzz.com/img/logos/equipas/40/4940_logo_sao_jose_ap_20260219162415.png" },
   ];
 
   const availableClubs = useMemo(() => {
@@ -1487,7 +1487,14 @@ export default function EstaduaisLeagueDetailPage() {
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               {tLogo && (
-                                <img src={tLogo} alt="" className="w-5 h-5 object-contain" />
+                                <img
+                                  src={photoSrc(tLogo)}
+                                  alt=""
+                                  className="w-5 h-5 object-contain"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
                               )}
                               <span className="text-[var(--text-muted)] font-medium">{tName}</span>
                             </div>
@@ -1705,7 +1712,14 @@ export default function EstaduaisLeagueDetailPage() {
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               {player.teamLogo && (
-                                <img src={player.teamLogo} alt="" className="w-5 h-5 object-contain" />
+                                <img
+                                  src={photoSrc(player.teamLogo)}
+                                  alt=""
+                                  className="w-5 h-5 object-contain"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = 'none';
+                                  }}
+                                />
                               )}
                               <span className="text-[var(--text-muted)] text-xs font-medium">
                                 {player.teamName || "—"}
