@@ -50,8 +50,13 @@ export class NewsController {
   }
 
   @Get()
-  async findAll(@Query() query: { leagueId?: string; teamId?: string; limit?: string }) {
+  async findAll(@Query() query: { leagueId?: string; teamId?: string; limit?: string; status?: string; includeDrafts?: string }) {
     return this.newsService.findAll(query);
+  }
+
+  @Post('bulk-delete')
+  async bulkDelete(@Body() body: { ids: string[] }) {
+    return this.newsService.bulkDelete(body.ids);
   }
 
   @Get(':id')

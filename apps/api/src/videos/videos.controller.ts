@@ -6,8 +6,13 @@ export class VideosController {
   constructor(private readonly videosService: VideosService) {}
 
   @Get()
-  async findAll(@Query() query: { leagueId?: string; teamId?: string; limit?: string }) {
+  async findAll(@Query() query: { leagueId?: string; teamId?: string; limit?: string; status?: string; includeDrafts?: string }) {
     return this.videosService.findAll(query);
+  }
+
+  @Post('bulk-delete')
+  async bulkDelete(@Body() body: { ids: string[] }) {
+    return this.videosService.bulkDelete(body.ids);
   }
 
   @Get(':id')

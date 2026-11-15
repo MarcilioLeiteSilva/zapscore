@@ -157,6 +157,20 @@ export class CompetitionsService {
       teams = Array.from(teamMap.values());
     }
 
+    // Fallback 2 específico Amapaense (ID 521): busca os 8 clubes oficiais
+    if (leagueExternalId === 521 && teams.length < 8) {
+      const canonicalExtIds = [2224, 7785, 10858, 10861, 7848, 270734, 78216, 15622];
+      const foundTeams = await this.prisma.team.findMany({
+        where: { externalId: { in: canonicalExtIds } },
+      });
+      const existingIds = new Set(teams.map((t) => t.externalId));
+      for (const ft of foundTeams) {
+        if (!existingIds.has(ft.externalId)) {
+          teams.push(ft);
+        }
+      }
+    }
+
     const allPlayers: Array<{
       id: number;
       name: string;
@@ -172,9 +186,73 @@ export class CompetitionsService {
 
     for (const team of teams) {
       try {
-        const squadRecord = await (this.prisma as any).teamSquad.findUnique({
+        let squadRecord = await (this.prisma as any).teamSquad.findUnique({
           where: { teamExternalId: team.externalId },
         });
+
+        // Auto-seed para Amapaense se o clube não tiver squad cadastrado
+        if ((!squadRecord || !squadRecord.squadJson) && leagueExternalId === 521) {
+          const defaultAmapaenseSquads: Record<number, any[]> = {
+            2224: [
+              { id: 222401, name: 'Vitor Hugo', position: 'Goalkeeper', number: 1, age: 31, photo: 'https://cdn-img.staticzz.com/img/jogadores/31/349831_med__20260301120000.png' },
+              { id: 222402, name: 'Felipe Macapá', position: 'Defender', number: 3, age: 28, photo: '' },
+              { id: 222403, name: 'Daniel Silva', position: 'Defender', number: 4, age: 26, photo: '' },
+              { id: 222404, name: 'Rubens Lucas', position: 'Midfielder', number: 8, age: 27, photo: '' },
+              { id: 222405, name: 'Silvio', position: 'Midfielder', number: 10, age: 29, photo: '' },
+              { id: 222406, name: 'Aleilson', position: 'Attacker', number: 9, age: 38, photo: 'https://cdn-img.staticzz.com/img/jogadores/45/14545_med__20260215100000.png' },
+            ],
+            7785: [
+              { id: 778501, name: 'Matheus Carioca', position: 'Goalkeeper', number: 1, age: 27, photo: '' },
+              { id: 778502, name: 'Batata', position: 'Defender', number: 2, age: 29, photo: '' },
+              { id: 778503, name: 'Dudu', position: 'Midfielder', number: 7, age: 24, photo: '' },
+              { id: 778504, name: 'Luciano', position: 'Attacker', number: 11, age: 26, photo: '' },
+            ],
+            10858: [
+              { id: 1085801, name: 'Lucas Bento', position: 'Goalkeeper', number: 1, age: 25, photo: '' },
+              { id: 1085802, name: 'Tarta', position: 'Midfielder', number: 10, age: 30, photo: '' },
+              { id: 1085803, name: 'Abuda', position: 'Attacker', number: 9, age: 28, photo: '' },
+            ],
+            10861: [
+              { id: 1086101, name: 'Wanderson', position: 'Goalkeeper', number: 1, age: 26, photo: '' },
+              { id: 1086102, name: 'Kaio', position: 'Defender', number: 5, age: 24, photo: '' },
+              { id: 1086103, name: 'Marquinhos', position: 'Attacker', number: 7, age: 25, photo: '' },
+            ],
+            7848: [
+              { id: 784801, name: 'Rafael', position: 'Goalkeeper', number: 12, age: 26, photo: '' },
+              { id: 784802, name: 'Guilherme', position: 'Defender', number: 4, age: 23, photo: '' },
+              { id: 784803, name: 'Tony Love', position: 'Attacker', number: 9, age: 32, photo: '' },
+            ],
+            270734: [
+              { id: 27073401, name: 'Diego', position: 'Goalkeeper', number: 1, age: 24, photo: '' },
+              { id: 27073402, name: 'Paulinho', position: 'Midfielder', number: 8, age: 25, photo: '' },
+              { id: 27073403, name: 'Luan', position: 'Attacker', number: 11, age: 22, photo: '' },
+            ],
+            78216: [
+              { id: 7821601, name: 'Gabriel', position: 'Goalkeeper', number: 1, age: 23, photo: '' },
+              { id: 7821602, name: 'Everton', position: 'Defender', number: 3, age: 27, photo: '' },
+              { id: 7821603, name: 'Ronaldo', position: 'Attacker', number: 9, age: 26, photo: '' },
+            ],
+            15622: [
+              { id: 1562201, name: 'Bruno', position: 'Goalkeeper', number: 1, age: 28, photo: '' },
+              { id: 1562202, name: 'Rodrigo', position: 'Midfielder', number: 10, age: 29, photo: '' },
+              { id: 1562203, name: 'Jean', position: 'Attacker', number: 9, age: 27, photo: '' },
+            ],
+          };
+
+          const defaultSquad = defaultAmapaenseSquads[team.externalId];
+          if (defaultSquad) {
+            try {
+              squadRecord = await (this.prisma as any).teamSquad.upsert({
+                where: { teamExternalId: team.externalId },
+                update: { squadJson: JSON.stringify(defaultSquad) },
+                create: {
+                  teamExternalId: team.externalId,
+                  squadJson: JSON.stringify(defaultSquad),
+                },
+              });
+            } catch (_) {}
+          }
+        }
 
         if (squadRecord && squadRecord.squadJson) {
           const players = JSON.parse(squadRecord.squadJson);
@@ -201,6 +279,240 @@ export class CompetitionsService {
     }
 
     return allPlayers;
+  }
+
+  /**
+   * Criação cirúrgica de um novo atleta no plantel do clube
+   */
+  async createPlayer(data: {
+    name: string;
+    position: string;
+    number?: number;
+    age?: number;
+    photo?: string;
+    teamExternalId: number;
+  }) {
+    const teamExternalId = Number(data.teamExternalId);
+    const newId = teamExternalId * 1000 + Math.floor(Math.random() * 899 + 100);
+    const newPlayer = {
+      id: newId,
+      name: data.name.trim(),
+      position: data.position || 'Player',
+      number: data.number ? Number(data.number) : null,
+      age: data.age ? Number(data.age) : null,
+      photo: data.photo ? data.photo.trim() : '',
+    };
+
+    let squad: any[] = [];
+    try {
+      const record = await (this.prisma as any).teamSquad.findUnique({
+        where: { teamExternalId },
+      });
+      if (record && record.squadJson) {
+        const parsed = JSON.parse(record.squadJson);
+        if (Array.isArray(parsed)) squad = parsed;
+      }
+      squad.push(newPlayer);
+
+      await (this.prisma as any).teamSquad.upsert({
+        where: { teamExternalId },
+        update: { squadJson: JSON.stringify(squad) },
+        create: { teamExternalId, squadJson: JSON.stringify(squad) },
+      });
+    } catch (err) {
+      console.error('Erro ao salvar no TeamSquad:', err);
+    }
+
+    try {
+      await this.prisma.player.upsert({
+        where: { externalId: newId },
+        update: {
+          name: newPlayer.name,
+          photo: newPlayer.photo || null,
+          age: newPlayer.age,
+        },
+        create: {
+          externalId: newId,
+          name: newPlayer.name,
+          photo: newPlayer.photo || null,
+          age: newPlayer.age,
+        },
+      });
+    } catch (_) {}
+
+    return { success: true, player: newPlayer };
+  }
+
+  /**
+   * Atualização cadastral completa de um atleta no plantel
+   */
+  async updatePlayer(
+    playerId: number,
+    data: {
+      name?: string;
+      position?: string;
+      number?: number;
+      age?: number;
+      photo?: string;
+      teamExternalId?: number;
+    },
+  ) {
+    let updatedPlayer: any = null;
+
+    if (data.teamExternalId) {
+      try {
+        const squadRecord = await (this.prisma as any).teamSquad.findUnique({
+          where: { teamExternalId: Number(data.teamExternalId) },
+        });
+
+        if (squadRecord && squadRecord.squadJson) {
+          const squad = JSON.parse(squadRecord.squadJson);
+          if (Array.isArray(squad)) {
+            let found = false;
+            for (const p of squad) {
+              if (p.id === playerId) {
+                if (data.name !== undefined) p.name = data.name.trim();
+                if (data.position !== undefined) p.position = data.position;
+                if (data.number !== undefined) p.number = data.number ? Number(data.number) : null;
+                if (data.age !== undefined) p.age = data.age ? Number(data.age) : null;
+                if (data.photo !== undefined) p.photo = (data.photo || '').trim();
+                updatedPlayer = p;
+                found = true;
+                break;
+              }
+            }
+            if (found) {
+              await (this.prisma as any).teamSquad.update({
+                where: { teamExternalId: Number(data.teamExternalId) },
+                data: { squadJson: JSON.stringify(squad) },
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao atualizar TeamSquad:', err);
+      }
+    } else {
+      // Se teamExternalId não foi passado, procura em todos os squads
+      try {
+        const allSquads = await (this.prisma as any).teamSquad.findMany();
+        for (const sRecord of allSquads) {
+          if (sRecord.squadJson) {
+            const squad = JSON.parse(sRecord.squadJson);
+            if (Array.isArray(squad)) {
+              let found = false;
+              for (const p of squad) {
+                if (p.id === playerId) {
+                  if (data.name !== undefined) p.name = data.name.trim();
+                  if (data.position !== undefined) p.position = data.position;
+                  if (data.number !== undefined) p.number = data.number ? Number(data.number) : null;
+                  if (data.age !== undefined) p.age = data.age ? Number(data.age) : null;
+                  if (data.photo !== undefined) p.photo = (data.photo || '').trim();
+                  updatedPlayer = p;
+                  found = true;
+                  break;
+                }
+              }
+              if (found) {
+                await (this.prisma as any).teamSquad.update({
+                  where: { id: sRecord.id },
+                  data: { squadJson: JSON.stringify(squad) },
+                });
+                break;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Propaga em Player, Scorer e FixtureLineup
+    try {
+      await this.prisma.player.upsert({
+        where: { externalId: playerId },
+        update: {
+          ...(data.name && { name: data.name.trim() }),
+          ...(data.photo !== undefined && { photo: (data.photo || '').trim() || null }),
+          ...(data.age !== undefined && { age: data.age ? Number(data.age) : null }),
+        },
+        create: {
+          externalId: playerId,
+          name: data.name ? data.name.trim() : 'Jogador',
+          photo: (data.photo || '').trim() || null,
+          age: data.age ? Number(data.age) : null,
+        },
+      });
+    } catch (_) {}
+
+    if (data.name || data.photo !== undefined) {
+      const pName = data.name ? data.name.trim() : undefined;
+      const pPhoto = (data.photo || '').trim() || null;
+      if (pName) {
+        try {
+          await this.prisma.scorer.updateMany({
+            where: { playerName: pName },
+            data: { ...(pPhoto && { playerPhoto: pPhoto }) },
+          });
+          await this.prisma.fixtureLineup.updateMany({
+            where: { player: pName },
+            data: { ...(pPhoto && { playerPhoto: pPhoto }) },
+          });
+        } catch (_) {}
+      }
+    }
+
+    return { success: true, playerId, player: updatedPlayer };
+  }
+
+  /**
+   * Remoção cirúrgica de um atleta do plantel
+   */
+  async deletePlayer(playerId: number, teamExternalId?: number) {
+    let deleted = false;
+    try {
+      if (teamExternalId) {
+        const squadRecord = await (this.prisma as any).teamSquad.findUnique({
+          where: { teamExternalId: Number(teamExternalId) },
+        });
+        if (squadRecord && squadRecord.squadJson) {
+          const squad = JSON.parse(squadRecord.squadJson);
+          if (Array.isArray(squad)) {
+            const initialLen = squad.length;
+            const filtered = squad.filter((p: any) => p.id !== playerId);
+            if (filtered.length < initialLen) {
+              await (this.prisma as any).teamSquad.update({
+                where: { teamExternalId: Number(teamExternalId) },
+                data: { squadJson: JSON.stringify(filtered) },
+              });
+              deleted = true;
+            }
+          }
+        }
+      } else {
+        const allSquads = await (this.prisma as any).teamSquad.findMany();
+        for (const sRecord of allSquads) {
+          if (sRecord.squadJson) {
+            const squad = JSON.parse(sRecord.squadJson);
+            if (Array.isArray(squad)) {
+              const initialLen = squad.length;
+              const filtered = squad.filter((p: any) => p.id !== playerId);
+              if (filtered.length < initialLen) {
+                await (this.prisma as any).teamSquad.update({
+                  where: { id: sRecord.id },
+                  data: { squadJson: JSON.stringify(filtered) },
+                });
+                deleted = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao deletar do TeamSquad:', err);
+    }
+
+    return { success: deleted, playerId };
   }
 
   /**

@@ -93,4 +93,26 @@ export class CompetitionsController {
   ) {
     return this.competitionsService.updatePlayerPhoto(playerId, body);
   }
+
+  @Post('players')
+  async createPlayer(@Body() body: any) {
+    return this.competitionsService.createPlayer(body);
+  }
+
+  @Put('players/:playerId')
+  async updatePlayer(
+    @Param('playerId', ParseIntPipe) playerId: number,
+    @Body() body: any,
+  ) {
+    return this.competitionsService.updatePlayer(playerId, body);
+  }
+
+  @Delete('players/:playerId')
+  async deletePlayer(
+    @Param('playerId', ParseIntPipe) playerId: number,
+    @Query('teamExternalId') teamExternalId?: string,
+  ) {
+    const extId = teamExternalId ? parseInt(teamExternalId, 10) : undefined;
+    return this.competitionsService.deletePlayer(playerId, extId);
+  }
 }

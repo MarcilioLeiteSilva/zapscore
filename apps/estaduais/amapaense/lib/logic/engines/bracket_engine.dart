@@ -541,6 +541,7 @@ class BracketEngine {
       );
     }
 
+    final hasPlayedMatches = standings.any((st) => st.played > 0);
     final s = StandingsEngine.sortStandings(standings);
 
     return [
@@ -550,8 +551,8 @@ class BracketEngine {
         title: 'Semifinal 1 (Ida e Volta)',
         seedHome: '1º Colocado (Classificatória)',
         seedAway: '4º Colocado (Classificatória)',
-        homeTeam: s.isNotEmpty ? _teamFromStanding(s[0]) : null,
-        awayTeam: s.length > 3 ? _teamFromStanding(s[3]) : null,
+        homeTeam: hasPlayedMatches && s.isNotEmpty ? _teamFromStanding(s[0]) : null,
+        awayTeam: hasPlayedMatches && s.length > 3 ? _teamFromStanding(s[3]) : null,
       ),
       Tie(
         id: 'semi_ap_2',
@@ -559,8 +560,8 @@ class BracketEngine {
         title: 'Semifinal 2 (Ida e Volta)',
         seedHome: '2º Colocado (Classificatória)',
         seedAway: '3º Colocado (Classificatória)',
-        homeTeam: s.length > 1 ? _teamFromStanding(s[1]) : null,
-        awayTeam: s.length > 2 ? _teamFromStanding(s[2]) : null,
+        homeTeam: hasPlayedMatches && s.length > 1 ? _teamFromStanding(s[1]) : null,
+        awayTeam: hasPlayedMatches && s.length > 2 ? _teamFromStanding(s[2]) : null,
       ),
     ];
   }

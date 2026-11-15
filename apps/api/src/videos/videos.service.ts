@@ -5,8 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 export class VideosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(params: { leagueId?: string; teamId?: string; limit?: string }) {
-    const { leagueId, teamId, limit } = params;
+  async findAll(params: { leagueId?: string; teamId?: string; limit?: string; status?: string; includeDrafts?: string }) {
+    const { leagueId, teamId, limit, status, includeDrafts } = params;
     const take = limit ? parseInt(limit) : 100;
 
     let leagueFilter: any = undefined;
@@ -49,7 +49,7 @@ export class VideosService {
       }
     }
     
-    return this.prisma.video.findMany({
+    const videos = await this.prisma.video.findMany({
       where: {
         ...(leagueFilter ? leagueFilter : {}),
         ...(teamId && { teamId }),
@@ -61,6 +61,27 @@ export class VideosService {
         team: true,
       },
     });
+
+    const mapped = videos.map((item) => {
+      const isDraft =
+        (item.description || '').startsWith('[DRAFT]') ||
+        item.duration === 'DRAFT';
+      return {
+        ...item,
+        isDraft,
+        status: isDraft ? 'draft' : 'published',
+      };
+    });
+
+    if (status === 'draft') {
+      return mapped.filter((v) => v.isDraft);
+    } else if (status === 'published') {
+      return mapped.filter((v) => !v.isDraft);
+    } else if (includeDrafts === 'true') {
+      return mapped;
+    } else {
+      return mapped.filter((v) => !v.isDraft);
+    }
   }
 
   async findOne(id: string) {
@@ -75,6 +96,24 @@ export class VideosService {
 
   private async resolveForeignKeys(data: any) {
     const payload = { ...data };
+
+    // Gestão de Rascunho / Publicação sem quebra de schema
+    if (payload.status === 'draft' || payload.isDraft === true) {
+      if (!payload.description || payload.description.trim() === '') {
+        payload.description = '[DRAFT]';
+      } else if (!payload.description.startsWith('[DRAFT]')) {
+        payload.description = `[DRAFT] ${payload.description}`;
+      }
+    } else if (payload.status === 'published' || payload.isDraft === false) {
+      if (payload.description === '[DRAFT]') {
+        payload.description = null;
+      } else if (payload.description?.startsWith('[DRAFT] ')) {
+        payload.description = payload.description.replace('[DRAFT] ', '').trim();
+      }
+    }
+    delete payload.status;
+    delete payload.isDraft;
+
     if (payload.leagueId) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.leagueId);
       if (!isUuid) {
@@ -129,6 +168,19 @@ export class VideosService {
       });
     } catch (error) {
       console.error('ERRO AO DELETAR VÍDEO:', error);
+      throw error;
+    }
+  }
+
+  async bulkDelete(ids: string[]) {
+    try {
+      if (!ids || ids.length === 0) return { count: 0 };
+      const res = await this.prisma.video.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return { success: true, count: res.count };
+    } catch (error) {
+      console.error('ERRO AO DELETAR VÍDEOS EM LOTE:', error);
       throw error;
     }
   }

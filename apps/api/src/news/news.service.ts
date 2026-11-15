@@ -14,8 +14,8 @@ export class NewsService implements OnModuleInit {
     });
   }
 
-  async findAll(params: { leagueId?: string; teamId?: string; limit?: string }) {
-    const { leagueId, teamId, limit } = params;
+  async findAll(params: { leagueId?: string; teamId?: string; limit?: string; status?: string; includeDrafts?: string }) {
+    const { leagueId, teamId, limit, status, includeDrafts } = params;
     const take = limit ? parseInt(limit, 10) : 100;
 
     let leagueFilter: any = undefined;
@@ -93,7 +93,7 @@ export class NewsService implements OnModuleInit {
         'atletico-go', 'bragantino', 'brasileirão', 'brasileirao'
       ];
 
-      return news.filter((item) => {
+      const filtered = news.filter((item) => {
         const text = `${item.title || ''} ${item.description || ''}`.toLowerCase();
         const source = (item.source || '').toLowerCase();
         const hasItalianMarker = strictItalianTokens.some(kw => text.includes(kw) || source.includes(kw));
@@ -105,9 +105,36 @@ export class NewsService implements OnModuleInit {
         }
         return true;
       });
+
+      return this.filterByStatus(filtered, status, includeDrafts);
     }
 
-    return news;
+    return this.filterByStatus(news, status, includeDrafts);
+  }
+
+  private filterByStatus(items: any[], status?: string, includeDrafts?: string) {
+    const mapped = items.map((item) => {
+      const isDraft =
+        item.content === '[DRAFT]' ||
+        item.author === 'DRAFT' ||
+        (item.content || '').startsWith('[DRAFT]');
+      return {
+        ...item,
+        isDraft,
+        status: isDraft ? 'draft' : 'published',
+      };
+    });
+
+    if (status === 'draft') {
+      return mapped.filter((i) => i.isDraft);
+    } else if (status === 'published') {
+      return mapped.filter((i) => !i.isDraft);
+    } else if (includeDrafts === 'true') {
+      return mapped;
+    } else {
+      // Para chamadas gerais de apps, entrega apenas publicadas
+      return mapped.filter((i) => !i.isDraft);
+    }
   }
 
   async findOne(id: string) {
@@ -122,6 +149,24 @@ export class NewsService implements OnModuleInit {
 
   private async resolveForeignKeys(data: any) {
     const payload = { ...data };
+
+    // Gestão de Rascunho / Publicação sem alterar schema
+    if (payload.status === 'draft' || payload.isDraft === true) {
+      if (!payload.content || payload.content.trim() === '') {
+        payload.content = '[DRAFT]';
+      } else if (!payload.content.startsWith('[DRAFT]')) {
+        payload.content = `[DRAFT] ${payload.content}`;
+      }
+    } else if (payload.status === 'published' || payload.isDraft === false) {
+      if (payload.content === '[DRAFT]') {
+        payload.content = null;
+      } else if (payload.content?.startsWith('[DRAFT] ')) {
+        payload.content = payload.content.replace('[DRAFT] ', '').trim();
+      }
+    }
+    delete payload.status;
+    delete payload.isDraft;
+
     if (payload.leagueId) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.leagueId);
       if (!isUuid) {
@@ -175,6 +220,19 @@ export class NewsService implements OnModuleInit {
       });
     } catch (error) {
       this.logger.error('ERRO AO DELETAR NOTÍCIA:', error);
+      throw error;
+    }
+  }
+
+  async bulkDelete(ids: string[]) {
+    try {
+      if (!ids || ids.length === 0) return { count: 0 };
+      const res = await this.prisma.news.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return { success: true, count: res.count };
+    } catch (error) {
+      this.logger.error('ERRO AO DELETAR NOTÍCIAS EM LOTE:', error);
       throw error;
     }
   }
