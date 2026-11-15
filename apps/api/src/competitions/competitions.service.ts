@@ -161,6 +161,119 @@ export class CompetitionsService {
       { id: 1562210, name: 'Marcelinho', number: 11, position: 'Attacker', age: 23, photo: '' },
     ],
   };
+
+  static readonly CANONICAL_AMAZONENSE_CLUBS = [
+    { externalId: 7578, name: 'Nacional Futebol Clube', logo: 'https://upload.wikimedia.org/wikipedia/pt/a/af/Nacional_FC_Amazonas_2021.png' },
+    { externalId: 15383, name: 'Amazonas Futebol Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/210178_imgbank_1711024367.png' },
+    { externalId: 7566, name: 'Manaus Futebol Clube', logo: 'https://upload.wikimedia.org/wikipedia/pt/a/a3/Escudo_do_Manaus_Futebol_Clube.png' },
+    { externalId: 18768, name: 'Manauara Esporte Clube', logo: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Manauara_EC-AM_%28BRA%29_logo.png' },
+    { externalId: 7579, name: 'Princesa do Solimões Esporte Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/3513_imgbank.png' },
+    { externalId: 20120, name: 'RPE Parintins', logo: 'https://upload.wikimedia.org/wikipedia/pt/f/f9/ParintinsFC.png' },
+    { externalId: 243643, name: 'Itacoatiara Futebol Clube', logo: 'https://cdn-img.staticzz.com/img/logos/equipas/243643_imgbank_1784021108.png' },
+    { externalId: 7559, name: 'Nacional Fast Clube', logo: 'https://upload.wikimedia.org/wikipedia/commons/3/32/Fast_Clube.png' },
+  ];
+
+  static readonly CANONICAL_AMAZONENSE_SQUADS: Record<number, any[]> = {
+    // 7578 - Nacional FC
+    7578: [
+      { id: 757801, name: 'Robson', number: 1, position: 'Goalkeeper', age: 31, photo: '' },
+      { id: 757802, name: 'Tom', number: 12, position: 'Goalkeeper', age: 25, photo: '' },
+      { id: 757803, name: 'Ivan', number: 3, position: 'Defender', age: 29, photo: '' },
+      { id: 757804, name: 'Davy', number: 4, position: 'Defender', age: 27, photo: '' },
+      { id: 757805, name: 'Rogério', number: 2, position: 'Defender', age: 28, photo: '' },
+      { id: 757806, name: 'Calebe', number: 8, position: 'Midfielder', age: 26, photo: '' },
+      { id: 757807, name: 'Leo Aquino', number: 10, position: 'Midfielder', age: 28, photo: '' },
+      { id: 757808, name: 'William Barbio', number: 7, position: 'Attacker', age: 31, photo: '' },
+      { id: 757809, name: 'Tcharles', number: 9, position: 'Attacker', age: 30, photo: '' },
+      { id: 757810, name: 'Vitinho', number: 11, position: 'Attacker', age: 24, photo: '' },
+    ],
+
+    // 15383 - Amazonas FC
+    15383: [
+      { id: 1538301, name: 'Fabian Volpi', number: 1, position: 'Goalkeeper', age: 27, photo: '' },
+      { id: 1538302, name: 'Marcão', number: 12, position: 'Goalkeeper', age: 31, photo: '' },
+      { id: 1538303, name: 'Miranda', number: 3, position: 'Defender', age: 25, photo: '' },
+      { id: 1538304, name: 'Wellington Manzoli', number: 4, position: 'Defender', age: 28, photo: '' },
+      { id: 1538305, name: 'Fabiano', number: 6, position: 'Defender', age: 33, photo: '' },
+      { id: 1538306, name: 'Xavier', number: 5, position: 'Midfielder', age: 29, photo: '' },
+      { id: 1538307, name: 'Rafael Tavares', number: 10, position: 'Midfielder', age: 32, photo: '' },
+      { id: 1538308, name: 'Sassá', number: 9, position: 'Attacker', age: 31, photo: '' },
+      { id: 1538309, name: 'Dentinho', number: 7, position: 'Attacker', age: 27, photo: '' },
+      { id: 1538310, name: 'Matheus Serafim', number: 11, position: 'Attacker', age: 26, photo: '' },
+    ],
+
+    // 7566 - Manaus FC
+    7566: [
+      { id: 756601, name: 'Vinicius', number: 1, position: 'Goalkeeper', age: 29, photo: '' },
+      { id: 756602, name: 'Gutierrez', number: 3, position: 'Defender', age: 28, photo: '' },
+      { id: 756603, name: 'Jefferson', number: 4, position: 'Defender', age: 26, photo: '' },
+      { id: 756604, name: 'Dieyson', number: 6, position: 'Defender', age: 30, photo: '' },
+      { id: 756605, name: 'Felipe Tiririca', number: 8, position: 'Midfielder', age: 27, photo: '' },
+      { id: 756606, name: 'Gharib', number: 10, position: 'Midfielder', age: 28, photo: '' },
+      { id: 756607, name: 'Roney', number: 7, position: 'Attacker', age: 26, photo: '' },
+      { id: 756608, name: 'Denis', number: 9, position: 'Attacker', age: 27, photo: '' },
+    ],
+
+    // 18768 - Manauara EC
+    18768: [
+      { id: 1876801, name: 'Jonathan', number: 1, position: 'Goalkeeper', age: 28, photo: '' },
+      { id: 1876802, name: 'Paulinho', number: 2, position: 'Defender', age: 27, photo: '' },
+      { id: 1876803, name: 'Tibúrcio', number: 3, position: 'Defender', age: 29, photo: '' },
+      { id: 1876804, name: 'Jhonathan Moc', number: 6, position: 'Defender', age: 32, photo: '' },
+      { id: 1876805, name: 'Ítalo', number: 5, position: 'Midfielder', age: 26, photo: '' },
+      { id: 1876806, name: 'Wallace', number: 8, position: 'Midfielder', age: 28, photo: '' },
+      { id: 1876807, name: 'Neto Oliveira', number: 9, position: 'Attacker', age: 26, photo: '' },
+      { id: 1876808, name: 'Vitinho', number: 11, position: 'Attacker', age: 24, photo: '' },
+    ],
+
+    // 7579 - Princesa do Solimões
+    7579: [
+      { id: 757901, name: 'Jonathan', number: 1, position: 'Goalkeeper', age: 26, photo: '' },
+      { id: 757902, name: 'Rodolfo', number: 3, position: 'Defender', age: 29, photo: '' },
+      { id: 757903, name: 'Eric', number: 4, position: 'Defender', age: 27, photo: '' },
+      { id: 757904, name: 'Wesley', number: 2, position: 'Defender', age: 25, photo: '' },
+      { id: 757905, name: 'Koffi', number: 5, position: 'Midfielder', age: 28, photo: '' },
+      { id: 757906, name: 'Léo Pará', number: 8, position: 'Midfielder', age: 27, photo: '' },
+      { id: 757907, name: 'Jonas', number: 9, position: 'Attacker', age: 29, photo: '' },
+      { id: 757908, name: 'Max', number: 11, position: 'Attacker', age: 25, photo: '' },
+    ],
+
+    // 20120 - RPE Parintins
+    20120: [
+      { id: 2012001, name: 'Robert', number: 1, position: 'Goalkeeper', age: 27, photo: '' },
+      { id: 2012002, name: 'Állefe', number: 2, position: 'Defender', age: 26, photo: '' },
+      { id: 2012003, name: 'Fernando', number: 3, position: 'Defender', age: 28, photo: '' },
+      { id: 2012004, name: 'Gabriel', number: 4, position: 'Defender', age: 25, photo: '' },
+      { id: 2012005, name: 'Victor Léo', number: 8, position: 'Midfielder', age: 26, photo: '' },
+      { id: 2012006, name: 'Darlyson', number: 10, position: 'Midfielder', age: 24, photo: '' },
+      { id: 2012007, name: 'Weverton', number: 9, position: 'Attacker', age: 28, photo: '' },
+      { id: 2012008, name: 'Lucas Silva', number: 11, position: 'Attacker', age: 25, photo: '' },
+    ],
+
+    // 243643 - Itacoatiara FC
+    243643: [
+      { id: 24364301, name: 'Zé Carlos', number: 1, position: 'Goalkeeper', age: 28, photo: '' },
+      { id: 24364302, name: 'Rayo', number: 3, position: 'Defender', age: 26, photo: '' },
+      { id: 24364303, name: 'Felipinho', number: 2, position: 'Defender', age: 25, photo: '' },
+      { id: 24364304, name: 'Marcelinho', number: 4, position: 'Defender', age: 27, photo: '' },
+      { id: 24364305, name: 'Léo Barba', number: 5, position: 'Midfielder', age: 29, photo: '' },
+      { id: 24364306, name: 'Thiago', number: 8, position: 'Midfielder', age: 26, photo: '' },
+      { id: 24364307, name: 'Léo Pará', number: 9, position: 'Attacker', age: 28, photo: '' },
+      { id: 24364308, name: 'Serginho', number: 11, position: 'Attacker', age: 24, photo: '' },
+    ],
+
+    // 7559 - Nacional Fast Clube
+    7559: [
+      { id: 755901, name: 'Valter', number: 1, position: 'Goalkeeper', age: 28, photo: '' },
+      { id: 755902, name: 'Guigui', number: 2, position: 'Defender', age: 26, photo: '' },
+      { id: 755903, name: 'Thiago Spice', number: 3, position: 'Defender', age: 34, photo: '' },
+      { id: 755904, name: 'Bernardo', number: 4, position: 'Defender', age: 27, photo: '' },
+      { id: 755905, name: 'Emerson', number: 5, position: 'Midfielder', age: 29, photo: '' },
+      { id: 755906, name: 'Robinho', number: 10, position: 'Midfielder', age: 28, photo: '' },
+      { id: 755907, name: 'Claudinho', number: 7, position: 'Attacker', age: 26, photo: '' },
+      { id: 755908, name: 'Alex', number: 9, position: 'Attacker', age: 27, photo: '' },
+    ],
+  };
   constructor(
     private readonly prisma: PrismaService,
     private readonly apiFootball: ApiFootballService,
@@ -338,7 +451,32 @@ export class CompetitionsService {
       }
     }
 
-    if (!league && leagueExternalId !== 521) return [];
+    // Fallback garantido para Amazonense (ID 522): assegura a presença dos 8 clubes canônicos
+    if (leagueExternalId === 522) {
+      const existingExtIds = new Set(teams.map((t) => t.externalId));
+      for (const ct of CompetitionsService.CANONICAL_AMAZONENSE_CLUBS) {
+        if (!existingExtIds.has(ct.externalId)) {
+          let dbTeam: any = null;
+          try {
+            dbTeam = await this.prisma.team.findUnique({
+              where: { externalId: ct.externalId },
+            });
+          } catch (_) { }
+          if (dbTeam) {
+            teams.push(dbTeam);
+          } else {
+            teams.push({
+              id: `canonical-${ct.externalId}`,
+              externalId: ct.externalId,
+              name: ct.name,
+              logo: ct.logo,
+            });
+          }
+        }
+      }
+    }
+
+    if (!league && leagueExternalId !== 521 && leagueExternalId !== 522) return [];
 
     const allPlayers: Array<{
       id: number;
@@ -379,6 +517,21 @@ export class CompetitionsService {
       // 3. Se for Amapaense (521) e elenco estiver vazio, usa os atletas canônicos
       if (squadList.length === 0 && leagueExternalId === 521) {
         const canonical = CompetitionsService.CANONICAL_AMAPAENSE_SQUADS[team.externalId];
+        if (canonical && canonical.length > 0) {
+          squadList = [...canonical];
+          try {
+            await (this.prisma as any).teamSquad?.upsert({
+              where: { teamExternalId: team.externalId },
+              update: { squadJson: JSON.stringify(squadList) },
+              create: { teamExternalId: team.externalId, squadJson: JSON.stringify(squadList) },
+            });
+          } catch (_) { }
+        }
+      }
+
+      // 3.1. Se for Amazonense (522) e elenco estiver vazio, usa os atletas canônicos
+      if (squadList.length === 0 && leagueExternalId === 522) {
+        const canonical = CompetitionsService.CANONICAL_AMAZONENSE_SQUADS[team.externalId];
         if (canonical && canonical.length > 0) {
           squadList = [...canonical];
           try {
@@ -444,9 +597,13 @@ export class CompetitionsService {
     if (CompetitionsService.memorySquads.has(teamExternalId)) {
       return [...CompetitionsService.memorySquads.get(teamExternalId)!];
     }
-    const defaultSquad = CompetitionsService.CANONICAL_AMAPAENSE_SQUADS[teamExternalId];
-    if (defaultSquad) {
-      return [...defaultSquad];
+    const amapaenseSquad = CompetitionsService.CANONICAL_AMAPAENSE_SQUADS[teamExternalId];
+    if (amapaenseSquad) {
+      return [...amapaenseSquad];
+    }
+    const amazonenseSquad = CompetitionsService.CANONICAL_AMAZONENSE_SQUADS[teamExternalId];
+    if (amazonenseSquad) {
+      return [...amazonenseSquad];
     }
     return [];
   }

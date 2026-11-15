@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "962041454794",
+    "project_id": "appense-2126c",
+    "storage_bucket": "appense-2126c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:962041454794:android:4c841fd2bd7a4fe8e11433",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualamazonense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC44M2Acxxd-Fulv_0NkCQeSeTq9ZNj-p8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

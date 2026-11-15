@@ -126,11 +126,11 @@ export default function EstaduaisLeagueDetailPage() {
   const [scorers, setScorers] = useState<ScorerItem[]>([]);
   const [players, setPlayers] = useState<PlayerItem[]>([]);
 
-  // Temporada Selecionada (Padrão 2027 para Pernambucano, Tocantinense, Baiano, Cearense, Sul-Matogrossense, Amapaense)
+  // Temporada Selecionada (Padrão 2027 para Pernambucano, Tocantinense, Baiano, Cearense, Sul-Matogrossense, Amapaense, Amazonense)
   const is2027League =
-    ["622", "631", "602", "609", "623", "521"].includes(leagueIdStr) ||
-    [622, 631, 602, 609, 623, 521].includes(leagueIdNum) ||
-    [622, 631, 602, 609, 623, 521].includes(numericLeagueId);
+    ["622", "631", "602", "609", "623", "521", "522"].includes(leagueIdStr) ||
+    [622, 631, 602, 609, 623, 521, 522].includes(leagueIdNum) ||
+    [622, 631, 602, 609, 623, 521, 522].includes(numericLeagueId);
   const defaultSeason = is2027League ? 2027 : 2026;
   const [selectedSeason, setSelectedSeason] = useState<number>(defaultSeason);
   const [availableSeasons, setAvailableSeasons] = useState<number[]>(
@@ -773,6 +773,18 @@ export default function EstaduaisLeagueDetailPage() {
     { externalId: 15622, name: "SER São José", logo: "https://cdn-img.staticzz.com/img/logos/equipas/40/4940_logo_sao_jose_ap_20260219162415.png" },
   ];
 
+  // Lista Canônica de Clubes do Amazonense (ID 522) com Escudos Oficiais
+  const AMAZONENSE_CANONICAL_CLUBS = [
+    { externalId: 7578, name: "Nacional Futebol Clube", logo: "https://upload.wikimedia.org/wikipedia/pt/a/af/Nacional_FC_Amazonas_2021.png" },
+    { externalId: 15383, name: "Amazonas Futebol Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/210178_imgbank_1711024367.png" },
+    { externalId: 7566, name: "Manaus Futebol Clube", logo: "https://upload.wikimedia.org/wikipedia/pt/a/a3/Escudo_do_Manaus_Futebol_Clube.png" },
+    { externalId: 18768, name: "Manauara Esporte Clube", logo: "https://upload.wikimedia.org/wikipedia/commons/9/95/Manauara_EC-AM_%28BRA%29_logo.png" },
+    { externalId: 7579, name: "Princesa do Solimões Esporte Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/3513_imgbank.png" },
+    { externalId: 20120, name: "RPE Parintins", logo: "https://upload.wikimedia.org/wikipedia/pt/f/f9/ParintinsFC.png" },
+    { externalId: 243643, name: "Itacoatiara Futebol Clube", logo: "https://cdn-img.staticzz.com/img/logos/equipas/243643_imgbank_1784021108.png" },
+    { externalId: 7559, name: "Nacional Fast Clube", logo: "https://upload.wikimedia.org/wikipedia/commons/3/32/Fast_Clube.png" },
+  ];
+
   const availableClubs = useMemo(() => {
     const clubMap = new Map<string, { externalId: number; name: string }>();
 
@@ -795,6 +807,21 @@ export default function EstaduaisLeagueDetailPage() {
     ) {
       const existingExtIds = new Set(Array.from(clubMap.values()).map((c) => c.externalId));
       for (const c of AMAPAENSE_CANONICAL_CLUBS) {
+        if (!existingExtIds.has(c.externalId)) {
+          clubMap.set(c.name, c);
+        }
+      }
+    }
+
+    // 3. Para Amazonense (ID 522), garante os 8 clubes canônicos no dropdown
+    if (
+      numericLeagueId === 522 ||
+      leagueIdNum === 522 ||
+      leagueIdStr === "522" ||
+      leagueIdStr.includes("amazonense")
+    ) {
+      const existingExtIds = new Set(Array.from(clubMap.values()).map((c) => c.externalId));
+      for (const c of AMAZONENSE_CANONICAL_CLUBS) {
         if (!existingExtIds.has(c.externalId)) {
           clubMap.set(c.name, c);
         }

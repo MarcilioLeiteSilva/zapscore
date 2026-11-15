@@ -1,0 +1,58 @@
+================================================================================
+ZAPSCORE - CAMPEONATO AMAZONENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
+================================================================================
+
+Data: 27/09/2026
+Nome do App: Amazonense
+Package / Application ID: com.zapscore.estadualamazonense
+Versão: 1.0.0
+Version Code: 1 (1.0.0+1)
+
+--------------------------------------------------------------------------------
+1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
+--------------------------------------------------------------------------------
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store
+- zapscore_amazonense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle para versionamento
+- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8
+- upload-keystore.jks             -> Chave de assinatura oficial utilizada para assinar o release
+- amazonense-upload-keystore.jks    -> Cópia de segurança da chave com prefixo do app
+- key.properties                  -> Arquivo de credenciais de assinatura do Gradle
+- INFO_RELEASE.txt                -> Este relatório técnico de auditoria e credenciais
+- DESCRICAO_PLAY_STORE.txt        -> Ficha técnica e descrições para publicação na Play Store
+
+--------------------------------------------------------------------------------
+2. DADOS DA CHAVE DE ASSINATURA (KEYSTORE)
+--------------------------------------------------------------------------------
+- Arquivo Keystore: upload-keystore.jks / amazonense-upload-keystore.jks
+- Alias: upload
+- Senha da Keystore (storePassword): zapscore_amazonense_key
+- Senha da Chave (keyPassword): zapscore_amazonense_key
+- Algoritmo: RSA 2048 bits / SHA256withRSA
+- Validade: 10.000 dias
+- Proprietário: CN=ZapScore Amazonense, OU=Mobile, O=ZapScore, L=Manaus, ST=Amazonas, C=BR
+
+FINGERPRINTS DO CERTIFICADO:
+- SHA-1:
+  11:42:44:9C:B2:D7:01:EE:CB:10:48:3C:39:E7:36:FF:3F:39:23:C1
+
+- SHA-256:
+  FF:74:E1:CF:0C:C7:BE:E6:67:FF:39:1F:4E:8C:E3:55:4E:E6:BB:E7:61:5C:2E:0E:38:51:68:97:A8:A1:A2:54
+
+--------------------------------------------------------------------------------
+3. UNIDADES DE ANÚNCIOS GOOGLE ADMOB (PRODUÇÃO)
+--------------------------------------------------------------------------------
+- AdMob App ID (AndroidManifest.xml):
+  ca-app-pub-6887857057070736~7861933247
+
+- Banner Ad Unit:
+  ca-app-pub-6887857057070736/4170100244
+
+- Interstitial Ad Unit:
+  ca-app-pub-6887857057070736/4313570474
+
+- Native Ad Unit (Small & Medium):
+  ca-app-pub-6887857057070736/7726201874
+
+- Rewarded Ad Unit:
+  ca-app-pub-6887857057070736/1666213763
+================================================================================

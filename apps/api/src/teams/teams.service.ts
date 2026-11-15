@@ -95,6 +95,9 @@ export class TeamsService {
         if (CompetitionsService.CANONICAL_AMAPAENSE_SQUADS?.[teamExternalId]) {
           return CompetitionsService.CANONICAL_AMAPAENSE_SQUADS[teamExternalId] as any;
         }
+        if (CompetitionsService.CANONICAL_AMAZONENSE_SQUADS?.[teamExternalId]) {
+          return CompetitionsService.CANONICAL_AMAZONENSE_SQUADS[teamExternalId] as any;
+        }
         return [];
       }
 
@@ -127,6 +130,12 @@ export class TeamsService {
         try {
           return JSON.parse(cachedSquad.squadJson);
         } catch (_) {}
+      }
+      if (CompetitionsService.CANONICAL_AMAPAENSE_SQUADS?.[teamExternalId]) {
+        return CompetitionsService.CANONICAL_AMAPAENSE_SQUADS[teamExternalId] as any;
+      }
+      if (CompetitionsService.CANONICAL_AMAZONENSE_SQUADS?.[teamExternalId]) {
+        return CompetitionsService.CANONICAL_AMAZONENSE_SQUADS[teamExternalId] as any;
       }
       return [];
     }
