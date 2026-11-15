@@ -13,13 +13,16 @@ class HomeScreen extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 145),
-                child: [
-                  const FixturePage(),
-                  const FavoritePage(),
-                  const NewsPage(),
-                  const WatchPage(),
-                  const SettingsPage(),
-                ][state.homeIndex],
+                child: IndexedStack(
+                  index: state.homeIndex,
+                  children: const [
+                    FixturePage(),
+                    FavoritePage(),
+                    NewsPage(),
+                    WatchPage(),
+                    SettingsPage(),
+                  ],
+                ),
               ),
               Positioned(
                 bottom: 0,

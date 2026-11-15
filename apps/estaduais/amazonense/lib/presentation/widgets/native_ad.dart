@@ -51,12 +51,11 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('⚠️ [AppNativeAdWidget] Failed to load native ad: $error');
+          _isAdLoaded = false;
+          _nativeAd = null;
           ad.dispose();
           if (mounted) {
-            setState(() {
-              _isAdLoaded = false;
-              _nativeAd = null;
-            });
+            setState(() {});
           }
         },
       ),
@@ -65,7 +64,12 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
 
   @override
   void dispose() {
-    _nativeAd?.dispose();
+    _isAdLoaded = false;
+    final adToDispose = _nativeAd;
+    _nativeAd = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      adToDispose?.dispose();
+    });
     super.dispose();
   }
 
@@ -88,7 +92,10 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: AdWidget(ad: _nativeAd!),
+      child: AdWidget(
+        key: ValueKey(_nativeAd),
+        ad: _nativeAd!,
+      ),
     );
   }
 }
@@ -134,12 +141,11 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('⚠️ [AppNativeAdMediumWidget] Failed to load medium native ad: $error');
+          _isAdLoaded = false;
+          _nativeAd = null;
           ad.dispose();
           if (mounted) {
-            setState(() {
-              _isAdLoaded = false;
-              _nativeAd = null;
-            });
+            setState(() {});
           }
         },
       ),
@@ -148,7 +154,12 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
 
   @override
   void dispose() {
-    _nativeAd?.dispose();
+    _isAdLoaded = false;
+    final adToDispose = _nativeAd;
+    _nativeAd = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      adToDispose?.dispose();
+    });
     super.dispose();
   }
 
@@ -170,8 +181,10 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: AdWidget(ad: _nativeAd!),
+      child: AdWidget(
+        key: ValueKey(_nativeAd),
+        ad: _nativeAd!,
+      ),
     );
   }
 }
-
