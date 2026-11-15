@@ -40,7 +40,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
 
           return Scaffold(
             appBar: AppBar(
-              title: Text('${AppConfig.appName} 2026'),
+              title: Text('${AppConfig.appName} 2027'),
               actions: [
                 BlocBuilder<FavoriteCubit, FavoriteState>(
                   builder: (context, favState) {

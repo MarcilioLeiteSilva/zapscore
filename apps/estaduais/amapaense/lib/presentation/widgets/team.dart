@@ -533,7 +533,7 @@ class TeamNewsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => NewsCubit(context.read<HomeCubit>().apiClient)
-        ..fetchNews(teamId: teamId),
+        ..fetchNews(teamId: teamId, leagueId: (leagueId ?? AppConfig.externalLeagueId).toString()),
       child: BlocBuilder<NewsCubit, NewsState>(
         builder: (context, state) {
           if (state is NewsLoading) {

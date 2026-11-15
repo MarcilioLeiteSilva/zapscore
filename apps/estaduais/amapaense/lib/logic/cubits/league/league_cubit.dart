@@ -19,14 +19,17 @@ class LeagueCubit extends Cubit<LeagueState> {
     emit(LeagueLoading());
     try {
       final results = await Future.wait([
-        apiClient.getRecentFixtures(leagueId, limit: 500),
-        apiClient.getStandings(leagueId),
-        apiClient.getScorers(leagueId),
+        apiClient.getRecentFixtures(leagueId, limit: 500, season: 2027),
+        apiClient.getStandings(leagueId, season: 2027),
+        apiClient.getScorers(leagueId, season: 2027),
       ]);
 
-      final fixtures = results[0] as List<Fixture>;
+      final rawApiFixtures = results[0] as List<Fixture>;
       final standings = results[1] as List<Standing>;
       final scorers = results[2] as List<Scorer>;
+
+      // Filtra estritamente partidas de 2027
+      final fixtures = rawApiFixtures.where((f) => f.season == 2027 || f.season == null).toList();
 
       // Obter nome da competição
       String compName = AppConfig.appName;
@@ -43,7 +46,7 @@ class LeagueCubit extends Cubit<LeagueState> {
       final defaultPhaseId = initialPhaseId ??
           (competition.phases.isNotEmpty ? competition.phases.first.id : 'fase_classificatoria');
 
-      final effectiveFixtures = fixtures.isNotEmpty
+      final effectiveFixtures = (fixtures.isNotEmpty && fixtures.any((f) => f.round != null && f.round!.isNotEmpty))
           ? fixtures
           : competition.phases.expand((p) => p.fixtures).toList();
 

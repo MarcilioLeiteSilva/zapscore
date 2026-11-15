@@ -21,7 +21,10 @@ class NewsCubit extends Cubit<NewsState> {
   Future<void> fetchNews({String? leagueId, String? teamId, int limit = 100}) async {
     emit(NewsLoading());
     try {
-      final news = await apiClient.getNews(leagueId: leagueId, teamId: teamId, limit: limit);
+      var news = await apiClient.getNews(leagueId: leagueId, teamId: teamId, limit: limit);
+      if (news.isEmpty && teamId != null && leagueId != null) {
+        news = await apiClient.getNews(leagueId: leagueId, limit: limit);
+      }
       emit(NewsLoaded(news));
     } catch (e) {
       emit(NewsError('Não foi possível carregar as notícias.'));

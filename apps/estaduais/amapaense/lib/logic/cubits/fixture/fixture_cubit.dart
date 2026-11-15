@@ -12,9 +12,13 @@ class FixtureCubit extends Cubit<FixtureState> {
 
   FixtureCubit(this.apiClient) : super(FixtureInitial());
 
-  Future<void> fetchFixtureDetails(String id, {bool isAutoRefresh = false}) async {
+  Future<void> fetchFixtureDetails(String id, {Fixture? fallbackFixture, bool isAutoRefresh = false}) async {
     if (!isAutoRefresh) {
-      emit(FixtureLoading());
+      if (fallbackFixture != null) {
+        emit(FixtureLoaded(fallbackFixture));
+      } else {
+        emit(FixtureLoading());
+      }
     }
     try {
       final fixture = await apiClient.getFixtureDetails(id);
@@ -61,8 +65,8 @@ class FixtureCubit extends Cubit<FixtureState> {
                    h2hData: current.h2hData,
                  ));
                }
-            });
-         });
+            }).catchError((_) {});
+         }).catchError((_) {});
       }
 
       // Se o jogo estiver ao vivo, inicia o auto-refresh se ainda não estiver rodando
@@ -72,7 +76,12 @@ class FixtureCubit extends Cubit<FixtureState> {
         stopAutoRefresh();
       }
     } catch (e) {
-      if (!isAutoRefresh) {
+      if (fallbackFixture != null) {
+        // Fallback: Mantém os dados da partida sem entrar em loop de erro
+        if (state is! FixtureLoaded) {
+          emit(FixtureLoaded(fallbackFixture));
+        }
+      } else if (!isAutoRefresh) {
         emit(FixtureError(e.toString()));
       }
     }

@@ -57,6 +57,28 @@ class CompetitionNormalizer {
     );
   }
 
+  static List<Fixture> get canonicalAmapaenseFixtures {
+    final comp = _buildAmapaense(
+      leagueId: 521,
+      leagueName: 'Campeonato Amapaense',
+      season: 2027,
+      rawStandings: const [],
+      rawFixtures: const [],
+    );
+    return comp.phases.first.fixtures;
+  }
+
+  static List<Standing> get canonicalAmapaenseStandings {
+    final comp = _buildAmapaense(
+      leagueId: 521,
+      leagueName: 'Campeonato Amapaense',
+      season: 2027,
+      rawStandings: const [],
+      rawFixtures: const [],
+    );
+    return comp.phases.first.standings;
+  }
+
   // =========================================================================
   // --- 🏆 AMAPAZÃO SÉRIE A 2027 (ID 521) ---
   // =========================================================================
@@ -202,10 +224,10 @@ class CompetitionNormalizer {
       makeFixture(id: 'fix_ap_28', externalId: 52128, home: teamRioNorte, away: teamSaoJose, date: DateTime.utc(2027, 3, 8, 23, 0), round: '7ª Rodada', venueName: 'A Definir', venueCity: 'Macapá'),
     ];
 
-    // Merge com partidas vindas da API (caso existam)
+    // Merge com partidas vindas da API (caso existam e sejam da temporada 2027)
     final Map<String, Fixture> apiMatches = {};
     for (final f in rawFixtures) {
-      if (f.homeTeam != null && f.awayTeam != null) {
+      if ((f.season == null || f.season == 2027) && f.homeTeam != null && f.awayTeam != null) {
         final h = f.homeTeam!.name.toLowerCase().trim();
         final a = f.awayTeam!.name.toLowerCase().trim();
         apiMatches['${h}_$a'] = f;
@@ -222,24 +244,31 @@ class CompetitionNormalizer {
       return cf;
     }).toList();
 
-    // Identificar partidas de mata-mata da API (caso existam)
+    // Identificar partidas de mata-mata da API (estritamente temporada 2027)
     final semiFixtures = rawFixtures.where((f) {
       final r = (f.round ?? '').toLowerCase();
-      return r.contains('semi');
+      return f.season == 2027 && r.contains('semi');
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     final finalFixtures = rawFixtures.where((f) {
       final r = (f.round ?? '').toLowerCase();
-      return r.contains('final') && !r.contains('semi');
+      return f.season == 2027 && r.contains('final') && !r.contains('semi');
     }).toList()..sort((a, b) => a.date.compareTo(b.date));
 
     // Rodadas da 1ª Fase
     final classificatoriaRounds = _extractRounds(mergedClassificatoriaFixtures, 7, prefix: 'Rodada ');
 
-    // Classificação da 1ª Fase
+    // Classificação da 1ª Fase (filtra apenas dados legítimos da temporada 2027)
     List<Standing> standings;
-    if (rawStandings.isNotEmpty) {
-      standings = StandingsEngine.sortStandings(rawStandings);
+    const canonicalExtIds = {2224, 7785, 10858, 10861, 7848, 270734, 78216, 15622};
+    final valid2027Standings = rawStandings.where((s) {
+      final name = s.teamName.toLowerCase();
+      final isObsolete = name.contains('icasa') || name.contains('cristal') || name.contains('macapá');
+      return canonicalExtIds.contains(s.teamId) && !isObsolete;
+    }).toList();
+
+    if (valid2027Standings.isNotEmpty && valid2027Standings.length >= 8) {
+      standings = StandingsEngine.sortStandings(valid2027Standings);
     } else {
       final calculated = StandingsEngine.calculateStandingsFromFixtures(
         mergedClassificatoriaFixtures,

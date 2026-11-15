@@ -148,31 +148,42 @@ export class Amapaense2027SeederService implements OnApplicationBootstrap {
       await this.prisma.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS "TeamSquad" (
           "id" TEXT PRIMARY KEY,
-          "teamId" TEXT NOT NULL,
-          "season" INTEGER NOT NULL,
-          "players" JSONB NOT NULL DEFAULT '[]',
+          "teamExternalId" INTEGER NOT NULL UNIQUE,
+          "squadJson" TEXT NOT NULL,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE UNIQUE INDEX IF NOT EXISTS "TeamSquad_teamId_season_key" ON "TeamSquad"("teamId", "season");
+        CREATE INDEX IF NOT EXISTS "TeamSquad_teamExternalId_idx" ON "TeamSquad"("teamExternalId");
       `);
+    } catch (tblErr: any) {
+      this.logger.warn(`[AMAPAENSE-2027-SEEDER] Aviso ao garantir tabela TeamSquad: ${tblErr.message}`);
+    }
 
-      for (const [teamExtId, players] of Object.entries(SQUADS_DEF)) {
-        const teamObj = await this.prisma.team.findUnique({
-          where: { externalId: Number(teamExtId) },
+    for (const [teamExtId, squadList] of Object.entries(SQUADS_DEF)) {
+      const extIdNum = parseInt(teamExtId, 10);
+      try {
+        const existing = await (this.prisma as any).teamSquad.findUnique({
+          where: { teamExternalId: extIdNum },
         });
-        if (teamObj) {
-          const playersJson = JSON.stringify(players);
-          await this.prisma.$executeRawUnsafe(`
-            INSERT INTO "TeamSquad" ("id", "teamId", "season", "players", "updatedAt")
-            VALUES ($1, $2, $3, $4::jsonb, CURRENT_TIMESTAMP)
-            ON CONFLICT ("teamId", "season")
-            DO UPDATE SET "players" = $4::jsonb, "updatedAt" = CURRENT_TIMESTAMP;
-          `, randomUUID(), teamObj.id, 2027, playersJson);
+        if (!existing) {
+          await (this.prisma as any).teamSquad.create({
+            data: {
+              id: randomUUID(),
+              teamExternalId: extIdNum,
+              squadJson: JSON.stringify(squadList),
+            },
+          });
+        } else {
+          await (this.prisma as any).teamSquad.update({
+            where: { teamExternalId: extIdNum },
+            data: {
+              squadJson: JSON.stringify(squadList),
+            },
+          });
         }
+      } catch (squadErr: any) {
+        this.logger.warn(`[AMAPAENSE-2027-SEEDER] Aviso ao registrar squad do time ${teamExtId}: ${squadErr.message}`);
       }
-    } catch (e: any) {
-      this.logger.warn(`[AMAPAENSE-2027-SEEDER] Squad seed notice: ${e.message}`);
     }
 
     // 5. Tabela Completa das 28 Partidas da 1ª Fase Oficial da FAF

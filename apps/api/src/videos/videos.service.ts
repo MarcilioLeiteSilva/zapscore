@@ -73,10 +73,36 @@ export class VideosService {
     });
   }
 
+  private async resolveForeignKeys(data: any) {
+    const payload = { ...data };
+    if (payload.leagueId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.leagueId);
+      if (!isUuid) {
+        const numId = parseInt(payload.leagueId, 10);
+        const league = await this.prisma.league.findFirst({
+          where: isNaN(numId) ? { id: payload.leagueId } : { OR: [{ externalId: numId }, { id: payload.leagueId }] },
+        });
+        payload.leagueId = league?.id || null;
+      }
+    }
+    if (payload.teamId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.teamId);
+      if (!isUuid) {
+        const numId = parseInt(payload.teamId, 10);
+        const team = await this.prisma.team.findFirst({
+          where: isNaN(numId) ? { id: payload.teamId } : { OR: [{ externalId: numId }, { id: payload.teamId }] },
+        });
+        payload.teamId = team?.id || null;
+      }
+    }
+    return payload;
+  }
+
   async create(data: any) {
     try {
       console.log('Tentando criar vídeo:', data);
-      return await this.prisma.video.create({ data });
+      const resolvedData = await this.resolveForeignKeys(data);
+      return await this.prisma.video.create({ data: resolvedData });
     } catch (error) {
       console.error('ERRO AO CRIAR VÍDEO NO BANCO:', error);
       throw error;
@@ -85,9 +111,10 @@ export class VideosService {
 
   async update(id: string, data: any) {
     try {
+      const resolvedData = await this.resolveForeignKeys(data);
       return await this.prisma.video.update({
         where: { id },
-        data,
+        data: resolvedData,
       });
     } catch (error) {
       console.error('ERRO AO ATUALIZAR VÍDEO:', error);

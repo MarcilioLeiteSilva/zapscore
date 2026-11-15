@@ -120,9 +120,35 @@ export class NewsService implements OnModuleInit {
     });
   }
 
+  private async resolveForeignKeys(data: any) {
+    const payload = { ...data };
+    if (payload.leagueId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.leagueId);
+      if (!isUuid) {
+        const numId = parseInt(payload.leagueId, 10);
+        const league = await this.prisma.league.findFirst({
+          where: isNaN(numId) ? { id: payload.leagueId } : { OR: [{ externalId: numId }, { id: payload.leagueId }] },
+        });
+        payload.leagueId = league?.id || null;
+      }
+    }
+    if (payload.teamId) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.teamId);
+      if (!isUuid) {
+        const numId = parseInt(payload.teamId, 10);
+        const team = await this.prisma.team.findFirst({
+          where: isNaN(numId) ? { id: payload.teamId } : { OR: [{ externalId: numId }, { id: payload.teamId }] },
+        });
+        payload.teamId = team?.id || null;
+      }
+    }
+    return payload;
+  }
+
   async create(data: any) {
     try {
-      return await this.prisma.news.create({ data });
+      const resolvedData = await this.resolveForeignKeys(data);
+      return await this.prisma.news.create({ data: resolvedData });
     } catch (error) {
       this.logger.error('ERRO AO CRIAR NOTÍCIA NO BANCO:', error);
       throw error;
@@ -131,9 +157,10 @@ export class NewsService implements OnModuleInit {
 
   async update(id: string, data: any) {
     try {
+      const resolvedData = await this.resolveForeignKeys(data);
       return await this.prisma.news.update({
         where: { id },
-        data,
+        data: resolvedData,
       });
     } catch (error) {
       this.logger.error('ERRO AO ATUALIZAR NOTÍCIA:', error);

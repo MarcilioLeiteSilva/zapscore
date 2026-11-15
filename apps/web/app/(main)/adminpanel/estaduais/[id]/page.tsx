@@ -107,8 +107,8 @@ export default function EstaduaisLeagueDetailPage() {
   const [scorers, setScorers] = useState<ScorerItem[]>([]);
   const [players, setPlayers] = useState<PlayerItem[]>([]);
 
-  // Temporada Selecionada (Padrão 2027 para Pernambucano, Tocantinense, Baiano, Cearense, Sul-Matogrossense)
-  const is2027League = ["622", "631", "602", "609", "623"].includes(leagueIdStr) || [622, 631, 602, 609, 623].includes(leagueIdNum);
+  // Temporada Selecionada (Padrão 2027 para Pernambucano, Tocantinense, Baiano, Cearense, Sul-Matogrossense, Amapaense)
+  const is2027League = ["622", "631", "602", "609", "623", "521"].includes(leagueIdStr) || [622, 631, 602, 609, 623, 521].includes(leagueIdNum);
   const defaultSeason = is2027League ? 2027 : 2026;
   const [selectedSeason, setSelectedSeason] = useState<number>(defaultSeason);
   const [availableSeasons, setAvailableSeasons] = useState<number[]>(
