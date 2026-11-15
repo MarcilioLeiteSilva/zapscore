@@ -5,16 +5,17 @@ ZAPSCORE - CAMPEONATO AMAPAENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
 Data: 15/11/2026
 Nome do App: Amapaense
 Package / Application ID: com.zapscore.estadualamapaense
-Versão Alvo / Build Pendente: 1.0.2
-Version Code: 3 (1.0.2+3)
+Versão: 1.0.2
+Version Code: 3 (1.0.2+3) - Compilado em 15/11/2026
 
 --------------------------------------------------------------------------------
 1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
 --------------------------------------------------------------------------------
-- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.1+2 atual)
-- zapscore_amapaense_v1.0.1+2.aab  -> Cópia nomeada do App Bundle atualizado (v1.0.1+2)
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.2+3)
+- zapscore_amapaense_v1.0.2+3.aab  -> Cópia nomeada do App Bundle atualizado (v1.0.2+3)
+- zapscore_amapaense_v1.0.1+2.aab  -> Cópia nomeada do App Bundle anterior (v1.0.1+2)
 - zapscore_amapaense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle anterior (v1.0.0+1)
-- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8 atualizado
+- mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8 atualizado (v1.0.2+3)
 - upload-keystore.jks             -> Chave de assinatura oficial utilizada para assinar o release
 - amapaense-upload-keystore.jks    -> Cópia de segurança da chave com prefixo do app
 - key.properties                  -> Arquivo de credenciais de assinatura do Gradle
