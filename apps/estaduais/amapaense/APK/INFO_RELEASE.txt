@@ -2,16 +2,16 @@
 ZAPSCORE - CAMPEONATO AMAPAENSE - CONFIGURAÇÕES DE RELEASE E MONETIZAÇÃO
 ================================================================================
 
-Data: 14/11/2026
+Data: 15/11/2026
 Nome do App: Amapaense
 Package / Application ID: com.zapscore.estadualamapaense
-Versão: 1.0.1
-Version Code: 2 (1.0.1+2)
+Versão Alvo / Build Pendente: 1.0.2
+Version Code: 3 (1.0.2+3)
 
 --------------------------------------------------------------------------------
 1. ARQUIVOS DISPONÍVEIS NESTA PASTA APK/
 --------------------------------------------------------------------------------
-- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.1+2)
+- app-release.aab                -> Android App Bundle (.aab) oficial assinado para a Google Play Store (v1.0.1+2 atual)
 - zapscore_amapaense_v1.0.1+2.aab  -> Cópia nomeada do App Bundle atualizado (v1.0.1+2)
 - zapscore_amapaense_v1.0.0+1.aab  -> Cópia nomeada do App Bundle anterior (v1.0.0+1)
 - mapping.txt                     -> Arquivo de mapeamento e desofuscação de símbolos ProGuard/R8 atualizado
@@ -22,8 +22,12 @@ Version Code: 2 (1.0.1+2)
 - DESCRICAO_PLAY_STORE.txt        -> Ficha técnica e descrições para publicação na Play Store
 
 --------------------------------------------------------------------------------
-2. NOVIDADES E ALTERAÇÕES DESTA VERSÃO (v1.0.1+2)
+2. NOVIDADES E ALTERAÇÕES PREPARADAS PARA A VERSÃO (v1.0.2+3)
 --------------------------------------------------------------------------------
+- [FIX] Renderização resiliente de fotos de atletas no plantel (team.dart e player.dart) com CachedNetworkImageProvider e sanitização de URLs vazias.
+- [FIX] Suporte a proxy de fotos e escudos com bypass de proteção anti-hotlink da API-Sports.
+- [FIX] Conexão dinâmica do endpoint /teams/:id/squad do backend com os elencos canônicos e edições em tempo real do AdminPanel.
+- [FEAT] Versão no pubspec.yaml incrementada para 1.0.2+3 pronta para build 'flutter build appbundle --release'.
 - Atualização e suporte oficial para o Amapazão Série A 2027 (Federação Amapaense de Futebol - FAF).
 - Correção no motor de chaves (BracketEngine): Semifinais e Finais exibem placeholders canônicos limpos (1º x 4º e 2º x 3º) com homeTeam/awayTeam nulos enquanto não houver jogos realizados na 1ª Fase.
 - Elencos e atletas canônicos dos 8 clubes oficiais do Amapazão 2027 (Santos-AP, São José-AP, Oratório, Independente-AP, Trem, Ypiranga-AP, Portuguesa-AP e Rio Norte) disponíveis com fotos reais, idades, posições e números.

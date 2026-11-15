@@ -53,17 +53,37 @@ Para evitar que dados históricos de 2026/2025 fiquem misturados na tela inicial
 
 ---
 
-## 4. Cadastro de Clubes e Elencos Canônicos (`TeamSquads`)
-- [ ] **Arquivo de Elencos Canônicos**:
+## 4. Cadastro de Clubes, Elencos Canônicos (`TeamSquads`) e Resiliência de Imagens
+- [ ] **Escudos Oficiais de Alta Resolução (FAF / oGol)**:
+  - Para evitar bloqueios de hotlink da API-Football (`media.api-sports.io`), priorizar os escudos estáveis do oGol (`https://cdn-img.staticzz.com/img/logos/equipas/...`).
+  - Esses escudos não sofrem bloqueios por CORS ou anti-scraping da Cloudflare e renderizam instantaneamente no Admin e nos apps Flutter.
+- [ ] **Arquivo de Elencos Canônicos no App Flutter**:
   - Criar ou atualizar o arquivo de elencos estaduais (ex: `amapaense_squads.dart`, `tocantinense_squads.dart`).
-  - Cadastrar os 8 ou 10 clubes oficiais com jogadores-base (nome, posição, número, idade e URL de foto).
-- [ ] **Fallback na API Backend**:
-  - Em `apps/api/src/competitions/competitions.service.ts`, registrar o fallback de IDs canônicos para a liga (`getCompetitionPlayers`).
-  - Assegurar que caso o clube não tenha registro no banco de dados, o backend crie ou devolva os atletas canônicos automaticamente.
+  - Cadastrar os 8 ou 10 clubes oficiais com jogadores-base (nome, posição, número, idade e URL de foto quando disponível).
+- [ ] **Fallback na API Backend (`CompetitionsService` & `TeamsService`)**:
+  - Em `apps/api/src/competitions/competitions.service.ts`, registrar `CANONICAL_<ESTADUAL>_CLUBS` e `CANONICAL_<ESTADUAL>_SQUADS`.
+  - Assegurar que caso o clube não tenha registro no banco de dados, o backend crie ou devolva os atletas canônicos automaticamente via `getCompetitionPlayers`.
+  - Em `apps/api/src/teams/teams.service.ts`: O método `getSquad(teamExternalId)` deve consultar `CompetitionsService.memorySquads` e `CANONICAL_<ESTADUAL>_SQUADS` para que o app mobile receba os elencos e fotos atualizadas em tempo real.
 
 ---
 
-## 5. AdminPanel (`apps/web`) e Gestão de Conteúdo
+## 5. AdminPanel (`apps/web`), Proxy de Imagens e Gestão de Conteúdo
+- [ ] **Proxy Obrigatório para Fotos e Escudos (`photoSrc`)**:
+  - Nunca usar `<img src={player.photo} />` ou `<img src={player.teamLogo} />` diretamente na tabela do Admin.
+  - Encapsular obrigatoriamente através da função `photoSrc(url)`:
+    ```typescript
+    const photoSrc = (url?: string | null): string => {
+      const u = (url || "").trim();
+      if (!u) return "";
+      if (u.includes("media.api-sports.io")) {
+        return `/api/proxy-image?url=${encodeURIComponent(u)}`;
+      }
+      return u;
+    };
+    ```
+- [ ] **Bypass de Anti-Hotlinking no Proxy Next.js (`apps/web/app/api/proxy-image/route.ts`)**:
+  - A rota `/api/proxy-image` deve obrigatoriamente enviar os headers `'Referer': new URL(url).origin` e `'User-Agent': 'Mozilla/5.0...'` para contornar o erro 403 Forbidden da Cloudflare/API-Sports.
+  - Implementar fallback resiliente para o proxy central da API ZapScore NestJS (`https://zapscore-zapscore-api.gtalg3.easypanel.host/news/proxy-image?url=...`).
 - [ ] **Dropdown de Filtro por Clube**:
   - Na aba de **Jogadores** de `apps/web/app/(main)/adminpanel/estaduais/[id]/page.tsx`, implementar dropdown com a lista de clubes participantes da liga para navegação rápida e sem sobreposição.
 - [ ] **CRUD Completo de Atletas**:
@@ -78,7 +98,22 @@ Para evitar que dados históricos de 2026/2025 fiquem misturados na tela inicial
 
 ---
 
-## 6. Validação e Testes no Dispositivo Real
+## 6. Validação e Renderização Segura de Fotos no App Mobile Flutter
+- [ ] **Padrão Obrigatório de Renderização de Avatar (`team.dart` e `player.dart`)**:
+  - **PROIBIDO** usar `NetworkImage(proxyImage(player.photo!))` com checagem simples de `player.photo != null`. Quando o campo vem com string vazia (`""`), o Dart avalia como não-nulo e quebra a tela com exceção de URI sem host.
+  - **Padrão Correto e Resiliente**:
+    ```dart
+    CircleAvatar(
+      radius: 22,
+      backgroundColor: context.appColors.info ?? Colors.black26,
+      backgroundImage: (player.photo != null && player.photo!.trim().length > 5)
+          ? CachedNetworkImageProvider(proxyImage(player.photo!))
+          : null,
+      child: (player.photo == null || player.photo!.trim().length <= 5)
+          ? const Icon(Icons.person, color: Colors.white54)
+          : null,
+    )
+    ```
 - [ ] **Execução via ADB / Flutter Run**:
   - Rodar o app no dispositivo conectado (`flutter run -d <DEVICE_ID>`).
 - [ ] **Validação AdMob**:
