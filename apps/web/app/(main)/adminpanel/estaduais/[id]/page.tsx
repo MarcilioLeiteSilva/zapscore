@@ -30,6 +30,17 @@ import { ECOSYSTEM_MODULES, LeagueConfig } from "../../registry";
 
 const API_URL = "https://zapscore-zapscore-api.gtalg3.easypanel.host";
 
+// A CDN media.api-sports.io bloqueia hotlinking direto do navegador.
+// Reutiliza o proxy de imagens já existente no projeto (/api/proxy-image).
+const photoSrc = (url?: string | null): string => {
+  const u = (url || "").trim();
+  if (!u) return "";
+  if (u.includes("media.api-sports.io")) {
+    return `/api/proxy-image?url=${encodeURIComponent(u)}`;
+  }
+  return u;
+};
+
 interface NewsItem {
   id: string;
   title: string;
@@ -1463,7 +1474,7 @@ export default function EstaduaisLeagueDetailPage() {
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-[var(--surface-hover)] border border-[var(--border)] overflow-hidden shrink-0 flex items-center justify-center">
                                 {pPhoto ? (
-                                  <img src={pPhoto} alt="" className="w-full h-full object-cover" />
+                                  <img src={photoSrc(pPhoto)} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                   <span className="font-bold text-xs text-[var(--text-muted)]">
                                     {pName.substring(0, 2).toUpperCase()}
@@ -1662,7 +1673,7 @@ export default function EstaduaisLeagueDetailPage() {
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-[var(--surface-hover)] border border-[var(--border)] mx-auto flex items-center justify-center shrink-0">
                               {hasPhoto ? (
                                 <img
-                                  src={player.photo!}
+                                  src={photoSrc(player.photo)}
                                   alt={player.name}
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
@@ -2201,7 +2212,7 @@ export default function EstaduaisLeagueDetailPage() {
                   <div className="p-3.5 rounded-xl bg-black/30 border border-[var(--border)] flex items-center gap-4">
                     <div className="w-14 h-14 rounded-full overflow-hidden border border-blue-500/40 shrink-0 bg-black/50">
                       <img
-                        src={playerFormData.photo.trim()}
+                        src={photoSrc(playerFormData.photo)}
                         alt="Preview"
                         className="w-full h-full object-cover"
                         onError={(e) => {
