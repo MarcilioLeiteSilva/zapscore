@@ -94,11 +94,13 @@ export default function EstaduaisLeagueDetailPage() {
   const leagueIdStr = (params?.id as string) || "";
   const leagueIdNum = parseInt(leagueIdStr, 10);
 
-  // Informações da Liga
+  // Informações da Liga e Resolução Robusta de ID Numérico
   const estaduaisModule = ECOSYSTEM_MODULES.find((m) => m.id === "estaduais");
   const leagueInfo: LeagueConfig | undefined = estaduaisModule?.leagues.find(
     (l) => l.id === leagueIdNum || l.slug === leagueIdStr
   );
+  const numericLeagueId = leagueInfo?.id || (!isNaN(leagueIdNum) && leagueIdNum > 0 ? leagueIdNum : 0);
+  const compIdForApi = numericLeagueId > 0 ? numericLeagueId : leagueIdStr;
 
   const leagueName = leagueInfo?.name || `Competição #${leagueIdStr}`;
   const leagueFlag = leagueInfo?.flag || "🇧🇷";
@@ -114,7 +116,10 @@ export default function EstaduaisLeagueDetailPage() {
   const [players, setPlayers] = useState<PlayerItem[]>([]);
 
   // Temporada Selecionada (Padrão 2027 para Pernambucano, Tocantinense, Baiano, Cearense, Sul-Matogrossense, Amapaense)
-  const is2027League = ["622", "631", "602", "609", "623", "521"].includes(leagueIdStr) || [622, 631, 602, 609, 623, 521].includes(leagueIdNum);
+  const is2027League =
+    ["622", "631", "602", "609", "623", "521"].includes(leagueIdStr) ||
+    [622, 631, 602, 609, 623, 521].includes(leagueIdNum) ||
+    [622, 631, 602, 609, 623, 521].includes(numericLeagueId);
   const defaultSeason = is2027League ? 2027 : 2026;
   const [selectedSeason, setSelectedSeason] = useState<number>(defaultSeason);
   const [availableSeasons, setAvailableSeasons] = useState<number[]>(
@@ -273,7 +278,7 @@ export default function EstaduaisLeagueDetailPage() {
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/seasons`);
+        const res = await fetch(`${API_URL}/competitions/${compIdForApi}/seasons`);
         if (res.ok) {
           const seasons = await res.json();
           if (Array.isArray(seasons) && seasons.length > 0) {
@@ -288,17 +293,17 @@ export default function EstaduaisLeagueDetailPage() {
         console.error("Erro ao buscar temporadas da competição:", err);
       }
     };
-    if (leagueIdStr) {
+    if (compIdForApi) {
       fetchSeasons();
     }
-  }, [leagueIdStr]);
+  }, [compIdForApi]);
 
   // Carregar Artilharia da Liga
   const fetchScorers = async (seasonToFetch?: number) => {
     try {
       setLoadingScorers(true);
       const targetSeason = seasonToFetch ?? selectedSeason;
-      const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/scorers?season=${targetSeason}`);
+      const res = await fetch(`${API_URL}/competitions/${compIdForApi}/scorers?season=${targetSeason}`);
       if (res.ok) {
         const data = await res.json();
         setScorers(Array.isArray(data) ? data : []);
@@ -315,7 +320,7 @@ export default function EstaduaisLeagueDetailPage() {
     try {
       setLoadingPlayers(true);
       const targetSeason = seasonToFetch ?? selectedSeason;
-      const res = await fetch(`${API_URL}/competitions/${leagueIdStr}/players?season=${targetSeason}`);
+      const res = await fetch(`${API_URL}/competitions/${compIdForApi}/players?season=${targetSeason}`);
       if (res.ok) {
         const data = await res.json();
         setPlayers(Array.isArray(data) ? data : []);
@@ -502,7 +507,12 @@ export default function EstaduaisLeagueDetailPage() {
 
   const handleBulkDeleteVideos = async () => {
     if (selectedVideoIds.size === 0) return;
-    if (!confirm(`Deseja excluir permanentemente os ${selectedVideoIds.size} vídeos selecionados?`)) return;
+    if (
+      !confirm(
+        `⚠️ ATENÇÃO: Deseja realmente excluir permanentemente os ${selectedVideoIds.size} vídeos selecionados?\n\nEsta ação é irreversível e removerá os vídeos do painel e do feed de vídeos do aplicativo.`
+      )
+    )
+      return;
     try {
       const res = await fetch(`${API_URL}/videos/bulk-delete`, {
         method: "POST",
@@ -625,7 +635,12 @@ export default function EstaduaisLeagueDetailPage() {
 
   const handleBulkDeleteNews = async () => {
     if (selectedNewsIds.size === 0) return;
-    if (!confirm(`Deseja excluir permanentemente as ${selectedNewsIds.size} notícias selecionadas?`)) return;
+    if (
+      !confirm(
+        `⚠️ ATENÇÃO: Deseja realmente excluir permanentemente as ${selectedNewsIds.size} notícias selecionadas?\n\nEsta ação é irreversível e removerá as notícias do painel e do feed de notícias do aplicativo.`
+      )
+    )
+      return;
     try {
       const res = await fetch(`${API_URL}/news/bulk-delete`, {
         method: "POST",
@@ -737,23 +752,20 @@ export default function EstaduaisLeagueDetailPage() {
 
   // Lista Canônica de Clubes do Amapaense (ID 521)
   const AMAPAENSE_CANONICAL_CLUBS = [
-    { externalId: 2224, name: "Trem Desportivo Clube" },
-    { externalId: 7785, name: "Santos Futebol Clube do Amapá" },
-    { externalId: 10858, name: "Oratório Recreativo Clube" },
-    { externalId: 10861, name: "Independente Esporte Clube" },
-    { externalId: 7848, name: "Ypiranga Clube" },
-    { externalId: 270734, name: "Portuguesa de Desporto do Amapá" },
-    { externalId: 78216, name: "Rio Norte Futebol Clube" },
+    { externalId: 2224, name: "Trem" },
+    { externalId: 7785, name: "Santos-AP" },
+    { externalId: 10858, name: "Ypiranga-AP" },
+    { externalId: 10861, name: "Santana" },
+    { externalId: 7848, name: "Macapá" },
+    { externalId: 270734, name: "Oratório" },
+    { externalId: 78216, name: "Independente-AP" },
     { externalId: 15622, name: "SER São José" },
   ];
 
   const availableClubs = useMemo(() => {
     const clubMap = new Map<string, { externalId: number; name: string }>();
-    if (leagueIdNum === 521 || leagueIdStr === "521") {
-      for (const c of AMAPAENSE_CANONICAL_CLUBS) {
-        clubMap.set(c.name, c);
-      }
-    }
+
+    // 1. Clubes que já possuem atletas carregados da API
     for (const p of players) {
       if (p.teamName) {
         clubMap.set(p.teamName, {
@@ -762,8 +774,24 @@ export default function EstaduaisLeagueDetailPage() {
         });
       }
     }
+
+    // 2. Para Amapaense (ID 521), garante os 8 clubes canônicos no dropdown
+    if (
+      numericLeagueId === 521 ||
+      leagueIdNum === 521 ||
+      leagueIdStr === "521" ||
+      leagueIdStr.includes("amapaense")
+    ) {
+      const existingExtIds = new Set(Array.from(clubMap.values()).map((c) => c.externalId));
+      for (const c of AMAPAENSE_CANONICAL_CLUBS) {
+        if (!existingExtIds.has(c.externalId)) {
+          clubMap.set(c.name, c);
+        }
+      }
+    }
+
     return Array.from(clubMap.values());
-  }, [players, leagueIdNum, leagueIdStr]);
+  }, [players, leagueIdNum, leagueIdStr, numericLeagueId]);
 
   // Filtro de buscas local com suporte a Publicado / Rascunho
   const filteredNews = news.filter((n) => {
@@ -788,8 +816,13 @@ export default function EstaduaisLeagueDetailPage() {
   });
 
   const filteredPlayers = players.filter((player) => {
-    if (selectedTeamFilter !== "all" && player.teamName !== selectedTeamFilter) {
-      return false;
+    if (selectedTeamFilter !== "all") {
+      const matchName = player.teamName === selectedTeamFilter;
+      const selectedClubObj = availableClubs.find((c) => c.name === selectedTeamFilter);
+      const matchExtId = selectedClubObj && player.teamExternalId === selectedClubObj.externalId;
+      if (!matchName && !matchExtId) {
+        return false;
+      }
     }
     if (onlyMissingPhotos && player.photo && player.photo.trim().length > 5) {
       return false;

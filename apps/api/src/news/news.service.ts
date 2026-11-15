@@ -114,10 +114,12 @@ export class NewsService implements OnModuleInit {
 
   private filterByStatus(items: any[], status?: string, includeDrafts?: string) {
     const mapped = items.map((item) => {
-      const isDraft =
-        item.content === '[DRAFT]' ||
-        item.author === 'DRAFT' ||
-        (item.content || '').startsWith('[DRAFT]');
+      // Regra de status inicial: RASCUNHO por padrão.
+      // Apenas itens marcados explicitamente como publicados têm status 'published'.
+      const isPublished =
+        item.author === 'PUBLISHED' ||
+        (item.content || '').startsWith('[PUBLISHED]');
+      const isDraft = !isPublished;
       return {
         ...item,
         isDraft,
@@ -150,18 +152,20 @@ export class NewsService implements OnModuleInit {
   private async resolveForeignKeys(data: any) {
     const payload = { ...data };
 
-    // Gestão de Rascunho / Publicação sem alterar schema
-    if (payload.status === 'draft' || payload.isDraft === true) {
-      if (!payload.content || payload.content.trim() === '') {
-        payload.content = '[DRAFT]';
-      } else if (!payload.content.startsWith('[DRAFT]')) {
-        payload.content = `[DRAFT] ${payload.content}`;
-      }
-    } else if (payload.status === 'published' || payload.isDraft === false) {
+    // Gestão de Rascunho / Publicação sem alterar schema (Status inicial = Rascunho)
+    if (payload.status === 'published' || payload.isDraft === false) {
+      payload.author = 'PUBLISHED';
       if (payload.content === '[DRAFT]') {
         payload.content = null;
       } else if (payload.content?.startsWith('[DRAFT] ')) {
         payload.content = payload.content.replace('[DRAFT] ', '').trim();
+      }
+    } else if (payload.status === 'draft' || payload.isDraft === true) {
+      if (payload.author === 'PUBLISHED') {
+        payload.author = null;
+      }
+      if (payload.content?.startsWith('[PUBLISHED] ')) {
+        payload.content = payload.content.replace('[PUBLISHED] ', '').trim();
       }
     }
     delete payload.status;

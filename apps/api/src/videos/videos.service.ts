@@ -63,9 +63,12 @@ export class VideosService {
     });
 
     const mapped = videos.map((item) => {
-      const isDraft =
-        (item.description || '').startsWith('[DRAFT]') ||
-        item.duration === 'DRAFT';
+      // Regra de status inicial: RASCUNHO por padrão.
+      // Apenas vídeos marcados explicitamente como publicados têm status 'published'.
+      const isPublished =
+        item.duration === 'PUBLISHED' ||
+        (item.description || '').startsWith('[PUBLISHED]');
+      const isDraft = !isPublished;
       return {
         ...item,
         isDraft,
@@ -97,18 +100,21 @@ export class VideosService {
   private async resolveForeignKeys(data: any) {
     const payload = { ...data };
 
-    // Gestão de Rascunho / Publicação sem quebra de schema
-    if (payload.status === 'draft' || payload.isDraft === true) {
+    // Gestão de Rascunho / Publicação sem quebra de schema (Status inicial = Rascunho)
+    if (payload.status === 'published' || payload.isDraft === false) {
       if (!payload.description || payload.description.trim() === '') {
-        payload.description = '[DRAFT]';
-      } else if (!payload.description.startsWith('[DRAFT]')) {
-        payload.description = `[DRAFT] ${payload.description}`;
+        payload.description = '[PUBLISHED]';
+      } else if (!payload.description.startsWith('[PUBLISHED]')) {
+        payload.description = `[PUBLISHED] ${payload.description.replace('[DRAFT] ', '').trim()}`;
       }
-    } else if (payload.status === 'published' || payload.isDraft === false) {
-      if (payload.description === '[DRAFT]') {
+    } else if (payload.status === 'draft' || payload.isDraft === true) {
+      if (payload.duration === 'PUBLISHED') {
+        payload.duration = null;
+      }
+      if (payload.description === '[PUBLISHED]') {
         payload.description = null;
-      } else if (payload.description?.startsWith('[DRAFT] ')) {
-        payload.description = payload.description.replace('[DRAFT] ', '').trim();
+      } else if (payload.description?.startsWith('[PUBLISHED] ')) {
+        payload.description = payload.description.replace('[PUBLISHED] ', '').trim();
       }
     }
     delete payload.status;

@@ -106,3 +106,4 @@ Para evitar que dados históricos de 2026/2025 fiquem misturados na tela inicial
   - Garantir o arquivo `key.properties` configurado apontando para o keystore em `APK/`.
   - Executar: `flutter build appbundle --release`.
   - Copiar o artefato final para o diretório `/<estadual>/APK/` correspondente.
+

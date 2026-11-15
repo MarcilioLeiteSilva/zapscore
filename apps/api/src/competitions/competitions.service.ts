@@ -123,27 +123,27 @@ export class CompetitionsService {
       where: { externalId: leagueExternalId },
     });
 
-    if (!league) return [];
-
-    // Busca times presentes na classificação ou partidas da liga
-    let standings = await this.prisma.standing.findMany({
-      where: { leagueId: league.id, season },
-      include: { team: true },
-      orderBy: { rank: 'asc' },
-    });
-
-    if (standings.length === 0 && season !== 2027) {
+    let standings: any[] = [];
+    if (league) {
       standings = await this.prisma.standing.findMany({
-        where: { leagueId: league.id, season: 2027 },
+        where: { leagueId: league.id, season },
         include: { team: true },
         orderBy: { rank: 'asc' },
       });
+
+      if (standings.length === 0 && season !== 2027) {
+        standings = await this.prisma.standing.findMany({
+          where: { leagueId: league.id, season: 2027 },
+          include: { team: true },
+          orderBy: { rank: 'asc' },
+        });
+      }
     }
 
     let teams = standings.map((s) => s.team);
 
     // Fallback: se standings ainda não estiver populado, busca times pelas fixtures
-    if (teams.length === 0) {
+    if (teams.length === 0 && league) {
       const fixtures = await this.prisma.fixture.findMany({
         where: { leagueId: league.id },
         include: { homeTeam: true, awayTeam: true },
@@ -157,19 +157,40 @@ export class CompetitionsService {
       teams = Array.from(teamMap.values());
     }
 
-    // Fallback 2 específico Amapaense (ID 521): busca os 8 clubes oficiais
-    if (leagueExternalId === 521 && teams.length < 8) {
-      const canonicalExtIds = [2224, 7785, 10858, 10861, 7848, 270734, 78216, 15622];
-      const foundTeams = await this.prisma.team.findMany({
-        where: { externalId: { in: canonicalExtIds } },
-      });
-      const existingIds = new Set(teams.map((t) => t.externalId));
-      for (const ft of foundTeams) {
-        if (!existingIds.has(ft.externalId)) {
-          teams.push(ft);
+    // Fallback garantido para Amapaense (ID 521): assegura a presença dos 8 clubes canônicos
+    if (leagueExternalId === 521) {
+      const CANONICAL_AMAPAENSE_CLUBS = [
+        { externalId: 2224, name: 'Trem', logo: 'https://media.api-sports.io/football/teams/2224.png' },
+        { externalId: 7785, name: 'Santos-AP', logo: 'https://media.api-sports.io/football/teams/7785.png' },
+        { externalId: 10858, name: 'Ypiranga-AP', logo: 'https://media.api-sports.io/football/teams/10858.png' },
+        { externalId: 10861, name: 'Santana', logo: 'https://media.api-sports.io/football/teams/10861.png' },
+        { externalId: 7848, name: 'Macapá', logo: 'https://media.api-sports.io/football/teams/7848.png' },
+        { externalId: 270734, name: 'Oratório', logo: 'https://media.api-sports.io/football/teams/270734.png' },
+        { externalId: 78216, name: 'Independente-AP', logo: 'https://media.api-sports.io/football/teams/78216.png' },
+        { externalId: 15622, name: 'SER São José', logo: 'https://media.api-sports.io/football/teams/15622.png' },
+      ];
+
+      const existingExtIds = new Set(teams.map((t) => t.externalId));
+      for (const ct of CANONICAL_AMAPAENSE_CLUBS) {
+        if (!existingExtIds.has(ct.externalId)) {
+          const dbTeam = await this.prisma.team.findUnique({
+            where: { externalId: ct.externalId },
+          });
+          if (dbTeam) {
+            teams.push(dbTeam);
+          } else {
+            teams.push({
+              id: `canonical-${ct.externalId}`,
+              externalId: ct.externalId,
+              name: ct.name,
+              logo: ct.logo,
+            });
+          }
         }
       }
     }
+
+    if (!league && leagueExternalId !== 521) return [];
 
     const allPlayers: Array<{
       id: number;
