@@ -262,7 +262,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Brasiliense',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2026, 2027],
   },
   {
     code: 'BR_ALAGOANO_1',

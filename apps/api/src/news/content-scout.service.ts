@@ -252,6 +252,14 @@ export class ContentScoutService {
         'campeonato amapaense', 'amapaense', 'amapazão', 'amapazao', 'trem dc', 'independente-ap',
         'santos-ap', 'ypiranga-ap', 'oratório', 'são josé-ap', 'portuguesa-ap', 'macapá'
       ]
+    },
+    610: {
+      name: 'Campeonato Brasiliense',
+      country: 'Brasil',
+      keywords: [
+        'campeonato brasiliense', 'candangão', 'candangao', 'brasiliense', 'gama', 'ceilândia',
+        'capital cf', 'taguatinga', 'sobradinho', 'real brasília', 'samambaia', 'paranoá', 'canaã'
+      ]
     }
   };
 

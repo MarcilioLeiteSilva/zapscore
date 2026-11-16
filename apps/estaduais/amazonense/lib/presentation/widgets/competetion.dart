@@ -500,8 +500,6 @@ class TableLeaguePage extends StatelessWidget {
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
                 HouseHeaderSponsor(leagueId: state.selectedLeagueId),
-                const AdBannerWidget(),
-                const Gap(10),
                 StandingsTableWidget(
                   standings: activePhase.standings.isNotEmpty ? activePhase.standings : state.standings,
                   groupTitle: activePhase.name,
