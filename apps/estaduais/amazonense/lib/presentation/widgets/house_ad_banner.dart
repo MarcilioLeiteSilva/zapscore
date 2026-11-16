@@ -65,7 +65,7 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          debugPrint('[AdBannerWidget] ✅ Banner AdMob carregado com sucesso');
+          debugPrint('[AdBannerWidget] ✅ Banner carregado com sucesso');
           if (mounted) {
             setState(() {
               _isAdMobLoaded = true;
@@ -74,12 +74,13 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
           }
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('[AdBannerWidget] ❌ Falha ao carregar banner AdMob: ${error.message} (code: ${error.code})');
-          _isAdMobLoaded = false;
-          _bannerAd = null;
+          debugPrint('[AdBannerWidget] ❌ Falha ao carregar banner: ${error.message} (code: ${error.code})');
           ad.dispose();
           if (mounted) {
-            setState(() {});
+            setState(() {
+              _isAdMobLoaded = false;
+              _bannerAd = null;
+            });
             // AdMob falhou ou sem inventário (no-fill) -> Chaveia instantaneamente para o House Ad
             _fetchHouseAdFallback();
           }
@@ -129,12 +130,7 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
 
   @override
   void dispose() {
-    _isAdMobLoaded = false;
-    final adToDispose = _bannerAd;
-    _bannerAd = null;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      adToDispose?.dispose();
-    });
+    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -149,10 +145,7 @@ class _HouseAdBannerState extends State<HouseAdBanner> with AutomaticKeepAliveCl
         width: _bannerAd!.size.width.toDouble(),
         height: _bannerAd!.size.height.toDouble(),
         alignment: Alignment.center,
-        child: AdWidget(
-          key: ValueKey(_bannerAd),
-          ad: _bannerAd!,
-        ),
+        child: AdWidget(ad: _bannerAd!),
       );
     }
 

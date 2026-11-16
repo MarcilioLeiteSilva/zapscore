@@ -254,7 +254,7 @@ export default function EstaduaisLeagueDetailPage() {
     try {
       setLoadingNews(true);
       const uuidToUse = targetUuid !== undefined ? targetUuid : leagueUuid;
-      const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${leagueIdStr}`;
+      const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${compIdForApi || leagueIdStr}`;
       const res = await fetch(`${API_URL}/news?limit=100&includeDrafts=true&${queryParam}`);
       if (res.ok) {
         const data = await res.json();
@@ -272,7 +272,7 @@ export default function EstaduaisLeagueDetailPage() {
     try {
       setLoadingVideos(true);
       const uuidToUse = targetUuid !== undefined ? targetUuid : leagueUuid;
-      const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${leagueIdStr}`;
+      const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${compIdForApi || leagueIdStr}`;
       const res = await fetch(`${API_URL}/videos?limit=100&includeDrafts=true&${queryParam}`);
       if (res.ok) {
         const data = await res.json();
@@ -462,7 +462,7 @@ export default function EstaduaisLeagueDetailPage() {
       const method = currentVideoId ? "PUT" : "POST";
       const payload = {
         ...videoFormData,
-        leagueId: leagueUuid || null,
+        leagueId: leagueUuid || String(compIdForApi || leagueIdStr),
       };
 
       const res = await fetch(url, {
@@ -589,7 +589,7 @@ export default function EstaduaisLeagueDetailPage() {
         source: newsFormData.source || "ZapScore",
         imageUrl: newsFormData.imageUrl || null,
         externalUrl: newsFormData.url || null,
-        leagueId: leagueUuid || null,
+        leagueId: leagueUuid || String(compIdForApi || leagueIdStr),
         status: newsFormData.status,
       };
 

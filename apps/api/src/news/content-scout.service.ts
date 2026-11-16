@@ -236,6 +236,22 @@ export class ContentScoutService {
         'campeonato goiano', 'goianão', 'goianao', 'goiás ec', 'atlético-go', 'vila nova',
         'aparecidense', 'anápolis', 'goianésia'
       ]
+    },
+    522: {
+      name: 'Campeonato Amazonense',
+      country: 'Brasil',
+      keywords: [
+        'campeonato amazonense', 'amazonense', 'barezão', 'barezao', 'amazonas fc', 'manaus fc',
+        'manauara', 'nacional-am', 'princesa do solimões', 'parintins', 'itacoatiara', 'fast clube'
+      ]
+    },
+    521: {
+      name: 'Campeonato Amapaense',
+      country: 'Brasil',
+      keywords: [
+        'campeonato amapaense', 'amapaense', 'amapazão', 'amapazao', 'trem dc', 'independente-ap',
+        'santos-ap', 'ypiranga-ap', 'oratório', 'são josé-ap', 'portuguesa-ap', 'macapá'
+      ]
     }
   };
 

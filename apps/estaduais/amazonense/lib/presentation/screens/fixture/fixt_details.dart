@@ -28,7 +28,7 @@ class _FixtureDetailsState extends State<FixtureDetails> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => FixtureCubit(context.read<HomeCubit>().apiClient)
-        ..fetchFixtureDetails(widget.fixture.id),
+        ..fetchFixtureDetails(widget.fixture.id, fallbackFixture: widget.fixture),
       child: BlocBuilder<FixtureCubit, FixtureState>(
         builder: (context, state) {
           final currentFixture = state is FixtureLoaded ? state.fixture : widget.fixture;

@@ -12,7 +12,7 @@ class FixtureCubit extends Cubit<FixtureState> {
 
   FixtureCubit(this.apiClient) : super(FixtureInitial());
 
-  Future<void> fetchFixtureDetails(String id, {bool isAutoRefresh = false}) async {
+  Future<void> fetchFixtureDetails(String id, {bool isAutoRefresh = false, Fixture? fallbackFixture}) async {
     if (!isAutoRefresh) {
       emit(FixtureLoading());
     }
@@ -73,7 +73,11 @@ class FixtureCubit extends Cubit<FixtureState> {
       }
     } catch (e) {
       if (!isAutoRefresh) {
-        emit(FixtureError(e.toString()));
+        if (fallbackFixture != null) {
+          emit(FixtureLoaded(fallbackFixture));
+        } else {
+          emit(FixtureError(e.toString()));
+        }
       }
     }
   }

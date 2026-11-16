@@ -1,5 +1,6 @@
 package com.zapscore.estadualamazonense
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
@@ -15,7 +16,9 @@ class NativeAdFactorySmall(private val layoutInflater: LayoutInflater) : GoogleM
         nativeAd: NativeAd,
         customOptions: MutableMap<String, Any>?
     ): NativeAdView {
-        val nativeAdView = layoutInflater.inflate(R.layout.custom_native_ad, null) as NativeAdView
+        Log.d("NativeAdFactorySmall", ">>> [NativeAdFactorySmall] createNativeAd ENTER")
+        try {
+            val nativeAdView = layoutInflater.inflate(R.layout.custom_native_ad, null) as NativeAdView
 
         // Headline
         val headlineView = nativeAdView.findViewById<TextView>(R.id.ad_headline)
@@ -78,6 +81,11 @@ class NativeAdFactorySmall(private val layoutInflater: LayoutInflater) : GoogleM
         }
 
         nativeAdView.setNativeAd(nativeAd)
+        Log.d("NativeAdFactorySmall", ">>> [NativeAdFactorySmall] createNativeAd SUCCESS nativeAdView=$nativeAdView")
         return nativeAdView
+    } catch (e: Exception) {
+        Log.e("NativeAdFactorySmall", "❌ [NativeAdFactorySmall] ERROR during inflate/bind: ${e.message}", e)
+        throw e
     }
+}
 }

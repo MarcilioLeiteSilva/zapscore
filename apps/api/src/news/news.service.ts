@@ -268,6 +268,8 @@ export class NewsService implements OnModuleInit {
         { extId: 477, keywords: ['campeonato gaúcho', 'campeonato gaucho', 'gauchão', 'gauchao', 'futebol gaúcho', 'futebol gaucho', 'fgf'] },
         { extId: 613, keywords: ['campeonato cearense', 'cearense', 'manjadinho', 'fcf'] },
         { extId: 602, keywords: ['campeonato baiano', 'baianão', 'baianao', 'fbf'] },
+        { extId: 522, keywords: ['campeonato amazonense', 'amazonense', 'barezão', 'barezao', 'faf'] },
+        { extId: 521, keywords: ['campeonato amapaense', 'amapaense', 'amapazão', 'amapazao', 'faf-ap'] },
         { extId: 606, keywords: ['campeonato goiano', 'goianão', 'goianao'] },
         { extId: 621, keywords: ['campeonato paranaense', 'paranaense'] },
         { extId: 605, keywords: ['campeonato catarinense', 'catarinense'] },

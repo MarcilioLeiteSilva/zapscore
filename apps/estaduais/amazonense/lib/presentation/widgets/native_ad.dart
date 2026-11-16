@@ -50,12 +50,13 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
           }
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('⚠️ [AppNativeAdWidget] Failed to load native ad: $error');
-          _isAdLoaded = false;
-          _nativeAd = null;
+          debugPrint('âš ï¸ [AppNativeAdWidget] Failed to load native ad: $error');
           ad.dispose();
           if (mounted) {
-            setState(() {});
+            setState(() {
+              _isAdLoaded = false;
+              _nativeAd = null;
+            });
           }
         },
       ),
@@ -64,12 +65,7 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
 
   @override
   void dispose() {
-    _isAdLoaded = false;
-    final adToDispose = _nativeAd;
-    _nativeAd = null;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      adToDispose?.dispose();
-    });
+    _nativeAd?.dispose();
     super.dispose();
   }
 
@@ -92,10 +88,7 @@ class _AppNativeAdWidgetState extends State<AppNativeAdWidget> with AutomaticKee
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: AdWidget(
-        key: ValueKey(_nativeAd),
-        ad: _nativeAd!,
-      ),
+      child: AdWidget(ad: _nativeAd!),
     );
   }
 }
@@ -132,7 +125,7 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
       request: const AdRequest(),
       listener: NativeAdListener(
         onAdLoaded: (ad) {
-          debugPrint('✅ [AppNativeAdMediumWidget] Medium native ad loaded successfully: ${ad.adUnitId}');
+          debugPrint('âœ… [AppNativeAdMediumWidget] Medium native ad loaded successfully: ${ad.adUnitId}');
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
@@ -140,12 +133,13 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
           }
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('⚠️ [AppNativeAdMediumWidget] Failed to load medium native ad: $error');
-          _isAdLoaded = false;
-          _nativeAd = null;
+          debugPrint('âš ï¸ [AppNativeAdMediumWidget] Failed to load medium native ad: $error');
           ad.dispose();
           if (mounted) {
-            setState(() {});
+            setState(() {
+              _isAdLoaded = false;
+              _nativeAd = null;
+            });
           }
         },
       ),
@@ -154,12 +148,7 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
 
   @override
   void dispose() {
-    _isAdLoaded = false;
-    final adToDispose = _nativeAd;
-    _nativeAd = null;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      adToDispose?.dispose();
-    });
+    _nativeAd?.dispose();
     super.dispose();
   }
 
@@ -181,10 +170,8 @@ class _AppNativeAdMediumWidgetState extends State<AppNativeAdMediumWidget> with 
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: AdWidget(
-        key: ValueKey(_nativeAd),
-        ad: _nativeAd!,
-      ),
+      child: AdWidget(ad: _nativeAd!),
     );
   }
 }
+

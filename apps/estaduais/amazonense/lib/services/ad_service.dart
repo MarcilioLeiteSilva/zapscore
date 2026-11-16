@@ -54,6 +54,18 @@ class AdService {
   /// Inicializa com o fluxo oficial de Consentimento do Google UMP (LGPD / GDPR)
   Future<void> init() async {
     try {
+      // CRÍTICO: Inicializa o MobileAds.instance ANTES do runApp()!
+      // O getter MobileAds.instance executa internamente _init() -> instanceManager.disposeAllAds() no Android.
+      // Se só for chamado dentro do callback assíncrono do ConsentInformation (que termina ~500ms após o runApp),
+      // ele apaga os anúncios recém-criados na Home (adId 0 e adId 1), causando a caixa vermelha:
+      // "This ad may have not been loaded or has been disposed. Ad with the following id could not be found: 1."
+      await MobileAds.instance.initialize();
+      if (kDebugMode) {
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
+        );
+      }
+
       final params = ConsentRequestParameters();
       ConsentInformation.instance.requestConsentInfoUpdate(
         params,
@@ -64,35 +76,17 @@ class AdService {
             }
             final canRequestAds = await ConsentInformation.instance.canRequestAds();
             if (canRequestAds) {
-              await MobileAds.instance.initialize();
-              if (kDebugMode) {
-                await MobileAds.instance.updateRequestConfiguration(
-                  RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
-                );
-              }
               preloadInterstitial();
             }
           });
         },
         (FormError error) async {
           debugPrint('⚠️ [AdService] Consent Info Update Error: ${error.message}');
-          await MobileAds.instance.initialize();
-          if (kDebugMode) {
-            await MobileAds.instance.updateRequestConfiguration(
-              RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
-            );
-          }
           preloadInterstitial();
         },
       );
     } catch (e) {
       debugPrint('⚠️ [AdService] Erro ao inicializar UMP Consent: $e');
-      await MobileAds.instance.initialize();
-      if (kDebugMode) {
-        await MobileAds.instance.updateRequestConfiguration(
-          RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
-        );
-      }
       preloadInterstitial();
     }
   }
