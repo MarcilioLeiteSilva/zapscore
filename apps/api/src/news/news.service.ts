@@ -264,7 +264,7 @@ export class NewsService implements OnModuleInit {
         { extId: 622, keywords: ['campeonato pernambucano', 'pernambucano', 'turno forró', 'turno forro', 'turno frevo', 'fpf-pe', 'futebol pernambucano'] },
         { extId: 624, keywords: ['campeonato carioca', 'cariocão', 'cariocao', 'taça guanabara', 'taca guanabara', 'taça rio', 'taca rio', 'ferj'] },
         { extId: 475, keywords: ['campeonato paulista', 'paulistão', 'paulistao', 'futebol paulista'] },
-        { extId: 629, keywords: ['campeonato mineiro', 'mineirão', 'mineirao', 'fmf'] },
+        { extId: 629, keywords: ['campeonato mineiro', 'mineiro sicoob', 'troféu inconfidência', 'mineirão', 'mineirao', 'fmf'] },
         { extId: 477, keywords: ['campeonato gaúcho', 'campeonato gaucho', 'gauchão', 'gauchao', 'futebol gaúcho', 'futebol gaucho', 'fgf'] },
         { extId: 613, keywords: ['campeonato cearense', 'cearense', 'manjadinho', 'fcf'] },
         { extId: 602, keywords: ['campeonato baiano', 'baianão', 'baianao', 'fbf'] },

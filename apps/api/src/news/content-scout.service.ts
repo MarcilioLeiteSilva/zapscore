@@ -184,8 +184,9 @@ export class ContentScoutService {
       name: 'Campeonato Mineiro',
       country: 'Brasil',
       keywords: [
-        'campeonato mineiro', 'mineirão', 'mineirao', 'atlético-mg', 'cruzeiro', 'américa-mg',
-        'tombense', 'athletic club', 'villa nova-mg', 'pouso alegre', 'ipatinga', 'democrata-gv', 'uberlândia'
+        'campeonato mineiro', 'mineiro sicoob', 'mineirão', 'mineirao', 'troféu inconfidência',
+        'atlético-mg', 'cruzeiro', 'américa-mg', 'tombense', 'pouso alegre', 'north esporte',
+        'betim futebol', 'villa nova-mg', 'itabirito', 'uberlândia', 'democrata-sl', 'urt'
       ]
     },
     477: {

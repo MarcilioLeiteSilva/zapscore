@@ -7,6 +7,7 @@ import { Tocantinense2027SeederService } from './tocantinense-2027-seeder.servic
 import { Amapaense2027SeederService } from './amapaense-2027-seeder.service';
 import { Amazonense2027SeederService } from './amazonense-2027-seeder.service';
 import { Brasiliense2027SeederService } from './brasiliense-2027-seeder.service';
+import { Mineiro2027SeederService } from './mineiro-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -27,6 +28,7 @@ export class SyncController {
     private readonly amapaenseSeeder: Amapaense2027SeederService,
     private readonly amazonenseSeeder: Amazonense2027SeederService,
     private readonly brasilienseSeeder: Brasiliense2027SeederService,
+    private readonly mineiroSeeder: Mineiro2027SeederService,
   ) {}
 
   @Post('seed-cearense-2027')
@@ -62,6 +64,11 @@ export class SyncController {
   @Post('seed-brasiliense-2027')
   async seedBrasiliense2027() {
     return this.brasilienseSeeder.seedBrasiliense2027();
+  }
+
+  @Post('seed-mineiro-2027')
+  async seedMineiro2027() {
+    return this.mineiroSeeder.seedMineiro2027();
   }
 
   @Post('bootstrap')
