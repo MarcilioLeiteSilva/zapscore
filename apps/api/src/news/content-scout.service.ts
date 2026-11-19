@@ -261,6 +261,16 @@ export class ContentScoutService {
         'campeonato brasiliense', 'candangão', 'candangao', 'brasiliense', 'gama', 'ceilândia',
         'capital cf', 'taguatinga', 'sobradinho', 'real brasília', 'samambaia', 'paranoá', 'canaã'
       ]
+    },
+    611: {
+      name: 'Campeonato Capixaba',
+      country: 'Brasil',
+      keywords: [
+        'campeonato capixaba', 'capixabão', 'capixabao', 'futebol capixaba', 'fes',
+        'porto vitória', 'porto vitoria', 'linhares fc', 'vitória-es', 'vitoria-es',
+        'estrela do norte', 'real noroeste', 'rio branco saf', 'rio branco-es',
+        'vilavelhense', 'forte fc', 'serra fc', 'desportiva ferroviária', 'desportiva ferroviaria'
+      ]
     }
   };
 
