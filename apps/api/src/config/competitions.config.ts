@@ -334,7 +334,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Rondoniense',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2026, 2027],
   },
   {
     code: 'BR_RORAIMENSE_1',

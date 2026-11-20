@@ -271,6 +271,17 @@ export class ContentScoutService {
         'estrela do norte', 'real noroeste', 'rio branco saf', 'rio branco-es',
         'vilavelhense', 'forte fc', 'serra fc', 'desportiva ferroviária', 'desportiva ferroviaria'
       ]
+    },
+    615: {
+      name: 'Campeonato Rondoniense',
+      country: 'Brasil',
+      keywords: [
+        'campeonato rondoniense', 'rondoniense', 'ffer', 'futebol rondoniense',
+        'porto velho', 'gazin porto velho', 'genus', 'sport genus',
+        'barcelona-ro', 'barcelona de vilhena', 'barcelona ro',
+        'ji-paraná', 'ji-parana', 'jipa', 'guaporé', 'guapore',
+        'rolim de moura', 'vilhena', 'vilhena ec', 'vec'
+      ]
     }
   };
 
