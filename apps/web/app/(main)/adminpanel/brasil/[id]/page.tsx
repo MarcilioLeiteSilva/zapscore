@@ -32,6 +32,8 @@ interface NewsItem {
   imageUrl?: string;
   publishedAt?: string;
   leagueId?: string;
+  isDraft?: boolean;
+  status?: string;
 }
 
 interface VideoItem {
@@ -41,6 +43,8 @@ interface VideoItem {
   videoUrl: string;
   thumbnailUrl?: string;
   leagueId?: string;
+  isDraft?: boolean;
+  status?: string;
 }
 
 interface ScorerItem {
@@ -171,7 +175,7 @@ export default function BrasilLeagueDetailPage() {
       setLoadingNews(true);
       const uuidToUse = targetUuid !== undefined ? targetUuid : leagueUuid;
       const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${leagueIdStr}`;
-      const res = await fetch(`${API_URL}/news?limit=100&${queryParam}`);
+      const res = await fetch(`${API_URL}/news?limit=100&includeDrafts=true&${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         setNews(Array.isArray(data) ? data : []);
@@ -189,7 +193,7 @@ export default function BrasilLeagueDetailPage() {
       setLoadingVideos(true);
       const uuidToUse = targetUuid !== undefined ? targetUuid : leagueUuid;
       const queryParam = uuidToUse ? `leagueId=${uuidToUse}` : `leagueId=${leagueIdStr}`;
-      const res = await fetch(`${API_URL}/videos?limit=100&${queryParam}`);
+      const res = await fetch(`${API_URL}/videos?limit=100&includeDrafts=true&${queryParam}`);
       if (res.ok) {
         const data = await res.json();
         setVideos(Array.isArray(data) ? data : []);
@@ -274,6 +278,28 @@ export default function BrasilLeagueDetailPage() {
     }
   };
 
+  const handleToggleVideoStatus = async (item: VideoItem) => {
+    const newStatus = item.isDraft ? "published" : "draft";
+    try {
+      const res = await fetch(`${API_URL}/videos/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setVideos((prev) =>
+          prev.map((v) =>
+            v.id === item.id
+              ? { ...v, isDraft: newStatus === "draft", status: newStatus }
+              : v
+          )
+        );
+      }
+    } catch (e) {
+      alert("Erro ao alterar status do vídeo.");
+    }
+  };
+
   // --- HANDLERS DE NOTÍCIA ---
   const openNewsModal = (item: NewsItem | null = null) => {
     if (item) {
@@ -333,6 +359,28 @@ export default function BrasilLeagueDetailPage() {
       fetchNews();
     } catch (e) {
       alert("Erro ao excluir notícia.");
+    }
+  };
+
+  const handleToggleNewsStatus = async (item: NewsItem) => {
+    const newStatus = item.isDraft ? "published" : "draft";
+    try {
+      const res = await fetch(`${API_URL}/news/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setNews((prev) =>
+          prev.map((n) =>
+            n.id === item.id
+              ? { ...n, isDraft: newStatus === "draft", status: newStatus }
+              : n
+          )
+        );
+      }
+    } catch (e) {
+      alert("Erro ao alterar status da notícia.");
     }
   };
 
@@ -576,20 +624,21 @@ export default function BrasilLeagueDetailPage() {
                   <tr className="bg-[var(--surface-hover)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider border-b border-[var(--border)]">
                     <th className="p-4">Matéria</th>
                     <th className="p-4">Fonte</th>
+                    <th className="p-4 text-center">Status</th>
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)] text-xs">
                   {loadingNews ? (
                     <tr>
-                      <td colSpan={3} className="p-12 text-center text-[var(--text-muted)]">
+                      <td colSpan={4} className="p-12 text-center text-[var(--text-muted)]">
                         <Loader2 className="animate-spin mx-auto mb-2" size={24} />
                         Carregando notícias da competição...
                       </td>
                     </tr>
                   ) : filteredNews.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="p-12 text-center text-[var(--text-muted)]">
+                      <td colSpan={4} className="p-12 text-center text-[var(--text-muted)]">
                         Nenhuma notícia encontrada para esta competição.
                       </td>
                     </tr>
@@ -618,11 +667,25 @@ export default function BrasilLeagueDetailPage() {
                         <td className="p-4 text-[var(--text-muted)] font-medium">
                           {item.source || "Geral"}
                         </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleToggleNewsStatus(item)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 transition-all ${
+                              item.isDraft
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                            }`}
+                            title="Clique para alternar Publicado / Rascunho"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${item.isDraft ? "bg-amber-400" : "bg-emerald-400"}`} />
+                            <span>{item.isDraft ? "Rascunho" : "Publicado"}</span>
+                          </button>
+                        </td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-2">
-                            {item.url && (
+                            {(item.url || item.externalUrl) && (
                               <button
-                                onClick={() => window.open(item.url, "_blank")}
+                                onClick={() => window.open(item.url || item.externalUrl, "_blank")}
                                 className="p-2.5 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white rounded-lg transition-all"
                                 title="Abrir Link"
                               >
@@ -693,20 +756,21 @@ export default function BrasilLeagueDetailPage() {
                   <tr className="bg-[var(--surface-hover)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider border-b border-[var(--border)]">
                     <th className="p-4">Vídeo / Highlight</th>
                     <th className="p-4">Duração</th>
+                    <th className="p-4 text-center">Status</th>
                     <th className="p-4 text-right">Controles</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)] text-xs">
                   {loadingVideos ? (
                     <tr>
-                      <td colSpan={3} className="p-12 text-center text-[var(--text-muted)]">
+                      <td colSpan={4} className="p-12 text-center text-[var(--text-muted)]">
                         <Loader2 className="animate-spin mx-auto mb-2" size={24} />
                         Carregando vídeos da competição...
                       </td>
                     </tr>
                   ) : filteredVideos.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="p-12 text-center text-[var(--text-muted)]">
+                      <td colSpan={4} className="p-12 text-center text-[var(--text-muted)]">
                         Nenhum vídeo cadastrado para esta competição.
                       </td>
                     </tr>
@@ -730,6 +794,20 @@ export default function BrasilLeagueDetailPage() {
                         </td>
                         <td className="p-4 text-[var(--text-muted)] font-mono font-bold">
                           {item.duration || "00:00"}
+                        </td>
+                        <td className="p-4 text-center">
+                          <button
+                            onClick={() => handleToggleVideoStatus(item)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5 transition-all ${
+                              item.isDraft
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                            }`}
+                            title="Clique para alternar Publicado / Rascunho"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${item.isDraft ? "bg-amber-400" : "bg-emerald-400"}`} />
+                            <span>{item.isDraft ? "Rascunho" : "Publicado"}</span>
+                          </button>
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-2">
