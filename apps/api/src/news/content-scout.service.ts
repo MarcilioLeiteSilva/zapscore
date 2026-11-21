@@ -234,8 +234,8 @@ export class ContentScoutService {
       name: 'Campeonato Goiano',
       country: 'Brasil',
       keywords: [
-        'campeonato goiano', 'goianão', 'goianao', 'goiás ec', 'atlético-go', 'vila nova',
-        'aparecidense', 'anápolis', 'goianésia'
+        'campeonato goiano', 'goianão', 'goianao', 'fgf', 'futebol goiano', 'goiás ec', 'goias ec', 'atlético-go', 'atletico-go', 'vila nova',
+        'aparecidense', 'anápolis', 'anapolis', 'crac', 'goianésia', 'goianesia', 'goiatuba', 'jataiense', 'anapolina', 'rio verde', 'agro ec'
       ]
     },
     522: {

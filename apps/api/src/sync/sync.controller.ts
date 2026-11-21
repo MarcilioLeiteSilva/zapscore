@@ -11,6 +11,7 @@ import { Mineiro2027SeederService } from './mineiro-2027-seeder.service';
 import { Capixaba2027SeederService } from './capixaba-2027-seeder.service';
 import { Rondoniense2027SeederService } from './rondoniense-2027-seeder.service';
 import { Piauiense2027SeederService } from './piauiense-2027-seeder.service';
+import { Goiano2027SeederService } from './goiano-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -35,6 +36,7 @@ export class SyncController {
     private readonly capixabaSeeder: Capixaba2027SeederService,
     private readonly rondonienseSeeder: Rondoniense2027SeederService,
     private readonly piauienseSeeder: Piauiense2027SeederService,
+    private readonly goianoSeeder: Goiano2027SeederService,
   ) {}
 
   @Post('seed-cearense-2027')
@@ -90,6 +92,11 @@ export class SyncController {
   @Post('seed-piauiense-2027')
   async seedPiauiense2027() {
     return this.piauienseSeeder.seedPiauiense2027();
+  }
+
+  @Post('seed-goiano-2027')
+  async seedGoiano2027() {
+    return this.goianoSeeder.seedGoiano2027();
   }
 
   @Post('bootstrap')

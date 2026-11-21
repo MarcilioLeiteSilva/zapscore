@@ -238,7 +238,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Goiano 1ª Divisão',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2026, 2027],
   },
   {
     code: 'BR_MATOGROSSENSE_1',
