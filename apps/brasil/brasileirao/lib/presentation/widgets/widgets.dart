@@ -40,6 +40,8 @@ import 'ad_banner.dart';
 import 'native_ad.dart';
 import 'standings_table.dart';
 import 'competition_bracket.dart';
+import 'house_header_sponsor.dart';
+export 'house_header_sponsor.dart';
 import '../../services/ad_service.dart';
 
 part 'user.dart';
