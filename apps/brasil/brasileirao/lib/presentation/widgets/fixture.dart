@@ -792,16 +792,24 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                 ]
                 else
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
-                    child: Center(
-                      child: Text(
-                        'no_games_today'.tr(context),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15),
+                    child: Column(
+                      children: [
+                        Center(
+                          child: Text(
+                            'no_games_today'.tr(context),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
+                        HouseNativeMatchCard(
+                          leagueId: int.tryParse(comp.league.id),
+                          margin: const EdgeInsets.only(top: 14),
+                        ),
+                      ],
                     ),
                   ),
               ],

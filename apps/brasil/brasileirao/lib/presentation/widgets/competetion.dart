@@ -153,7 +153,18 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
             itemBuilder: (_, i) {
               final fix = phaseFixtures[i];
-              if (i > 0 && i % 4 == 0) {
+              if (i == 1) {
+                return Column(
+                  children: [
+                    HouseNativeMatchCard(
+                      leagueId: state.selectedLeagueId,
+                      margin: const EdgeInsets.only(bottom: 10),
+                    ),
+                    CardFixtureLeagueItem(fixture: fix),
+                  ],
+                );
+              }
+              if (i > 1 && i % 4 == 0) {
                 return Column(
                   children: [
                     const AppNativeAdWidget(variant: NativeAdVariant.fixture),
@@ -763,7 +774,18 @@ class RoundLeaguePage extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
                         itemBuilder: (_, i) {
                           final fix = displayFixtures[i];
-                          if (i > 0 && i % 4 == 0) {
+                          if (i == 1) {
+                            return Column(
+                              children: [
+                                HouseNativeMatchCard(
+                                  leagueId: state.selectedLeagueId,
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                ),
+                                CardFixtureLeagueItem(fixture: fix),
+                              ],
+                            );
+                          }
+                          if (i > 1 && i % 4 == 0) {
                             return Column(
                               children: [
                                 const AppNativeAdWidget(variant: NativeAdVariant.fixture),
