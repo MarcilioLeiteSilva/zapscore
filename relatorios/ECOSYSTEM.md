@@ -2898,13 +2898,19 @@ Durante a homologação em hardware real do app piloto Paulista (`apps/estaduais
 
 Com o piloto validado, estabeleceu-se o seguinte roadmap de expansão para a rede própria:
 
-#### 1. Regionalização Inteligente via GeoIP no Backend (Sem GPS e Sem Atrito)
-* **Objetivo:** Permitir segmentação hiperlocal para patrocinadores de cidades ou estados específicos (ex: uma campanha no app Mineiro veiculada estritamente no Estado de Minas Gerais ou apenas na Grande Belo Horizonte).
-* **Mecanismo Técnico:** 
-  - A API detecta a localização geográfica do usuário a partir do IP público da requisição HTTP (`x-forwarded-for`) utilizando uma base leve em memória (`geoip-lite` ou MaxMind GeoLite2).
-  - Em < 2ms, a API extrai UF (ex: `MG`, `SP`) e Cidade/Região Metropolitana (ex: `Belo Horizonte`, `Contagem`, `Betim`).
-  - No AdminPanel: inclusão de filtros opcionais `target_states` (UFs) e `target_metro_regions` (Grande BH, Grande SP, etc.).
-* **Vantagens:** Zero necessidade de pedir permissão de GPS no celular do torcedor, zero impacto de bateria, total conformidade com a LGPD e as diretrizes do Google Play Data Safety.
+#### 1. [CONCLUÍDO - 22/11/2026] Regionalização Inteligente via GeoIP no Backend (Sem GPS e Sem Atrito)
+* **Status:** `[CONCLUÍDO E HOMOLOGADO EM PRODUÇÃO NO BRASILEIRÃO]`
+* **Objetivo:** Permitir segmentação hiperlocal automática para patrocinadores e divulgação cruzada de campeonatos estaduais no app nacional do Brasileirão e Copas sem pedir permissão de GPS ao torcedor.
+* **Mecanismo Técnico Implementado:**
+  - `GeoIpService` (`apps/api/src/ads/providers/geoip.service.ts`): Resolve a UF brasileira a partir do IP da requisição ou headers Cloudflare (`cf-region-code`, `cf-region`, `cf-connecting-ip`, `x-forwarded-for`).
+  - Cache em memória de alta performance (`Map<string, { state, expiresAt }>`) com TTL de 24 horas para 0ms de latência em requisições recorrentes.
+  - Mapeamento determinístico de 100% dos 27 estados brasileiros (26 UFs + DF) associados aos slugs dos 27 aplicativos estaduais.
+  - Algoritmo de Priorização Regional: No app do Brasileirão (`app=brasileirao`), torcedores de PE recebem criativos do Pernambucano; torcedores de SP recebem criativos do Paulistão; torcedores de RJ recebem o Carioca; torcedores de MG recebem o Mineiro, com fallback gracioso para campanhas nacionais gerais quando não há campanha estadual ativa.
+* **Integração no App Brasileirão (`apps/brasil/brasileirao`):**
+  - **Banner Topo (`header_sponsor`)**: `HouseHeaderSponsor` integrado no topo da tabela de classificação.
+  - **Pop-up Inicial (`popup_launch`)**: `HousePopupLaunchHelper` exibindo modal 1:1 com fechamento e redirecionamento à Google Play.
+  - **Card Nativo Entre Jogos (`native_match_card`)**: `HouseNativeMatchCard` integrado nas rodadas/fases e no feed da Home.
+* **Vantagens:** Zero fricção, zero permissões invasivas na Google Play, 100% compatível com a política de privacidade e LGPD.
 
 #### 2. Governança Centralizada de Rotação e Frequência no AdminPanel
 * **Controle de Rotação por Slot:** Adicionar no criador de campanhas (`/adminpanel/ads/new`) ou no inventário um seletor de tempo de rotação (`0s - Fixo`, `30s`, `45s`, `60s`). O app mobile já lê o campo `rotateIntervalSeconds` e realiza a transição suave com `AnimatedSwitcher`.
