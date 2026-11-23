@@ -149,23 +149,19 @@ export class AdsService {
       const appUf = STATE_SLUG_TO_UF[cleanAppSlug];
 
       eligible = validCampaigns.filter((campaign) => {
-        const isTargeted = isAppTargeted(campaign);
-        const campaignState = this.geoIpService.detectCampaignState(campaign);
-        const isOwnStateCampaign =
-          campaignState !== null &&
-          this.geoIpService.getChampionshipSlug(campaignState) === cleanAppSlug;
-
-        if (!isTargeted && !isOwnStateCampaign) {
+        // 1. O app precisa estar expressamente autorizado em target_apps (ou 'all')
+        if (!isAppTargeted(campaign)) {
           return false;
         }
 
-        // Se a campanha tem geo_targeting ativo para outro estado específico, não deve exibir aqui
+        // 2. Se a campanha tem geo_targeting ativo para outro estado específico, não deve exibir aqui
         if (campaign.geo_targeting === true) {
           if (Array.isArray(campaign.target_states) && campaign.target_states.length > 0) {
             if (appUf && !campaign.target_states.map((s) => s.toUpperCase().trim()).includes(appUf)) {
               return false;
             }
           } else {
+            const campaignState = this.geoIpService.detectCampaignState(campaign);
             if (campaignState && appUf && campaignState !== appUf) {
               return false;
             }
