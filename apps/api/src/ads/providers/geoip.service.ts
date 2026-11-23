@@ -133,15 +133,20 @@ export class GeoIpService {
    * Analisa destination_url, title, target_apps e target_states com precisão.
    */
   detectCampaignState(campaign: AdCampaign): string | null {
-    // 0. Se for campanha explícita do Brasileirão / nacional, não é de estado
+    // 0. Se geo_targeting for falso explicitamente, não tem restrição estadual
+    if (campaign.geo_targeting === false) {
+      return null;
+    }
+
+    // 0.1 Se for campanha explícita do Brasileirão / nacional, não é de estado
     const destUrl = (campaign.destination_url || '').toLowerCase();
     if (destUrl.includes('com.prolaser.futebolbrasileirobr') || destUrl.includes('screwpuzzler') || destUrl.includes('liquidcolor')) {
       return null;
     }
 
     // 1. target_states explícito (se existir no schema)
-    if ((campaign as any).target_states && Array.isArray((campaign as any).target_states)) {
-      const states = (campaign as any).target_states;
+    if (campaign.target_states && Array.isArray(campaign.target_states)) {
+      const states = campaign.target_states;
       if (states.length > 0 && BRAZILIAN_UFS.has(states[0].toUpperCase())) {
         return states[0].toUpperCase();
       }

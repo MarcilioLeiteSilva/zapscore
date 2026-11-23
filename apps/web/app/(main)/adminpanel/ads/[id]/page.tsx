@@ -20,6 +20,7 @@ import {
   Link2,
   X,
   Target,
+  MapPin,
   RefreshCw,
   Image as ImageIcon,
 } from 'lucide-react';
@@ -131,6 +132,36 @@ const AVAILABLE_APPS = [
   { slug: 'copalibertadores', name: 'Copa Libertadores', flag: '🏆' },
 ];
 
+const BRAZILIAN_STATES = [
+  { uf: 'AC', name: 'Acre' },
+  { uf: 'AL', name: 'Alagoas' },
+  { uf: 'AP', name: 'Amapá' },
+  { uf: 'AM', name: 'Amazonas' },
+  { uf: 'BA', name: 'Bahia' },
+  { uf: 'CE', name: 'Ceará' },
+  { uf: 'DF', name: 'Distrito Federal' },
+  { uf: 'ES', name: 'Espírito Santo' },
+  { uf: 'GO', name: 'Goiás' },
+  { uf: 'MA', name: 'Maranhão' },
+  { uf: 'MT', name: 'Mato Grosso' },
+  { uf: 'MS', name: 'Mato Grosso do Sul' },
+  { uf: 'MG', name: 'Minas Gerais' },
+  { uf: 'PA', name: 'Pará' },
+  { uf: 'PB', name: 'Paraíba' },
+  { uf: 'PR', name: 'Paraná' },
+  { uf: 'PE', name: 'Pernambuco' },
+  { uf: 'PI', name: 'Piauí' },
+  { uf: 'RJ', name: 'Rio de Janeiro' },
+  { uf: 'RN', name: 'Rio Grande do Norte' },
+  { uf: 'RS', name: 'Rio Grande do Sul' },
+  { uf: 'RO', name: 'Rondônia' },
+  { uf: 'RR', name: 'Roraima' },
+  { uf: 'SC', name: 'Santa Catarina' },
+  { uf: 'SP', name: 'São Paulo' },
+  { uf: 'SE', name: 'Sergipe' },
+  { uf: 'TO', name: 'Tocantins' },
+];
+
 export default function EditAdCampaignPage() {
   const router = useRouter();
   const params = useParams();
@@ -148,6 +179,8 @@ export default function EditAdCampaignPage() {
   const [destinationUrl, setDestinationUrl] = useState('');
   const [allApps, setAllApps] = useState(true);
   const [selectedApps, setSelectedApps] = useState<string[]>([]);
+  const [geoTargeting, setGeoTargeting] = useState(false);
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [startAt, setStartAt] = useState('');
   const [endAt, setEndAt] = useState('');
   const [priority, setPriority] = useState(5);
@@ -211,6 +244,10 @@ export default function EditAdCampaignPage() {
             setAllApps(false);
             setSelectedApps(apps);
           }
+
+          // Segmentação GeoIP
+          setGeoTargeting(c.geo_targeting === true || c.geo_targeting === 'true');
+          setSelectedStates(Array.isArray(c.target_states) ? c.target_states : []);
         } else {
           setErrorMsg('Campanha não encontrada ou indisponível.');
         }
@@ -245,6 +282,14 @@ export default function EditAdCampaignPage() {
       setSelectedApps(selectedApps.filter((s) => s !== slug));
     } else {
       setSelectedApps([...selectedApps, slug]);
+    }
+  };
+
+  const handleToggleState = (uf: string) => {
+    if (selectedStates.includes(uf)) {
+      setSelectedStates(selectedStates.filter((s) => s !== uf));
+    } else {
+      setSelectedStates([...selectedStates, uf]);
     }
   };
 
@@ -285,6 +330,9 @@ export default function EditAdCampaignPage() {
 
       const appsList = allApps ? ['all'] : selectedApps.length > 0 ? selectedApps : ['all'];
       formData.append('target_apps', JSON.stringify(appsList));
+
+      formData.append('geo_targeting', String(geoTargeting));
+      formData.append('target_states', JSON.stringify(geoTargeting ? selectedStates : []));
 
       if (creativeFile) {
         formData.append('creative', creativeFile);
@@ -525,6 +573,113 @@ export default function EditAdCampaignPage() {
                       );
                     })}
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3.1: Segmentação Geográfica (GeoIP) */}
+          <div className="card p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-[var(--border)] pb-3">
+              <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <MapPin size={16} className="text-amber-400" />
+                4. Segmentação Geográfica por IP (GeoIP)
+              </h2>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                geoTargeting
+                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+              }`}>
+                {geoTargeting ? '🎯 Regional Ativo' : '🌐 Universal (Todos os Estados)'}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <label
+                onClick={() => setGeoTargeting(!geoTargeting)}
+                className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                  geoTargeting
+                    ? 'bg-amber-500/10 border-amber-400 text-white'
+                    : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)]'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={geoTargeting}
+                    onChange={() => {}}
+                    className="w-4 h-4 accent-amber-400 rounded"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-white">
+                      {geoTargeting ? 'Restrição Regional por Estado Ativa' : 'Exibir para Todos os Estados (Sem filtro de IP)'}
+                    </span>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                      {geoTargeting
+                        ? 'O anúncio será entregue apenas para torcedores conectados a partir dos estados selecionados.'
+                        : 'Ideal para Games, Anúncios Nacionais e Casas de Apostas (concorre em rotação justa com campanhas locais).'}
+                    </p>
+                  </div>
+                </div>
+                <span className="badge badge-live text-[9px] px-2 py-0.5 font-bold shrink-0">
+                  {geoTargeting ? 'REGIONAL' : 'GLOBAL'}
+                </span>
+              </label>
+
+              {geoTargeting && (
+                <div className="pt-2 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-[var(--text-muted)]">
+                      Selecione os estados (UFs) autorizados para exibição:
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStates(BRAZILIAN_STATES.map((s) => s.uf))}
+                        className="text-[10px] font-bold text-amber-400 hover:text-white transition-colors"
+                      >
+                        Marcar Todos
+                      </button>
+                      <span className="text-[var(--text-muted)] text-[10px]">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStates([])}
+                        className="text-[10px] font-bold text-[var(--text-muted)] hover:text-white transition-colors"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {BRAZILIAN_STATES.map((st) => {
+                      const isChecked = selectedStates.includes(st.uf);
+                      return (
+                        <div
+                          key={st.uf}
+                          onClick={() => handleToggleState(st.uf)}
+                          className={`p-2 rounded-xl border text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
+                            isChecked
+                              ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-xs'
+                              : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-white'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="w-3 h-3 accent-amber-400 rounded pointer-events-none"
+                          />
+                          <span>{st.uf}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {selectedStates.length > 0 && (
+                    <p className="text-[11px] text-amber-400/90 font-mono">
+                      ✓ {selectedStates.length} estado(s) selecionado(s): {selectedStates.join(', ')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

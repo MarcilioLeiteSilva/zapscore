@@ -21,6 +21,8 @@ export interface AdCampaign {
   placement: AdPlacement;
   target_apps: string[];
   target_leagues: number[];
+  geo_targeting?: boolean;
+  target_states?: string[];
   creative_image: string;
   creative_url?: string;
   destination_url: string;

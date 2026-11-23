@@ -157,10 +157,21 @@ export class AdsController {
       }
     }
 
+    let targetStates = body.target_states;
+    if (typeof targetStates === 'string') {
+      try {
+        targetStates = JSON.parse(targetStates);
+      } catch {
+        targetStates = targetStates ? [targetStates] : [];
+      }
+    }
+
     const payload = {
       ...body,
       target_apps: targetApps,
       target_leagues: targetLeagues,
+      target_states: Array.isArray(targetStates) ? targetStates : [],
+      geo_targeting: body.geo_targeting === true || body.geo_targeting === 'true',
       priority: body.priority ? parseInt(body.priority, 10) : 1,
       max_impressions: body.max_impressions ? parseInt(body.max_impressions, 10) : 0,
     };
@@ -197,10 +208,21 @@ export class AdsController {
       }
     }
 
+    let targetStates = body.target_states;
+    if (typeof targetStates === 'string') {
+      try {
+        targetStates = JSON.parse(targetStates);
+      } catch {
+        targetStates = targetStates ? [targetStates] : [];
+      }
+    }
+
     const payload = {
       ...body,
       ...(targetApps !== undefined ? { target_apps: targetApps } : {}),
       ...(targetLeagues !== undefined ? { target_leagues: targetLeagues } : {}),
+      ...(targetStates !== undefined ? { target_states: Array.isArray(targetStates) ? targetStates : [] } : {}),
+      ...(body.geo_targeting !== undefined ? { geo_targeting: body.geo_targeting === true || body.geo_targeting === 'true' } : {}),
       ...(body.priority !== undefined ? { priority: parseInt(body.priority, 10) } : {}),
       ...(body.max_impressions !== undefined ? { max_impressions: parseInt(body.max_impressions, 10) } : {}),
     };

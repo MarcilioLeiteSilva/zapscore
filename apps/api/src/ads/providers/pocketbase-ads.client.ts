@@ -82,6 +82,12 @@ export class PocketbaseAdsClient {
         : typeof record.target_leagues === 'string' && record.target_leagues.trim() !== ''
         ? JSON.parse(record.target_leagues)
         : [],
+      geo_targeting: record.geo_targeting === true || record.geo_targeting === 'true',
+      target_states: Array.isArray(record.target_states)
+        ? record.target_states
+        : typeof record.target_states === 'string' && record.target_states.trim() !== ''
+        ? JSON.parse(record.target_states)
+        : [],
       creative_image: record.creative_image || '',
       creative_url: record.creative_image
         ? this.getCreativeUrl(record.id, record.creative_image)
@@ -198,6 +204,14 @@ export class PocketbaseAdsClient {
         : [];
       formData.append('target_leagues', JSON.stringify(targetLeagues));
 
+      formData.append('geo_targeting', String(payload.geo_targeting === true || payload.geo_targeting === 'true'));
+      const targetStates = Array.isArray(payload.target_states)
+        ? payload.target_states
+        : typeof payload.target_states === 'string' && payload.target_states.trim() !== ''
+        ? JSON.parse(payload.target_states)
+        : [];
+      formData.append('target_states', JSON.stringify(targetStates));
+
       if (file && file.buffer) {
         const blob = new Blob([new Uint8Array(file.buffer)], { type: file.mimetype });
         formData.append('creative_image', blob, file.originalname);
@@ -243,6 +257,18 @@ export class PocketbaseAdsClient {
       }
       if (payload.target_leagues !== undefined) {
         formData.append('target_leagues', JSON.stringify(payload.target_leagues));
+      }
+
+      if (payload.geo_targeting !== undefined) {
+        formData.append('geo_targeting', String(payload.geo_targeting === true || payload.geo_targeting === 'true'));
+      }
+      if (payload.target_states !== undefined) {
+        const targetStates = Array.isArray(payload.target_states)
+          ? payload.target_states
+          : typeof payload.target_states === 'string' && payload.target_states.trim() !== ''
+          ? JSON.parse(payload.target_states)
+          : [];
+        formData.append('target_states', JSON.stringify(targetStates));
       }
 
       if (file && file.buffer) {

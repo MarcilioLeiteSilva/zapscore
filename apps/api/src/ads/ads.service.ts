@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PocketbaseAdsClient } from './providers/pocketbase-ads.client';
-import { GeoIpService } from './providers/geoip.service';
+import { GeoIpService, STATE_SLUG_TO_UF } from './providers/geoip.service';
 import {
   AdCampaign,
   AdPlacement,
@@ -104,44 +104,56 @@ export class AdsService {
     let eligible: AdCampaign[] = [];
 
     if (isNationalApp) {
-      // CASO A: Aplicativo de Alcance Nacional (ex: Brasileirão)
-      // Se detectou a UF do torcedor, busca campanhas estaduais correspondentes à sua região
-      if (userUf) {
-        const stateMatches = validCampaigns.filter((campaign) => {
-          const campaignState = this.geoIpService.detectCampaignState(campaign);
-          return campaignState === userUf;
-        });
+      // CASO A: Aplicativo de Alcance Nacional (ex: Brasileirão, Copas, All)
+      // 1. Campanhas globais/nacionais (ex: Games PuzzleScrew, Jogo das Cores e anunciantes nacionais)
+      const nationalCampaigns = validCampaigns.filter((campaign) => {
+        if (campaign.geo_targeting === false) return true;
+        if (campaign.geo_targeting === true) return false;
+        return this.geoIpService.detectCampaignState(campaign) === null;
+      });
 
-        if (stateMatches.length > 0) {
-          eligible = stateMatches;
-        }
-      }
+      // 2. Campanhas regionais direcionadas especificamente para a UF do torcedor (via GeoIP)
+      const stateMatches = userUf
+        ? validCampaigns.filter((campaign) => {
+            if (campaign.geo_targeting === false) return false;
+            if (Array.isArray(campaign.target_states) && campaign.target_states.length > 0) {
+              return campaign.target_states.map((s) => s.toUpperCase().trim()).includes(userUf);
+            }
+            return this.geoIpService.detectCampaignState(campaign) === userUf;
+          })
+        : [];
 
-      // Se o torcedor não tem UF detectada ou não há campanha específica para o seu estado,
-      // entrega campanhas nacionais / gerais configuradas para o app ou para 'all'
+      // Concorrência justa: Tanto a campanha regional do estado do torcedor quanto as campanhas nacionais/games concorrem no sorteio ponderado!
+      eligible = [...stateMatches, ...nationalCampaigns];
+
       if (eligible.length === 0) {
-        const nationalCampaigns = validCampaigns.filter((campaign) => {
-          const campaignState = this.geoIpService.detectCampaignState(campaign);
-          return (
-            campaignState === null ||
-            campaign.target_apps?.includes(queryApp) ||
-            campaign.target_apps?.includes('all')
-          );
-        });
-
-        eligible = nationalCampaigns.length > 0 ? nationalCampaigns : validCampaigns;
+        eligible = validCampaigns;
       }
     } else {
       // CASO B: Aplicativo Estadual Específico (ex: "pernambucano", "paulista", "mineiro")
       const queryCandidates = new Set<string>();
       queryCandidates.add(queryApp);
-      if (queryApp.startsWith('campeonato_')) {
-        queryCandidates.add(queryApp.replace('campeonato_', ''));
-      } else {
-        queryCandidates.add(`campeonato_${queryApp}`);
-      }
+      const cleanSlug = queryApp.replace('campeonato_', '');
+      queryCandidates.add(cleanSlug);
+      queryCandidates.add(`campeonato_${cleanSlug}`);
+
+      const appUf = STATE_SLUG_TO_UF[cleanSlug];
 
       eligible = validCampaigns.filter((campaign) => {
+        // Se a campanha tem geo_targeting ativo para outro estado específico, não deve exibir aqui
+        if (campaign.geo_targeting === true) {
+          if (Array.isArray(campaign.target_states) && campaign.target_states.length > 0) {
+            if (appUf && !campaign.target_states.map((s) => s.toUpperCase().trim()).includes(appUf)) {
+              return false;
+            }
+          } else {
+            const cState = this.geoIpService.detectCampaignState(campaign);
+            if (cState && appUf && cState !== appUf) {
+              return false;
+            }
+          }
+        }
+
         const targetApps = campaign.target_apps || ['all'];
         const appMatch =
           targetApps.includes('all') ||
@@ -156,9 +168,8 @@ export class AdsService {
 
         if (appMatch) return true;
 
-        const stateSlug = queryApp.replace('campeonato_', '');
         const campaignState = this.geoIpService.detectCampaignState(campaign);
-        return campaignState !== null && this.geoIpService.getChampionshipSlug(campaignState) === stateSlug;
+        return campaignState !== null && this.geoIpService.getChampionshipSlug(campaignState) === cleanSlug;
       });
     }
 
