@@ -36,29 +36,18 @@ export class Piauiense2027SeederService implements OnApplicationBootstrap {
       this.logger.log('[PIAUIENSE-2027-SEEDER] Liga 621 criada no banco.');
     }
 
-    // 2. Verificar se os 28 jogos já existem
-    const existingCount = await this.prisma.fixture.count({
-      where: { leagueId: league.id, season: 2027 },
-    });
+    this.logger.log('[PIAUIENSE-2027-SEEDER] Atualizando 8 clubes oficiais da FFP 2027 com escudos transparentes...');
 
-    if (existingCount >= 28) {
-      const msg = `Piauiense 2027 já possui ${existingCount} partidas cadastradas. Nenhuma ação necessária.`;
-      this.logger.log(`[PIAUIENSE-2027-SEEDER] ${msg}`);
-      return { success: true, fixturesCount: existingCount, message: msg };
-    }
-
-    this.logger.log('[PIAUIENSE-2027-SEEDER] Populando 8 clubes oficiais e 28 jogos da FFP 2027...');
-
-    // 3. Upsert dos 8 Clubes Oficiais com Escudos Oficiais FFP/CBF
+    // 2. Upsert dos 8 Clubes Oficiais com Escudos Oficiais FFP Transparentes
     const TEAMS_DEF = [
-      { key: 'altos', externalId: 7820, name: 'Altos', code: 'ALT', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/53914/escudo.jpg' },
-      { key: 'atletico_pi', externalId: 65174, name: 'Atlético Piauiense', code: 'CAP', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/65174/escudo.jpg' },
-      { key: 'flamengo_pi', externalId: 7828, name: 'Flamengo-PI', code: 'FLA', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/20044/escudo.jpg' },
-      { key: 'fluminense_pi', externalId: 10425, name: 'Fluminense-PI', code: 'FLU', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/35775/escudo.jpg' },
-      { key: 'oeirense', externalId: 15624, name: 'Oeirense', code: 'OEI', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/57053/escudo.jpg' },
-      { key: 'piaui', externalId: 7827, name: 'Piauí', code: 'PIA', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/20111/escudo.jpg' },
-      { key: 'river', externalId: 2218, name: 'River', code: 'RIV', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/20077/escudo.jpg' },
-      { key: 'teresina', externalId: 54232, name: 'Teresina', code: 'TEC', logo: 'https://wsrv.nl/?url=conteudo.cbf.com.br/clubes/54232/escudo.jpg' },
+      { key: 'altos', externalId: 7820, name: 'Altos', code: 'ALT', logo: 'https://blogger.googleusercontent.com/img/a/AVvXsEgb2KOHUi1r4Sqw_lRQlKC4dPBk9sCOzPUx0UN-porMuEi420JrE9ZtRp3XVe-3jdFsgwufQT6X_JoS0YdBV-ISFfffWmJun-jHgcSRl7UVw9f1uo_9StT5bPHJ-rKtVSKDo_VT5-C8Rfx9raMWdMCIuwfNUbA6YrvChLFfMAuXYMRB81GykhHC1qGC8zU' },
+      { key: 'atletico_pi', externalId: 65174, name: 'Atlético Piauiense', code: 'CAP', logo: 'https://blogger.googleusercontent.com/img/a/AVvXsEhGeJZNIdGGDGk2UFMQxgkrV7DwyTDFnKxXnkwKkU4yf_h1sP1Vwe7GHNMEPUAGc8i1O-mUvO8DYRsCr6XFgzh5qzgElRTAFNd0VV3W9jK8OA3Q2TKG4gxT10svjQhy2aP3vAn0Vq9IP7jurH9vzP_TYsyPnCNdlicstVoTHaQo3keLet3ex5ZkoCoeP38' },
+      { key: 'flamengo_pi', externalId: 7828, name: 'Flamengo-PI', code: 'FLA', logo: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLD5fB6-UoRllRdtRw1TTUEiLaR3pu_UCCnPoJ0zlS9l-ajU6ZvzM7pcvfxIJPNuhXtIslZWpA4PF3xiLJpsbGut6en3oP94-EIqrM7nsT9odSWwk2llDdgqje8096wTDW8nUT5_y1zOQ/s800/Esporte+Clube+Flamengo+-+Teresina-PI.png' },
+      { key: 'fluminense_pi', externalId: 10425, name: 'Fluminense-PI', code: 'FLU', logo: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhXbC49YzlaqHi2gbDw8wheodB_qLTIE_p7kUoqZnkvUQ9fFRItLYnW8VHIsz3nk4XB-V7_TYQxDJDRxuhY-f9JovQaAcA5ojbRi9DcNWme7ove0ZOI9kBmK2f0TDLeIkIm2_epNs_eMek/s1600/1673118036155566-2.png' },
+      { key: 'oeirense', externalId: 15624, name: 'Oeirense', code: 'OEI', logo: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgcLfbW5rFvoi_cUAQdQpeBgc68eQzX0YSJn5P57KtESmPENeJQeB-E6M0Kst7gkAccZsiYQSjdt2EnX8m2CZct6uh6Y7Pu06UC67sL4JIRrw2ReEWDiMDZlXjqjf5BomVDD-vfIgN7hYs/s783/Associa%25C3%25A7%25C3%25A3o+Atl%25C3%25A9tica+Oeirense+-+Oeiras-PI.png' },
+      { key: 'piaui', externalId: 7827, name: 'Piauí', code: 'PIA', logo: 'https://blogger.googleusercontent.com/img/a/AVvXsEi_d7x_t-MYPtji62BVJpa1WHLC_44cbBdPzZepQW2FSyolip0JYGPXhtIU1SCA-iD5QlCFBTomiAd2AoOJzW0MoscD9BH2vYxXpyDyutFHaCFKIvgmmye9x2fMl2Bc5b8BfL2v08nEV27WNigeERiVaaw70VKEx6YXnQojztfpCwiE_qwP0e6slPPmd6w' },
+      { key: 'river', externalId: 2218, name: 'River', code: 'RIV', logo: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_vpyOcw4DHkGfnB9EtVFQUfSYAjw175mN9xLf7rTWN6h9Vaz3O_3_iDyXRCPY1PmqNH6oFd4YAeviT1ThyphenhyphenaI3GsKKJcx5Ok1sWJbCEFZVXAlufzvFrv-4H4uyF4_z1uVrw0wr6477U0w/s800/River+Atl%25C3%25A9tico+Clube+-+Teresina-PI.png' },
+      { key: 'teresina', externalId: 54232, name: 'Teresina', code: 'TEC', logo: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEikT3HXKMGL-SJdcNAKTM5oUqozRLZ34Nr0hGlLdxFzITgjSLPuD6Zq3LMsIIo_9rTyrpQ9p4Rcf8FOWpE8f95xtCdO_bMNBNePXxbMPywZFfbdr88h5vzoZoxyOhizWOaL8z6Yd6TSgykgLIfJjoqnjBqHwWKkUxCuEW86YitKTMtnFj6s3VfFPaCSkEs/s1515/Teresina%20Esporte%20Clube%20de%20Teresina-PI.png' },
     ];
 
     const teamDbMap = new Map<string, string>(); // key -> team.id (UUID)
@@ -78,7 +67,7 @@ export class Piauiense2027SeederService implements OnApplicationBootstrap {
       teamDbMap.set(t.key, team.id);
     }
 
-    // 4. Upsert da Classificação Inicial (8 clubes zerados)
+    // 3. Upsert da Classificação Inicial (8 clubes)
     let rank = 1;
     for (const t of TEAMS_DEF) {
       const teamId = teamDbMap.get(t.key)!;
@@ -106,6 +95,17 @@ export class Piauiense2027SeederService implements OnApplicationBootstrap {
           goalsDiff: 0,
         },
       });
+    }
+
+    // 4. Verificar se os 28 jogos já existem
+    const existingCount = await this.prisma.fixture.count({
+      where: { leagueId: league.id, season: 2027 },
+    });
+
+    if (existingCount >= 28) {
+      const msg = `Piauiense 2027 clubes atualizados com sucesso e já possui ${existingCount} partidas cadastradas.`;
+      this.logger.log(`[PIAUIENSE-2027-SEEDER] ${msg}`);
+      return { success: true, fixturesCount: existingCount, message: msg };
     }
 
     // 5. As 28 Partidas Oficiais da Tabela FFP 2027 (1ª Fase - Turno Único)

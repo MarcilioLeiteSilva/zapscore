@@ -48,6 +48,8 @@ export interface ServeAdQuery {
   app: string;
   placement: AdPlacement;
   leagueId?: number;
+  clientIp?: string;
+  state?: string;
 }
 
 export interface ServeAdResponse {
@@ -59,6 +61,7 @@ export interface ServeAdResponse {
   destinationUrl: string;
   impressionUrl: string;
   clickUrl: string;
+  detectedState?: string;
 }
 
 export interface PlacementInventoryInfo {

@@ -10,11 +10,12 @@ import {
   Body,
   UseInterceptors,
   UploadedFile,
+  Req,
   Res,
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AdsService } from './ads.service';
 import { AdPlacement, AdStatus, UploadedCreativeFile } from './interfaces/ads.types';
 
@@ -33,12 +34,32 @@ export class AdsController {
     @Query('app') app: string,
     @Query('placement') placement: AdPlacement,
     @Query('leagueId') leagueId?: string,
+    @Query('state') state?: string,
+    @Query('uf') uf?: string,
+    @Query('clientIp') clientIpParam?: string,
+    @Req() req?: Request,
   ) {
     const parsedLeagueId = leagueId ? parseInt(leagueId, 10) : undefined;
+
+    // Extrai IP do cliente considerando Cloudflare e proxies reversos
+    const clientIp = (
+      clientIpParam ||
+      (req?.headers['cf-connecting-ip'] as string) ||
+      (req?.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      (req?.headers['x-real-ip'] as string) ||
+      req?.socket?.remoteAddress ||
+      ''
+    ).trim();
+
+    // Extrai região brasileira se enviada via header Cloudflare (cf-region-code / cf-region)
+    const cfRegion = (req?.headers['cf-region-code'] || req?.headers['cf-region']) as string;
+
     const ad = await this.adsService.serveAd({
       app: app || 'all',
       placement: placement || 'banner_bottom',
       leagueId: isNaN(parsedLeagueId as number) ? undefined : parsedLeagueId,
+      clientIp,
+      state: state || uf || cfRegion,
     });
 
     return {

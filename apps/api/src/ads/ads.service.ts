@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PocketbaseAdsClient } from './providers/pocketbase-ads.client';
+import { GeoIpService } from './providers/geoip.service';
 import {
   AdCampaign,
   AdPlacement,
@@ -19,7 +20,10 @@ export class AdsService {
   // Cache em memória de campanhas ativas (TTL: 60 segundos)
   private activeCampaignsCache: { data: AdCampaign[]; expiresAt: number } | null = null;
 
-  constructor(private readonly pbAdsClient: PocketbaseAdsClient) {}
+  constructor(
+    private readonly pbAdsClient: PocketbaseAdsClient,
+    private readonly geoIpService: GeoIpService,
+  ) {}
 
   /**
    * Limpa o cache em memória após mutações cadastrais
@@ -47,6 +51,7 @@ export class AdsService {
 
   /**
    * Motor de entrega de anúncios (Serving Engine) para os aplicativos Flutter
+   * com segmentação regional por GeoIP automática para apps de alcance nacional.
    */
   async serveAd(query: ServeAdQuery): Promise<ServeAdResponse | null> {
     const activeCampaigns = await this.getCachedActiveCampaigns();
@@ -56,12 +61,15 @@ export class AdsService {
 
     const now = new Date();
 
-    // Filtra campanhas elegíveis para este app e local
-    const eligible = activeCampaigns.filter((campaign) => {
-      // 1. Filtro de Placement
+    // 0. Resolução regional do torcedor (UF brasileira) via IP ou dica (hint/header Cloudflare)
+    const userUf = await this.geoIpService.resolveState(query.clientIp, query.state);
+
+    // 1. Filtro base de validade técnica (placement, vigência, capping de impressões e liga)
+    const validCampaigns = activeCampaigns.filter((campaign) => {
+      // Filtro de Placement
       if (campaign.placement !== query.placement) return false;
 
-      // 2. Filtro de Datas (se configuradas)
+      // Filtro de Vigência (início e término)
       if (campaign.start_at) {
         const start = new Date(campaign.start_at);
         if (now < start) return false;
@@ -71,38 +79,12 @@ export class AdsService {
         if (now > end) return false;
       }
 
-      // 3. Filtro de Capping de Impressões
+      // Filtro de Capping de Impressões
       if (campaign.max_impressions > 0 && campaign.impressions_count >= campaign.max_impressions) {
         return false;
       }
 
-      // 4. Filtro de Aplicativo (com suporte a sinônimos: "paulista" <=> "campeonato_paulista")
-      const targetApps = campaign.target_apps || ['all'];
-      const queryApp = query.app ? query.app.toLowerCase().trim() : '';
-      const queryCandidates = new Set<string>();
-      if (queryApp) {
-        queryCandidates.add(queryApp);
-        if (queryApp.startsWith('campeonato_')) {
-          queryCandidates.add(queryApp.replace('campeonato_', ''));
-        } else {
-          queryCandidates.add(`campeonato_${queryApp}`);
-        }
-      }
-
-      const appMatch =
-        targetApps.includes('all') ||
-        targetApps.some((target) => {
-          const t = target.toLowerCase().trim();
-          return (
-            queryCandidates.has(t) ||
-            (t.startsWith('campeonato_') && queryCandidates.has(t.replace('campeonato_', ''))) ||
-            (!t.startsWith('campeonato_') && queryCandidates.has(`campeonato_${t}`))
-          );
-        });
-
-      if (!appMatch) return false;
-
-      // 5. Filtro de Liga/Campeonato (se fornecido na query)
+      // Filtro de Liga/Campeonato (se fornecido na query)
       const targetLeagues = campaign.target_leagues || [];
       if (targetLeagues.length > 0 && query.leagueId) {
         const leagueIdNum = Number(query.leagueId);
@@ -111,6 +93,74 @@ export class AdsService {
 
       return true;
     });
+
+    if (validCampaigns.length === 0) {
+      return null;
+    }
+
+    const queryApp = (query.app || 'all').toLowerCase().trim();
+    const isNationalApp = ['brasileirao', 'copadobrasil', 'copalibertadores', 'europa', 'all'].includes(queryApp);
+
+    let eligible: AdCampaign[] = [];
+
+    if (isNationalApp) {
+      // CASO A: Aplicativo de Alcance Nacional (ex: Brasileirão)
+      // Se detectou a UF do torcedor, busca campanhas estaduais correspondentes à sua região
+      if (userUf) {
+        const stateMatches = validCampaigns.filter((campaign) => {
+          const campaignState = this.geoIpService.detectCampaignState(campaign);
+          return campaignState === userUf;
+        });
+
+        if (stateMatches.length > 0) {
+          eligible = stateMatches;
+        }
+      }
+
+      // Se o torcedor não tem UF detectada ou não há campanha específica para o seu estado,
+      // entrega campanhas nacionais / gerais configuradas para o app ou para 'all'
+      if (eligible.length === 0) {
+        const nationalCampaigns = validCampaigns.filter((campaign) => {
+          const campaignState = this.geoIpService.detectCampaignState(campaign);
+          return (
+            campaignState === null ||
+            campaign.target_apps?.includes(queryApp) ||
+            campaign.target_apps?.includes('all')
+          );
+        });
+
+        eligible = nationalCampaigns.length > 0 ? nationalCampaigns : validCampaigns;
+      }
+    } else {
+      // CASO B: Aplicativo Estadual Específico (ex: "pernambucano", "paulista", "mineiro")
+      const queryCandidates = new Set<string>();
+      queryCandidates.add(queryApp);
+      if (queryApp.startsWith('campeonato_')) {
+        queryCandidates.add(queryApp.replace('campeonato_', ''));
+      } else {
+        queryCandidates.add(`campeonato_${queryApp}`);
+      }
+
+      eligible = validCampaigns.filter((campaign) => {
+        const targetApps = campaign.target_apps || ['all'];
+        const appMatch =
+          targetApps.includes('all') ||
+          targetApps.some((target) => {
+            const t = target.toLowerCase().trim();
+            return (
+              queryCandidates.has(t) ||
+              (t.startsWith('campeonato_') && queryCandidates.has(t.replace('campeonato_', ''))) ||
+              (!t.startsWith('campeonato_') && queryCandidates.has(`campeonato_${t}`))
+            );
+          });
+
+        if (appMatch) return true;
+
+        const stateSlug = queryApp.replace('campeonato_', '');
+        const campaignState = this.geoIpService.detectCampaignState(campaign);
+        return campaignState !== null && this.geoIpService.getChampionshipSlug(campaignState) === stateSlug;
+      });
+    }
 
     if (eligible.length === 0) {
       return null;
@@ -141,6 +191,7 @@ export class AdsService {
       destinationUrl: selected.destination_url,
       impressionUrl: `/ads/${selected.id}/impression`,
       clickUrl: `/ads/${selected.id}/click`,
+      detectedState: userUf || undefined,
     };
   }
 
