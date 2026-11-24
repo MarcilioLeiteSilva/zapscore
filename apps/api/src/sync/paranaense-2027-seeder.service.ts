@@ -1,11 +1,15 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class Paranaense2027SeederService implements OnApplicationBootstrap {
   private readonly logger = new Logger(Paranaense2027SeederService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly redis?: RedisService,
+  ) {}
 
   async onApplicationBootstrap() {
     this.logger.log('[PARANAENSE-2027-SEEDER] Verificando integridade das partidas de 2027 no bootstrap...');
@@ -36,20 +40,9 @@ export class Paranaense2027SeederService implements OnApplicationBootstrap {
       this.logger.log('[PARANAENSE-2027-SEEDER] Liga 606 criada no banco.');
     }
 
-    // 2. Verificar se os 36 jogos da 1ª Fase já existem
-    const existingCount = await this.prisma.fixture.count({
-      where: { leagueId: league.id, season: 2027 },
-    });
+    this.logger.log('[PARANAENSE-2027-SEEDER] Sincronizando 12 clubes oficiais e classificação...');
 
-    if (existingCount >= 36) {
-      const msg = `Paranaense 2027 já possui ${existingCount} partidas cadastradas. Nenhuma ação necessária.`;
-      this.logger.log(`[PARANAENSE-2027-SEEDER] ${msg}`);
-      return { success: true, fixturesCount: existingCount, message: msg };
-    }
-
-    this.logger.log('[PARANAENSE-2027-SEEDER] Populando 12 clubes oficiais e 36 jogos da FPF 2027...');
-
-    // 3. Upsert dos 12 Clubes Oficiais (Grupo A e Grupo B — FPF 2027)
+    // 2. Upsert dos 12 Clubes Oficiais (Grupo A e Grupo B — FPF 2027)
     const TEAMS_DEF = [
       // Grupo A
       { key: 'coritiba', externalId: 132, name: 'Coritiba', code: 'CFC', logo: 'https://wsrv.nl/?url=media.api-sports.io/football/teams/132.png' },
@@ -84,7 +77,7 @@ export class Paranaense2027SeederService implements OnApplicationBootstrap {
       teamDbMap.set(t.key, team.id);
     }
 
-    // 4. Upsert da Classificação Inicial (12 clubes zerados)
+    // 3. Upsert da Classificação Inicial (12 clubes zerados)
     let rank = 1;
     for (const t of TEAMS_DEF) {
       const teamId = teamDbMap.get(t.key)!;
@@ -114,8 +107,30 @@ export class Paranaense2027SeederService implements OnApplicationBootstrap {
       });
     }
 
-    // 5. As 36 Partidas Oficiais da Fase Classificatória FPF 2027 (6 Rodadas x 6 Jogos)
-    // Horários convertidos de BRT (UTC-3) para UTC (+3h)
+    // 4. Invalida cache de standings no Redis se disponível
+    if (this.redis) {
+      try {
+        await this.redis.delPattern('standings:*');
+        this.logger.log('[PARANAENSE-2027-SEEDER] Cache de standings invalidado no Redis.');
+      } catch (err: any) {
+        this.logger.warn(`[PARANAENSE-2027-SEEDER] Erro ao limpar cache Redis: ${err.message}`);
+      }
+    }
+
+    // 5. Verificar se os 36 jogos da 1ª Fase já existem
+    const existingCount = await this.prisma.fixture.count({
+      where: { leagueId: league.id, season: 2027 },
+    });
+
+    if (existingCount >= 36) {
+      const msg = `Paranaense 2027 já possui ${existingCount} partidas e 12 clubes na tabela. Nenhuma ação pendente.`;
+      this.logger.log(`[PARANAENSE-2027-SEEDER] ${msg}`);
+      return { success: true, fixturesCount: existingCount, message: msg };
+    }
+
+    this.logger.log('[PARANAENSE-2027-SEEDER] Populando 36 jogos da FPF 2027...');
+
+    // 6. As 36 Partidas Oficiais da Fase Classificatória FPF 2027 (6 Rodadas x 6 Jogos)
     const MATCHES_SCHEDULE = [
       // 1ª Rodada (Quarta-feira, 06/01/2027 às 20h00 BRT = 23h00 UTC)
       { ref: 1, rod: '1ª Rodada', data: '2027-01-06T23:00:00Z', home: 'coritiba', away: 'cianorte', estadio: 'Couto Pereira', cidade: 'Curitiba' },

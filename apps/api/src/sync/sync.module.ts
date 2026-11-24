@@ -25,9 +25,10 @@ import { VideosModule } from '../videos/videos.module';
 import { FixturesModule } from '../fixtures/fixtures.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { LineupsModule } from '../lineups/lineups.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule, VideosModule, FixturesModule, NotificationsModule, LineupsModule],
+  imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule, VideosModule, FixturesModule, NotificationsModule, LineupsModule, RedisModule],
   controllers: [SyncController],
   providers: [SyncService, SyncJobsService, SyncContentService, Cearense2027SeederService, Baiano2027SeederService, Sulmatogrossense2027SeederService, Tocantinense2027SeederService, Amapaense2027SeederService, Amazonense2027SeederService, Brasiliense2027SeederService, Mineiro2027SeederService, Capixaba2027SeederService, Rondoniense2027SeederService, Piauiense2027SeederService, Goiano2027SeederService, Paranaense2027SeederService],
   exports: [SyncService, Cearense2027SeederService, Baiano2027SeederService, Sulmatogrossense2027SeederService, Tocantinense2027SeederService, Amapaense2027SeederService, Amazonense2027SeederService, Brasiliense2027SeederService, Mineiro2027SeederService, Capixaba2027SeederService, Rondoniense2027SeederService, Piauiense2027SeederService, Goiano2027SeederService, Paranaense2027SeederService],
