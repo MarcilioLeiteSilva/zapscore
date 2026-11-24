@@ -729,26 +729,34 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                (comp.league.externalId == 606 ? AppConfig.appName : comp.league.name).toUpperCase(),
-                                maxLines: 1,
-                                style: context.textTheme.bodySmall!.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (comp.league.country != null)
-                          Text(
-                            comp.league.country == 'Brazil' ? 'Brasil' : comp.league.country!,
-                            style: context.textTheme.labelSmall,
+                        Text(
+                          'Campeonato',
+                          style: context.textTheme.bodySmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
+                        ),
+                        Text(
+                          (comp.league.externalId == 606 || comp.league.id == '606')
+                              ? 'Paranaense - 1'
+                              : (comp.league.externalId == 614 || comp.league.id == '614')
+                                  ? 'Paranaense - 2'
+                                  : comp.league.name.replaceAll('Campeonato', '').trim().isEmpty
+                                      ? 'Paranaense - 1'
+                                      : comp.league.name.replaceAll('Campeonato', '').trim(),
+                          style: context.textTheme.bodySmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: Colors.white.withValues(alpha: 0.9),
+                          ),
+                        ),
+                        Text(
+                          (comp.league.country == null || comp.league.country == 'Brazil' || comp.league.country == 'Brasil')
+                              ? 'Brasil'
+                              : comp.league.country!,
+                          style: context.textTheme.labelSmall,
+                        ),
                       ],
                     ),
                   ),

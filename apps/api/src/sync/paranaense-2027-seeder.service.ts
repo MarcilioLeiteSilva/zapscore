@@ -25,13 +25,13 @@ export class Paranaense2027SeederService implements OnApplicationBootstrap {
     const league = await this.prisma.league.upsert({
       where: { externalId: 606 },
       update: {
-        name: 'Campeonato Paranaense',
+        name: 'Campeonato Paranaense - 1',
         country: 'Brasil',
         season: 2027,
       },
       create: {
         externalId: 606,
-        name: 'Campeonato Paranaense',
+        name: 'Campeonato Paranaense - 1',
         country: 'Brasil',
         logo: 'https://media.api-sports.io/football/leagues/606.png',
         type: 'League',
