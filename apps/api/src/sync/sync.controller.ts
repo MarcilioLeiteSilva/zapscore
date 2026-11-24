@@ -12,6 +12,7 @@ import { Capixaba2027SeederService } from './capixaba-2027-seeder.service';
 import { Rondoniense2027SeederService } from './rondoniense-2027-seeder.service';
 import { Piauiense2027SeederService } from './piauiense-2027-seeder.service';
 import { Goiano2027SeederService } from './goiano-2027-seeder.service';
+import { Paranaense2027SeederService } from './paranaense-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -37,6 +38,7 @@ export class SyncController {
     private readonly rondonienseSeeder: Rondoniense2027SeederService,
     private readonly piauienseSeeder: Piauiense2027SeederService,
     private readonly goianoSeeder: Goiano2027SeederService,
+    private readonly paranaenseSeeder: Paranaense2027SeederService,
   ) {}
 
   @Post('seed-cearense-2027')
@@ -97,6 +99,11 @@ export class SyncController {
   @Post('seed-goiano-2027')
   async seedGoiano2027() {
     return this.goianoSeeder.seedGoiano2027();
+  }
+
+  @Post('seed-paranaense-2027')
+  async seedParanaense2027() {
+    return this.paranaenseSeeder.seedParanaense2027();
   }
 
   @Post('bootstrap')

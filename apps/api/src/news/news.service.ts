@@ -275,6 +275,7 @@ export class NewsService implements OnModuleInit {
         { extId: 615, keywords: ['campeonato rondoniense', 'rondoniense', 'ffer', 'futebol rondoniense', 'rondoniense sicoob', 'rondoniense sicredi'] },
         { extId: 628, keywords: ['campeonato goiano', 'goianão', 'goianao', 'fgf', 'futebol goiano', 'goiano 1ª divisão', 'goiano 1a divisao', 'vila nova', 'atlético-go', 'atletico-go', 'goiás ec', 'goias ec', 'aparecidense', 'anápolis', 'anapolis', 'crac', 'goianésia', 'goianesia', 'goiatuba', 'jataiense', 'anapolina', 'rio verde', 'agro ec'] },
         { extId: 621, keywords: ['campeonato piauiense', 'piauiense', 'ffp', 'futebol piauiense'] },
+        { extId: 606, keywords: ['campeonato paranaense', 'paranaense', 'futebol paranaense', 'fpf-pr', 'athletico-pr', 'coritiba', 'operário-pr', 'operario-pr', 'maringá', 'maringa', 'londrina', 'fc cascavel', 'cianorte', 'azuriz', 'são joseense', 'sao joseense', 'paraná clube', 'parana clube', 'foz do iguaçu', 'foz do iguacu', 'paranavaí', 'paranavai'] },
         { extId: 605, keywords: ['campeonato catarinense', 'catarinense'] },
         { extId: 612, keywords: ['copa do nordeste', 'nordestão', 'nordestao', 'lampions'] },
         { extId: 73, keywords: ['copa do brasil'] },

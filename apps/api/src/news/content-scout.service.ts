@@ -218,8 +218,8 @@ export class ContentScoutService {
       name: 'Campeonato Paranaense',
       country: 'Brasil',
       keywords: [
-        'campeonato paranaense', 'paranaense', 'athletico-pr', 'coritiba', 'operário-pr',
-        'maringá', 'londrina', 'fc cascavel', 'cianorte', 'azuriz'
+        'campeonato paranaense', 'paranaense', 'futebol paranaense', 'athletico-pr', 'coritiba', 'operário-pr',
+        'maringá', 'londrina', 'fc cascavel', 'cianorte', 'azuriz', 'são joseense', 'paraná clube', 'foz do iguaçu', 'paranavaí'
       ]
     },
     604: {
