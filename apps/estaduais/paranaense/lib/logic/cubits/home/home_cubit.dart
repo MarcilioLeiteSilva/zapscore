@@ -40,15 +40,15 @@ class HomeCubit extends Cubit<HomeState> {
           League(
             id: '606',
             externalId: 606,
-            name: 'Paranaense Série A',
-            country: 'Brazil',
-            logo: 'https://media.api-sports.io/football/leagues/606.png',
+            name: AppConfig.appName,
+            country: 'Brasil',
+            logo: AppConfig.defaultLeagueLogo,
           ),
           League(
             id: '614',
             externalId: 614,
             name: 'Paranaense Série B',
-            country: 'Brazil',
+            country: 'Brasil',
             logo: 'https://media.api-sports.io/football/leagues/614.png',
           ),
         ];

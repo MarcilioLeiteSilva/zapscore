@@ -87,7 +87,7 @@ class FavoriteTeamHomeCard extends StatelessWidget {
                               if (primaryTeam.country != null) ...[
                                 const Gap(2),
                                 Text(
-                                  primaryTeam.country!,
+                                  primaryTeam.country == 'Brazil' ? 'Brasil' : primaryTeam.country!,
                                   style: context.textTheme.bodySmall?.copyWith(
                                     color: Colors.white60,
                                   ),
@@ -733,7 +733,7 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                           children: [
                             Flexible(
                               child: Text(
-                                comp.league.name.toUpperCase(),
+                                (comp.league.externalId == 606 ? AppConfig.appName : comp.league.name).toUpperCase(),
                                 maxLines: 1,
                                 style: context.textTheme.bodySmall!.copyWith(
                                   fontWeight: FontWeight.bold,
@@ -746,7 +746,7 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                         ),
                         if (comp.league.country != null)
                           Text(
-                            comp.league.country!,
+                            comp.league.country == 'Brazil' ? 'Brasil' : comp.league.country!,
                             style: context.textTheme.labelSmall,
                           ),
                       ],
@@ -780,9 +780,16 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
           AnimatedCrossFade(
             firstChild: Column(
               children: [
-                if (comp.matches.isNotEmpty)
-                  ...comp.matches.map((match) => CardFixtureItem(fixture: match))
-                else
+                if (comp.matches.isNotEmpty) ...[
+                  for (int idx = 0; idx < comp.matches.length; idx++) ...[
+                    CardFixtureItem(fixture: comp.matches[idx]),
+                    if (idx == 1 || (comp.matches.length == 1 && idx == 0))
+                      HouseNativeMatchCard(
+                        leagueId: int.tryParse(comp.league.id),
+                        margin: const EdgeInsets.only(right: 15, top: 6, bottom: 6),
+                      ),
+                  ],
+                ] else
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),
                     child: Center(
@@ -1178,7 +1185,7 @@ class CardFixtureDetail extends StatelessWidget {
               if (fix.league?.country != null) ...[
                 const Gap(4),
                 Text(
-                  fix.league!.country!,
+                  fix.league!.country == 'Brazil' ? 'Brasil' : fix.league!.country!,
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

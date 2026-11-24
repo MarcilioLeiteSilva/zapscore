@@ -22,23 +22,26 @@ export class Paranaense2027SeederService implements OnApplicationBootstrap {
 
   async seedParanaense2027(): Promise<{ success: boolean; fixturesCount: number; message: string }> {
     // 1. Obter ou criar a liga Campeonato Paranaense 1ª Divisão (606)
-    let league = await this.prisma.league.findUnique({
+    const league = await this.prisma.league.upsert({
       where: { externalId: 606 },
+      update: {
+        name: 'Campeonato Paranaense',
+        country: 'Brasil',
+        season: 2027,
+      },
+      create: {
+        externalId: 606,
+        name: 'Campeonato Paranaense',
+        country: 'Brasil',
+        logo: 'https://media.api-sports.io/football/leagues/606.png',
+        type: 'League',
+        season: 2027,
+      },
     });
-
-    if (!league) {
-      league = await this.prisma.league.create({
-        data: {
-          externalId: 606,
-          name: 'Campeonato Paranaense 1ª Divisão',
-          country: 'Brazil',
-          logo: 'https://media.api-sports.io/football/leagues/606.png',
-          type: 'League',
-          season: 2027,
-        },
-      });
-      this.logger.log('[PARANAENSE-2027-SEEDER] Liga 606 criada no banco.');
+    if (this.redis) {
+      await this.redis.delPattern('leagues*');
     }
+    this.logger.log('[PARANAENSE-2027-SEEDER] Liga 606 atualizada para Campeonato Paranaense / Brasil.');
 
     this.logger.log('[PARANAENSE-2027-SEEDER] Sincronizando 12 clubes oficiais e classificação...');
 

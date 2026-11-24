@@ -45,14 +45,10 @@ import '../../logic/models/standing.dart';
 import '../../logic/models/scorer.dart';
 import '../../logic/models/ai_performance_stats.dart';
 import '../../logic/models/tactical_comment.dart';
-import '../../logic/models/competition.dart';
-import '../../logic/models/competition_phase.dart';
-import '../../logic/models/tie.dart';
 import '../widgets/widgets.dart';
 import '../widgets/ad_banner.dart';
 import '../widgets/native_ad.dart';
-import '../widgets/standings_table.dart';
-import '../widgets/competition_bracket.dart';
+import '../widgets/house_popup_launch.dart';
 import '../../services/ad_service.dart';
 
 part 'user/welcome.dart';

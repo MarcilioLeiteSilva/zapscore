@@ -198,16 +198,20 @@ class BracketEngine {
       );
     }
 
-    // Projeção baseada na classificação dos grupos
-    final a1 = standingsGroupA.isNotEmpty ? _standingToTeam(standingsGroupA[0]) : null;
-    final a2 = standingsGroupA.length >= 2 ? _standingToTeam(standingsGroupA[1]) : null;
-    final a3 = standingsGroupA.length >= 3 ? _standingToTeam(standingsGroupA[2]) : null;
-    final a4 = standingsGroupA.length >= 4 ? _standingToTeam(standingsGroupA[3]) : null;
+    final bool hasPlayedMatches = standingsGeneral.any((st) => st.played > 0) ||
+        standingsGroupA.any((st) => st.played > 0) ||
+        standingsGroupB.any((st) => st.played > 0);
 
-    final b1 = standingsGroupB.isNotEmpty ? _standingToTeam(standingsGroupB[0]) : null;
-    final b2 = standingsGroupB.length >= 2 ? _standingToTeam(standingsGroupB[1]) : null;
-    final b3 = standingsGroupB.length >= 3 ? _standingToTeam(standingsGroupB[2]) : null;
-    final b4 = standingsGroupB.length >= 4 ? _standingToTeam(standingsGroupB[3]) : null;
+    // Projeção baseada na classificação dos grupos apenas se houver partidas disputadas (Gate 3)
+    final a1 = (hasPlayedMatches && standingsGroupA.isNotEmpty) ? _standingToTeam(standingsGroupA[0]) : null;
+    final a2 = (hasPlayedMatches && standingsGroupA.length >= 2) ? _standingToTeam(standingsGroupA[1]) : null;
+    final a3 = (hasPlayedMatches && standingsGroupA.length >= 3) ? _standingToTeam(standingsGroupA[2]) : null;
+    final a4 = (hasPlayedMatches && standingsGroupA.length >= 4) ? _standingToTeam(standingsGroupA[3]) : null;
+
+    final b1 = (hasPlayedMatches && standingsGroupB.isNotEmpty) ? _standingToTeam(standingsGroupB[0]) : null;
+    final b2 = (hasPlayedMatches && standingsGroupB.length >= 2) ? _standingToTeam(standingsGroupB[1]) : null;
+    final b3 = (hasPlayedMatches && standingsGroupB.length >= 3) ? _standingToTeam(standingsGroupB[2]) : null;
+    final b4 = (hasPlayedMatches && standingsGroupB.length >= 4) ? _standingToTeam(standingsGroupB[3]) : null;
 
     return [
       Tie(
@@ -309,7 +313,7 @@ class BracketEngine {
     ];
   }
 
-  /// Torneio da Morte / Rebaixamento Série A (Ida e Volta: 9º × 12º e 10º × 11º)
+  /// Torneio da Morte / Rebaixamento Série A (Ida e Volta: 5º GA × 6º GB e 5º GB × 6º GA - FPF 2027)
   static List<Tie> generateParanaenseA1Relegation(
     List<Fixture> rawRelegationFixtures,
     List<Standing> standingsGroupA,
@@ -322,35 +326,39 @@ class BracketEngine {
         rawRelegationFixtures,
         isTwoLegged: true,
         defaultSeedPairs: const [
-          '9º Colocado x 12º Colocado',
-          '10º Colocado x 11º Colocado',
+          '5º Grupo A x 6º Grupo B',
+          '5º Grupo B x 6º Grupo A',
         ],
       );
     }
 
-    final team9 = standingsGeneral.length >= 9 ? _standingToTeam(standingsGeneral[8]) : null;
-    final team10 = standingsGeneral.length >= 10 ? _standingToTeam(standingsGeneral[9]) : null;
-    final team11 = standingsGeneral.length >= 11 ? _standingToTeam(standingsGeneral[10]) : null;
-    final team12 = standingsGeneral.length >= 12 ? _standingToTeam(standingsGeneral[11]) : null;
+    final bool hasPlayedMatches = standingsGeneral.any((st) => st.played > 0) ||
+        standingsGroupA.any((st) => st.played > 0) ||
+        standingsGroupB.any((st) => st.played > 0);
+
+    final a5 = (hasPlayedMatches && standingsGroupA.length >= 5) ? _standingToTeam(standingsGroupA[4]) : null;
+    final a6 = (hasPlayedMatches && standingsGroupA.length >= 6) ? _standingToTeam(standingsGroupA[5]) : null;
+    final b5 = (hasPlayedMatches && standingsGroupB.length >= 5) ? _standingToTeam(standingsGroupB[4]) : null;
+    final b6 = (hasPlayedMatches && standingsGroupB.length >= 6) ? _standingToTeam(standingsGroupB[5]) : null;
 
     return [
       Tie(
         id: 'relegation_a1_tie_0',
         phaseId: 'relegation_a1',
         title: 'Torneio da Morte 1 (Ida e Volta)',
-        seedHome: '9º Geral (ou 5º GA)',
-        seedAway: '12º Geral (ou 6º GB)',
-        homeTeam: team9,
-        awayTeam: team12,
+        seedHome: '5º Grupo A',
+        seedAway: '6º Grupo B',
+        homeTeam: a5,
+        awayTeam: b6,
       ),
       Tie(
         id: 'relegation_a1_tie_1',
         phaseId: 'relegation_a1',
         title: 'Torneio da Morte 2 (Ida e Volta)',
-        seedHome: '10º Geral (ou 5º GB)',
-        seedAway: '11º Geral (ou 6º GA)',
-        homeTeam: team10,
-        awayTeam: team11,
+        seedHome: '5º Grupo B',
+        seedAway: '6º Grupo A',
+        homeTeam: b5,
+        awayTeam: a6,
       ),
     ];
   }

@@ -233,7 +233,7 @@ class FixturePage extends StatelessWidget {
                                     id: AppConfig.leagueId,
                                     externalId: AppConfig.externalLeagueId,
                                     name: AppConfig.appName,
-                                    country: 'Brazil',
+                                    country: 'Brasil',
                                     logo: AppConfig.defaultLeagueLogo,
                                   ),
                                   matches: [],

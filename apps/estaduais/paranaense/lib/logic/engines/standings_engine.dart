@@ -41,26 +41,22 @@ class StandingsEngine {
     });
   }
 
-  /// Separa a classificação da 1ª Fase do Paranaense Série A em Grupo A e Grupo B
-  /// Grupo A: Athletico, Maringá, Londrina, São Joseense, FC Cascavel, Foz do Iguaçu
-  /// Grupo B: Coritiba, Operário, Cianorte, Azuriz, Andraus, Galo Maringá
+  /// Separa a classificação da 1ª Fase do Paranaense Série A em Grupo A e Grupo B (FPF 2027)
+  /// Grupo A: Coritiba, Operário-PR, FC Cascavel, Azuriz, Foz do Iguaçu, Paranavaí
+  /// Grupo B: Athletico-PR, Maringá, Londrina, Cianorte, Paraná Clube, São Joseense
   static Map<String, List<Standing>> splitParanaenseA1Groups(List<Standing> rawStandings) {
     final Set<String> groupATeamKeywords = {
-      'athletico',
-      'atletico paranaense',
-      'atletico-pr',
-      'athletico-pr',
-      'maringá',
-      'maringa',
-      'londrina',
-      'são joseense',
-      'sao joseense',
-      'joseense',
+      'coritiba',
+      'operário',
+      'operario',
       'cascavel',
       'fc cascavel',
+      'azuriz',
       'foz do iguaçu',
       'foz do iguacu',
       'foz',
+      'paranavaí',
+      'paranavai',
     };
 
     final List<Standing> groupA = [];

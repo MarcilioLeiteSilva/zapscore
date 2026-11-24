@@ -2,7 +2,6 @@ import '../models/competition.dart';
 import '../models/competition_phase.dart';
 import '../models/fixture.dart';
 import '../models/standing.dart';
-import '../models/tie.dart';
 import 'standings_engine.dart';
 import 'bracket_engine.dart';
 
@@ -66,6 +65,7 @@ class CompetitionNormalizer {
           r.contains('1st phase') ||
           r.contains('primeira fase') ||
           r.contains('fase de grupos') ||
+          r.contains('rodada') ||
           r.contains('classificatória');
     }).toList();
 

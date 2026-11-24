@@ -3,6 +3,8 @@ part of 'helpers.dart';
 class AppConfig {
   static const String leagueId = '606';
   static const int externalLeagueId = 606;
+  static const int season = 2027;
+  static const int defaultSeason = 2027;
   static const String appName = 'Campeonato Paranaense';
   static const String appSlug = 'campeonato_paranaense';
   static const String apiBaseUrl = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../helpers/helpers.dart';
 import '../../../repository/api/api_client.dart';
 import '../../models/fixture.dart';
 import '../../models/standing.dart';
@@ -6,6 +7,7 @@ import '../../models/scorer.dart';
 import '../../models/competition.dart';
 import '../../models/competition_phase.dart';
 import '../../engines/competition_normalizer.dart';
+import '../../data/paranaense_2027_schedule.dart';
 
 part 'league_state.dart';
 
@@ -14,27 +16,38 @@ class LeagueCubit extends Cubit<LeagueState> {
 
   LeagueCubit(this.apiClient) : super(LeagueInitial());
 
-  Future<void> fetchLeagueData(int leagueId, {String? initialPhaseId}) async {
+  Future<void> fetchLeagueData(int leagueId, {String? initialPhaseId, int? season}) async {
     emit(LeagueLoading());
     try {
+      final int targetSeason = season ?? (leagueId == AppConfig.paranaenseSerieBId ? 2026 : AppConfig.season);
       final results = await Future.wait([
-        apiClient.getRecentFixtures(leagueId, limit: 500),
-        apiClient.getStandings(leagueId),
-        apiClient.getScorers(leagueId),
+        apiClient.getRecentFixtures(leagueId, limit: 500, season: targetSeason),
+        apiClient.getStandings(leagueId, season: targetSeason),
+        apiClient.getScorers(leagueId, season: targetSeason),
       ]);
 
-      final fixtures = results[0] as List<Fixture>;
-      final standings = results[1] as List<Standing>;
+      List<Fixture> fixtures = results[0] as List<Fixture>;
+      List<Standing> standings = results[1] as List<Standing>;
       final scorers = results[2] as List<Scorer>;
 
+      // Fallback offline se a API retornar lista vazia
+      if (leagueId == AppConfig.paranaenseSerieAId && targetSeason == AppConfig.season) {
+        if (fixtures.isEmpty) {
+          fixtures = Paranaense2027Schedule.getOfficialFirstPhaseFixtures();
+        }
+        if (standings.isEmpty) {
+          standings = Paranaense2027Schedule.getOfficialInitialStandings();
+        }
+      }
+
       // Obter nome da competição
-      String compName = leagueId == 614 ? 'Campeonato Paranaense - Série B' : 'Campeonato Paranaense - Série A';
+      String compName = leagueId == AppConfig.paranaenseSerieBId ? 'Campeonato Paranaense - Série B' : 'Campeonato Paranaense - Série A';
 
       // Normalizar via Motor de Competições
       final competition = CompetitionNormalizer.normalize(
         leagueId: leagueId,
         leagueName: compName,
-        season: 2026,
+        season: targetSeason,
         rawStandings: standings,
         rawFixtures: fixtures,
       );

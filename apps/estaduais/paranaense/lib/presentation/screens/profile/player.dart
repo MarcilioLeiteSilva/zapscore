@@ -57,6 +57,8 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                   padding: const EdgeInsets.only(left: 15, right: 15, top: 15, bottom: 120),
                   child: Column(
                     children: [
+                      const AdBannerWidget(),
+                      const Gap(15),
                       // Header Card
                       _buildHeader(),
                       const Gap(15),
@@ -97,11 +99,16 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
           Stack(
             alignment: Alignment.center,
             children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: context.appColors.info ?? Colors.black26,
-                backgroundImage: player!.photo != null ? NetworkImage(proxyImage(player!.photo!)) : null,
-                child: player!.photo == null ? const Icon(Icons.person, size: 50, color: Colors.white54) : null,
+              Builder(
+                builder: (context) {
+                  final bool hasPhoto = player!.photo != null && player!.photo!.trim().length > 5;
+                  return CircleAvatar(
+                    radius: 50,
+                    backgroundColor: context.appColors.info ?? Colors.black26,
+                    backgroundImage: hasPhoto ? CachedNetworkImageProvider(proxyImage(player!.photo!)) : null,
+                    child: !hasPhoto ? const Icon(Icons.person, size: 50, color: Colors.white54) : null,
+                  );
+                },
               ),
               if (team != null && team['logo'] != null)
                 Positioned(
