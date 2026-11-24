@@ -282,6 +282,16 @@ export class ContentScoutService {
         'ji-paraná', 'ji-parana', 'jipa', 'guaporé', 'guapore',
         'rolim de moura', 'vilhena', 'vilhena ec', 'vec'
       ]
+    },
+    627: {
+      name: 'Campeonato Paraense',
+      country: 'Brasil',
+      keywords: [
+        'campeonato paraense', 'parazão', 'parazao', 'paraense a1', 'futebol paraense', 'fpf-pa', 're-pa',
+        'paysandu', 'clube do remo', 'tuna luso', 'castanhal', 'águia de marabá', 'aguia de maraba',
+        'cametá', 'cameta', 'santa rosa', 'capitão poço', 'capitao poco', 'são raimundo-pa',
+        'amazônia independente', 'amazonia independente', 'izabelense', 'urumajó', 'urumajo', 'mangueirão'
+      ]
     }
   };
 
