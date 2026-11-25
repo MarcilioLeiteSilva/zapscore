@@ -1,144 +1,205 @@
-# Checklist Oficial de Padronização e Atualização de Estaduais (ZapScore)
+# 📋 Roadmap Oficial e Checklist com Portões de Validação (ZapScore Estaduais)
 
-Este documento estabelece o fluxo de trabalho obrigatório, padronizado e auditado para a atualização de qualquer aplicativo de campeonato estadual do ecossistema ZapScore, tendo como referências os projetos já consolidados (**Baianão**, **Tocantinense** e **Amapaense**).
+Este documento estabelece o **Roadmap Operacional com Portões de Validação (Quality Gates)** obrigatórios para a sincronização, padronização e homologação de qualquer campeonato estadual a partir da publicação da tabela oficial da respectiva federação.
+
+> [!CAUTION]
+> **REGRA DE OURO CONTRA ALUCINAÇÕES (Zero Suposição e Zero Formato Fixo)**:
+> 1. **Cada campeonato possui sua própria estrutura**: A quantidade de clubes (`N`), divisão em grupos (grupo único ou múltiplos grupos), número de rodadas (`R`), total de jogos (`M`), fases eliminatórias (quartas, semifinais, finais, quadrangular de descenso, etc.) e vagas de classificação/rebaixamento **dependem exclusivamente da tabela oficial e do regulamento daquele campeonato**.
+> 2. **Bloqueio de Avanço**: É **terminantemente proibido** avançar para a etapa seguinte sem que o teste de validação da etapa corrente tenha retornado **SUCESSO (Exit code 0)**. O agente deve implementar estritamente o que consta na tabela oficial fornecida, sem inventar clubes em mata-mata, sem usar números fixos de outro estadual e sem rodar o app no celular antes da API estar ativa em produção.
+> 3. **Protocolo Estrito Anti-Omissão (Como proceder para não omitir nenhum requisito)**:
+>    - **Checagem Automatizada de Arquivos Obrigatórios**: Antes de encerrar qualquer etapa, rodar um script de auditoria que testa a existência física (`Test-Path`) de cada arquivo e componente exigido no checklist (ex: `house_ad_service.dart`, `house_header_sponsor.dart`, `house_native_match_card.dart`, `house_popup_launch.dart`, `house_ad_banner.dart`, etc.).
+>    - **Diff Estrutural contra o App Modelo**: Executar uma comparação direta entre a árvore de diretórios do app em atualização e a do app de referência (`baiano`/`capixaba`) para acusar instantaneamente qualquer serviço, widget ou injeção faltante.
+>    - **Validação Item a Item com Evidência**: Nunca declarar uma etapa encerrada sem listar cada sub-item do checklist acompanhado da respectiva evidência de código (linhas exatas do arquivo onde foi implementado).
+
+---
 
 ```mermaid
 flowchart TD
-    A["1. Coleta e Análise Oficial<br>(Regulamento, Clubes e Tabela)"] --> B["2. Limpeza e Saneamento de Dados<br>(Artilharia, Jogos e Temporada Anterior)"]
-    B --> C["3. Estruturação do Normalizador & BracketEngine<br>(Fase Classificatória, Semifinais e Finais)"]
-    C --> D["4. Configuração de Clubes & Elencos Canônicos<br>(TeamSquads, IDs da API e Fotos)"]
-    D --> E["5. Validação no AdminPanel & Endpoints da API<br>(Filtro por Clube, Notícias/Vídeos e Rascunhos)"]
-    E --> F["6. Teste Real no Aparelho Físico<br>(Flutter Run, AdMob Validator e Navegação)"]
-    F --> G["7. Deploy Backend & Geração de AAB<br>(Git Push e Build de Release)"]
+    G0["ETAPA 0: Travamento da Tabela Oficial<br>(Clubes, Grupos, Rodadas e Regulamento Específico)"] -->|Gate 0 Aprovado| G1["ETAPA 1: Backend NestJS<br>(Seeder Fiel à Tabela, ActiveSeasons, Scout e News)"]
+    G1 -->|Gate 1: Build API 0 Errors| G2["ETAPA 2: Deploy Easypanel & Auditoria HTTP<br>(Verificação ao Vivo: /fixtures e /standings)"]
+    G2 -->|Gate 2: HTTP 200 com Dados Exatos| G3["ETAPA 3: Motores Flutter & Bloqueio Mata-Mata<br>(Schedule Local, Normalizer da Liga e BracketEngine)"]
+    G3 -->|Gate 3: Placeholders Null Validados| G4["ETAPA 4: Monetização & Estabilidade<br>(House Ads, AdMob Native Fix, XMLs e Dart Analyze)"]
+    G4 -->|Gate 4: Dart Analyze Exit Code 0| G5["ETAPA 5: Validação no Celular Físico<br>(Flutter Run e Auditoria Visual das 5 Telas)"]
+    G5 -->|Aprovação Expressa do Usuário| G6["ETAPA 6: Release de Produção<br>(AAB Play Store)"]
 ```
 
 ---
 
-## 1. Coleta e Análise do Regulamento e Tabela Oficial
-Antes de alterar qualquer linha de código:
-- [ ] **Mapeamento de Clubes Participantes**: Identificar todos os clubes confirmados para a temporada 2027 e mapear seus respectivos `teamId` ou `teamExternalId` (API-Football ou banco local).
-- [ ] **Formato de Disputa**:
-  - Quantidade de clubes na 1ª fase (turno único ou grupos).
-  - Número de classificados para mata-mata (ex: semifinais com 4 clubes ou quartas com 8 clubes).
-  - Critérios de desempate e vantagens (empate no agregado para o melhor colocado ou disputa de pênaltis).
-  - Quantidade de clubes rebaixados para a Série B.
-- [ ] **Tabela de Jogos**: Rodadas oficiais, confrontos, datas previstas e horários.
+## 🛑 ETAPA 0: Ingestão e Travamento da Tabela Oficial (Fonte Única da Verdade)
+Antes de escrever uma única linha de código, a estrutura exata do campeonato em questão deve ser extraída da tabela oficial publicada pela Federação:
+
+1. **Mapeamento Estrito dos Clubes da Tabela Oficial (`N` Clubes)**:
+   - Levantar a lista exata de clubes participantes conforme consta na tabela oficial do campeonato (sejam 6, 8, 10, 12, 16 clubes ou qualquer outra configuração).
+   - Identificar os clubes promovidos da divisão de acesso e atribuir IDs canônicos dedicados caso ainda não existam na base.
+   - **Escudos Estáveis**: Obter URLs de escudos estáveis para 100% dos clubes da tabela (oGol ou CDN oficial sem restrição de `Referer` ou CORS). Nunca usar links quebrados da `media.api-sports.io` que retornem HTTP 403.
+2. **Estrutura da Fase Classificatória (`G` Grupos, `R` Rodadas, `M` Partidas)**:
+   - Definir conforme a tabela oficial se a competição é disputada em **Grupo Único** ou dividida em **Grupos (A, B, C, etc.)**, e se os confrontos ocorrem dentro do próprio grupo ou cruzados (Ex: Grupo A x Grupo B).
+   - Levantar a quantidade exata de rodadas (`R`) e o total de partidas (`M`) que compõem as fases com confrontos já definidos na tabela.
+   - Respeitar rigorosamente o mando de campo oficial (1º time listado = Mandante; 2º time listado = Visitante), datas-base, horários e estádios divulgados.
+3. **Regulamento Específico das Fases Eliminatórias e Zonas da Tabela**:
+   - Mapear quais fases compõem o campeonato após a fase inicial (Ex: 2ª Fase, Quartas de Final, Semifinais, Disputa de 3º Lugar, Taça Secundária, Quadrangular da Permanência, Grande Final).
+   - Identificar o formato de cada fase eliminatória (jogo único ou ida e volta) e critérios de desempate (vantagem de empate no agregado para melhor campanha ou pênaltis).
+   - Identificar exatamente quantas posições classificam e quantas são rebaixadas (na classificação geral ou dentro de cada grupo).
+
+> [!IMPORTANT]
+> ### 🔒 GATE DE VALIDAÇÃO 0
+> - [ ] O número de clubes (`N`), grupos (`G`), rodadas (`R`) e partidas (`M`) mapeados reflete com 100% de exatidão a tabela oficial do campeonato?
+> - [ ] As URLs de escudos de todos os `N` clubes foram testadas via script e retornam HTTP 200 sem bloqueio anti-hotlink?
 
 ---
 
-## 2. Limpeza e Saneamento da Temporada Anterior
-Para evitar que dados históricos de 2026/2025 fiquem misturados na tela inicial ou na tabela:
-- [ ] **Saneamento de Artilharia (`Scorer`)**:
-  - Verificar se a tela de artilheiros do app ou a home exibe atletas antigos.
-  - No `AppConfig.season` do app estadual (ex: `lib/config/app_config.dart`), garantir que o ano da temporada corrente esteja apontado para a temporada ativa (ex: `2027`).
-- [ ] **Partidas Anteriores em Loop**:
-  - Garantir que o `TeamCubit` e o `FixtureCubit` filtrem apenas partidas da temporada ativa do campeonato e tratem ausência de partidas como estado vazio amigável (`"Nenhum jogo encontrado"` ou `"Em breve"`), sem entrar em loop de requisição.
+## 🛑 ETAPA 1: Backend NestJS (`apps/api`) — Seeder e Regras da Competição
+Configurar a fonte de dados central que abastecerá o aplicativo via API e PocketBase:
+
+1. **Ativação da Temporada**:
+   - Em `apps/api/src/config/competitions.config.ts`, incluir a temporada na propriedade `activeSeasons` da competição (Ex: `activeSeasons: [2026, 2027]`).
+2. **Criação do Seeder Canônico**:
+   - Criar `apps/api/src/sync/<estadual>-2027-seeder.service.ts`:
+     - Cadastrar todos os `N` clubes da tabela oficial e suas classificações iniciais zeradas (`standings`), respeitando a divisão de grupos (`Grupo Único`, `Grupo A`, `Grupo B`, etc.) do campeonato.
+     - Inserir **estritamente as `M` partidas já definidas na tabela oficial**.
+     - **PROIBIDO** criar partidas no banco de dados com clubes fictícios ou pré-selecionados para fases futuras (Quartas, Semifinais, Final) cujos classificados ainda não estão definidos.
+   - Registrar o seeder em `sync.module.ts` e expor o endpoint em `sync.controller.ts` (`@Post('seed-<estadual>-2027')`).
+3. **Radar de Notícias e Content Scout**:
+   - Cadastrar as palavras-chave da competição e o nome de todos os `N` clubes participantes em:
+     - `apps/api/src/news/news.service.ts` (`regionalLeagueRules`)
+     - `apps/api/src/news/content-scout.service.ts` (`SCOUT_TARGET_LEAGUES`)
+     - `apps/api/src/notifications/notifications.service.ts`
+
+> [!IMPORTANT]
+> ### 🔒 GATE DE VALIDAÇÃO 1
+> Rodar obrigatoriamente a compilação do NestJS:
+> ```powershell
+> npm run build --prefix apps/api
+> ```
+> O comando **deve terminar com código 0**. Qualquer erro de compilação bloqueia o avanço.
 
 ---
 
-## 3. Motor de Chaves e Mata-Mata (`BracketEngine` & `CompetitionNormalizer`)
-- [ ] **Placeholders Limpos para Fases Futuras**:
-  - No arquivo `bracket_engine.dart` de cada estadual, nunca preencher equipes antes de partidas serem jogadas na 1ª fase.
-  - **Regra de Bloqueio**:
-    ```dart
-    final hasPlayedMatches = standings.any((st) => st.played > 0);
-    ```
-  - Se `hasPlayedMatches == false`:
-    - Manter `homeTeam: null` e `awayTeam: null`.
-    - Definir títulos claros de chave: `1º Colocado x 4º Colocado`, `2º Colocado x 3º Colocado`, `Vencedor Semifinal 1 x Vencedor Semifinal 2`.
-- [ ] **Cores e Legendas de Classificação**:
-  - No normalizador (`competition_normalizer.dart`), ajustar as legendas e faixas coloridas da tabela:
-    - Ex: 1º ao 4º colocados: avanço às semifinais (verde).
-    - Ex: 7º e 8º colocados: rebaixamento para a Série B (vermelho).
+## 🛑 ETAPA 2: Deploy no Easypanel e Auditoria HTTP ao Vivo
+**É proibido iniciar testes no aplicativo mobile antes da API em produção estar atualizada e respondendo com os dados da tabela oficial.**
+
+1. **Commit e Deploy**:
+   - Executar `git commit` e `git push origin main`.
+   - Aguardar o deploy no Easypanel atualizar o serviço `zapscore-api`.
+2. **Execução do Seeder**:
+   - Acionar o seeder para gravar os `N` clubes e as `M` partidas da tabela oficial no PocketBase.
+3. **Auditoria HTTP ao Vivo**:
+   - Verificar os endpoints de produção:
+     - `GET https://zapscore-zapscore-api.gtalg3.easypanel.host/fixtures?leagueId=<EXT_ID>&season=2027`
+     - `GET https://zapscore-zapscore-api.gtalg3.easypanel.host/standings?leagueId=<EXT_ID>&season=2027`
+
+> [!IMPORTANT]
+> ### 🔒 GATE DE VALIDAÇÃO 2
+> O script de auditoria HTTP deve comprovar:
+> - [ ] O endpoint `/fixtures` retorna exatamente as `M` partidas da tabela oficial?
+> - [ ] O endpoint `/standings` retorna exatamente os `N` clubes do campeonato, nos seus respectivos grupos, com 0 pontos e 0 jogos disputados?
 
 ---
 
-## 4. Cadastro de Clubes, Elencos Canônicos (`TeamSquads`) e Resiliência de Imagens
-- [ ] **Escudos Oficiais de Alta Resolução (FAF / oGol)**:
-  - Para evitar bloqueios de hotlink da API-Football (`media.api-sports.io`), priorizar os escudos estáveis do oGol (`https://cdn-img.staticzz.com/img/logos/equipas/...`).
-  - Esses escudos não sofrem bloqueios por CORS ou anti-scraping da Cloudflare e renderizam instantaneamente no Admin e nos apps Flutter.
-- [ ] **Arquivo de Elencos Canônicos no App Flutter**:
-  - Criar ou atualizar o arquivo de elencos estaduais (ex: `amapaense_squads.dart`, `tocantinense_squads.dart`).
-  - Cadastrar os 8 ou 10 clubes oficiais com jogadores-base (nome, posição, número, idade e URL de foto quando disponível).
-- [ ] **Fallback na API Backend (`CompetitionsService` & `TeamsService`)**:
-  - Em `apps/api/src/competitions/competitions.service.ts`, registrar `CANONICAL_<ESTADUAL>_CLUBS` e `CANONICAL_<ESTADUAL>_SQUADS`.
-  - Assegurar que caso o clube não tenha registro no banco de dados, o backend crie ou devolva os atletas canônicos automaticamente via `getCompetitionPlayers`.
-  - Em `apps/api/src/teams/teams.service.ts`: O método `getSquad(teamExternalId)` deve consultar `CompetitionsService.memorySquads` e `CANONICAL_<ESTADUAL>_SQUADS` para que o app mobile receba os elencos e fotos atualizadas em tempo real.
+## 🛑 ETAPA 3: Motores Flutter, Adequação ao Regulamento e Bloqueio de Mata-Mata (`lib/logic/`)
+
+1. **Configuração da Temporada**:
+   - Definir `AppConfig.season = 2027` em `lib/helpers/app_config.dart`.
+2. **Tabela Offline de Fallback**:
+   - Criar `lib/logic/data/<estadual>_2027_schedule.dart` espelhando com exatidão 1:1 os mesmos `N` clubes, grupos e `M` partidas da tabela oficial cadastrada no backend.
+3. **Adequação Estrita no `CompetitionNormalizer`**:
+   - Estruturar apenas as fases reais previstas no regulamento daquele campeonato (Ex: 1ª Fase em Grupo Único ou Grupos A/B/C, 2ª Fase, Quartas de Final, Semifinais, Final, Quadrangular de Rebaixamento, etc.).
+   - Configurar as faixas de classificação e rebaixamento na tabela (`competetion.dart` e `CompetitionNormalizer`) de acordo com as vagas exatas do regulamento da competição.
+4. **Regra de Bloqueio Obrigatória no `BracketEngine` (Proibição de Clubes sem Definição)**:
+   Em `lib/logic/engines/bracket_engine.dart`, em **qualquer fase eliminatória ou futura** que dependa de classificação prévia, é obrigatório verificar se já existem partidas disputadas antes de projetar clubes:
+   ```dart
+   final bool hasPlayedMatches = standings.any((st) => st.played > 0);
+
+   // ENQUANTO A FASE CLASSIFICATÓRIA NÃO TIVER JOGOS DISPUTADOS (hasPlayedMatches == false):
+   // homeTeam e awayTeam DEVEM SER ESTRITAMENTE NULL!
+   final Team? teamA = hasPlayedMatches && standings.isNotEmpty ? _teamFromStanding(standings[0]) : null;
+   final Team? teamB = hasPlayedMatches && standings.length > 3 ? _teamFromStanding(standings[3]) : null;
+
+   // As chaves devem exibir apenas os títulos descritivos do cruzamento previsto no regulamento:
+   // Ex: '1º Colocado x 4º Colocado', '1º do Grupo A x 2º do Grupo B',
+   //     'Vencedor Quartas 1 x Vencedor Quartas 2', 'Vencedor Semifinal 1 x Vencedor Semifinal 2'
+   ```
+   - Nas fases subsequentes (ex: Final antes das Semifinais acontecerem), manter sempre `homeTeam: null` e `awayTeam: null`, exibindo exclusivamente os placeholders (`Vencedor Semifinal 1` vs `Vencedor Semifinal 2`).
+
+> [!IMPORTANT]
+> ### 🔒 GATE DE VALIDAÇÃO 3
+> Auditar o `BracketEngine` e o `CompetitionNormalizer`:
+> - [ ] As fases e grupos criados correspondem exatamente ao regulamento da tabela oficial?
+> - [ ] Com `played == 0`, todas as chaves de fases futuras (Quartas, Semifinais, Final, etc.) possuem `homeTeam == null` e `awayTeam == null`?
+> - [ ] Os confrontos futuros exibem apenas as descrições de cruzamento do regulamento sem nenhum clube fixado indevidamente?
 
 ---
 
-## 5. AdminPanel (`apps/web`), Proxy de Imagens e Gestão de Conteúdo
-- [ ] **Proxy Obrigatório para Fotos e Escudos (`photoSrc`)**:
-  - Nunca usar `<img src={player.photo} />` ou `<img src={player.teamLogo} />` diretamente na tabela do Admin.
-  - Encapsular obrigatoriamente através da função `photoSrc(url)`:
-    ```typescript
-    const photoSrc = (url?: string | null): string => {
-      const u = (url || "").trim();
-      if (!u) return "";
-      if (u.includes("media.api-sports.io")) {
-        return `/api/proxy-image?url=${encodeURIComponent(u)}`;
-      }
-      return u;
-    };
-    ```
-- [ ] **Bypass de Anti-Hotlinking no Proxy Next.js (`apps/web/app/api/proxy-image/route.ts`)**:
-  - A rota `/api/proxy-image` deve obrigatoriamente enviar os headers `'Referer': new URL(url).origin` e `'User-Agent': 'Mozilla/5.0...'` para contornar o erro 403 Forbidden da Cloudflare/API-Sports.
-  - Implementar fallback resiliente para o proxy central da API ZapScore NestJS (`https://zapscore-zapscore-api.gtalg3.easypanel.host/news/proxy-image?url=...`).
-- [ ] **Dropdown de Filtro por Clube**:
-  - Na aba de **Jogadores** de `apps/web/app/(main)/adminpanel/estaduais/[id]/page.tsx`, implementar dropdown com a lista de clubes participantes da liga para navegação rápida e sem sobreposição.
-- [ ] **CRUD Completo de Atletas**:
-  - Inserção de novos jogadores (`POST /competitions/players`).
-  - Edição de atleta existente (`PUT /competitions/players/:id`).
-  - Exclusão com confirmação (`DELETE /competitions/players/:id`).
-- [ ] **Controle de Notícias e Vídeos (Rascunho vs. Publicado)**:
-  - Seletor de status (`Publicado` / `Rascunho`) na criação e edição rápida.
-  - Filtros de visualização (`Todos`, `Publicados`, `Rascunhos`).
-  - Botão de seleção múltipla e **Exclusão em Lote** (`POST /news/bulk-delete`, `POST /videos/bulk-delete`).
-  - Preservação da regra máxima de não alterar o schema do Prisma de modo que quebre migrações no PostgreSQL de produção.
+## 🛑 ETAPA 4: Monetização, Política de Privacidade, Resiliência e Análise Estática
+
+1. **House Ads Padronizados (4 Componentes) & Banners Híbridos**:
+   - `house_header_sponsor.dart` ativo no topo da aba Tabela (`competetion.dart`).
+   - `house_native_match_card.dart` intercalado na lista de partidas (`fixture.dart`).
+   - `house_popup_launch.dart` disparado na abertura da Home (`home.dart`).
+   - `ad_banner.dart` envelopando `house_ad_banner.dart` no rodapé fixo da Home (`home.dart`).
+   - **Inclusão Obrigatória do Banner (`AdBannerWidget`) nas 4 Telas Internas Secundárias** (Padrão Baiano e Amapaense):
+     1. **Detalhes da Partida** (`presentation/screens/fixture/fixt_details.dart`): banner no topo do corpo da tela, logo abaixo da barra de abas.
+     2. **Perfil do Clube / Time** (`presentation/screens/profile/team.dart`): banner no topo da visualização do clube.
+     3. **Perfil do Atleta / Jogador** (`presentation/screens/profile/player.dart`): banner no topo da visualização do atleta.
+     4. **Visualização da Competição** (`presentation/widgets/competetion.dart`): banner posicionado no topo das listas de Classificação, Fases de Grupos e Eliminatórias.
+2. **Correção de Race Condition no AdMob (`ad_service.dart`)**:
+   - `await MobileAds.instance.initialize()` deve ser executado **na primeira linha do método `init()`**, antes do UMP Consent e antes do `runApp()`.
+3. **Correção dos Layouts XML Android**:
+   - `custom_native_ad.xml` e `custom_native_ad_medium.xml` devem utilizar `<Button>` nativo (nunca `AppCompatButton`).
+4. **Resiliência Offline nos Detalhes da Partida**:
+   - Em `fixture_cubit.dart` e `fixt_details.dart`, garantir `fallbackFixture: widget.fixture` para que a abertura de qualquer partida seja imediata e sem tela preta.
+5. **Renderização Segura de Fotos de Atletas**:
+   - Em `player.dart` e `team.dart`: checagem estrita `(player.photo != null && player.photo!.trim().length > 5)` com `CachedNetworkImageProvider(proxyImage(player.photo!))`.
+6. **Política de Privacidade Oficial (Exigências Google Play + App Interno + Pasta `APK/`)**:
+   - Elaborar a Política de Privacidade dedicada ao aplicativo conforme as diretrizes da Google Play Store:
+     - Citar nominalmente o **Nome do Aplicativo**, o **`Package ID`** exato (`com.zapscore.estadual<nome>`) e o desenvolvedor (**Prolaser Dev**);
+     - Declarar explicitamente os dados que **não** são coletados (câmera, microfone, contatos, GPS, Bluetooth, NFC, etc.) e apenas as permissões reais do `AndroidManifest.xml` (`INTERNET`, `ACCESS_NETWORK_STATE`, `POST_NOTIFICATIONS`);
+     - Divulgar os SDKs reais utilizados (**Google Play Services**, **Google AdMob / UMP Consent** e **Firebase Cloud Messaging**) com links diretos para suas políticas oficiais, criptografia em trânsito (**HTTPS/TLS**), regras de retenção/exclusão (LGPD) e canal de contato (`contato@prolaserdev.com`).
+   - **Atualizar a Tela Interna do App**: Sincronizar o texto completo em `lib/presentation/screens/settings/privacy_policy.dart`.
+   - **Salvar na Pasta `APK/` Correspondente**: Gerar e salvar obrigatoriamente na pasta `apps/estaduais/<estadual>/APK/` os dois arquivos prontos para publicação:
+     - `politica_privacidade_<estadual>.html` (página web padrão completa para hospedar na URL individual do app);
+     - `POLITICA_DE_PRIVACIDADE.txt` (versão em texto padronizada do pacote de release).
+
+> [!IMPORTANT]
+> ### 🔒 GATE DE VALIDAÇÃO 4
+> - [ ] Checagem automatizada (`Test-Path`) dos arquivos e serviços de HouseAds (`house_ad_service.dart`, `house_header_sponsor.dart`, `house_native_match_card.dart`, `house_popup_launch.dart`, `house_ad_banner.dart`), inclusão comprovada do `AdBannerWidget` nas 4 telas internas secundárias (`fixt_details.dart`, `team.dart`, `player.dart`, `competetion.dart`) e diff estrutural contra o modelo (`baiano`/`capixaba`/`amapaense`) com 100% de paridade comprovada?
+> - [ ] Os arquivos `APK/politica_privacidade_<estadual>.html` e `APK/POLITICA_DE_PRIVACIDADE.txt` foram salvos na pasta `APK/` do app e a tela `privacy_policy.dart` foi atualizada com o nome e `Package ID` exatos do aplicativo?
+> - [ ] Executar análise estática do código Dart/Flutter:
+> ```powershell
+> dart analyze apps/estaduais/<estadual>/lib
+> ```
+> O comando **deve terminar com código 0, ZERO erros e ZERO warnings**.
 
 ---
 
-## 6. Validação e Renderização Segura de Fotos no App Mobile Flutter
-- [ ] **Padrão Obrigatório de Renderização de Avatar (`team.dart` e `player.dart`)**:
-  - **PROIBIDO** usar `NetworkImage(proxyImage(player.photo!))` com checagem simples de `player.photo != null`. Quando o campo vem com string vazia (`""`), o Dart avalia como não-nulo e quebra a tela com exceção de URI sem host.
-  - **Padrão Correto e Resiliente**:
-    ```dart
-    CircleAvatar(
-      radius: 22,
-      backgroundColor: context.appColors.info ?? Colors.black26,
-      backgroundImage: (player.photo != null && player.photo!.trim().length > 5)
-          ? CachedNetworkImageProvider(proxyImage(player.photo!))
-          : null,
-      child: (player.photo == null || player.photo!.trim().length <= 5)
-          ? const Icon(Icons.person, color: Colors.white54)
-          : null,
-    )
-    ```
-- [ ] **Execução via ADB / Flutter Run**:
-  - Rodar o app no dispositivo conectado (`flutter run -d <DEVICE_ID>`).
-- [ ] **Validação AdMob**:
-  - Confirmar que o *AdMob Native Ad Validator* exibe zero inconformidades (`"No implementation issues found"`).
-  - Verificar se banners e nativos carregam de forma fluida sem vazamentos de memória.
-- [ ] **Auditoria de Telas**:
-  - **Início**: Sem partidas duplicadas da temporada passada; artilheiros zerados ou corretos.
-  - **Tabela**: Classificação com pontos corretos e legenda de vagas/rebaixamento.
-  - **Fases de Mata-Mata**: Sem times pré-definidos se a 1ª fase não começou.
-  - **Perfil do Clube**: Partidas recentes, tabela, informações institucionais e plantel com atletas e fotos.
+## 🛑 ETAPA 5: Homologação no Celular Físico (`flutter run`)
+
+Somente após a aprovação dos Gates 0, 1, 2, 3 e 4, compilar e rodar no dispositivo físico conectado:
+```powershell
+flutter run -d <DEVICE_ID>
+```
+
+### 📋 Checklist de Auditoria Visual na Tela do Celular (5 Telas Obrigatórias):
+1. **Home / Início**:
+   - [ ] Pop-up do House Ad exibido na abertura.
+   - [ ] Banner nativo AdMob renderizado sem erro no rodapé.
+   - [ ] Card de próxima rodada exibindo a 1ª Rodada oficial com os confrontos corretos da tabela.
+2. **Tabela / Classificação**:
+   - [ ] Banner AdMob (`AdBannerWidget`) e Card patrocinado `HouseHeaderSponsor` renderizados no topo.
+   - [ ] Todos os clubes da competição listados corretamente (em grupo único ou divididos por grupos conforme a tabela oficial), todos com 0 pontos e 0 jogos.
+   - [ ] Cores de classificação e rebaixamento fiéis às vagas do regulamento.
+3. **Rodadas**:
+   - [ ] Todas as rodadas da tabela oficial navegáveis no seletor, com mandantes, visitantes, datas e estádios exatos.
+   - [ ] Cards de House Ads intercalados entre as partidas.
+4. **Mata-Mata / Fases Eliminatórias**:
+   - [ ] Chaves exibindo estritamente os cruzamentos previstos no regulamento (ex: `1º Colocado x 4º Colocado`, `Vencedor Semifinal 1 x Vencedor Semifinal 2`) e **ZERO clubes pré-preenchidos**.
+5. **Detalhes do Jogo**:
+   - [ ] Ao clicar em qualquer confronto da tabela, a tela de detalhes abre instantaneamente sem travamento.
+   - [ ] Banner AdMob (`AdBannerWidget`) renderizado no topo do conteúdo da partida.
 
 ---
 
-## 7. Versionamento, Deploy e Build de Produção
-- [ ] **Compilação e Auditoria Estática**:
-  - `apps/web`: `npx tsc --noEmit` -> 0 erros.
-  - `apps/api`: `npx tsc --noEmit` -> 0 erros.
-  - `apps/estaduais/<app>`: `flutter analyze` -> 0 erros.
-- [ ] **Deploy de Backend / Web**:
-  - `git add <arquivos>`
-  - `git commit -m "feat(<estadual>): ..."`
-  - `git push origin main` (dispara deploy automático no Easypanel).
-- [ ] **Build do Pacote para Loja (Google Play)**:
-  - Incrementar `version` no `pubspec.yaml` (ex: `version: 1.0.1+2`).
-  - Garantir o arquivo `key.properties` configurado apontando para o keystore em `APK/`.
-  - Executar: `flutter build appbundle --release`.
-  - Copiar o artefato final para o diretório `/<estadual>/APK/` correspondente.
-
+## 🛑 ETAPA 6: Geração de AAB para a Google Play Store
+> [!CAUTION]
+> **Aviso de Bloqueio Absoluto**:
+> O build de release (`flutter build appbundle --release`) **NUNCA** deve ser executado pelo agente por conta própria. Ele só será disparado após o usuário validar o teste no celular na Etapa 5 e autorizar expressamente.

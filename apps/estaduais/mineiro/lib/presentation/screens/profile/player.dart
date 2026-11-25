@@ -63,6 +63,8 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
                       // Personal Info Card
                       _buildPersonalInfo(),
                       const Gap(15),
+                      const AdBannerWidget(),
+                      const Gap(15),
                       // Stats Card
                       if (player!.statistics.isNotEmpty) ...[
                         for (int i = 0; i < (player!.statistics.length > 2 ? 2 : player!.statistics.length); i++)
@@ -100,8 +102,12 @@ class _PlayerProfileScreenState extends State<PlayerProfileScreen> {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: context.appColors.info ?? Colors.black26,
-                backgroundImage: player!.photo != null ? NetworkImage(proxyImage(player!.photo!)) : null,
-                child: player!.photo == null ? const Icon(Icons.person, size: 50, color: Colors.white54) : null,
+                backgroundImage: (player!.photo != null && player!.photo!.trim().length > 5)
+                    ? CachedNetworkImageProvider(proxyImage(player!.photo!))
+                    : null,
+                child: (player!.photo == null || player!.photo!.trim().length <= 5)
+                    ? const Icon(Icons.person, size: 50, color: Colors.white54)
+                    : null,
               ),
               if (team != null && team['logo'] != null)
                 Positioned(

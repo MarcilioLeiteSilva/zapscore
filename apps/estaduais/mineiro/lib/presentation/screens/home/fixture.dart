@@ -232,8 +232,8 @@ class FixturePage extends StatelessWidget {
                                   league: League(
                                     id: AppConfig.leagueId,
                                     externalId: AppConfig.externalLeagueId,
-                                    name: AppConfig.appName,
-                                    country: 'Brazil',
+                                    name: 'Campeonato Mineiro - Módulo I',
+                                    country: 'Brasil',
                                     logo: AppConfig.defaultLeagueLogo,
                                   ),
                                   matches: [],

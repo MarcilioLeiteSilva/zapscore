@@ -2,7 +2,7 @@ import '../models/competition.dart';
 import '../models/competition_phase.dart';
 import '../models/fixture.dart';
 import '../models/standing.dart';
-import '../models/tie.dart';
+import '../data/mineiro_2027_schedule.dart';
 import 'standings_engine.dart';
 import 'bracket_engine.dart';
 
@@ -17,6 +17,16 @@ class CompetitionNormalizer {
     required List<Fixture> rawFixtures,
   }) {
     if (leagueId == 629) {
+      if (season >= 2027) {
+        return _buildMineiro2027Modulo1(
+          leagueId: leagueId,
+          leagueName: leagueName,
+          leagueLogo: leagueLogo,
+          season: season,
+          rawStandings: rawStandings,
+          rawFixtures: rawFixtures,
+        );
+      }
       return _buildMineiroModulo1(
         leagueId: leagueId,
         leagueName: leagueName,
@@ -44,6 +54,188 @@ class CompetitionNormalizer {
       season: season,
       rawStandings: rawStandings,
       rawFixtures: rawFixtures,
+    );
+  }
+
+  // --- MÓDULO I: CAMPEONATO MINEIRO SICOOB 2027 (NOVO FORMATO FMF) ---
+  // 1ª Fase (2 Grupos de 6 clubes, 6 rodadas cruzadas A x B) -> Quartas (Ida/Volta) -> Semifinais (Ida/Volta) -> Final (Ida/Volta) + Troféu Inconfidência
+  static Competition _buildMineiro2027Modulo1({
+    required int leagueId,
+    required String leagueName,
+    String? leagueLogo,
+    required int season,
+    required List<Standing> rawStandings,
+    required List<Fixture> rawFixtures,
+  }) {
+    final seasonFixtures = rawFixtures.where((f) => f.season == 2027 || f.season == 0).toList();
+
+    List<Fixture> firstPhaseFixtures = seasonFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      final isKnockout = r.contains('quarter') ||
+          r.contains('quartas') ||
+          r.contains('semi') ||
+          r.contains('final') ||
+          r.contains('inconfid') ||
+          r.contains('decis');
+      return !isKnockout;
+    }).toList();
+
+    if (firstPhaseFixtures.length < 10) {
+      firstPhaseFixtures = Mineiro2027Schedule.getOfficialFirstPhaseFixtures();
+    }
+
+    firstPhaseFixtures.sort((a, b) {
+      final numA = _extractRoundNumber(a.round);
+      final numB = _extractRoundNumber(b.round);
+      if (numA != numB) return numA.compareTo(numB);
+      return a.date.compareTo(b.date);
+    });
+
+    List<Standing> effectiveStandings = rawStandings;
+    if (effectiveStandings.isEmpty || effectiveStandings.every((s) => s.played == 0)) {
+      final calculated = StandingsEngine.calculateStandingsFromFixtures(firstPhaseFixtures);
+      if (calculated.isNotEmpty && calculated.any((s) => s.played > 0)) {
+        effectiveStandings = calculated;
+      } else if (effectiveStandings.isEmpty || effectiveStandings.length < 12) {
+        effectiveStandings = Mineiro2027Schedule.getOfficialInitialStandings();
+      }
+    }
+
+    final groupsMap = StandingsEngine.splitMineiro2027Groups(
+      effectiveStandings,
+    );
+
+    final groupAStandings = groupsMap['Grupo A'] ?? [];
+    final groupBStandings = groupsMap['Grupo B'] ?? [];
+    final generalStandings = groupsMap['Classificação Geral'] ?? StandingsEngine.sortStandings(effectiveStandings);
+
+    final firstPhaseRounds = _extractRounds(firstPhaseFixtures, 6);
+
+    final primeiraFasePhase = CompetitionPhase(
+      id: 'fase_grupos_2027',
+      name: '1ª Fase (Grupos)',
+      type: PhaseType.groupStage,
+      legs: 1,
+      groups: [
+        PhaseGroup(
+          id: 'grupo_a',
+          name: 'Grupo A',
+          standings: groupAStandings,
+        ),
+        PhaseGroup(
+          id: 'grupo_b',
+          name: 'Grupo B',
+          standings: groupBStandings,
+        ),
+        PhaseGroup(
+          id: 'classificacao_geral',
+          name: 'Geral',
+          standings: generalStandings,
+        ),
+      ],
+      rounds: firstPhaseRounds,
+      fixtures: firstPhaseFixtures,
+      standings: generalStandings,
+      qualificationRuleDescription: 'Grupo A enfrenta Grupo B em turno único (6 rodadas). Os 4 primeiros de cada grupo avançam às Quartas de Final.',
+      relegationRuleDescription: 'O 6º colocado de cada grupo é rebaixado diretamente para o Módulo II de 2028 (2 rebaixados).',
+    );
+
+    // 2. Quartas de Final (Ida: 31/01 e Volta: 06/02 — intra-grupo: 1ºx4º e 2ºx3º)
+    final qfFixtures = seasonFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return (r.contains('quarter') || r.contains('quartas')) && !r.contains('inconfid');
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
+    final qfTies = BracketEngine.generateMineiro2027QuarterFinals(
+      groupAStandings,
+      groupBStandings,
+      qfFixtures,
+    );
+
+    final quartasPhase = CompetitionPhase(
+      id: 'quartas_2027',
+      name: 'Quartas de Final',
+      type: PhaseType.knockout,
+      legs: 2,
+      fixtures: qfFixtures,
+      ties: qfTies,
+      qualificationRuleDescription: 'Duelos intra-grupo (1º x 4º e 2º x 3º de cada chave) em ida e volta. Melhor campanha decide o 2º jogo em casa; empate no agregado vai para os pênaltis.',
+    );
+
+    // 3. Semifinais (Ida: 14/02 e Volta: 21/02)
+    final sfFixtures = seasonFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return r.contains('semi') && !r.contains('quarter') && !r.contains('quartas') && !r.contains('inconfid');
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
+    final sfTies = BracketEngine.generateMineiro2027SemiFinals(qfTies, sfFixtures);
+
+    final semiPhase = CompetitionPhase(
+      id: 'semifinais_2027',
+      name: 'Semifinais',
+      type: PhaseType.knockout,
+      legs: 2,
+      fixtures: sfFixtures,
+      ties: sfTies,
+      qualificationRuleDescription: 'Disputadas em jogos de ida e volta (Venc. Grupo C x Venc. Grupo D e Venc. Grupo E x Venc. Grupo F). Empate no agregado vai para os pênaltis.',
+    );
+
+    // 4. Grande Final (Ida: 28/02 e Volta: 07/03)
+    final finalFixtures = seasonFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return (r == 'final' || (r.contains('final') && !r.contains('semi') && !r.contains('quarter') && !r.contains('quartas'))) &&
+          !r.contains('inconfid') &&
+          !r.contains('3rd');
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
+    final finalTies = BracketEngine.generateMineiro2027Final(sfTies, finalFixtures);
+
+    final finalPhase = CompetitionPhase(
+      id: 'final_2027',
+      name: 'Final',
+      type: PhaseType.finalStage,
+      legs: 2,
+      fixtures: finalFixtures,
+      ties: finalTies,
+      qualificationRuleDescription: 'Disputada em jogos de ida e volta (28/02 e 07/03). Melhor campanha decide a volta em casa; empate no agregado vai para os pênaltis.',
+    );
+
+    // 5. Troféu Inconfidência (Ida e Volta entre os 4 eliminados das Quartas)
+    final incFixtures = seasonFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return r.contains('inconfid');
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
+    final incTies = BracketEngine.generateMineiro2027Inconfidencia(qfTies, incFixtures);
+
+    final inconfidenciaPhase = CompetitionPhase(
+      id: 'inconfidencia_2027',
+      name: 'Troféu Inconfidência',
+      type: PhaseType.knockout,
+      legs: 2,
+      fixtures: incFixtures,
+      ties: incTies,
+      qualificationRuleDescription: 'Disputado pelos 4 clubes eliminados nas Quartas de Final, em semifinais e final de ida e volta.',
+    );
+
+    return Competition(
+      id: leagueId.toString(),
+      externalId: leagueId,
+      name: leagueName,
+      logo: leagueLogo,
+      season: season,
+      division: DivisionLevel.a1,
+      rules: const CompetitionRules(
+        relegatedTo: 'Módulo II 2028',
+        relegationCount: 2,
+      ),
+      phases: [
+        primeiraFasePhase,
+        quartasPhase,
+        semiPhase,
+        finalPhase,
+        inconfidenciaPhase,
+      ],
     );
   }
 

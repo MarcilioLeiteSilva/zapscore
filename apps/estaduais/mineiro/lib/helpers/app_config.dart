@@ -3,6 +3,7 @@ part of 'helpers.dart';
 class AppConfig {
   static const String leagueId = '629';
   static const int externalLeagueId = 629;
+  static const int season = 2027;
   static const String appName = 'Campeonato Mineiro';
   static const String appSlug = 'campeonato_mineiro';
   static const String apiBaseUrl = 'https://zapscore-zapscore-api.gtalg3.easypanel.host';

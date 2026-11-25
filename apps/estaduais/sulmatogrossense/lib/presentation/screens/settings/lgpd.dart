@@ -18,7 +18,7 @@ class LgpdScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF454444),
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -47,24 +47,30 @@ class LgpdScreen extends StatelessWidget {
               const Divider(),
               const Gap(12),
               Text(
-                '''A conformidade com a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados - LGPD) é uma prioridade fundamental para o Campeonato Sul-Mato-Grossense.
+                '''A conformidade com a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados - LGPD) é um compromisso prioritário do aplicativo Campeonato Sul-Mato-Grossense, mantido pela Prolaser Dev (Ecossistema ZapScore).
 
-1. DIREITOS DO TITULAR DOS DADOS
-Nos termos da LGPD, você possui os seguintes direitos em relação aos seus dados pessoais:
-- Confirmação da existência de tratamento de dados.
-- Acesso fácil e transparente aos dados armazenados.
-- Correção de dados incompletos, inexatos ou desatualizados.
-- Anonimização, bloqueio ou eliminação de dados desnecessários.
-- Revogação do consentimento a qualquer momento.
+1. DIREITOS DO TITULAR DOS DADOS (ARTIGO 18 DA LGPD)
+Nos termos da LGPD, você possui os seguintes direitos garantidos em relação aos seus dados:
+- Confirmação da existência de tratamento: saber se tratamos algum dado relacionado ao seu dispositivo;
+- Acesso aos dados: obter informações claras sobre dados processados;
+- Correção de dados: retificar preferências desatualizadas ou incompletas;
+- Eliminação e anonimização: solicitar a exclusão de registros técnicos associados ao seu aparelho;
+- Revogação de consentimento: cancelar o recebimento de notificações push ou preferências de anúncios a qualquer instante.
 
-2. TRATAMENTO E BASE LEGAL
-O tratamento de dados no Campeonato Sul-Mato-Grossense ocorre com base no legítimo interesse para a prestação dos serviços esportivos em tempo real e na execução dos termos de uso do aplicativo.
+2. BASES LEGAIS DO TRATAMENTO
+O tratamento de dados técnicos no aplicativo ocorre estritamente sob:
+- Execução dos serviços solicitados pelo usuário (entrega de placares ao vivo, tabela e notificações em tempo real);
+- Legítimo interesse do desenvolvedor para garantir a segurança da infraestrutura, prevenção a fraudes em anúncios e monitoramento de estabilidade;
+- Consentimento expresso para o envio de notificações push (Android 13+) e preferências de privacidade de anúncios (Google UMP).
 
-3. SOLICITAÇÃO E EXCLUSÃO DE DADOS
-O usuário pode a qualquer momento alterar suas preferências ou solicitar a exclusão de seu cadastro e preferências armazenadas enviando uma requisição pelas configurações do aplicativo.
+3. CANAL DE ATENDIMENTO AO TITULAR DE DADOS (DPO)
+Qualquer requisição referente à LGPD pode ser encaminhada diretamente ao Encarregado pelo Tratamento de Dados Pessoais através do e-mail:
+contato@prolaserdev.com
 
-4. SEGURANÇA E PRIVACIDADE
-Adotamos os melhores padrões de segurança da informação para garantir a privacidade e inviolabilidade das suas preferências no aplicativo.''',
+Prazo de resposta: em conformidade com o artigo 19 da LGPD, as requisições serão respondidas no prazo regulamentar de até 15 dias corridos.
+
+4. MEDIDAS DE SEGURANÇA E PRIVACIDADE
+Adotamos salvaguardas técnicas e administrativas rigorosas, incluindo criptografia de dados em trânsito (HTTPS/TLS) e retenção temporária estritamente necessária ao funcionamento da aplicação esportiva.''',
                 style: GoogleFonts.urbanist(
                   textStyle: context.textTheme.bodySmall!.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),

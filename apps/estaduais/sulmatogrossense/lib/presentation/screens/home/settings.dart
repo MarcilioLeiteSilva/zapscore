@@ -130,6 +130,24 @@ class SettingsPage extends StatelessWidget {
             },
           ),
           CardSettingItem(
+            label: 'privacy_policy'.tr(context),
+            icon: Assets.securite,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
+            onTap: () {
+              context.pushNamed(screenPrivacyPolicy);
+            },
+          ),
+          CardSettingItem(
+            label: 'lgpd'.tr(context),
+            icon: Assets.securite,
+            color: AppColor.accent.withValues(alpha: .1),
+            iconColor: AppColor.accent,
+            onTap: () {
+              context.pushNamed(screenLgpd);
+            },
+          ),
+          CardSettingItem(
             label: 'about'.tr(context),
             icon: Assets.info,
             color: AppColor.accent.withValues(alpha: .1),

@@ -54,6 +54,14 @@ class AdService {
   /// Inicializa com o fluxo oficial de Consentimento do Google UMP (LGPD / GDPR)
   Future<void> init() async {
     try {
+      // CRÍTICO: Executa MobileAds.instance ANTES do runApp() para que _init() -> disposeAllAds()
+      // rode antes de qualquer BannerAd (adId=0) ou NativeAd (adId=1) ser criado na Home!
+      await MobileAds.instance.initialize();
+      if (kDebugMode) {
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
+        );
+      }
       final params = ConsentRequestParameters();
       ConsentInformation.instance.requestConsentInfoUpdate(
         params,
@@ -64,35 +72,17 @@ class AdService {
             }
             final canRequestAds = await ConsentInformation.instance.canRequestAds();
             if (canRequestAds) {
-              await MobileAds.instance.initialize();
-              if (kDebugMode) {
-                await MobileAds.instance.updateRequestConfiguration(
-                  RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
-                );
-              }
               preloadInterstitial();
             }
           });
         },
         (FormError error) async {
           debugPrint('⚠️ [AdService] Consent Info Update Error: ${error.message}');
-          await MobileAds.instance.initialize();
-          if (kDebugMode) {
-            await MobileAds.instance.updateRequestConfiguration(
-              RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
-            );
-          }
           preloadInterstitial();
         },
       );
     } catch (e) {
       debugPrint('⚠️ [AdService] Erro ao inicializar UMP Consent: $e');
-      await MobileAds.instance.initialize();
-      if (kDebugMode) {
-        await MobileAds.instance.updateRequestConfiguration(
-          RequestConfiguration(testDeviceIds: ['009A55C88C73C446B985FB6F333F961B']),
-        );
-      }
       preloadInterstitial();
     }
   }

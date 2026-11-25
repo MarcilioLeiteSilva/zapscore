@@ -14,13 +14,14 @@ class LeagueCubit extends Cubit<LeagueState> {
 
   LeagueCubit(this.apiClient) : super(LeagueInitial());
 
-  Future<void> fetchLeagueData(int leagueId, {String? initialPhaseId}) async {
+  Future<void> fetchLeagueData(int leagueId, {String? initialPhaseId, int? season}) async {
     emit(LeagueLoading());
+    final int targetSeason = season ?? (leagueId == 619 ? 2026 : 2027);
     try {
       final results = await Future.wait([
-        apiClient.getRecentFixtures(leagueId, limit: 500),
-        apiClient.getStandings(leagueId),
-        apiClient.getScorers(leagueId),
+        apiClient.getRecentFixtures(leagueId, limit: 500, season: targetSeason),
+        apiClient.getStandings(leagueId, season: targetSeason),
+        apiClient.getScorers(leagueId, season: targetSeason),
       ]);
 
       final fixtures = results[0] as List<Fixture>;
@@ -34,16 +35,24 @@ class LeagueCubit extends Cubit<LeagueState> {
       final competition = CompetitionNormalizer.normalize(
         leagueId: leagueId,
         leagueName: compName,
-        season: 2026,
+        season: targetSeason,
         rawStandings: standings,
         rawFixtures: fixtures,
       );
 
       final defaultPhaseId = initialPhaseId ??
-          (competition.phases.isNotEmpty ? competition.phases.first.id : 'primeira_fase_modulo_1');
+          (competition.phases.isNotEmpty
+              ? competition.phases.first.id
+              : (targetSeason >= 2027 && leagueId == 629 ? 'fase_grupos_2027' : 'primeira_fase_modulo_1'));
+
+      final effectiveFixtures = (fixtures.isNotEmpty)
+          ? fixtures
+          : (competition.phases.isNotEmpty && competition.phases.first.fixtures.isNotEmpty
+              ? competition.phases.first.fixtures
+              : fixtures);
 
       // Extrair rodadas dinamicamente
-      final rounds = fixtures
+      final rounds = effectiveFixtures
           .map((f) => f.round ?? 'N/A')
           .where((r) => r != 'N/A')
           .toSet()
@@ -69,14 +78,14 @@ class LeagueCubit extends Cubit<LeagueState> {
 
       // Rodada atual: primeira rodada com jogo hoje ou no futuro
       final now = DateTime.now();
-      final futureFixture = fixtures.firstWhere(
+      final futureFixture = effectiveFixtures.firstWhere(
         (f) => f.date.isAfter(now.subtract(const Duration(hours: 4))),
-        orElse: () => fixtures.isNotEmpty ? fixtures.last : Fixture.dummy(),
+        orElse: () => effectiveFixtures.isNotEmpty ? effectiveFixtures.last : Fixture.dummy(),
       );
       final currentRound = futureFixture.round ?? (rounds.isNotEmpty ? rounds.first : 'N/A');
 
       emit(LeagueLoaded(
-        fixtures: fixtures,
+        fixtures: effectiveFixtures,
         standings: standings,
         scorers: scorers,
         rounds: rounds,

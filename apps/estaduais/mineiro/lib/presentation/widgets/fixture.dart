@@ -730,26 +730,40 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                comp.league.name.toUpperCase(),
-                                maxLines: 1,
-                                style: context.textTheme.bodySmall!.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (comp.league.country != null)
-                          Text(
-                            comp.league.country!,
-                            style: context.textTheme.labelSmall,
+                        Text(
+                          (comp.league.externalId == 619 || comp.league.id == '619' || comp.league.externalId == 629 || comp.league.id == '629')
+                              ? 'Campeonato Mineiro'
+                              : comp.league.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.textTheme.bodySmall!.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
+                        ),
+                        if (comp.league.externalId == 619 || comp.league.id == '619')
+                          Text(
+                            'Módulo II',
+                            style: context.textTheme.labelSmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          )
+                        else if (comp.league.externalId == 629 || comp.league.id == '629')
+                          Text(
+                            'Módulo I',
+                            style: context.textTheme.labelSmall!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        Text(
+                          (comp.league.country == null || comp.league.country == 'Brazil' || comp.league.country == 'Brasil')
+                              ? 'Brasil'
+                              : comp.league.country!,
+                          style: context.textTheme.labelSmall,
+                        ),
                       ],
                     ),
                   ),
@@ -782,7 +796,14 @@ class _CardGroupFixtureItemState extends State<CardGroupFixtureItem> {
             firstChild: Column(
               children: [
                 if (comp.matches.isNotEmpty)
-                  ...comp.matches.map((match) => CardFixtureItem(fixture: match))
+                  for (int idx = 0; idx < comp.matches.length; idx++) ...[
+                    CardFixtureItem(fixture: comp.matches[idx]),
+                    if (idx == 1 || (comp.matches.length == 1 && idx == 0))
+                      HouseNativeMatchCard(
+                        leagueId: int.tryParse(comp.league.id),
+                        margin: const EdgeInsets.only(right: 15, top: 6, bottom: 6),
+                      ),
+                  ]
                 else
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 15),

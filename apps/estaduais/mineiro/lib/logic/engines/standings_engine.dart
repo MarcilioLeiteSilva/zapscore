@@ -123,6 +123,87 @@ class StandingsEngine {
     return sortStandings(standings);
   }
 
+  /// Divide os 12 clubes do Mineiro SICOOB 2027 Módulo I em 2 Grupos de 6 + Classificação Geral por Camadas (Art. 9º REC):
+  /// Grupo A: Atlético-MG, Pouso Alegre, North, Tombense, Betim, Villa Nova
+  /// Grupo B: Cruzeiro, América-MG, URT, Uberlândia, Itabirito, Democrata-SL
+  static Map<String, List<Standing>> splitMineiro2027Groups(List<Standing> rawStandings) {
+    final sortedStandings = sortStandings(rawStandings);
+
+    bool matchesGroupA(String name) {
+      final n = name.toLowerCase();
+      return n.contains('atlético') ||
+          n.contains('atletico') ||
+          n.contains('pouso alegre') ||
+          n.contains('north') ||
+          n.contains('tombense') ||
+          n.contains('betim') ||
+          n.contains('villa nova');
+    }
+
+    bool matchesGroupB(String name) {
+      final n = name.toLowerCase();
+      return n.contains('cruzeiro') ||
+          n.contains('américa') ||
+          n.contains('america') ||
+          n.contains('urt') ||
+          n.contains('trabalhadores') ||
+          n.contains('uberlândia') ||
+          n.contains('uberlandia') ||
+          n.contains('itabirito') ||
+          (n.contains('democrata') && (n.contains('sl') || n.contains('sete')));
+    }
+
+    List<Standing> groupA = [];
+    List<Standing> groupB = [];
+
+    for (final s in sortedStandings) {
+      if (matchesGroupA(s.teamName) && groupA.length < 6) {
+        groupA.add(s);
+      } else if (matchesGroupB(s.teamName) && groupB.length < 6) {
+        groupB.add(s);
+      }
+    }
+
+    groupA = sortStandings(groupA);
+    groupB = sortStandings(groupB);
+
+    // Art. 9º do REC: Classificação Geral por camadas (1ºs de cada grupo, 2ºs de cada grupo, ...)
+    final List<Standing> layeredGeneral = [];
+    int generalRank = 1;
+    final maxLen = groupA.length > groupB.length ? groupA.length : groupB.length;
+    for (int pos = 0; pos < maxLen; pos++) {
+      final List<Standing> layer = [];
+      if (pos < groupA.length) layer.add(groupA[pos]);
+      if (pos < groupB.length) layer.add(groupB[pos]);
+      final sortedLayer = sortStandings(layer);
+      for (final s in sortedLayer) {
+        layeredGeneral.add(Standing(
+          rank: generalRank++,
+          teamId: s.teamId,
+          teamName: s.teamName,
+          teamLogo: s.teamLogo,
+          points: s.points,
+          played: s.played,
+          win: s.win,
+          draw: s.draw,
+          lose: s.lose,
+          goalsFor: s.goalsFor,
+          goalsAgainst: s.goalsAgainst,
+          goalsDiff: s.goalsDiff,
+          group: s.group,
+          form: s.form,
+          description: s.description,
+        ));
+      }
+    }
+
+    return {
+      'Grupo A': groupA,
+      'Grupo B': groupB,
+      'Classificação Geral': layeredGeneral.isNotEmpty ? layeredGeneral : sortedStandings,
+    };
+  }
+
   /// Divide os 12 clubes do Mineiro Módulo 1 em 3 Grupos de 4 + Classificação Geral:
   /// Grupo A: Atlético-MG, Uberlândia, Democrata GV, URT
   /// Grupo B: América-MG, Tombense, Betim, Pouso Alegre

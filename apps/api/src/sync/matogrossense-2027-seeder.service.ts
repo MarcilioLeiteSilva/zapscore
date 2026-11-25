@@ -196,7 +196,7 @@ export class Matogrossense2027SeederService implements OnApplicationBootstrap {
     for (const m of scheduleFMF) {
       const homeTeamId = teamDbMap.get(m.home);
       const awayTeamId = teamDbMap.get(m.away);
-      const extId = 6302027000 + m.ref;
+      const extId = 202763000 + m.ref;
 
       if (!homeTeamId || !awayTeamId) {
         this.logger.warn(`[MATOGROSSENSE-2027-SEEDER] Time não encontrado para jogo ${m.ref}: ${m.home} x ${m.away}`);

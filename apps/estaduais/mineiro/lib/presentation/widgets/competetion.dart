@@ -23,6 +23,8 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
               children: [
+                const AdBannerWidget(),
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -49,6 +51,16 @@ class _MatchLeaguePageState extends State<MatchLeaguePage> {
             padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 120),
             itemBuilder: (_, i) {
               final fix = phaseFixtures[i];
+              if (i == 0) {
+                return Column(
+                  children: [
+                    const AdBannerWidget(),
+                    HouseHeaderSponsor(leagueId: state.selectedLeagueId),
+                    const Gap(10),
+                    CardFixtureLeagueItem(fixture: fix),
+                  ],
+                );
+              }
               if (i > 0 && i % 4 == 0) {
                 return Column(
                   children: [
@@ -359,16 +371,31 @@ class TableLeaguePage extends StatelessWidget {
             String? relDesc;
 
             if (isModulo1) {
-              if (isGeneralGroup) {
-                qualCount = 4;
-                relCount = 2;
-                qualDesc = 'Top 4 classificados para as Semifinais (3 líderes + melhor 2º colocado).';
-                relDesc = '11º e 12º colocados são rebaixados para o Módulo II de 2027.';
+              final is2027 = activePhase.id == 'fase_grupos_2027';
+              if (is2027) {
+                if (isGeneralGroup) {
+                  qualCount = 8;
+                  relCount = 2;
+                  qualDesc = 'Top 4 de cada grupo (8 clubes) avançam para as Quartas de Final.';
+                  relDesc = 'Último colocado de cada grupo (6º A e 6º B) cai para o Módulo II 2028.';
+                } else {
+                  qualCount = 4;
+                  relCount = 1;
+                  qualDesc = '1º ao 4º colocados do grupo avançam para as Quartas de Final (1ºx4º e 2ºx3º).';
+                  relDesc = '6º colocado (último do grupo) é rebaixado diretamente para o Módulo II 2028.';
+                }
               } else {
-                qualCount = 1;
-                relCount = 0;
-                qualDesc = '1º colocado avança para as Semifinais (o melhor 2º geral entre os 3 grupos também classifica).';
-                relDesc = null;
+                if (isGeneralGroup) {
+                  qualCount = 4;
+                  relCount = 2;
+                  qualDesc = 'Top 4 classificados para as Semifinais (3 líderes + melhor 2º colocado).';
+                  relDesc = '11º e 12º colocados são rebaixados para o Módulo II de 2027.';
+                } else {
+                  qualCount = 1;
+                  relCount = 0;
+                  qualDesc = '1º colocado avança para as Semifinais (o melhor 2º geral entre os 3 grupos também classifica).';
+                  relDesc = null;
+                }
               }
             } else {
               // Módulo II
@@ -381,7 +408,9 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
-                // Switcher de Grupos [Grupo A] [Grupo B] [Grupo C] [Geral]
+                const AdBannerWidget(),
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
+                // Switcher de Grupos [Grupo A] [Grupo B] [Geral]
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: Row(
@@ -435,6 +464,8 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 CompetitionBracketWidget(
                   ties: activePhase.ties,
                   phaseDescription: activePhase.qualificationRuleDescription,
@@ -449,6 +480,8 @@ class TableLeaguePage extends StatelessWidget {
             return ListView(
               padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
               children: [
+                const AdBannerWidget(),
+                HouseHeaderSponsor(leagueId: state.selectedLeagueId),
                 StandingsTableWidget(
                   standings: activePhase.standings.isNotEmpty ? activePhase.standings : state.standings,
                   groupTitle: activePhase.name,
@@ -459,7 +492,7 @@ class TableLeaguePage extends StatelessWidget {
                       : '1º ao 4º colocados avançam para as Semifinais.',
                   relegationDescription: isM2
                       ? '11º e 12º colocados são rebaixados para a Segunda Divisão de 2027.'
-                      : '11º e 12º colocados são rebaixados para o Módulo II de 2027.',
+                      : '11º e 12º colocados são rebaixados para o Módulo II de 2028.',
                 ),
               ],
             );
@@ -469,6 +502,8 @@ class TableLeaguePage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
             children: [
+              const AdBannerWidget(),
+              HouseHeaderSponsor(leagueId: state.selectedLeagueId),
               StandingsTableWidget(
                 standings: state.standings,
                 groupTitle: 'Classificação Geral',
@@ -612,6 +647,8 @@ class RoundLeaguePage extends StatelessWidget {
 
           return Column(
             children: [
+              const AdBannerWidget(),
+              HouseHeaderSponsor(leagueId: state.selectedLeagueId),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                 margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -752,25 +789,42 @@ class TopScoresList extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state is LeagueLoaded) {
-          return ListView.separated(
-            shrinkWrap: true,
-            physics: const ScrollPhysics(),
-            padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
-            itemBuilder: (_, i) {
-              final scorer = state.scorers[i];
-              return Ink(
-                width: context.width,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(15),
+          if (state.scorers.isEmpty) {
+            return Column(
+              children: [
+                const AdBannerWidget(),
+                Expanded(
+                  child: Center(child: Text('no_data_found'.tr(context))),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-                child: CardTopScores(scorer: scorer, rank: i + 1),
-              );
-            },
-            separatorBuilder: (_, i) => const Gap(15),
-            itemCount: state.scorers.length,
+              ],
+            );
+          }
+          return Column(
+            children: [
+              const AdBannerWidget(),
+              Expanded(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const ScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 10, right: 10, top: 15, bottom: 120),
+                  itemBuilder: (_, i) {
+                    final scorer = state.scorers[i];
+                    return Ink(
+                      width: context.width,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+                      child: CardTopScores(scorer: scorer, rank: i + 1),
+                    );
+                  },
+                  separatorBuilder: (_, i) => const Gap(15),
+                  itemCount: state.scorers.length,
+                ),
+              ),
+            ],
           );
         }
         return const SizedBox();

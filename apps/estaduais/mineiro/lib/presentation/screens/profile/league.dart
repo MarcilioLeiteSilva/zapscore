@@ -43,7 +43,7 @@ class _LeagueProfileScreenState extends State<LeagueProfileScreen> {
               title: Text(
                 currentLeagueId == 619
                     ? 'Mineiro - Módulo 2'
-                    : 'Campeonato Mineiro 2026',
+                    : 'Campeonato Mineiro 2027',
               ),
               actions: [
                 BlocBuilder<FavoriteCubit, FavoriteState>(

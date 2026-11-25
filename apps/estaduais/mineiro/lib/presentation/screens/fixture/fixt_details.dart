@@ -28,7 +28,7 @@ class _FixtureDetailsState extends State<FixtureDetails> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => FixtureCubit(context.read<HomeCubit>().apiClient)
-        ..fetchFixtureDetails(widget.fixture.id),
+        ..fetchFixtureDetails(widget.fixture.id, fallbackFixture: widget.fixture),
       child: BlocBuilder<FixtureCubit, FixtureState>(
         builder: (context, state) {
           final currentFixture = state is FixtureLoaded ? state.fixture : widget.fixture;
@@ -113,21 +113,28 @@ class _FixtureDetailsState extends State<FixtureDetails> {
               body: MediaQuery.removePadding(
                 context: context,
                 removeTop: true,
-                child: state is FixtureLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : [
-                        const InfoFixPage(),
-                        const SummaryFixPage(),
-                        TacticalCommentsFixPage(fixture: currentFixture),
-                        AiAnalysisFixPage(fixture: currentFixture),
-                        ReportFixPage(
-                          leagueId: currentFixture.leagueId,
-                        ),
-                        const StatsFixPage(),
-                        const LineupsFixPage(),
-                        const TableFixPage(),
-                        const H2hFixPage(),
-                      ][indexTab],
+                child: Column(
+                  children: [
+                    const AdBannerWidget(),
+                    Expanded(
+                      child: state is FixtureLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : [
+                              const InfoFixPage(),
+                              const SummaryFixPage(),
+                              TacticalCommentsFixPage(fixture: currentFixture),
+                              AiAnalysisFixPage(fixture: currentFixture),
+                              ReportFixPage(
+                                leagueId: currentFixture.leagueId,
+                              ),
+                              const StatsFixPage(),
+                              const LineupsFixPage(),
+                              const TableFixPage(),
+                              const H2hFixPage(),
+                            ][indexTab],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

@@ -474,4 +474,227 @@ class BracketEngine {
       ),
     ];
   }
+
+  // =========================================================================
+  // --- 🏆 CAMPEONATO MINEIRO SICOOB 2027 (MÓDULO I - NOVO FORMATO FMF) ---
+  // =========================================================================
+
+  /// Quartas de Final 2027 (Ida: 31/01 e Volta: 06/02) — Cruzamentos dentro do próprio grupo:
+  /// Grupo C: 4º A x 1º A | Grupo D: 3º A x 2º A | Grupo E: 4º B x 1º B | Grupo F: 3º B x 2º B
+  /// Regra de Bloqueio: NUNCA preencher times enquanto nenhum jogo da 1ª fase tiver sido disputado.
+  static List<Tie> generateMineiro2027QuarterFinals(
+    List<Standing> groupAStandings,
+    List<Standing> groupBStandings,
+    List<Fixture> qfFixtures,
+  ) {
+    if (qfFixtures.isNotEmpty) {
+      return buildTiesFromFixtures(
+        'quartas_2027',
+        qfFixtures,
+        isTwoLegged: true,
+        advantageForHigherSeed: false,
+        defaultSeedPairs: const [
+          '1º do Grupo A x 4º do Grupo A',
+          '2º do Grupo A x 3º do Grupo A',
+          '1º do Grupo B x 4º do Grupo B',
+          '2º do Grupo B x 3º do Grupo B',
+        ],
+      );
+    }
+
+    final bool hasPlayedMatches =
+        groupAStandings.any((st) => st.played > 0) ||
+        groupBStandings.any((st) => st.played > 0);
+
+    Team? teamFromStanding(Standing? s) {
+      if (s == null) return null;
+      return Team(
+        id: s.teamId.toString(),
+        externalId: s.teamId,
+        name: s.teamName,
+        logo: s.teamLogo,
+        country: 'Brazil',
+      );
+    }
+
+    final gA = groupAStandings;
+    final gB = groupBStandings;
+
+    return [
+      Tie(
+        id: 'qf_2027_c',
+        phaseId: 'quartas_2027',
+        title: 'Quartas - Grupo C (Ida e Volta)',
+        seedHome: '1º do Grupo A',
+        seedAway: '4º do Grupo A',
+        homeTeam: hasPlayedMatches && gA.isNotEmpty ? teamFromStanding(gA[0]) : null,
+        awayTeam: hasPlayedMatches && gA.length > 3 ? teamFromStanding(gA[3]) : null,
+      ),
+      Tie(
+        id: 'qf_2027_d',
+        phaseId: 'quartas_2027',
+        title: 'Quartas - Grupo D (Ida e Volta)',
+        seedHome: '2º do Grupo A',
+        seedAway: '3º do Grupo A',
+        homeTeam: hasPlayedMatches && gA.length > 1 ? teamFromStanding(gA[1]) : null,
+        awayTeam: hasPlayedMatches && gA.length > 2 ? teamFromStanding(gA[2]) : null,
+      ),
+      Tie(
+        id: 'qf_2027_e',
+        phaseId: 'quartas_2027',
+        title: 'Quartas - Grupo E (Ida e Volta)',
+        seedHome: '1º do Grupo B',
+        seedAway: '4º do Grupo B',
+        homeTeam: hasPlayedMatches && gB.isNotEmpty ? teamFromStanding(gB[0]) : null,
+        awayTeam: hasPlayedMatches && gB.length > 3 ? teamFromStanding(gB[3]) : null,
+      ),
+      Tie(
+        id: 'qf_2027_f',
+        phaseId: 'quartas_2027',
+        title: 'Quartas - Grupo F (Ida e Volta)',
+        seedHome: '2º do Grupo B',
+        seedAway: '3º do Grupo B',
+        homeTeam: hasPlayedMatches && gB.length > 1 ? teamFromStanding(gB[1]) : null,
+        awayTeam: hasPlayedMatches && gB.length > 2 ? teamFromStanding(gB[2]) : null,
+      ),
+    ];
+  }
+
+  /// Semifinais 2027 (Ida: 14/02 e Volta: 21/02):
+  /// Grupo G: Vencedor Grupo C x Vencedor Grupo D
+  /// Grupo H: Vencedor Grupo E x Vencedor Grupo F
+  static List<Tie> generateMineiro2027SemiFinals(
+    List<Tie> qfTies,
+    List<Fixture> sfFixtures,
+  ) {
+    if (sfFixtures.isNotEmpty) {
+      return buildTiesFromFixtures(
+        'semifinais_2027',
+        sfFixtures,
+        isTwoLegged: true,
+        advantageForHigherSeed: false,
+        defaultSeedPairs: const [
+          'Vencedor Grupo C x Vencedor Grupo D',
+          'Vencedor Grupo E x Vencedor Grupo F',
+        ],
+      );
+    }
+
+    Team? winnerOfQf(int idx) => idx < qfTies.length ? qfTies[idx].winner : null;
+
+    return [
+      Tie(
+        id: 'sf_2027_g',
+        phaseId: 'semifinais_2027',
+        title: 'Semifinal - Grupo G (Ida e Volta)',
+        seedHome: 'Vencedor Grupo C',
+        seedAway: 'Vencedor Grupo D',
+        homeTeam: winnerOfQf(0),
+        awayTeam: winnerOfQf(1),
+      ),
+      Tie(
+        id: 'sf_2027_h',
+        phaseId: 'semifinais_2027',
+        title: 'Semifinal - Grupo H (Ida e Volta)',
+        seedHome: 'Vencedor Grupo E',
+        seedAway: 'Vencedor Grupo F',
+        homeTeam: winnerOfQf(2),
+        awayTeam: winnerOfQf(3),
+      ),
+    ];
+  }
+
+  /// Grande Final 2027 (Ida: 28/02 e Volta: 07/03):
+  /// Vencedor Grupo G x Vencedor Grupo H
+  static List<Tie> generateMineiro2027Final(
+    List<Tie> sfTies,
+    List<Fixture> finalFixtures,
+  ) {
+    final cleanFinalFixtures = finalFixtures.where((f) {
+      final r = (f.round ?? '').toLowerCase();
+      return !r.contains('inconfid') && !r.contains('3rd') && !r.contains('terceiro');
+    }).toList();
+
+    if (cleanFinalFixtures.isNotEmpty) {
+      return buildTiesFromFixtures(
+        'final_2027',
+        cleanFinalFixtures,
+        isTwoLegged: true,
+        advantageForHigherSeed: false,
+        defaultSeedPairs: const ['Vencedor Grupo G x Vencedor Grupo H'],
+      );
+    }
+
+    Team? winnerOfSf(int idx) => idx < sfTies.length ? sfTies[idx].winner : null;
+
+    return [
+      Tie(
+        id: 'final_2027_0',
+        phaseId: 'final_2027',
+        title: 'Grande Final (Ida e Volta)',
+        seedHome: 'Vencedor Grupo G',
+        seedAway: 'Vencedor Grupo H',
+        homeTeam: winnerOfSf(0),
+        awayTeam: winnerOfSf(1),
+      ),
+    ];
+  }
+
+  /// Troféu Inconfidência 2027 (Semifinais I/J + Final em Ida e Volta):
+  /// Disputado pelos 4 eliminados das Quartas de Final
+  static List<Tie> generateMineiro2027Inconfidencia(
+    List<Tie> qfTies,
+    List<Fixture> incFixtures,
+  ) {
+    if (incFixtures.isNotEmpty) {
+      return buildTiesFromFixtures(
+        'inconfidencia_2027',
+        incFixtures,
+        isTwoLegged: true,
+        advantageForHigherSeed: false,
+        defaultSeedPairs: const [
+          'Perdedor Grupo C x Perdedor Grupo D',
+          'Perdedor Grupo E x Perdedor Grupo F',
+          'Vencedor Grupo I x Vencedor Grupo J',
+        ],
+      );
+    }
+
+    Team? loserOfQf(int idx) {
+      if (idx >= qfTies.length) return null;
+      final t = qfTies[idx];
+      if (t.winner == null) return null;
+      if (t.winner?.id == t.homeTeam?.id) return t.awayTeam;
+      if (t.winner?.id == t.awayTeam?.id) return t.homeTeam;
+      return null;
+    }
+
+    return [
+      Tie(
+        id: 'inc_2027_i',
+        phaseId: 'inconfidencia_2027',
+        title: 'Troféu Inconfidência - Grupo I (Ida e Volta)',
+        seedHome: 'Perdedor Grupo C',
+        seedAway: 'Perdedor Grupo D',
+        homeTeam: loserOfQf(0),
+        awayTeam: loserOfQf(1),
+      ),
+      Tie(
+        id: 'inc_2027_j',
+        phaseId: 'inconfidencia_2027',
+        title: 'Troféu Inconfidência - Grupo J (Ida e Volta)',
+        seedHome: 'Perdedor Grupo E',
+        seedAway: 'Perdedor Grupo F',
+        homeTeam: loserOfQf(2),
+        awayTeam: loserOfQf(3),
+      ),
+      const Tie(
+        id: 'inc_2027_final',
+        phaseId: 'inconfidencia_2027',
+        title: 'Final do Troféu Inconfidência (Ida e Volta)',
+        seedHome: 'Vencedor Grupo I',
+        seedAway: 'Vencedor Grupo J',
+      ),
+    ];
+  }
 }

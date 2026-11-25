@@ -40,15 +40,15 @@ class HomeCubit extends Cubit<HomeState> {
           League(
             id: '629',
             externalId: 629,
-            name: 'Mineiro Módulo 1',
-            country: 'Brazil',
+            name: 'Campeonato Mineiro - Módulo I',
+            country: 'Brasil',
             logo: 'https://media.api-sports.io/football/leagues/629.png',
           ),
           League(
             id: '619',
             externalId: 619,
-            name: 'Mineiro Módulo 2',
-            country: 'Brazil',
+            name: 'Campeonato Mineiro - Módulo II',
+            country: 'Brasil',
             logo: 'https://media.api-sports.io/football/leagues/619.png',
           ),
         ];
