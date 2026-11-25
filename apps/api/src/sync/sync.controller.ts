@@ -14,6 +14,7 @@ import { Piauiense2027SeederService } from './piauiense-2027-seeder.service';
 import { Goiano2027SeederService } from './goiano-2027-seeder.service';
 import { Paranaense2027SeederService } from './paranaense-2027-seeder.service';
 import { Paraense2027SeederService } from './paraense-2027-seeder.service';
+import { Matogrossense2027SeederService } from './matogrossense-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -41,6 +42,7 @@ export class SyncController {
     private readonly goianoSeeder: Goiano2027SeederService,
     private readonly paranaenseSeeder: Paranaense2027SeederService,
     private readonly paraenseSeeder: Paraense2027SeederService,
+    private readonly matogrossenseSeeder: Matogrossense2027SeederService,
   ) {}
 
   @Post('seed-cearense-2027')
@@ -181,6 +183,11 @@ export class SyncController {
   async repairPhotos() {
     this.logger.log('Repair photos triggered');
     return this.syncService.repairPhotos();
+  }
+
+  @Post('seed-matogrossense-2027')
+  async seedMatogrossense2027() {
+    return this.matogrossenseSeeder.seedMatogrossense2027();
   }
 
   @Post('news')
