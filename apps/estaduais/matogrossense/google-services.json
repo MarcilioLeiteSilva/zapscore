@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "602306750596",
+    "project_id": "appmatogrossense",
+    "storage_bucket": "appmatogrossense.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602306750596:android:7872c80e37b3139f903ad1",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualmatogrossense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0WJ2Kv6WnOQbk3xLECgx6hn-HiWOGBD4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
