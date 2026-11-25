@@ -21,6 +21,15 @@ export class Matogrossense2027SeederService implements OnApplicationBootstrap {
   }
 
   async seedMatogrossense2027(): Promise<{ success: boolean; fixturesCount: number; message: string }> {
+    try {
+      return await this._executeSeed();
+    } catch (err: any) {
+      this.logger.error(`[MATOGROSSENSE-2027-SEEDER] ERRO FATAL: ${err.message}`, err.stack);
+      return { success: false, fixturesCount: 0, message: `Erro: ${err.message}` };
+    }
+  }
+
+  private async _executeSeed(): Promise<{ success: boolean; fixturesCount: number; message: string }> {
     // 1. Obter ou atualizar a liga Campeonato Mato-Grossense (630)
     const league = await this.prisma.league.upsert({
       where: { externalId: 630 },
