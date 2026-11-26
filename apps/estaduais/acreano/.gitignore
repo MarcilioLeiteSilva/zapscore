@@ -23,3 +23,8 @@ ios/ServiceDefinitions.json
 *.pbxuser
 *.perspectivev3
 *.log
+
+# Release artifacts
+APK/
+*.aab
+*.apk

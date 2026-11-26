@@ -29,12 +29,15 @@ apps/europa/pb_hooks/
 key.properties
 **/key.properties
 
-# Pacotes Binários de Release e APKs
-**/APK/*.aab
-**/APK/*.apk
+# Pacotes Binários de Release, APKs e Pastas APK
+APK/
+**/APK/
+**/APK/**
 *.aab
 *.apk
 *.zip
+mapping.txt
+**/mapping.txt
 
 # Build artifacts
 *.js.map
