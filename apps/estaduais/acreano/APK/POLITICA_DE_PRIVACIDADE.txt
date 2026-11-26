@@ -1,0 +1,69 @@
+POLÍTICA DE PRIVACIDADE — CAMPEONATO ACREANO
+================================================================================
+Data de vigência e última atualização: 25 de novembro de 2026
+Nome do Aplicativo na Google Play: Acreano 2027: Tabela e Jogos / Campeonato Acreano
+Identificador do Pacote (Package ID): com.zapscore.estadualacreano
+Desenvolvedor / Entidade Responsável: Prolaser Dev (Ecossistema ZapScore)
+E-mail de Contato e Privacidade: contato@prolaserdev.com
+================================================================================
+
+1. INTRODUÇÃO E ESCOPO
+Esta Política de Privacidade aplica-se especificamente ao aplicativo móvel Campeonato Acreano (Acreano 2027: Tabela e Jogos), registrado sob o pacote com.zapscore.estadualacreano na Google Play Store e desenvolvido por Prolaser Dev. Este documento descreve de forma transparente e abrangente como o aplicativo coleta, utiliza, armazena, protege e compartilha dados do usuário e do dispositivo, bem como os direitos e controles de privacidade à disposição do usuário.
+
+2. COLETA E USO DE INFORMAÇÕES
+O aplicativo Campeonato Acreano fornece placares ao vivo, tabela de classificação, escalações, estatísticas, notícias e vídeos do futebol acreano sem exigir cadastro obrigatório, criação de conta ou login.
+
+2.1. Dados Pessoais e Sensíveis que NÃO Coletamos
+O aplicativo NÃO solicita, NÃO acessa e NÃO coleta dados pessoais identificáveis ou permissões sensíveis do dispositivo, tais como: nome completo, CPF, telefone, endereço físico, câmera, microfone, lista de contatos, galeria de fotos/arquivos pessoais, localização geográfica precisa (GPS), registros de chamadas, SMS, Bluetooth ou NFC.
+
+2.2. Dados do Dispositivo Coletados Automaticamente
+- Token de Notificação Push (Firebase Cloud Messaging - FCM Registration Token): Identificador técnico anônimo gerado pelo dispositivo para permitir o envio de alertas de início de jogos, gols, placares e notícias dos clubes selecionados pelo usuário.
+- Identificador de Publicidade do Android (Google Advertising ID - AAID): Utilizado pelo SDK do Google AdMob para exibição de banners e anúncios, limitação de frequência publicitária, prevenção contra fraudes e medição de desempenho de anúncios, respeitando o consentimento concedido pelo usuário.
+- Dados Técnicos e Diagnóstico: Modelo do aparelho, versão do sistema operacional Android, idioma configurado, endereço IP (processado de forma transitória nas requisições HTTPS), registros de falhas (crash logs) e métricas de desempenho.
+- Preferências Locais do Usuário: Times marcados como favoritos, preferências de ativação/desativação de alertas e tema visual armazenados localmente no aparelho (SharedPreferences).
+
+2.3. Interações Voluntárias no Aplicativo
+- Enquetes de Partidas: Quando o usuário vota voluntariamente em uma enquete de jogo ("Vote no Vencedor"), apenas o cômputo anônimo do voto vinculado a um identificador técnico local é enviado ao servidor, sem qualquer identificação pessoal.
+
+3. PERMISSÕES DO DISPOSITIVO UTILIZADAS
+O aplicativo declara e utiliza exclusivamente as seguintes permissões no AndroidManifest.xml:
+- android.permission.INTERNET: Necessária para buscar a tabela atualizada, placares ao vivo, estatísticas, escalações, notícias e vídeos.
+- android.permission.ACCESS_NETWORK_STATE: Necessária para verificar se o dispositivo possui conexão ativa e acionar o modo offline quando necessário.
+- android.permission.POST_NOTIFICATIONS: Permissão opcional solicitada ao usuário (Android 13+) exclusivamente para exibir alertas de gols e partidas. Pode ser revogada a qualquer momento nas configurações do aparelho.
+
+4. FINALIDADE DO TRATAMENTO DOS DADOS
+- Fornecer resultados de jogos, classificação, artilharia, escalações e notícias do Campeonato Acreano em tempo real;
+- Enviar notificações push de gols e eventos das partidas para os dispositivos que autorizaram o recebimento;
+- Exibir anúncios através do Google AdMob e campanhas informativas internas (House Ads) para manter o aplicativo 100% gratuito;
+- Diagnosticar erros técnicos, corrigir falhas e garantir a estabilidade do aplicativo.
+
+5. COMPARTILHAMENTO DE DADOS E SERVIÇOS DE TERCEIROS (SDKs)
+A Prolaser Dev não vende, não aluga e não comercializa dados pessoais de seus usuários. O aplicativo integra bibliotecas (SDKs) oficiais do Google que processam identificadores técnicos de acordo com suas próprias políticas:
+- Google Play Services: https://policies.google.com/privacy
+- Google AdMob & User Messaging Platform (UMP): https://policies.google.com/technologies/ads
+- Google Firebase (Firebase Cloud Messaging): https://firebase.google.com/support/privacy
+
+6. PUBLICIDADE E CONTROLE DE CONSENTIMENTO (LGPD / GDPR)
+O aplicativo utiliza o fluxo oficial de consentimento do Google (User Messaging Platform - UMP). O usuário pode gerenciar, alterar ou revogar a qualquer momento suas preferências de privacidade e personalização de anúncios diretamente no aplicativo (Configurações > Privacidade) ou nas configurações do sistema Android (Configurações > Google > Anúncios).
+
+7. SEGURANÇA E CRIPTOGRAFIA DE DADOS
+Todos os dados transmitidos entre o aplicativo Campeonato Acreano (com.zapscore.estadualacreano) e nossos servidores ou APIs parceiras são protegidos com criptografia em trânsito via protocolo seguro HTTPS/TLS (Transport Layer Security).
+
+8. RETENÇÃO E EXCLUSÃO DE DADOS (LGPD - LEI Nº 13.709/2018)
+O aplicativo não realiza criação de contas pessoais.
+- Exclusão Local Imediata: O usuário pode excluir todas as preferências locais limpando o armazenamento do aplicativo nas configurações do Android ou desinstalando o aplicativo.
+- Exclusão do Token de Notificação (FCM Token): Ao desativar as notificações ou desinstalar o aplicativo, o token de push é automaticamente invalidado e removido da base ativa de envios.
+- Solicitação de Exclusão de Dados: O usuário pode solicitar a confirmação, acesso ou exclusão definitiva de quaisquer registros técnicos associados ao seu dispositivo pelo e-mail contato@prolaserdev.com com o assunto "Exclusão de Dados - Acreano". Atendimento gratuito em até 15 dias corridos.
+
+9. PRIVACIDADE DE CRIANÇAS
+O aplicativo possui conteúdo informativo esportivo e não é direcionado a crianças menores de 13 anos, não coletando intencionalmente dados pessoais de crianças.
+
+10. ALTERAÇÕES A ESTA POLÍTICA
+Esta Política de Privacidade pode ser atualizada periodicamente para refletir melhorias no serviço ou alterações legais e regulatórias.
+
+11. CONTATO E ENCARREGADO DE DADOS (DPO)
+Em caso de dúvidas ou solicitações sobre esta Política de Privacidade ou sobre o tratamento de seus dados:
+- Desenvolvedor: Prolaser Dev
+- E-mail: contato@prolaserdev.com
+- Identificador do Pacote: com.zapscore.estadualacreano
+- Aplicativo: Campeonato Acreano

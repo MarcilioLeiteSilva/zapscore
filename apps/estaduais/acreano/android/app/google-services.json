@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1007665091374",
+    "project_id": "appacreano",
+    "storage_bucket": "appacreano.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007665091374:android:d0410cf27c2398193760bf",
+        "android_client_info": {
+          "package_name": "com.zapscore.estadualacreano"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjhPIZv1yBnJ6gtprtlMZfvl-WnQDZv5c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
