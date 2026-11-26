@@ -15,6 +15,7 @@ import { Goiano2027SeederService } from './goiano-2027-seeder.service';
 import { Paranaense2027SeederService } from './paranaense-2027-seeder.service';
 import { Paraense2027SeederService } from './paraense-2027-seeder.service';
 import { Matogrossense2027SeederService } from './matogrossense-2027-seeder.service';
+import { Acreano2027SeederService } from './acreano-2027-seeder.service';
 import { NewsCrawlerService } from '../news/news-crawler.service';
 import { VideoCrawlerService } from '../videos/video-crawler.service';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
@@ -43,6 +44,7 @@ export class SyncController {
     private readonly paranaenseSeeder: Paranaense2027SeederService,
     private readonly paraenseSeeder: Paraense2027SeederService,
     private readonly matogrossenseSeeder: Matogrossense2027SeederService,
+    private readonly acreanoSeeder: Acreano2027SeederService,
   ) {}
 
   @Post('seed-cearense-2027')
@@ -188,6 +190,11 @@ export class SyncController {
   @Post('seed-matogrossense-2027')
   async seedMatogrossense2027() {
     return this.matogrossenseSeeder.seedMatogrossense2027();
+  }
+
+  @Post('seed-acreano-2027')
+  async seedAcreano2027() {
+    return this.acreanoSeeder.seedAcreano2027();
   }
 
   @Post('news')
