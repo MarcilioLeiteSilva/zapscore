@@ -278,7 +278,7 @@ export const SUPPORTED_COMPETITIONS: CompetitionConfig[] = [
     name: 'Campeonato Potiguar',
     country: 'Brazil',
     type: 'league',
-    activeSeasons: [2026],
+    activeSeasons: [2027, 2026],
   },
   {
     code: 'BR_PIAUIENSE_1',
