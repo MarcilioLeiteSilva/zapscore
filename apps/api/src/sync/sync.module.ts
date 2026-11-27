@@ -23,6 +23,7 @@ import { Paraense2027SeederService } from './paraense-2027-seeder.service';
 import { Matogrossense2027SeederService } from './matogrossense-2027-seeder.service';
 import { Acreano2027SeederService } from './acreano-2027-seeder.service';
 import { Potiguar2027SeederService } from './potiguar-2027-seeder.service';
+import { Catarinense2027SeederService } from './catarinense-2027-seeder.service';
 import { CompetitionsModule } from '../competitions/competitions.module';
 import { NewsModule } from '../news/news.module';
 import { VideosModule } from '../videos/videos.module';
@@ -34,8 +35,8 @@ import { RedisModule } from '../redis/redis.module';
 @Module({
   imports: [PrismaModule, ApiFootballModule, CompetitionsModule, NewsModule, VideosModule, FixturesModule, NotificationsModule, LineupsModule, RedisModule],
   controllers: [SyncController],
-  providers: [SyncService, SyncJobsService, SyncContentService, Cearense2027SeederService, Baiano2027SeederService, Sulmatogrossense2027SeederService, Tocantinense2027SeederService, Amapaense2027SeederService, Amazonense2027SeederService, Brasiliense2027SeederService, Mineiro2027SeederService, Capixaba2027SeederService, Rondoniense2027SeederService, Piauiense2027SeederService, Goiano2027SeederService, Paranaense2027SeederService, Paraense2027SeederService, Matogrossense2027SeederService, Acreano2027SeederService, Potiguar2027SeederService],
-  exports: [SyncService, Cearense2027SeederService, Baiano2027SeederService, Sulmatogrossense2027SeederService, Tocantinense2027SeederService, Amapaense2027SeederService, Amazonense2027SeederService, Brasiliense2027SeederService, Mineiro2027SeederService, Capixaba2027SeederService, Rondoniense2027SeederService, Piauiense2027SeederService, Goiano2027SeederService, Paranaense2027SeederService, Paraense2027SeederService, Matogrossense2027SeederService, Acreano2027SeederService, Potiguar2027SeederService],
+  providers: [SyncService, SyncJobsService, SyncContentService, Cearense2027SeederService, Baiano2027SeederService, Sulmatogrossense2027SeederService, Tocantinense2027SeederService, Amapaense2027SeederService, Amazonense2027SeederService, Brasiliense2027SeederService, Mineiro2027SeederService, Capixaba2027SeederService, Rondoniense2027SeederService, Piauiense2027SeederService, Goiano2027SeederService, Paranaense2027SeederService, Paraense2027SeederService, Matogrossense2027SeederService, Acreano2027SeederService, Potiguar2027SeederService, Catarinense2027SeederService],
+  exports: [SyncService, Cearense2027SeederService, Baiano2027SeederService, Sulmatogrossense2027SeederService, Tocantinense2027SeederService, Amapaense2027SeederService, Amazonense2027SeederService, Brasiliense2027SeederService, Mineiro2027SeederService, Capixaba2027SeederService, Rondoniense2027SeederService, Piauiense2027SeederService, Goiano2027SeederService, Paranaense2027SeederService, Paraense2027SeederService, Matogrossense2027SeederService, Acreano2027SeederService, Potiguar2027SeederService, Catarinense2027SeederService],
 })
 export class SyncModule {}
 
